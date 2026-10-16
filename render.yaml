@@ -1,0 +1,103 @@
+# Kriya Tavi on Render: a web service and a background worker, both built
+# from this repository. State lives in Supabase; neither service keeps
+# anything that matters on its own disk.
+#
+# Secrets are `sync: false`: Render asks for each one when the Blueprint is
+# first applied and never stores it in this file. (Environment groups can't
+# hold sync:false values, so secrets are listed per service.) Instance plans
+# are chosen in the dashboard. See docs/kriya/deployment.md.
+
+envVarGroups:
+  - name: kriya-shared
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: OPENROUTER_BASE_URL
+        value: https://openrouter.ai/api/v1
+
+services:
+  - type: web
+    name: kriya-web
+    runtime: node
+    # Closest Render region to Indian users; put Supabase in Mumbai (ap-south-1)
+    region: singapore
+    buildCommand: npm ci && npm run build
+    # `next start` listens on Render's PORT
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - fromGroup: kriya-shared
+      - key: KRIYA_APP_URL
+        sync: false
+      # Supabase Postgres through the transaction pooler (port 6543)
+      - key: DATABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      # Account deletion and owner user lookups (server only)
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      # Lets the web app refuse tasks when models are unreachable
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_DEFAULT_MODEL
+        sync: false
+      # Only its presence is read here, to show whether web research is on
+      - key: FIRECRAWL_API_KEY
+        sync: false
+      - key: KRIYA_FX_USD_INR
+        sync: false
+      - key: KRIYA_FX_SOURCE
+        sync: false
+      # razorpay, or test (a simulated checkout, refused in production
+      # unless KRIYA_ALLOW_TEST_BILLING=1, e.g. on a staging service)
+      - key: KRIYA_BILLING_PROVIDER
+        value: razorpay
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      - key: KRIYA_SUPPORT_EMAIL
+        sync: false
+      - key: DB_POOL_MAX
+        value: "10"
+
+  - type: worker
+    name: kriya-worker
+    runtime: node
+    region: singapore
+    buildCommand: npm ci
+    startCommand: npm run worker
+    envVars:
+      - fromGroup: kriya-shared
+      - key: DATABASE_URL
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      # Model ids per tier: check the live catalogue and run
+      # `npm run models:eval` before relying on one. /owner/config overrides.
+      - key: OPENROUTER_DEFAULT_MODEL
+        sync: false
+      - key: OPENROUTER_BALANCED_MODEL
+        sync: false
+      - key: OPENROUTER_ESCALATION_MODEL
+        sync: false
+      - key: OPENROUTER_FALLBACK_MODEL
+        sync: false
+      - key: FIRECRAWL_API_KEY
+        sync: false
+      - key: KRIYA_FX_USD_INR
+        sync: false
+      - key: KRIYA_FX_SOURCE
+        sync: false
+      - key: KRIYA_APP_URL
+        sync: false
+      # Tasks this worker runs at once; add workers to scale out
+      - key: WORKER_CONCURRENCY
+        value: "4"
+      - key: DB_POOL_MAX
+        value: "6"

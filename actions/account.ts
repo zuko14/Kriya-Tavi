@@ -1,0 +1,211 @@
+"use server"
+
+import { count, eq } from "drizzle-orm"
+import { nanoid } from "nanoid"
+import { revalidatePath } from "next/cache"
+import { redirect } from "next/navigation"
+import { z } from "zod"
+
+import { privileged, withUser } from "@/db"
+import {
+  agents,
+  auditEvents,
+  plans,
+  profileInputSchema,
+  profiles,
+  tasks,
+  threads,
+} from "@/db/schema"
+import { requireUser } from "@/lib/auth"
+import { cancelSubscription, simulateTestPayment, startCheckout } from "@/lib/billing"
+import { log } from "@/lib/log"
+import { allow } from "@/lib/rate-limit"
+import { createSupabase, createSupabaseAdmin } from "@/lib/supabase"
+import { templatesFor } from "@/lib/templates"
+
+export type FormState = { error?: string; message?: string } | null
+
+function field(form: FormData, name: string) {
+  const value = form.get(name)
+  return typeof value === "string" ? value : ""
+}
+
+function parseProfile(form: FormData) {
+  return profileInputSchema.safeParse({
+    displayName: field(form, "displayName"),
+    locale: field(form, "locale") || "en-IN",
+    useCase: field(form, "useCase") || undefined,
+  })
+}
+
+export async function saveProfile(_: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser()
+  const parsed = parseProfile(form)
+  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  await withUser(user.id, (tx) =>
+    tx
+      .update(profiles)
+      .set({
+        displayName: parsed.data.displayName,
+        locale: parsed.data.locale,
+        useCase: parsed.data.useCase ?? null,
+      })
+      .where(eq(profiles.id, user.id))
+  )
+  revalidatePath("/", "layout")
+  return { message: "Saved." }
+}
+
+// First run: who you are, then a first agent that fits, then straight into it
+export async function completeOnboarding(
+  _: FormState,
+  form: FormData
+): Promise<FormState> {
+  const user = await requireUser()
+  const parsed = parseProfile(form)
+  if (!parsed.success) return { error: parsed.error.issues[0].message }
+
+  const destination = await withUser(user.id, async (tx) => {
+    await tx
+      .update(profiles)
+      .set({
+        displayName: parsed.data.displayName,
+        locale: parsed.data.locale,
+        useCase: parsed.data.useCase ?? null,
+        onboardedAt: new Date(),
+      })
+      .where(eq(profiles.id, user.id))
+    const [existing] = await tx.select({ n: count() }).from(agents)
+    if ((existing?.n ?? 0) > 0) return "/home"
+    const template = templatesFor(parsed.data.useCase)[0]
+    const [agent] = await tx
+      .insert(agents)
+      .values({
+        id: nanoid(12),
+        userId: user.id,
+        name: template.name,
+        role: template.role,
+        instructions: template.instructions,
+      })
+      .returning({ id: agents.id })
+    const [thread] = await tx
+      .insert(threads)
+      .values({ id: nanoid(12), userId: user.id, agentId: agent.id })
+      .returning({ id: threads.id })
+    return `/a/${agent.id}/${thread.id}`
+  })
+  revalidatePath("/", "layout")
+  redirect(destination)
+}
+
+/* ───────────────────────────── billing ──────────────────────────── */
+
+export async function choosePlan(_: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser()
+  const planId = z
+    .string()
+    .regex(/^[a-z0-9-]{1,32}$/)
+    .safeParse(field(form, "plan"))
+  if (!planId.success) return { error: "Choose a plan." }
+  if (!(await allow(`checkout:${user.id}`, 10, 60 * 60))) {
+    return { error: "Too many attempts. Try again in a while." }
+  }
+  const [plan] = await privileged.select().from(plans).where(eq(plans.id, planId.data))
+  if (!plan) return { error: "That plan isn't available." }
+  let url: string
+  try {
+    ;({ url } = await startCheckout(user.id, plan))
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Couldn't start the payment.",
+    }
+  }
+  redirect(url)
+}
+
+export async function finishTestCheckout(
+  _: FormState,
+  form: FormData
+): Promise<FormState> {
+  const user = await requireUser()
+  const sub = z
+    .string()
+    .regex(/^test_sub_[\w-]+$/)
+    .safeParse(field(form, "sub"))
+  const outcome = field(form, "outcome") === "failed" ? "failed" : "paid"
+  if (!sub.success) return { error: "Checkout not found." }
+  try {
+    await simulateTestPayment(user.id, sub.data, outcome)
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Couldn't complete the test.",
+    }
+  }
+  revalidatePath("/", "layout")
+  redirect(outcome === "paid" ? "/account?billing=active" : "/account?billing=failed")
+}
+
+export async function cancelPlan(): Promise<FormState> {
+  const user = await requireUser()
+  try {
+    const sub = await cancelSubscription(user.id, true)
+    if (!sub) return { error: "You don't have a paid plan to cancel." }
+  } catch (error) {
+    log.error("cancel failed", { error })
+    return { error: "Couldn't cancel right now. Try again, or contact support." }
+  }
+  revalidatePath("/", "layout")
+  return { message: "Your plan stays active until the end of this billing period." }
+}
+
+/* ───────────────────────────── deletion ─────────────────────────── */
+
+// Deletes the account and everything in it. Payment and usage records are
+// kept without the person's identity, as accounting requires.
+export async function deleteAccount(_: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser()
+  if (field(form, "confirm").trim() !== "DELETE") {
+    return { error: "Type DELETE in capitals to confirm." }
+  }
+  if (!(await allow(`delete:${user.id}`, 3, 60 * 60))) {
+    return { error: "Too many attempts. Try again in a while." }
+  }
+
+  try {
+    await cancelSubscription(user.id, false)
+  } catch (error) {
+    log.error("delete: subscription cancel failed", { error })
+    return {
+      error:
+        "We couldn't cancel your paid plan, so nothing was deleted. Try again, or contact support.",
+    }
+  }
+
+  // Stop anything still running; the cascade then removes the tasks
+  await privileged
+    .update(tasks)
+    .set({ cancelRequestedAt: new Date() })
+    .where(eq(tasks.userId, user.id))
+  await privileged.insert(auditEvents).values({
+    actorId: user.id,
+    action: "account.delete",
+    targetType: "user",
+    targetId: user.id,
+  })
+
+  try {
+    const admin = createSupabaseAdmin()
+    const { error } = await admin.auth.admin.deleteUser(user.id)
+    if (error) throw error
+  } catch (error) {
+    log.error("delete: auth deletion failed", { error })
+    return {
+      error:
+        "We couldn't delete your account right now. Contact support and we'll do it.",
+    }
+  }
+
+  const supabase = await createSupabase()
+  await supabase.auth.signOut().catch(() => {})
+  redirect("/?deleted=1")
+}

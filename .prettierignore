@@ -1,0 +1,7 @@
+.next
+node_modules
+data
+db/migrations
+package-lock.json
+public
+*.md

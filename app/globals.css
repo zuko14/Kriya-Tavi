@@ -1,0 +1,576 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "streamdown/styles.css";
+
+@source "../node_modules/streamdown/dist/*.js";
+@source "../node_modules/@streamdown/code/dist/*.js";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ───────────────────────────────────────────────────────────────────
+ * Kriya Tavi design tokens
+ *
+ * Drawn from Tavi, the mascot: studio cream, deep teal and terracotta.
+ * `rigel` is the brand teal (focus, active, links); `betelgeuse` is
+ * terracotta (highlights and things that need attention). Token names come
+ * from the star names the brand uses. Surfaces are translucent "liquid
+ * glass" laid over a soft aura; the `.glass*` utilities below compose them.
+ * ─────────────────────────────────────────────────────────────────── */
+
+:root {
+  --radius: 0.75rem;
+
+  --background: #f5efe7;
+  --foreground: #13292b;
+  --surface: #fffcf8;
+  --elevated: #fffdfa;
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: #fffcf8;
+  --popover-foreground: var(--foreground);
+
+  --primary: #173a3d;
+  --primary-foreground: #fbf5ec;
+  --secondary: rgb(23 58 61 / 0.06);
+  --secondary-foreground: var(--foreground);
+  --muted: rgb(23 58 61 / 0.055);
+  --muted-foreground: #56696a;
+  --faint: #8a9898;
+  --accent: rgb(23 58 61 / 0.07);
+  --accent-foreground: var(--foreground);
+
+  --border: rgb(23 58 61 / 0.11);
+  --hairline: rgb(23 58 61 / 0.07);
+  --input: rgb(23 58 61 / 0.15);
+  --ring: #2f7a78;
+
+  --rigel: #1f6362;
+  --rigel-soft: rgb(31 99 98 / 0.11);
+  --betelgeuse: #b4622f;
+  --betelgeuse-soft: rgb(205 136 81 / 0.16);
+  --ok: #2c8a5f;
+  --warn: #b7791f;
+  --destructive: #c2413a;
+
+  --grid-dot: rgb(23 58 61 / 0.09);
+
+  /* Liquid glass */
+  --glass-bg: rgb(255 253 250 / 0.6);
+  --glass-strong: rgb(255 253 250 / 0.82);
+  --glass-rim: rgb(255 255 255 / 0.9);
+  --glass-edge: rgb(23 58 61 / 0.1);
+  --glass-shadow: 0 1px 2px rgb(19 41 43 / 0.05), 0 12px 40px -12px rgb(19 41 43 / 0.16);
+  --aura-1: rgb(205 136 81 / 0.2);
+  --aura-2: rgb(47 122 120 / 0.16);
+  --aura-3: rgb(252 221 181 / 0.55);
+}
+
+.dark {
+  --background: #0a1213;
+  --foreground: #f2eadf;
+  --surface: #111d1f;
+  --elevated: #142224;
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: #132022;
+  --popover-foreground: var(--foreground);
+
+  --primary: #f2eadf;
+  --primary-foreground: #0d1a1b;
+  --secondary: rgb(242 234 223 / 0.07);
+  --secondary-foreground: var(--foreground);
+  --muted: rgb(242 234 223 / 0.065);
+  --muted-foreground: #9fb0ad;
+  --faint: #6c7f7d;
+  --accent: rgb(242 234 223 / 0.08);
+  --accent-foreground: var(--foreground);
+
+  --border: rgb(226 240 236 / 0.1);
+  --hairline: rgb(226 240 236 / 0.065);
+  --input: rgb(226 240 236 / 0.13);
+  --ring: #6cc0b8;
+
+  --rigel: #6cc0b8;
+  --rigel-soft: rgb(108 192 184 / 0.14);
+  --betelgeuse: #e7a46d;
+  --betelgeuse-soft: rgb(231 164 109 / 0.15);
+  --ok: #6fd3a0;
+  --warn: #f0c063;
+  --destructive: #f07a6e;
+
+  --grid-dot: rgb(226 240 236 / 0.06);
+
+  --glass-bg: rgb(24 40 42 / 0.5);
+  --glass-strong: rgb(20 34 36 / 0.78);
+  --glass-rim: rgb(255 255 255 / 0.1);
+  --glass-edge: rgb(226 240 236 / 0.1);
+  --glass-shadow: 0 1px 0 rgb(0 0 0 / 0.2), 0 18px 50px -18px rgb(0 0 0 / 0.7);
+  --aura-1: rgb(205 136 81 / 0.13);
+  --aura-2: rgb(47 122 120 / 0.2);
+  --aura-3: rgb(29 63 66 / 0.35);
+}
+
+@theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "SFMono-Regular", monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-elevated: var(--elevated);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-hairline: var(--hairline);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-rigel: var(--rigel);
+  --color-rigel-soft: var(--rigel-soft);
+  --color-betelgeuse: var(--betelgeuse);
+  --color-betelgeuse-soft: var(--betelgeuse-soft);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+
+  --animate-pulse-dot: pulse-dot 1.6s ease-in-out infinite;
+  --animate-caret: caret 1s steps(2, start) infinite;
+  --animate-scan: scan 2.4s linear infinite;
+  --animate-countdown: countdown var(--countdown, 8s) linear forwards;
+
+  @keyframes pulse-dot {
+    0%,
+    100% {
+      opacity: 1;
+      box-shadow: 0 0 0 0 color-mix(in oklch, currentColor 45%, transparent);
+    }
+    50% {
+      opacity: 0.55;
+      box-shadow: 0 0 0 4px transparent;
+    }
+  }
+  @keyframes caret {
+    to {
+      visibility: hidden;
+    }
+  }
+  @keyframes scan {
+    from {
+      background-position: -200% 0;
+    }
+    to {
+      background-position: 200% 0;
+    }
+  }
+  @keyframes countdown {
+    from {
+      transform: scaleX(1);
+    }
+    to {
+      transform: scaleX(0);
+    }
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings:
+      "cv11" 1,
+      "ss01" 1,
+      "ss03" 1;
+    font-size: 14px;
+  }
+  ::selection {
+    background: color-mix(in oklch, var(--rigel) 35%, transparent);
+  }
+  code,
+  kbd,
+  pre,
+  samp {
+    font-family: var(--font-mono);
+    font-feature-settings: "zero" 1;
+  }
+  :focus-visible {
+    outline-offset: 2px;
+  }
+  /* Quiet, thin scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklch, var(--foreground) 14%, transparent) transparent;
+  }
+}
+
+@layer components {
+  /* Small uppercase mono labels: section headers, keys, captions */
+  .label-mono {
+    @apply font-mono text-[10.5px] font-medium tracking-[0.09em] text-muted-foreground uppercase;
+  }
+
+  /* Dotted engineering-paper backdrop */
+  .bg-grid {
+    background-image: radial-gradient(var(--grid-dot) 1px, transparent 1px);
+    background-size: 18px 18px;
+  }
+
+  .bg-grid-fade {
+    mask-image: radial-gradient(ellipse at 50% 30%, black 20%, transparent 75%);
+  }
+
+  /* A shimmering line used while something is in flight */
+  .shimmer-text {
+    background: linear-gradient(
+        90deg,
+        var(--muted-foreground) 0%,
+        var(--foreground) 50%,
+        var(--muted-foreground) 100%
+      )
+      0 0 / 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: var(--animate-scan);
+  }
+
+  .hairline-b {
+    box-shadow: inset 0 -1px 0 var(--hairline);
+  }
+
+  /* Display serif for headlines and big numbers */
+  .font-display {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    font-variation-settings: "SOFT" 50;
+    letter-spacing: -0.02em;
+  }
+
+  /* Liquid glass: a translucent pane with a bright top rim */
+  .glass {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-edge);
+    box-shadow:
+      inset 0 1px 0 var(--glass-rim),
+      var(--glass-shadow);
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+  }
+  .glass-strong {
+    background: var(--glass-strong);
+    border: 1px solid var(--glass-edge);
+    box-shadow:
+      inset 0 1px 0 var(--glass-rim),
+      var(--glass-shadow);
+    backdrop-filter: blur(28px) saturate(170%);
+    -webkit-backdrop-filter: blur(28px) saturate(170%);
+  }
+
+  /* Soft environmental light behind glass */
+  .aura {
+    background:
+      radial-gradient(60% 45% at 85% -5%, var(--aura-2), transparent 60%),
+      radial-gradient(55% 40% at 0% 10%, var(--aura-1), transparent 60%),
+      radial-gradient(70% 50% at 50% 110%, var(--aura-3), transparent 70%),
+      var(--background);
+  }
+
+  /* Liquid glass buttons: a lit, slightly convex pill */
+  .btn-liquid {
+    position: relative;
+    isolation: isolate;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 999px;
+    font-weight: 500;
+    color: #fbf5ec;
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.22), rgb(255 255 255 / 0) 55%),
+      linear-gradient(135deg, #24575a 0%, #173a3d 60%, #10292b 100%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.35),
+      inset 0 -1px 0 rgb(0 0 0 / 0.25),
+      0 10px 30px -10px rgb(23 58 61 / 0.7),
+      0 2px 6px -2px rgb(23 58 61 / 0.4);
+    transition:
+      transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 160ms,
+      filter 160ms;
+  }
+  .btn-liquid:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.08);
+  }
+  .btn-liquid:active {
+    transform: scale(0.97);
+  }
+  .btn-liquid:disabled {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+  .dark .btn-liquid {
+    color: #10292b;
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.55), rgb(255 255 255 / 0) 60%),
+      linear-gradient(135deg, #fcddb5 0%, #f2c992 55%, #e2a76c 100%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.7),
+      inset 0 -1px 0 rgb(120 60 20 / 0.25),
+      0 10px 34px -10px rgb(231 164 109 / 0.55);
+  }
+  .btn-glass {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 999px;
+    font-weight: 500;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-edge);
+    box-shadow: inset 0 1px 0 var(--glass-rim);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    transition:
+      background 160ms,
+      transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .btn-glass:hover {
+    background: var(--glass-strong);
+  }
+  .btn-glass:active {
+    transform: scale(0.97);
+  }
+
+  .rise {
+    animation: rise 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+/* Browsers without backdrop-filter get solid panes, never see-through text */
+@supports not ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))) {
+  .glass,
+  .glass-strong,
+  .btn-glass {
+    background: var(--surface);
+  }
+}
+
+/* Markdown inside agent replies */
+.prose-kriya {
+  @apply text-[14px] leading-[1.7] text-foreground;
+}
+.prose-kriya :where(p, ul, ol, pre, blockquote, table, h1, h2, h3, h4) + :where(*) {
+  margin-top: 0.75em;
+}
+.prose-kriya :where(h1, h2, h3, h4) {
+  @apply font-semibold tracking-tight;
+}
+.prose-kriya :where(h1) {
+  @apply text-lg;
+}
+.prose-kriya :where(h2) {
+  @apply text-base;
+}
+.prose-kriya :where(h3, h4) {
+  @apply text-[14px];
+}
+.prose-kriya :where(ul) {
+  @apply list-disc pl-5;
+}
+.prose-kriya :where(ol) {
+  @apply list-decimal pl-5;
+}
+.prose-kriya :where(li) + :where(li) {
+  margin-top: 0.25em;
+}
+.prose-kriya :where(a) {
+  @apply text-rigel underline decoration-rigel/40 underline-offset-[3px] hover:decoration-rigel;
+}
+.prose-kriya :where(:not(pre) > code) {
+  @apply rounded-[4px] bg-muted px-[0.35em] py-[0.1em] font-mono text-[0.86em];
+}
+.prose-kriya :where(blockquote) {
+  @apply border-l-2 border-border pl-3 text-muted-foreground;
+}
+.prose-kriya :where(hr) {
+  @apply my-4 border-hairline;
+}
+.prose-kriya :where(strong) {
+  @apply font-semibold;
+}
+
+/* Kriya runs under `next dev` locally, whose error badge and overlay aren't meant for
+   the people using it. Errors still print in the terminal and the browser
+   console; delete this rule while working on Kriya if you want them back. */
+nextjs-portal {
+  display: none !important;
+}
+
+/* Phones with gesture bars: keep bottom navigation clear of them */
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Respect the system setting: no pulsing, sliding or smooth scrolling */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Intro film ──────────────────────────────────────────────────────
+ * Resting styles are the final frame; every animation runs `from` an
+ * earlier frame, so reduced motion simply shows the finished shot. */
+[data-intro-seen] .tavi-intro {
+  display: none;
+}
+.tavi-intro {
+  transition:
+    opacity 500ms ease,
+    transform 500ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 500ms ease;
+}
+.tavi-intro[data-state="leaving"] {
+  opacity: 0;
+  transform: scale(1.03);
+  filter: blur(8px);
+  pointer-events: none;
+}
+.tavi-intro-studio {
+  background:
+    radial-gradient(70% 55% at 50% 42%, #f4ebe3 0%, #f2e8df 45%, #e7d9cb 100%), #f2e8df;
+}
+.tavi-intro-studio::after {
+  /* the studio floor */
+  content: "";
+  position: absolute;
+  inset: 62% 0 0;
+  background: linear-gradient(180deg, transparent, rgb(29 63 66 / 0.05));
+}
+.tavi-intro .btn-ink,
+.dark .tavi-intro .btn-ink {
+  color: #fbf5ec;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.22), rgb(255 255 255 / 0) 55%),
+    linear-gradient(135deg, #24575a 0%, #173a3d 60%, #10292b 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.35),
+    inset 0 -1px 0 rgb(0 0 0 / 0.25),
+    0 12px 30px -10px rgb(23 58 61 / 0.6);
+}
+.tavi-backword {
+  opacity: 0.075;
+  letter-spacing: -0.03em;
+  animation: tavi-backword 1.8s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+.tavi-walk {
+  animation: tavi-walk 1.8s cubic-bezier(0.33, 0.9, 0.4, 1) 0.3s both;
+}
+.tavi-waddle {
+  transform-origin: 50% 92%;
+  animation:
+    tavi-waddle 0.6s ease-in-out 0.3s 3,
+    tavi-breathe 3.4s ease-in-out 2.2s infinite;
+}
+.tavi-shadow {
+  animation: tavi-shadow 0.6s ease-in-out 0.3s 3;
+}
+.tavi-fade-1 {
+  animation: rise 700ms cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+.tavi-fade-2 {
+  animation: rise 800ms cubic-bezier(0.16, 1, 0.3, 1) 1.5s both;
+}
+.tavi-fade-3 {
+  animation: rise 900ms cubic-bezier(0.16, 1, 0.3, 1) 1.8s both;
+}
+.tavi-fade-4 {
+  animation: rise 800ms cubic-bezier(0.16, 1, 0.3, 1) 2.4s both;
+}
+@keyframes tavi-backword {
+  from {
+    opacity: 0;
+    letter-spacing: 0.25em;
+    filter: blur(10px);
+  }
+}
+@keyframes tavi-walk {
+  from {
+    transform: translateX(-75vw);
+  }
+}
+@keyframes tavi-waddle {
+  0%,
+  50%,
+  100% {
+    transform: none;
+  }
+  25% {
+    transform: translateY(-5%) rotate(-6deg);
+  }
+  75% {
+    transform: translateY(-5%) rotate(6deg);
+  }
+}
+@keyframes tavi-breathe {
+  50% {
+    transform: translateY(-1.5%) scale(1.012, 0.995);
+  }
+}
+@keyframes tavi-shadow {
+  25%,
+  75% {
+    transform: scale(0.82);
+    opacity: 0.6;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tavi-intro,
+  .tavi-intro * {
+    animation: none !important;
+  }
+}

@@ -1,0 +1,30 @@
+name: Feature request
+description: Suggest an idea for Kriya Tavi
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the situation, not just the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: Fits Kriya's principles
+      options:
+        - label: Keeps every person's data isolated and limits enforced on the server
+          required: true
+        - label: Anything consequential an agent does needs the person's approval
+          required: true
