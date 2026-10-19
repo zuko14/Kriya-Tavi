@@ -281,8 +281,16 @@ export async function createBrowserService(options: Options) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const secret = process.env.KRIYA_BROWSER_SECRET ?? ""
   if (secret.length < 32) {
+    // Length and look-alike names only, never the value
+    const similar = Object.keys(process.env).filter(
+      (name) => /browser|secret/i.test(name) && name !== "KRIYA_BROWSER_SECRET"
+    )
     console.error(
-      "[kriya-browser] KRIYA_BROWSER_SECRET is missing or shorter than 32 characters"
+      `[kriya-browser] KRIYA_BROWSER_SECRET is ${
+        "KRIYA_BROWSER_SECRET" in process.env
+          ? `${secret.length} characters; it needs at least 32`
+          : "not set"
+      }. Similar variable names: ${similar.join(", ") || "none"}`
     )
     process.exit(1)
   }
