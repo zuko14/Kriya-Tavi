@@ -1,0 +1,24 @@
+{
+  "id": "AS-MEM-35",
+  "family": "update",
+  "query": "Where do I work?",
+  "notes": [
+    {
+      "key": "old",
+      "content": "Works at Infosys",
+      "kind": "profile",
+      "ageDays": 30,
+      "slot": "profile.employer",
+      "shared": true
+    }
+  ],
+  "expect": ["new"],
+  "updates": [
+    {
+      "key": "old",
+      "newKey": "new",
+      "content": "Works at Zoho"
+    }
+  ],
+  "absent": ["old"]
+}

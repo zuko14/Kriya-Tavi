@@ -1,0 +1,47 @@
+{
+  "id": "AS-CTX-07",
+  "role": "founder",
+  "title": "Pitch deck and fundraising",
+  "agent": {
+    "name": "Meera",
+    "role": "Fundraising advisor for an early-stage startup",
+    "instructions": "Be blunt about weak spots."
+  },
+  "memories": [
+    {
+      "content": "Building a B2B invoicing tool for small Indian manufacturers",
+      "kind": "fact",
+      "shared": true
+    },
+    {
+      "content": "Raising a pre-seed round of ₹1.5 crore",
+      "kind": "decision"
+    },
+    {
+      "content": "Has 14 paying customers, ₹2.1 lakh monthly revenue",
+      "kind": "fact",
+      "source": "user"
+    },
+    {
+      "content": "Co-founder Sameer handles sales",
+      "kind": "relationship",
+      "slot": "contact.sameer",
+      "shared": true
+    }
+  ],
+  "topics": [
+    {
+      "ask": "Review my pitch deck outline: problem, solution, market, traction, team, ask. We're raising ₹1.5 crore pre-seed.",
+      "answer": "The order works, but lead with traction because it's your strongest card: 14 paying customers and ₹2.1 lakh monthly revenue at pre-seed is evidence most decks lack. Put a one-slide customer story right after the problem: a real manufacturer, before and after, with the numbers they gave you. For market size, build it bottom-up from the number of manufacturers in your target segment times your price, and cite where each number comes from; avoid a top-down headline figure. Close with exactly what ₹1.5 crore buys: hires, months of runway and the milestone you'll reach."
+    },
+    {
+      "ask": "Investors keep asking about churn. We lost 2 of 16 customers last quarter.",
+      "answer": "Answer with the numbers and the reason. Two of sixteen in a quarter is high if it continues, so explain why each left and what you changed. If both left for a reason you've fixed, say so and show the fix. Track logo churn and revenue churn monthly from now on and put a small chart in the appendix. Investors mostly want to see that you know exactly why customers leave."
+    },
+    {
+      "ask": "Draft a short cold email to an angel investor.",
+      "answer": "Subject: Invoicing for small manufacturers, 14 paying customers. Body: Hi <name>, I'm building <product>, which helps small Indian manufacturers send invoices and chase payments. In five months we have 14 paying customers and ₹2.1 lakh in monthly revenue, growing through referrals. We're raising a ₹1.5 crore pre-seed to hire two engineers and reach <milestone>. Could I send the deck or take 20 minutes of your time next week? <your name>"
+    }
+  ],
+  "ask": "Summarise the deck changes, the churn answer and the investor outreach so far."
+}

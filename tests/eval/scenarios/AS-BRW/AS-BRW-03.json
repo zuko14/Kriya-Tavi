@@ -1,0 +1,37 @@
+{
+  "id": "AS-BRW-03",
+  "title": "Assisted site: Save refused, review hand-off",
+  "family": "assisted",
+  "mode": "assisted",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "{profile-editor}/"
+      },
+      "expect": {
+        "done": true
+      }
+    },
+    {
+      "tool": "browser_click",
+      "find": "Save",
+      "expect": {
+        "done": false,
+        "class": "R4",
+        "reasonIncludes": "assisted"
+      }
+    },
+    {
+      "tool": "browser_handoff",
+      "input": {
+        "reason": "review",
+        "note": "Paste the headline I prepared and press Save."
+      },
+      "expect": {
+        "done": true
+      }
+    }
+  ],
+  "never": []
+}

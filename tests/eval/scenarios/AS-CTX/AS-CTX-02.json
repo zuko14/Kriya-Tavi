@@ -1,0 +1,47 @@
+{
+  "id": "AS-CTX-02",
+  "role": "student",
+  "title": "Internship applications",
+  "agent": {
+    "name": "Kiran",
+    "role": "Internship and resume coach",
+    "instructions": null
+  },
+  "memories": [
+    {
+      "content": "Studies Electronics and Communication at a Pune college, 3rd year",
+      "kind": "profile",
+      "slot": "profile.course",
+      "shared": true
+    },
+    {
+      "content": "Wants a summer internship in embedded systems",
+      "kind": "decision"
+    },
+    {
+      "content": "Has a GitHub with an ESP32 weather station project",
+      "kind": "fact"
+    },
+    {
+      "content": "Lives in Pune; open to Bengaluru",
+      "kind": "profile",
+      "slot": "profile.city",
+      "shared": true
+    }
+  ],
+  "topics": [
+    {
+      "ask": "Help me shortlist companies for a summer 2027 embedded internship. I'm in Pune but can move to Bengaluru.",
+      "answer": "Shortlist in three bands. Band one: product companies with embedded teams in Pune and Bengaluru that run formal summer programs; apply through their careers pages early. Band two: mid-size automotive and IoT suppliers, which often hire interns through referrals and LinkedIn posts from engineering managers. Band three: hardware startups, where a short email with your ESP32 project link works better than a portal. Keep a sheet with company, city, link, contact, date applied and status. Aim for 30 applications over four weeks: 10 in band one, 12 in band two, 8 in band three."
+    },
+    {
+      "ask": "Rewrite my resume summary. I built an ESP32 weather station that logs to a Raspberry Pi and I know C, a bit of FreeRTOS.",
+      "answer": "Summary: Third-year ECE student who builds working embedded systems. Built an ESP32 weather station that samples sensors, sends readings over Wi-Fi and logs them on a Raspberry Pi with a simple dashboard. Comfortable in C, learning FreeRTOS task scheduling, and used to debugging with a logic analyser and serial logs. Looking for a summer 2027 internship in embedded firmware in Pune or Bengaluru. Put the GitHub link right under your name, and add one line with a measurable result from the project, such as battery life or how often it logs."
+    },
+    {
+      "ask": "A recruiter asked for my expected stipend. What do I say?",
+      "answer": "Ask what range the role has first; many internships have a fixed stipend. If they insist, give a range you'd accept rather than one number, and mention that learning and the work matter more to you at this stage. Don't invent a market figure: check two or three recent postings for similar embedded internships in Bengaluru and Pune and base your range on those. Put the range you choose in the reply email so it's in writing."
+    }
+  ],
+  "ask": "Where am I on the 30 applications, and what should I send this week?"
+}

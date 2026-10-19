@@ -1,0 +1,22 @@
+{
+  "id": "AS-MEM-44",
+  "family": "contradiction",
+  "query": "When can calls start?",
+  "notes": [
+    {
+      "key": "p",
+      "content": "Do not call before 10 am",
+      "kind": "preference",
+      "source": "user",
+      "shared": true,
+      "ageDays": 40
+    },
+    {
+      "key": "a",
+      "content": "Calls are fine from 8 am",
+      "kind": "preference",
+      "ageDays": 5
+    }
+  ],
+  "expect": ["p"]
+}

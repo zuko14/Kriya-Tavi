@@ -1,0 +1,24 @@
+{
+  "id": "AS-MEM-40",
+  "family": "update",
+  "query": "Who is my manager?",
+  "notes": [
+    {
+      "key": "old",
+      "content": "Manager is Suresh",
+      "kind": "profile",
+      "ageDays": 30,
+      "slot": "profile.manager",
+      "shared": true
+    }
+  ],
+  "expect": ["new"],
+  "updates": [
+    {
+      "key": "old",
+      "newKey": "new",
+      "content": "Manager is Kavya"
+    }
+  ],
+  "absent": ["old"]
+}

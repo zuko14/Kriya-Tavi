@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-46",
+  "family": "gap",
+  "query": "Is my PAN address change done?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "PAN card address change pending",
+      "kind": "fact",
+      "ageDays": 660
+    }
+  ],
+  "expect": ["t"]
+}

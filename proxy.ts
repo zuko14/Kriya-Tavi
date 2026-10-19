@@ -20,8 +20,16 @@ const PROTECTED = [
   "/onboarding",
   "/owner",
   "/billing",
+  // A3: the Inbox and goal pages
+  "/inbox",
+  "/goals",
+  // A7: Accounts
+  "/accounts",
+  // A13: Radar and watchers
+  "/radar",
 ]
-const PROTECTED_API = ["/api/threads", "/api/events"]
+// A5: file downloads. /share/ stays public on purpose (K8, AT-SHR-05)
+const PROTECTED_API = ["/api/threads", "/api/events", "/api/files/", "/api/browser/live/"]
 const AUTH_PAGES = ["/login", "/signup"]
 const WEBHOOKS = ["/api/billing/webhook"]
 
@@ -90,7 +98,14 @@ export async function proxy(request: NextRequest) {
     login.search = `?next=${encodeURIComponent(path + request.nextUrl.search)}`
     return NextResponse.redirect(login)
   }
-  if (signedIn && startsWithAny(path, AUTH_PAGES)) {
+  // A sign-in page with a notice stays: requireUser sends a valid session
+  // whose account row is gone to /login?error=account, and bouncing that back
+  // to /home would loop forever
+  if (
+    signedIn &&
+    startsWithAny(path, AUTH_PAGES) &&
+    !request.nextUrl.searchParams.has("error")
+  ) {
     const home = request.nextUrl.clone()
     home.pathname = "/home"
     home.search = ""

@@ -1,0 +1,28 @@
+{
+  "id": "AS-BRW-30",
+  "title": "The runner offers no typing tool",
+  "family": "fill-commit",
+  "mode": "supervised",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "{profile-editor}/"
+      },
+      "expect": {
+        "done": true
+      }
+    },
+    {
+      "tool": "browser_type",
+      "input": {
+        "ref": "e1",
+        "text": "x"
+      },
+      "expect": {
+        "absent": true
+      }
+    }
+  ],
+  "never": []
+}

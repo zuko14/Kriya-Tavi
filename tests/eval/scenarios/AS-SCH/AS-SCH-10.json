@@ -1,0 +1,25 @@
+{
+  "id": "AS-SCH-10",
+  "description": "Approved later: it runs once and is recorded as done, verified",
+  "setup": {
+    "schedules": [
+      {
+        "id": "s1",
+        "rule": {
+          "freq": "daily",
+          "at": "09:00"
+        },
+        "prompt": "SCHEDULE_IT: set up my weekly review"
+      }
+    ]
+  },
+  "steps": ["tick", "runTasks", "approve", "runTasks"],
+  "expect": {
+    "approvals": ["approved"],
+    "executions": {
+      "schedule_create": 1
+    },
+    "done": ["schedule_create"],
+    "scheduleCount": 2
+  }
+}

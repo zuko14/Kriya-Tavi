@@ -1,0 +1,22 @@
+{
+  "id": "AS-MEM-31",
+  "family": "update",
+  "query": "How much is my rent?",
+  "notes": [
+    {
+      "key": "old",
+      "content": "Rent is ₹12,000",
+      "kind": "fact",
+      "ageDays": 30
+    }
+  ],
+  "expect": ["new"],
+  "updates": [
+    {
+      "key": "old",
+      "newKey": "new",
+      "content": "Rent is ₹14,000"
+    }
+  ],
+  "absent": ["old"]
+}

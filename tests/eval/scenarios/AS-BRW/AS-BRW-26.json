@@ -1,0 +1,18 @@
+{
+  "id": "AS-BRW-26",
+  "title": "Opening a loopback address directly is blocked",
+  "family": "egress",
+  "mode": "unknown",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "http://127.0.0.1:{port}/secret"
+      },
+      "expect": {
+        "done": false
+      }
+    }
+  ],
+  "never": ["/secret"]
+}

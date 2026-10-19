@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-18",
+  "family": "paraphrase",
+  "query": "When does my pay come in?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Salary is credited on the last working day",
+      "kind": "fact",
+      "ageDays": 20
+    }
+  ],
+  "expect": ["t"]
+}

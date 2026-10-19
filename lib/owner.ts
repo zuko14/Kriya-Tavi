@@ -471,6 +471,38 @@ export async function operations() {
   }
 }
 
+// Goals, schedules, their runs, approvals and "What I did" records (A3):
+// counts by status only, never what's in them (AT-OWN-A1)
+export async function backgroundCounts() {
+  const week = sql`now() - interval '7 days'`
+  const result = await privileged.execute(sql`
+    select
+      (select count(*) from kriya.goals where status in ('active', 'paused'))::int as "openGoals",
+      (select count(*) from kriya.schedules where status = 'active')::int as "activeSchedules",
+      (select count(*) from kriya.schedules where status = 'paused')::int as "pausedSchedules",
+      (select count(*) from kriya.schedule_runs where created_at > ${week})::int as "runs7d",
+      (select count(*) from kriya.schedule_runs where created_at > ${week} and outcome = 'enqueued')::int as "enqueued7d",
+      (select count(*) from kriya.schedule_runs where created_at > ${week} and outcome like 'skipped%')::int as "skipped7d",
+      (select count(*) from kriya.schedule_runs where created_at > ${week} and outcome = 'failed')::int as "failed7d",
+      (select count(*) from kriya.schedule_runs where outcome = 'claimed')::int as "claimedNow",
+      (select count(*) from kriya.approvals where status = 'pending')::int as "pendingApprovals",
+      (select count(*) from kriya.approvals where status = 'expired' and decided_at > ${week})::int as "expired7d",
+      (select count(*) from kriya.episodes where created_at > ${week})::int as "episodes7d"`)
+  return rowsOf<{
+    openGoals: number
+    activeSchedules: number
+    pausedSchedules: number
+    runs7d: number
+    enqueued7d: number
+    skipped7d: number
+    failed7d: number
+    claimedNow: number
+    pendingApprovals: number
+    expired7d: number
+    episodes7d: number
+  }>(result)[0]
+}
+
 export async function auditLog(filter?: string) {
   return privileged
     .select({

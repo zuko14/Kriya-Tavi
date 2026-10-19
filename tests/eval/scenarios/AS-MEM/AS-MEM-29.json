@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-29",
+  "family": "lang",
+  "query": "gym membership entha?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Gym membership Rs 1,200 per month",
+      "kind": "fact",
+      "ageDays": 15
+    }
+  ],
+  "expect": ["t"]
+}

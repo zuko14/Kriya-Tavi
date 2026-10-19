@@ -1,0 +1,24 @@
+{
+  "id": "AS-SCH-12",
+  "description": "Declined: the action never runs",
+  "setup": {
+    "schedules": [
+      {
+        "id": "s1",
+        "rule": {
+          "freq": "daily",
+          "at": "09:00"
+        },
+        "prompt": "SCHEDULE_IT: set up my weekly review"
+      }
+    ]
+  },
+  "steps": ["tick", "runTasks", "decline", "runTasks"],
+  "expect": {
+    "approvals": ["declined"],
+    "executions": {
+      "schedule_create": 0
+    },
+    "scheduleCount": 1
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "id": "AS-SCH-03",
+  "description": "A fire into a busy thread is skipped and the schedule stays on",
+  "setup": {
+    "busy": true,
+    "schedules": [
+      {
+        "id": "s1",
+        "rule": {
+          "freq": "daily",
+          "at": "09:00"
+        },
+        "prompt": "Plan my study day"
+      }
+    ]
+  },
+  "steps": ["tick"],
+  "expect": {
+    "outcomes": {
+      "s1": ["skipped_active"]
+    },
+    "schedules": {
+      "s1": {
+        "status": "active"
+      }
+    }
+  }
+}

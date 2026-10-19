@@ -1,0 +1,47 @@
+{
+  "id": "AS-CTX-03",
+  "role": "student",
+  "title": "Semester budget",
+  "agent": {
+    "name": "Asha",
+    "role": "Money planner for a hostel student",
+    "instructions": "Use rupees and Indian number grouping."
+  },
+  "memories": [
+    {
+      "content": "Monthly allowance from parents is ₹12,000",
+      "kind": "fact",
+      "shared": true,
+      "source": "user"
+    },
+    {
+      "content": "Pays hostel mess ₹4,500 a month",
+      "kind": "fact"
+    },
+    {
+      "content": "Saving for a laptop, target ₹65,000 by June 2027",
+      "kind": "decision"
+    },
+    {
+      "content": "Wants answers as short bullet lists",
+      "kind": "preference",
+      "shared": true,
+      "source": "user"
+    }
+  ],
+  "topics": [
+    {
+      "ask": "My allowance is ₹12,000 a month. Mess is ₹4,500. Help me make a monthly budget and save for a ₹65,000 laptop by June 2027.",
+      "answer": "Monthly plan on ₹12,000: mess ₹4,500, travel ₹1,200, phone and internet ₹400, books and printing ₹600, food outside ₹1,500, personal ₹800. That leaves ₹3,000 a month for the laptop. From November 2026 to June 2027 is 8 months, so ₹24,000 from savings. The gap to ₹65,000 is ₹41,000: either a part-time income of about ₹5,000 a month, a smaller laptop budget, or help from home for the rest. Put the ₹3,000 into a separate savings account on the day the allowance arrives so it isn't spent by mistake."
+    },
+    {
+      "ask": "I can tutor school kids on weekends for ₹300 an hour. How many hours do I need?",
+      "answer": "To close ₹41,000 in 8 months you need about ₹5,125 a month, which is 17–18 hours of tutoring a month, roughly 4–5 hours each weekend. If that's too much with exams, plan 3 hours a weekend in exam months and 6 in the others; the total still works out. Keep a simple log of hours and payments so you know exactly where the savings stand, and move the tutoring money to the laptop account the same day."
+    },
+    {
+      "ask": "I overspent ₹2,000 on a trip this month. What now?",
+      "answer": "Don't touch the laptop savings. Cut food outside to ₹800 and personal to ₹500 next month, which recovers ₹1,000, and add one extra tutoring hour on each of the next two weekends for the rest. The plan stays on track for June 2027. If trips are likely again, add a ₹500 monthly travel buffer and take it from food outside."
+    }
+  ],
+  "ask": "Give me the current status: savings so far, the gap, and this month's budget."
+}

@@ -1,0 +1,20 @@
+{
+  "id": "AS-BRW-09",
+  "title": "Password, code and Aadhaar values never reach the agent",
+  "family": "handoff",
+  "mode": "supervised",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "{signup}/"
+      },
+      "expect": {
+        "done": true,
+        "pageExcludes": ["fixture-secret-hunter2", "482913", "1234 5678 9012"],
+        "pageIncludes": "sensitive: the person types this"
+      }
+    }
+  ],
+  "never": []
+}

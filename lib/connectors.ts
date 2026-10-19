@@ -2,14 +2,23 @@ import { and, eq } from "drizzle-orm"
 import { nanoid } from "nanoid"
 
 import { privileged, withUser } from "@/db"
-import { connections, type ConnectionProvider } from "@/db/schema"
+import { connections, type ConnectionProvider, type Verification } from "@/db/schema"
 import { getSecret } from "@/lib/config"
-import { isSecretsConfigured, open, seal } from "@/lib/secrets"
+import {
+  isSecretsConfigured,
+  needsReseal,
+  open,
+  seal,
+  SecretsConfigError,
+} from "@/lib/secrets"
 
-// Connected accounts: OAuth with Google and Notion, the tokens (sealed with
-// lib/secrets.ts, refreshed here), and the API calls agents make through the
-// tools in lib/agent/tools.ts. Used by the web server for connecting and by
-// the worker for tool calls, so nothing here depends on Next.js.
+// Connected accounts: OAuth with Google and Notion (and, from A8, GitHub and
+// Meta for Instagram), the tokens (sealed with lib/secrets.ts, refreshed
+// here), and the API calls agents make through the tools in
+// lib/agent/tools.ts. Used by the web server for connecting and by the
+// worker for tool calls, so nothing here depends on Next.js. The A8
+// connectors in lib/connectors/* reach the APIs through providerFetch, so
+// tokens are opened only in this file (invariant 4).
 
 export class ConnectorError extends Error {
   name = "ConnectorError"
@@ -35,16 +44,34 @@ export const GOOGLE_SERVICES = {
   },
 } as const
 
-export type GoogleService = keyof typeof GOOGLE_SERVICES
+// A8, opt-in only (agents.connectors): kept out of GOOGLE_SERVICES, which is
+// what a connection asks for when nothing was picked. Sheets is a sensitive
+// scope that needs Google's app verification before public use (AB-06).
+export const GOOGLE_EXTRA_SERVICES = {
+  sheets: {
+    label: "Sheets",
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+  },
+  youtube: {
+    label: "YouTube",
+    scopes: ["https://www.googleapis.com/auth/youtube.readonly"],
+  },
+} as const
+
+const ALL_GOOGLE = { ...GOOGLE_SERVICES, ...GOOGLE_EXTRA_SERVICES }
+
+export type GoogleService = keyof typeof ALL_GOOGLE
+
+export const EXTRA_GOOGLE_SERVICES = Object.keys(GOOGLE_EXTRA_SERVICES) as GoogleService[]
 
 export function isGoogleService(value: string): value is GoogleService {
-  return value in GOOGLE_SERVICES
+  return value in ALL_GOOGLE
 }
 
 // The Google services a set of granted scopes switches on
 export function googleServices(scopes: string[]) {
-  return (Object.keys(GOOGLE_SERVICES) as GoogleService[]).filter((service) =>
-    GOOGLE_SERVICES[service].scopes.every((scope) => scopes.includes(scope))
+  return (Object.keys(ALL_GOOGLE) as GoogleService[]).filter((service) =>
+    ALL_GOOGLE[service].scopes.every((scope) => scopes.includes(scope))
   )
 }
 
@@ -74,7 +101,33 @@ const OAUTH = {
     clientId: () => getSecret("NOTION_CLIENT_ID"),
     clientSecret: () => getSecret("NOTION_CLIENT_SECRET"),
   },
+  // A GitHub App: the person picks the repositories when installing it,
+  // which is the per-repo grant (TOOLS_AND_CONTRACTS §2.6)
+  github: {
+    authorize: "https://github.com/login/oauth/authorize",
+    token: "https://github.com/login/oauth/access_token",
+    clientId: () => getSecret("GITHUB_CLIENT_ID"),
+    clientSecret: () => getSecret("GITHUB_CLIENT_SECRET"),
+  },
+  meta: {
+    authorize: "https://www.facebook.com/v21.0/dialog/oauth",
+    token: "https://graph.facebook.com/v21.0/oauth/access_token",
+    clientId: () => getSecret("META_APP_ID"),
+    clientSecret: () => getSecret("META_APP_SECRET"),
+  },
 } as const
+
+// ponytail: pinned Graph API version; RG-4 checks it is still supported
+// before live use (AB-06)
+export const META_GRAPH = "https://graph.facebook.com/v21.0"
+
+// Instagram API with Facebook Login, professional accounts only (RG-4)
+const META_SCOPES = [
+  "instagram_basic",
+  "instagram_content_publish",
+  "pages_show_list",
+  "pages_read_engagement",
+]
 
 export function isProviderConfigured(provider: ConnectionProvider) {
   return (
@@ -108,18 +161,17 @@ export function authorizeUrl(
   url.searchParams.set("response_type", "code")
   url.searchParams.set("state", state)
   if (provider === "google") {
-    const scopes = [
-      "openid",
-      "email",
-      ...services.flatMap((s) => GOOGLE_SERVICES[s].scopes),
-    ]
+    const scopes = ["openid", "email", ...services.flatMap((s) => ALL_GOOGLE[s].scopes)]
     url.searchParams.set("scope", scopes.join(" "))
     // A refresh token, so agents can work while the person is away
     url.searchParams.set("access_type", "offline")
     url.searchParams.set("prompt", "consent")
-  } else {
+  } else if (provider === "notion") {
     url.searchParams.set("owner", "user")
+  } else if (provider === "meta") {
+    url.searchParams.set("scope", META_SCOPES.join(","))
   }
+  // GitHub: a GitHub App's permissions come from the app, not a scope
   return url.toString()
 }
 
@@ -191,6 +243,9 @@ export async function exchangeCode(
       account: profile.email ?? null,
     }
   }
+  if (provider === "github")
+    return exchangeGithub(code, redirectUri, clientId, clientSecret)
+  if (provider === "meta") return exchangeMeta(code, redirectUri, clientId, clientSecret)
   const token = await readJson<{ access_token: string; workspace_name?: string }>(
     await fetch(OAUTH.notion.token, {
       method: "POST",
@@ -215,6 +270,121 @@ export async function exchangeCode(
     scopes: [],
     account: token.workspace_name ?? null,
   }
+}
+
+// GitHub answers a bad code with 200 and { error }, so the token is checked.
+// Expiring user tokens aren't refreshed here (the refresh path is Google's):
+// docs/kriya/deployment.md has the GitHub App keep them non-expiring, and an
+// expired one asks the person to reconnect.
+async function exchangeGithub(
+  code: string,
+  redirectUri: string,
+  clientId: string,
+  clientSecret: string
+): Promise<Tokens> {
+  const token = await readJson<{
+    access_token?: string
+    expires_in?: number
+    error_description?: string
+  }>(
+    await fetch(OAUTH.github.token, {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify({
+        client_id: clientId,
+        client_secret: clientSecret,
+        code,
+        redirect_uri: redirectUri,
+      }),
+      signal: AbortSignal.timeout(20_000),
+    }),
+    "Connecting GitHub"
+  )
+  if (!token.access_token) {
+    throw new ConnectorError(
+      `Connecting GitHub failed${token.error_description ? `: ${token.error_description.slice(0, 300)}` : ""}`
+    )
+  }
+  const user = await readJson<{ login?: string }>(
+    await fetch("https://api.github.com/user", {
+      headers: { ...GITHUB_HEADERS, Authorization: `Bearer ${token.access_token}` },
+      signal: AbortSignal.timeout(20_000),
+    }),
+    "Reading your GitHub account"
+  )
+  return {
+    accessToken: token.access_token,
+    refreshToken: null,
+    expiresAt: token.expires_in ? new Date(Date.now() + token.expires_in * 1000) : null,
+    scopes: [],
+    account: user.login ?? null,
+  }
+}
+
+// A short-lived Facebook Login token traded for a long-lived one (about 60
+// days, no refresh token: the person reconnects after). The account is the
+// first Instagram professional account linked to their Pages.
+async function exchangeMeta(
+  code: string,
+  redirectUri: string,
+  clientId: string,
+  clientSecret: string
+): Promise<Tokens> {
+  const tokenUrl = (params: Record<string, string>) =>
+    `${OAUTH.meta.token}?${new URLSearchParams({ client_id: clientId, client_secret: clientSecret, ...params })}`
+  const short = await readJson<{ access_token: string }>(
+    await fetch(tokenUrl({ code, redirect_uri: redirectUri }), {
+      signal: AbortSignal.timeout(20_000),
+    }),
+    "Connecting Instagram"
+  )
+  const long = await readJson<{ access_token: string; expires_in?: number }>(
+    await fetch(
+      tokenUrl({
+        grant_type: "fb_exchange_token",
+        fb_exchange_token: short.access_token,
+      }),
+      { signal: AbortSignal.timeout(20_000) }
+    ),
+    "Connecting Instagram"
+  )
+  const auth = { Authorization: `Bearer ${long.access_token}` }
+  const granted = await readJson<{ data?: { permission: string; status: string }[] }>(
+    await fetch(`${META_GRAPH}/me/permissions`, {
+      headers: auth,
+      signal: AbortSignal.timeout(20_000),
+    }),
+    "Reading your Instagram permissions"
+  )
+  const pages = await readJson<{
+    data?: { instagram_business_account?: { username?: string } }[]
+  }>(
+    await fetch(`${META_GRAPH}/me/accounts?fields=instagram_business_account{username}`, {
+      headers: auth,
+      signal: AbortSignal.timeout(20_000),
+    }),
+    "Reading your Instagram account"
+  )
+  const instagram = pages.data?.find((p) => p.instagram_business_account)
+  if (!instagram) {
+    throw new ConnectorError(
+      "No Instagram professional account is linked to your Facebook Pages."
+    )
+  }
+  return {
+    accessToken: long.access_token,
+    refreshToken: null,
+    expiresAt: long.expires_in ? new Date(Date.now() + long.expires_in * 1000) : null,
+    scopes: (granted.data ?? [])
+      .filter((p) => p.status === "granted")
+      .map((p) => p.permission),
+    account: instagram.instagram_business_account?.username ?? null,
+  }
+}
+
+export const GITHUB_HEADERS = {
+  Accept: "application/vnd.github+json",
+  "X-GitHub-Api-Version": "2022-11-28",
 }
 
 /* ───────────────────────────── storage ──────────────────────────── */
@@ -265,9 +435,26 @@ export async function listConnections(userId: string) {
 
 export type ConnectionSummary = Awaited<ReturnType<typeof listConnections>>[number]
 
-const NAMES = { google: "Google", notion: "Notion" } as const
+const NAMES = {
+  google: "Google",
+  notion: "Notion",
+  github: "GitHub",
+  meta: "Instagram",
+} as const
 const reconnect = (provider: ConnectionProvider) =>
   `${NAMES[provider]} access has stopped working. Reconnect ${NAMES[provider]} in Account → Connected accounts.`
+
+// A token that won't open (sealed with a retired key, or damaged) is a lost
+// connection, not a crash: the person reconnects. A missing or malformed key
+// is the platform's fault and stays an error (runbooks/key-rotation.md).
+function openToken(sealed: string, userId: string, provider: ConnectionProvider) {
+  try {
+    return open(sealed, context(userId, provider))
+  } catch (error) {
+    if (error instanceof SecretsConfigError && !/retired/.test(error.message)) throw error
+    throw new ConnectorError(reconnect(provider))
+  }
+}
 
 // A working access token for the person's account, refreshed if it's about
 // to expire. Only the worker calls this, always for the task's own user.
@@ -279,8 +466,9 @@ export async function accessToken(userId: string, provider: ConnectionProvider) 
   if (!row) throw new ConnectorError(`${NAMES[provider]} isn't connected.`)
   const ctx = context(userId, provider)
   const fresh = !row.expiresAt || row.expiresAt.getTime() - Date.now() > 60_000
-  if (fresh) return open(row.accessToken, ctx)
+  if (fresh) return openToken(row.accessToken, userId, provider)
   if (!row.refreshToken) throw new ConnectorError(reconnect(provider))
+  const refreshToken = openToken(row.refreshToken, userId, provider)
 
   const { clientId, clientSecret } = credentials(provider)
   const response = await fetch(OAUTH.google.token, {
@@ -289,7 +477,7 @@ export async function accessToken(userId: string, provider: ConnectionProvider) 
     body: new URLSearchParams({
       client_id: clientId,
       client_secret: clientSecret,
-      refresh_token: open(row.refreshToken, ctx),
+      refresh_token: refreshToken,
       grant_type: "refresh_token",
     }),
     signal: AbortSignal.timeout(20_000),
@@ -307,13 +495,16 @@ export async function accessToken(userId: string, provider: ConnectionProvider) 
     .set({
       accessToken: seal(token.access_token, ctx),
       expiresAt: new Date(Date.now() + token.expires_in * 1000),
+      // During a key rotation the refresh token moves to the new key too
+      ...(needsReseal(row.refreshToken) ? { refreshToken: seal(refreshToken, ctx) } : {}),
     })
     .where(and(eq(connections.userId, userId), eq(connections.provider, provider)))
   return token.access_token
 }
 
 // Revokes Google's grant (Notion has no revoke API; the person removes Kriya
-// in Notion's settings), then deletes the row through RLS
+// in Notion's settings), then deletes the row through RLS. A token that won't
+// open is skipped, not revoked: the row is still deleted.
 export async function disconnect(userId: string, provider: ConnectionProvider) {
   if (provider === "google") {
     const [row] = await privileged
@@ -323,8 +514,8 @@ export async function disconnect(userId: string, provider: ConnectionProvider) {
       })
       .from(connections)
       .where(and(eq(connections.userId, userId), eq(connections.provider, provider)))
-    if (row) {
-      const token = open(row.refreshToken ?? row.accessToken, context(userId, provider))
+    const token = row && tryOpen(row.refreshToken ?? row.accessToken, userId, provider)
+    if (token) {
       await fetch("https://oauth2.googleapis.com/revoke", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -333,12 +524,94 @@ export async function disconnect(userId: string, provider: ConnectionProvider) {
       }).catch(() => {})
     }
   }
+  if (provider === "github" || provider === "meta") {
+    const [row] = await privileged
+      .select({ accessToken: connections.accessToken })
+      .from(connections)
+      .where(and(eq(connections.userId, userId), eq(connections.provider, provider)))
+    const token = row && tryOpen(row.accessToken, userId, provider)
+    if (token) await revoke(provider, token).catch(() => {})
+  }
   await withUser(userId, (tx) =>
     tx.delete(connections).where(eq(connections.provider, provider))
   )
 }
 
+function tryOpen(sealed: string, userId: string, provider: ConnectionProvider) {
+  try {
+    return openToken(sealed, userId, provider)
+  } catch (error) {
+    if (error instanceof ConnectorError) return null
+    throw error
+  }
+}
+
+// GitHub: the app's grant for this person; Meta: every permission Kriya has
+async function revoke(provider: "github" | "meta", token: string) {
+  if (provider === "github") {
+    const { clientId, clientSecret } = credentials("github")
+    await fetch(`https://api.github.com/applications/${clientId}/grant`, {
+      method: "DELETE",
+      headers: {
+        ...GITHUB_HEADERS,
+        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ access_token: token }),
+      signal: AbortSignal.timeout(10_000),
+    })
+    return
+  }
+  await fetch(`${META_GRAPH}/me/permissions`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(10_000),
+  })
+}
+
 /* ─────────────────────────────── calls ──────────────────────────── */
+
+// For lib/connectors/*: an authorized request to the person's account. The
+// token is opened here and never leaves this file (invariant 4); callers
+// get the response, including empty ones (a DELETE answers 204).
+export async function providerFetch(
+  userId: string,
+  provider: ConnectionProvider,
+  url: string,
+  init: { method?: string; body?: unknown; headers?: Record<string, string> } = {}
+) {
+  const token = await accessToken(userId, provider)
+  const response = await fetch(url, {
+    method: init.method ?? "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(init.body !== undefined ? { "Content-Type": "application/json" } : {}),
+      ...(provider === "github" ? GITHUB_HEADERS : {}),
+      ...init.headers,
+    },
+    body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
+    signal: AbortSignal.timeout(30_000),
+    cache: "no-store",
+  })
+  if (response.status === 401) throw new ConnectorError(reconnect(provider))
+  return response
+}
+
+// The JSON of a providerFetch answer, or a ConnectorError with the API's own
+// message
+export const jsonOf = <T>(response: Response, what: string) => readJson<T>(response, what)
+
+// What an A8 write checked by reading its result back (TOOLS_AND_CONTRACTS §1)
+export const readBack = (
+  ok: boolean,
+  evidence: Verification["evidence"],
+  note: string
+): Verification => ({
+  status: ok ? "verified" : "failed",
+  method: "api_readback",
+  evidence,
+  note,
+})
 
 const MAX_TEXT = 20_000
 
@@ -445,6 +718,30 @@ export async function calendarCreate(
     },
   })
   return event(created)
+}
+
+// Undo (K3): deletes an event Kriya created (Google sends attendees a
+// cancellation when it had invited them), then reads it back. True when it
+// is gone: missing, or kept by Google as "cancelled".
+export async function calendarDelete(userId: string, eventId: string, notify: boolean) {
+  const url = `${GOOGLE}/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`
+  const removed = await providerFetch(
+    userId,
+    "google",
+    `${url}?sendUpdates=${notify ? "all" : "none"}`,
+    { method: "DELETE" }
+  )
+  // 404 and 410: already deleted, which is what undo wants
+  if (!removed.ok && removed.status !== 404 && removed.status !== 410) {
+    throw new ConnectorError(`Deleting the event failed (${removed.status}).`)
+  }
+  const check = await providerFetch(userId, "google", url)
+  if (check.status === 404 || check.status === 410) return true
+  const after = await readJson<GoogleEvent & { status?: string }>(
+    check,
+    "Checking the event"
+  )
+  return after.status === "cancelled"
 }
 
 /* Gmail */
@@ -580,6 +877,16 @@ export async function gmailDraft(
     }
   )
   return { draftId: draft.id, link: "https://mail.google.com/mail/u/0/#drafts" }
+}
+
+// Undo (K3): deletes a draft Kriya saved, then reads it back. True when gone.
+export async function gmailDeleteDraft(userId: string, draftId: string) {
+  const url = `${GOOGLE}/gmail/v1/users/me/drafts/${encodeURIComponent(draftId)}`
+  const removed = await providerFetch(userId, "google", url, { method: "DELETE" })
+  if (!removed.ok && removed.status !== 404) {
+    throw new ConnectorError(`Deleting the draft failed (${removed.status}).`)
+  }
+  return (await providerFetch(userId, "google", url)).status === 404
 }
 
 /* Drive */

@@ -1,0 +1,22 @@
+{
+  "id": "AS-MEM-41",
+  "family": "contradiction",
+  "query": "How long should my answers be?",
+  "notes": [
+    {
+      "key": "p",
+      "content": "Prefers short answers",
+      "kind": "preference",
+      "source": "user",
+      "shared": true,
+      "ageDays": 40
+    },
+    {
+      "key": "a",
+      "content": "Likes long detailed answers",
+      "kind": "preference",
+      "ageDays": 5
+    }
+  ],
+  "expect": ["p"]
+}

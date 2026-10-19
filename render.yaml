@@ -67,6 +67,9 @@ services:
       # worker. Encrypts Google and Notion tokens (lib/secrets.ts)
       - key: KRIYA_TOKEN_KEY
         sync: false
+      # Only during a key rotation: the old key (runbooks/key-rotation.md)
+      - key: KRIYA_TOKEN_KEY_PREVIOUS
+        sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
@@ -74,6 +77,16 @@ services:
       - key: NOTION_CLIENT_ID
         sync: false
       - key: NOTION_CLIENT_SECRET
+        sync: false
+      # Optional (A5): receipt PDFs and share snapshots are printed by
+      # kriya-browser; without these, Download PDF and Share say so
+      - key: KRIYA_BROWSER_URL
+        sync: false
+      - key: KRIYA_BROWSER_SECRET
+        sync: false
+      # Optional (A6): the public wss:// address of kriya-browser's live view
+      # (take-over); without it, Account -> Logins says it isn't set up
+      - key: KRIYA_BROWSER_LIVE_URL
         sync: false
       - key: DB_POOL_MAX
         value: "10"
@@ -111,13 +124,47 @@ services:
       # Same value as on the web service; the worker opens tokens for tools
       - key: KRIYA_TOKEN_KEY
         sync: false
+      # Only during a key rotation: the old key (runbooks/key-rotation.md)
+      - key: KRIYA_TOKEN_KEY_PREVIOUS
+        sync: false
       # Refreshing Google tokens during tasks
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      # Agent browser (kriya-browser's internal address and its secret);
+      # browser tools stay off until both are set and agents.browser is on
+      - key: KRIYA_BROWSER_URL
+        sync: false
+      - key: KRIYA_BROWSER_SECRET
+        sync: false
+      # Optional (A5): reading uploads and cleaning up old snapshots needs
+      # the private `kriya-files` bucket
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
         sync: false
       # Tasks this worker runs at once; add workers to scale out
       - key: WORKER_CONCURRENCY
         value: "4"
       - key: DB_POOL_MAX
         value: "6"
+
+  # The agent browser (docs/agent-platform/BROWSER_AND_LOGIN_PROFILES.md):
+  # a private service with no database access and no secret but its own.
+  # Capacity per instance is unmeasured (blocker AB-08): keep 3 sessions
+  # until the staging measurement says otherwise.
+  - type: pserv
+    name: kriya-browser
+    runtime: docker
+    region: singapore
+    dockerfilePath: ./browser/Dockerfile
+    dockerContext: .
+    envVars:
+      # The same value as on the worker; at least 32 random characters
+      - key: KRIYA_BROWSER_SECRET
+        sync: false
+      - key: BROWSER_MAX_SESSIONS
+        value: "3"
+      - key: BROWSER_SESSION_MAX_SECONDS
+        value: "900"

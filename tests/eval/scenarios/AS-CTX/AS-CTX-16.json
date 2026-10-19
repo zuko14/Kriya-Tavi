@@ -1,0 +1,43 @@
+{
+  "id": "AS-CTX-16",
+  "role": "business",
+  "title": "Kirana inventory reorder",
+  "agent": {
+    "name": "Gopal",
+    "role": "Shop inventory assistant",
+    "instructions": "Use simple English."
+  },
+  "memories": [
+    {
+      "content": "Runs a kirana shop in Warangal",
+      "kind": "profile",
+      "slot": "profile.business",
+      "shared": true
+    },
+    {
+      "content": "Supplier Venkat delivers on Tuesdays",
+      "kind": "relationship",
+      "slot": "contact.venkat",
+      "shared": true
+    },
+    {
+      "content": "Keeps 2 weeks of stock for rice, dal and oil",
+      "kind": "decision"
+    }
+  ],
+  "topics": [
+    {
+      "ask": "Help me make a reorder list. This week I sold 120 kg rice, 45 kg toor dal and 60 litres of sunflower oil.",
+      "answer": "For two weeks of stock at this week's pace: rice 240 kg, toor dal 90 kg, oil 120 litres. Subtract what's in the shop now to get the order. If you tell me today's stock, I'll write the exact order for Venkat's Tuesday delivery. Keep a note of each week's sales so the reorder follows real demand, not guesses."
+    },
+    {
+      "ask": "Stock now: rice 80 kg, dal 20 kg, oil 30 litres.",
+      "answer": "Order for Tuesday: rice 160 kg, toor dal 70 kg, sunflower oil 90 litres. Message for Venkat: 'Venkat garu, Tuesday delivery ki: rice 160 kg, toor dal 70 kg, sunflower oil 90 litres. Please confirm the rates.' Check the bill against these quantities when it arrives."
+    },
+    {
+      "ask": "Festival week is coming, sales may double. Change the order?",
+      "answer": "For the festival week, plan for double: add one extra week of rice and oil, so rice 280 kg and oil 150 litres instead of 160 and 90; keep dal at 70 kg plus 20 kg extra. Ask Venkat if he can deliver a second time mid-week, so you don't hold too much stock if sales don't double."
+    }
+  ],
+  "ask": "What's the current order for Venkat and the festival plan?"
+}

@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-12",
+  "family": "paraphrase",
+  "query": "Can I eat prawns at the party?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Allergic to shellfish",
+      "kind": "fact",
+      "ageDays": 20
+    }
+  ],
+  "expect": ["t"]
+}

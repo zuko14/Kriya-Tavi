@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-10",
+  "family": "fact",
+  "query": "Who is my thesis guide?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Thesis guide is Prof. Lakshmi in the ECE department",
+      "kind": "fact",
+      "ageDays": 20
+    }
+  ],
+  "expect": ["t"]
+}

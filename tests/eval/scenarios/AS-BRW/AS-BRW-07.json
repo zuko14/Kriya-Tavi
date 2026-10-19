@@ -1,0 +1,37 @@
+{
+  "id": "AS-BRW-07",
+  "title": "Sign-up page with a CAPTCHA: everything but hand-off is R5",
+  "family": "handoff",
+  "mode": "supervised",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "{signup}/"
+      },
+      "expect": {
+        "done": true,
+        "pageIncludes": "CAPTCHA on the page"
+      }
+    },
+    {
+      "tool": "browser_click",
+      "find": "Create account",
+      "expect": {
+        "done": false,
+        "class": "R5"
+      }
+    },
+    {
+      "tool": "browser_handoff",
+      "input": {
+        "reason": "captcha",
+        "note": "Please solve the check and create the account."
+      },
+      "expect": {
+        "done": true
+      }
+    }
+  ],
+  "never": []
+}

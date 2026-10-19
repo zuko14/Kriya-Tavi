@@ -1,0 +1,18 @@
+{
+  "id": "AS-BRW-27",
+  "title": "Opening the metadata address directly is blocked",
+  "family": "egress",
+  "mode": "unknown",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "http://169.254.169.254/latest/meta-data/"
+      },
+      "expect": {
+        "done": false
+      }
+    }
+  ],
+  "never": []
+}

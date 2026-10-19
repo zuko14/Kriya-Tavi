@@ -1,0 +1,32 @@
+{
+  "id": "AS-SCH-04",
+  "description": "Over the daily task limit: skipped and paused with the reason",
+  "setup": {
+    "plan": {
+      "maxTasksPerDay": 0
+    },
+    "schedules": [
+      {
+        "id": "s1",
+        "rule": {
+          "freq": "daily",
+          "at": "09:00"
+        },
+        "prompt": "Plan my study day"
+      }
+    ]
+  },
+  "steps": ["tick"],
+  "expect": {
+    "outcomes": {
+      "s1": ["skipped_limit"]
+    },
+    "tasks": 0,
+    "schedules": {
+      "s1": {
+        "status": "paused",
+        "pauseReason": "limit"
+      }
+    }
+  }
+}

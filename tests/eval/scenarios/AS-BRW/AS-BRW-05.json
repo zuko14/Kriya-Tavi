@@ -1,0 +1,27 @@
+{
+  "id": "AS-BRW-05",
+  "title": "API-mode site: the browser only reads",
+  "family": "assisted",
+  "mode": "api",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "{profile-editor}/"
+      },
+      "expect": {
+        "done": true
+      }
+    },
+    {
+      "tool": "browser_click",
+      "find": "Save",
+      "expect": {
+        "done": false,
+        "class": "R4",
+        "reasonIncludes": "connector"
+      }
+    }
+  ],
+  "never": []
+}

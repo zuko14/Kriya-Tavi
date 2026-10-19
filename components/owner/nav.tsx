@@ -9,6 +9,8 @@ import {
   SlidersHorizontalIcon,
   UsersIcon,
   WalletIcon,
+  BookCheckIcon,
+  FlaskConicalIcon,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -19,6 +21,10 @@ const NAV = [
   { href: "/owner/users", label: "Members", icon: UsersIcon },
   { href: "/owner/operations", label: "Operations", icon: ActivityIcon },
   { href: "/owner/config", label: "Config", icon: SlidersHorizontalIcon },
+  // A13: the public facts commons (K6)
+  { href: "/owner/facts", label: "Facts", icon: BookCheckIcon },
+  // A12: policy versions, canary and rollback
+  { href: "/owner/improve", label: "Improve", icon: FlaskConicalIcon },
   { href: "/owner/audit", label: "Audit", icon: ScrollTextIcon },
 ]
 

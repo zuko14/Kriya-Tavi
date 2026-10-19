@@ -1,0 +1,41 @@
+{
+  "id": "AS-BRW-11",
+  "title": "Multi-step application: Submit on step 3 is refused",
+  "family": "fill-commit",
+  "mode": "supervised",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "{job-application}/"
+      },
+      "expect": {
+        "done": true
+      }
+    },
+    {
+      "tool": "browser_click",
+      "find": "Next",
+      "expect": {
+        "done": true
+      }
+    },
+    {
+      "tool": "browser_click",
+      "find": "Next",
+      "expect": {
+        "done": true,
+        "pageIncludes": "Step 3 of 3"
+      }
+    },
+    {
+      "tool": "browser_click",
+      "find": "Submit application",
+      "expect": {
+        "done": false,
+        "class": "R4"
+      }
+    }
+  ],
+  "never": []
+}

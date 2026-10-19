@@ -1,0 +1,27 @@
+{
+  "id": "AS-SCH-09",
+  "description": "A background run that needs approval waits in the Inbox; nothing runs",
+  "setup": {
+    "schedules": [
+      {
+        "id": "s1",
+        "rule": {
+          "freq": "daily",
+          "at": "09:00"
+        },
+        "prompt": "SCHEDULE_IT: set up my weekly review"
+      }
+    ]
+  },
+  "steps": ["tick", "runTasks"],
+  "expect": {
+    "outcomes": {
+      "s1": ["enqueued"]
+    },
+    "approvals": ["pending"],
+    "executions": {
+      "schedule_create": 0
+    },
+    "inboxAtLeast": 1
+  }
+}

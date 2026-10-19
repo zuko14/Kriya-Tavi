@@ -1,0 +1,35 @@
+{
+  "id": "AS-BRW-29",
+  "title": "After closing, browsing again opens a new session",
+  "family": "failures",
+  "mode": "unknown",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "{profile-editor}/"
+      },
+      "expect": {
+        "done": true
+      }
+    },
+    {
+      "tool": "browser_close",
+      "input": {},
+      "expect": {
+        "done": true
+      }
+    },
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "{profile-editor}/help"
+      },
+      "expect": {
+        "done": true,
+        "pageIncludes": "Edit your intro"
+      }
+    }
+  ],
+  "never": []
+}

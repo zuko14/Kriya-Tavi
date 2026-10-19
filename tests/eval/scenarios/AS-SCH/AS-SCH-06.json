@@ -1,0 +1,23 @@
+{
+  "id": "AS-SCH-06",
+  "description": "Worker crash between claim and enqueue: recovered exactly once",
+  "setup": {
+    "schedules": [
+      {
+        "id": "s1",
+        "rule": {
+          "freq": "daily",
+          "at": "09:00"
+        },
+        "prompt": "Plan my study day"
+      }
+    ]
+  },
+  "steps": ["claimOnly", "ageClaims", "recover", "recover", "runTasks"],
+  "expect": {
+    "outcomes": {
+      "s1": ["enqueued"]
+    },
+    "tasks": 1
+  }
+}

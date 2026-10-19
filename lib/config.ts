@@ -69,6 +69,174 @@ export const SETTINGS = {
     pattern: /^\d{1,4}$/,
     hint: "Basis points, e.g. 236 for 2.36%",
   },
+  // Agent platform switches (docs/agent-platform). Each is off by default,
+  // and off means existing agents get the same prompt and tools as before.
+  // Memory v2: typed, shared and retrieved memory, thread summaries
+  "agents.memoryV2": {
+    env: "KRIYA_AGENTS_MEMORY_V2",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Model spend on summaries and memory consolidation, per person per day.
+  // A platform cost, never charged to the person. 0 runs no such job.
+  "agents.maintenanceCapMicroUsd": {
+    env: "KRIYA_MAINTENANCE_CAP_MICRO_USD",
+    fallback: "0",
+    pattern: /^\d{1,9}$/,
+    hint: "Micro-USD per person per day, e.g. 20000 for $0.02",
+  },
+  // Onboarding offers "Meet your team": the use case's role pack as a squad (A2)
+  "agents.rolePacks": {
+    env: "KRIYA_AGENTS_ROLE_PACKS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Agent browser tools (A4). Also needs the plan's browser minutes and
+  // KRIYA_BROWSER_URL + KRIYA_BROWSER_SECRET on the worker.
+  "agents.browser": {
+    env: "KRIYA_AGENTS_BROWSER",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Inbox and "What I did" (A3): approvals indexed for the Inbox and expired
+  // after agents.approvalTtlHours, records of verified actions after each task
+  "agents.inbox": {
+    env: "KRIYA_AGENTS_INBOX",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  "agents.approvalTtlHours": {
+    env: "KRIYA_APPROVAL_TTL_HOURS",
+    fallback: "72",
+    pattern: /^\d{1,4}$/,
+    hint: "Hours an approval waits before it counts as declined, e.g. 72",
+  },
+  // Goal and schedule tools (A3). Runs also need KRIYA_SCHEDULES_ENABLED=1
+  // on the worker.
+  "agents.goals": {
+    env: "KRIYA_AGENTS_GOALS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // GitHub, Sheets, YouTube and Instagram tools and their Account options (A8)
+  "agents.connectors": {
+    env: "KRIYA_AGENTS_CONNECTORS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // The Undo window for reversible tools (K3): 10 minutes, run by the worker
+  "agents.undo": {
+    env: "KRIYA_AGENTS_UNDO",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Skills (A9): save, approve and replay procedures
+  "agents.skills": {
+    env: "KRIYA_AGENTS_SKILLS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Receipt cards and "Verify my records" (K1)
+  "agents.receipts": {
+    env: "KRIYA_AGENTS_RECEIPTS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Files, generated PDFs and Kriya Share (A5, K8): uploads, extraction in
+  // the worker, receipt PDFs and share links
+  "agents.files": {
+    env: "KRIYA_AGENTS_FILES",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // A vision-capable model that reads PDFs and images; unset = they wait
+  "agents.fileReaderModel": {
+    env: "KRIYA_FILE_READER_MODEL",
+    pattern: MODEL_ID,
+    hint: "an OpenRouter model id that accepts images and PDFs",
+  },
+  // Accounts (A7): ledger entries, GST invoices with gapless numbers, CA
+  // exports. Each plan also needs ledger_enabled in /owner (default off)
+  "agents.ledger": {
+    env: "KRIYA_AGENTS_LEDGER",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // K7 step 2: a cheap model checks cited, quote-less claims (never money)
+  "agents.crossCheck": {
+    env: "KRIYA_AGENTS_CROSS_CHECK",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  "agents.crossCheckModel": {
+    env: "KRIYA_CROSS_CHECK_MODEL",
+    pattern: MODEL_ID,
+    hint: "a budget OpenRouter model, ideally another provider than the agents'",
+  },
+  // K5 watchers: schedule_create can watch a page; unchanged pages cost no
+  // task or model call (fetches are metered)
+  "agents.watchers": {
+    env: "KRIYA_AGENTS_WATCHERS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // K4 Radar: obligations with their quotes; reminders in-app until voice
+  "agents.radar": {
+    env: "KRIYA_AGENTS_RADAR",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // K6 public facts commons: the fact job and facts_lookup
+  "agents.facts": {
+    env: "KRIYA_AGENTS_FACTS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Governed improvement (A12, AD-25): tasks use the active or canary policy
+  // bundle and are stamped with its version; off = the code baseline
+  "agents.improvement": {
+    env: "KRIYA_AGENTS_IMPROVEMENT",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Login profiles and take-over (A6, AD-05): Account → Logins, and tasks
+  // use a saved sign-in. Also needs KRIYA_TOKEN_KEY and kriya-browser
+  "agents.loginProfiles": {
+    env: "KRIYA_AGENTS_LOGIN_PROFILES",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Ready-to-apply kits (K9, AD-35): kit_prepare and kit_check
+  "agents.kits": {
+    env: "KRIYA_AGENTS_KITS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // ₹ quotes and caps (K2)
+  "agents.quotes": {
+    env: "KRIYA_AGENTS_QUOTES",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
 } satisfies Record<string, SettingDef>
 
 export type SettingKey = keyof typeof SETTINGS
@@ -164,10 +332,18 @@ export const SECRETS = [
   "RAZORPAY_KEY_SECRET",
   "RAZORPAY_WEBHOOK_SECRET",
   "KRIYA_TOKEN_KEY",
+  // Only during a key rotation (runbooks/key-rotation.md)
+  "KRIYA_TOKEN_KEY_PREVIOUS",
   "GOOGLE_CLIENT_ID",
   "GOOGLE_CLIENT_SECRET",
   "NOTION_CLIENT_ID",
   "NOTION_CLIENT_SECRET",
+  "KRIYA_BROWSER_SECRET",
+  // A8 connectors (AB-06: the owner creates the apps)
+  "GITHUB_CLIENT_ID",
+  "GITHUB_CLIENT_SECRET",
+  "META_APP_ID",
+  "META_APP_SECRET",
 ] as const
 
 export type SecretName = (typeof SECRETS)[number]

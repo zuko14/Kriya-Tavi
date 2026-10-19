@@ -13,12 +13,18 @@ import {
 } from "@/actions/auth"
 import { StateNotice, SubmitButton, TextField } from "@/components/auth/auth-kit"
 
-export function LoginForm({ next, notice }: { next?: string; notice?: string }) {
+export function LoginForm({
+  next,
+  notice,
+}: {
+  next?: string
+  notice?: { message?: string; error?: string }
+}) {
   const [state, action] = useActionState<AuthState, FormData>(signIn, null)
   const unconfirmed = state?.error?.startsWith("Confirm your email")
   return (
     <div className="flex flex-col gap-4">
-      {notice && !state && <StateNotice state={{ error: notice }} />}
+      {notice && !state && <StateNotice state={notice} />}
       <form action={action} className="flex flex-col gap-4">
         <input type="hidden" name="next" value={next ?? ""} />
         <TextField

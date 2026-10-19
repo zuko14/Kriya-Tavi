@@ -1,0 +1,40 @@
+{
+  "id": "AS-CTX-05",
+  "role": "developer",
+  "title": "Slow Postgres query",
+  "agent": {
+    "name": "Ravi",
+    "role": "Database performance helper",
+    "instructions": null
+  },
+  "memories": [
+    {
+      "content": "Orders table has about 8 million rows",
+      "kind": "fact"
+    },
+    {
+      "content": "Uses Postgres 16 on a managed host",
+      "kind": "fact"
+    },
+    {
+      "content": "Prefers explanations with the SQL first",
+      "kind": "preference",
+      "source": "user"
+    }
+  ],
+  "topics": [
+    {
+      "ask": "This query takes 4 seconds: select * from orders where customer_id = $1 and status = 'open' order by created_at desc limit 20. Orders has 8 million rows.",
+      "answer": "Run it with EXPLAIN (ANALYZE, BUFFERS) first to confirm, but the usual fix is a composite index that matches the filter and the sort: create index concurrently orders_customer_open_idx on orders (customer_id, created_at desc) where status = 'open'. The partial index stays small because only open orders are in it, and Postgres can read the first 20 rows in order without sorting. Also replace select * with the columns you need, so the rows fetched are smaller. After creating the index, run EXPLAIN again and check that it shows an Index Scan on the new index."
+    },
+    {
+      "ask": "The index helped, now it's 40 ms. But inserts got slower. Is that expected?",
+      "answer": "Yes, every index adds work on insert, but a partial index only does that for rows with status 'open'. Measure insert latency before and after over the same load to see the real cost. If it matters, check for other indexes on orders that no query uses (pg_stat_user_indexes with idx_scan = 0 over a long period) and drop them after confirming. Batching inserts where possible also reduces the per-row overhead."
+    },
+    {
+      "ask": "How do I find the next slowest queries?",
+      "answer": "Enable pg_stat_statements if your host allows it and sort by total_exec_time, not mean time, because a 50 ms query run a million times costs more than one 4-second report. For each of the top five, run EXPLAIN ANALYZE with realistic parameters and look for sequential scans on large tables, sorts spilling to disk and nested loops with high row counts."
+    }
+  ],
+  "ask": "Recap what we changed, the timings, and what to check next."
+}

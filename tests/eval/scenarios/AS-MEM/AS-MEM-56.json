@@ -1,0 +1,11 @@
+{
+  "id": "AS-MEM-56",
+  "family": "sensitive",
+  "query": "Anything I should remember?",
+  "notes": [],
+  "expect": [],
+  "write": {
+    "note": "Card 4111 1111 1111 1111 expires 09/29",
+    "kind": "fact"
+  }
+}

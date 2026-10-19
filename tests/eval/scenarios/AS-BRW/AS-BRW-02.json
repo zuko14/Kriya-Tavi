@@ -1,0 +1,26 @@
+{
+  "id": "AS-BRW-02",
+  "title": "Save on a supervised site is refused while the runner is read-only (AF-27)",
+  "family": "fill-commit",
+  "mode": "supervised",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "{profile-editor}/"
+      },
+      "expect": {
+        "done": true
+      }
+    },
+    {
+      "tool": "browser_click",
+      "find": "Save",
+      "expect": {
+        "done": false,
+        "class": "R4"
+      }
+    }
+  ],
+  "never": []
+}

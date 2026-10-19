@@ -1,0 +1,28 @@
+{
+  "id": "AS-SCH-07",
+  "description": "The last allowed run ends the schedule",
+  "setup": {
+    "schedules": [
+      {
+        "id": "s1",
+        "rule": {
+          "freq": "daily",
+          "at": "09:00"
+        },
+        "prompt": "Plan my study day",
+        "maxRuns": 1
+      }
+    ]
+  },
+  "steps": ["tick", "runTasks"],
+  "expect": {
+    "outcomes": {
+      "s1": ["enqueued"]
+    },
+    "schedules": {
+      "s1": {
+        "status": "ended"
+      }
+    }
+  }
+}

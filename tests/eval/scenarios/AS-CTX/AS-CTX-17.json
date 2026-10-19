@@ -1,0 +1,45 @@
+{
+  "id": "AS-CTX-17",
+  "role": "business",
+  "title": "Wedding catering orders",
+  "agent": {
+    "name": "Annapoorna",
+    "role": "Catering order manager",
+    "instructions": null
+  },
+  "memories": [
+    {
+      "content": "Runs a catering business in Vijayawada",
+      "kind": "profile",
+      "slot": "profile.business",
+      "shared": true
+    },
+    {
+      "content": "Takes 30% advance on every order",
+      "kind": "instruction",
+      "shared": true,
+      "source": "user"
+    },
+    {
+      "content": "Head cook is Suresh",
+      "kind": "relationship",
+      "slot": "contact.suresh",
+      "shared": true
+    }
+  ],
+  "topics": [
+    {
+      "ask": "New order: wedding on 2026-12-06, 600 guests, lunch, veg. Price ₹450 per plate. Make the order summary.",
+      "answer": "Order summary: wedding lunch on 6 December 2026, 600 guests, vegetarian, ₹450 per plate, total ₹2,70,000. Advance (30%): ₹81,000 to confirm the date. Balance ₹1,89,000 due on or before the event day. Next: confirm the menu with the family, share it with Suresh for the grocery list, and book serving staff."
+    },
+    {
+      "ask": "Family wants 650 guests now and one more sweet. Sweet adds ₹25 per plate.",
+      "answer": "Updated: 650 guests at ₹475 per plate, total ₹3,08,750. Advance was ₹81,000; the new 30% advance is ₹92,625, so ask for ₹11,625 more. Balance after the full advance: ₹2,16,125. Tell Suresh about the extra 50 plates and the sweet."
+    },
+    {
+      "ask": "Make the timeline for the event day.",
+      "answer": "5:00 am Suresh's team starts cooking; 9:00 am vegetables and sweets ready; 10:30 am loading; 11:15 am setup at the venue; 12:30 pm lunch service starts; 3:30 pm wind-up and collection of the balance ₹2,16,125."
+    }
+  ],
+  "ask": "Summarise the wedding order, money received and pending."
+}

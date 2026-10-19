@@ -46,10 +46,26 @@ const OPTIONAL: Record<"web" | "worker", Check[]> = {
       name: "KRIYA_TOKEN_KEY",
       why: "connected accounts (32 random bytes, base64; encrypts their tokens)",
     },
+    {
+      name: "KRIYA_TOKEN_KEY_PREVIOUS",
+      why: "only during a key rotation: the key being retired",
+    },
     { name: "GOOGLE_CLIENT_ID", why: "connecting Google Calendar, Gmail and Drive" },
     { name: "GOOGLE_CLIENT_SECRET", why: "connecting Google Calendar, Gmail and Drive" },
     { name: "NOTION_CLIENT_ID", why: "connecting Notion" },
     { name: "NOTION_CLIENT_SECRET", why: "connecting Notion" },
+    {
+      name: "KRIYA_BROWSER_URL",
+      why: "receipt PDFs and share snapshots (kriya-browser)",
+    },
+    {
+      name: "KRIYA_BROWSER_SECRET",
+      why: "receipt PDFs and share snapshots (kriya-browser)",
+    },
+    {
+      name: "KRIYA_BROWSER_LIVE_URL",
+      why: "take-over and saved logins (kriya-browser's public wss:// live view)",
+    },
   ],
   worker: [
     {
@@ -61,6 +77,10 @@ const OPTIONAL: Record<"web" | "worker", Check[]> = {
       name: "KRIYA_TOKEN_KEY",
       why: "connected accounts (32 random bytes, base64; encrypts their tokens)",
     },
+    {
+      name: "KRIYA_TOKEN_KEY_PREVIOUS",
+      why: "only during a key rotation: the key being retired",
+    },
     { name: "GOOGLE_CLIENT_ID", why: "connecting Google Calendar, Gmail and Drive" },
     { name: "GOOGLE_CLIENT_SECRET", why: "connecting Google Calendar, Gmail and Drive" },
     { name: "NOTION_CLIENT_ID", why: "connecting Notion" },
@@ -69,6 +89,13 @@ const OPTIONAL: Record<"web" | "worker", Check[]> = {
       name: "KRIYA_FX_USD_INR",
       why: "rupee charges (until set, charges are recorded as unpriced)",
     },
+    { name: "KRIYA_BROWSER_URL", why: "agent browser tools (kriya-browser)" },
+    { name: "KRIYA_BROWSER_SECRET", why: "agent browser tools (kriya-browser)" },
+    {
+      name: "NEXT_PUBLIC_SUPABASE_URL",
+      why: "reading uploaded files (kriya-files bucket)",
+    },
+    { name: "SUPABASE_SECRET_KEY", why: "reading uploaded files (kriya-files bucket)" },
   ],
 }
 

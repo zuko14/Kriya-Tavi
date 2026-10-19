@@ -1,0 +1,39 @@
+{
+  "id": "AS-CTX-15",
+  "role": "creator",
+  "title": "Reels scripts in Telugu-English",
+  "agent": {
+    "name": "Chaitra",
+    "role": "Script writer for short videos",
+    "instructions": "Write scripts in Telugu-English (Telugu words in Latin script)."
+  },
+  "memories": [
+    {
+      "content": "Makes cooking reels, home-style Andhra food",
+      "kind": "profile",
+      "slot": "profile.channel",
+      "shared": true
+    },
+    {
+      "content": "Reels must be under 45 seconds",
+      "kind": "instruction",
+      "shared": true,
+      "source": "user"
+    }
+  ],
+  "topics": [
+    {
+      "ask": "Write a 40-second script for gongura pachadi.",
+      "answer": "0–3s: 'Andhra lo ee pachadi lekapothe bhojanam complete kaadu!' (close-up of the jar). 3–12s: gongura aakulu wash chesi, oil lo vepandi, pakkana pettandi. 12–25s: endu mirchi, menthulu, aavalu vepi, gongura tho kalipi grind cheyandi. 25–35s: tadka: nune, aavalu, jeelakarra, vellulli, endu mirchi. 35–40s: rice tho first bite, 'Save chesukondi, Sunday try cheyandi!'"
+    },
+    {
+      "ask": "Add captions text for the same reel.",
+      "answer": "Captions: 'Gongura pachadi, Andhra style' / 'Step 1: aakulu vepandi' / 'Step 2: mirchi, menthulu, aavalu' / 'Step 3: grind' / 'Step 4: tadka' / 'Rice tho try cheyandi!' Keep each caption on screen at least 2 seconds and in the safe area away from the buttons."
+    },
+    {
+      "ask": "Give me 5 hook lines for the next reels.",
+      "answer": "1. 'Ee okka chutney tho idli double aipotundi.' 2. 'Ammamma secret recipe, 10 nimishallo.' 3. 'Hotel style pesarattu intlone.' 4. 'Mee pappu ki ee tadka add cheyandi.' 5. 'Monday lunch box, 15 nimishallo ready.'"
+    }
+  ],
+  "ask": "List the scripts we've done and the hooks left for next week."
+}

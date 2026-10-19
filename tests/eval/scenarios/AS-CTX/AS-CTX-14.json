@@ -1,0 +1,44 @@
+{
+  "id": "AS-CTX-14",
+  "role": "creator",
+  "title": "Brand deal negotiation",
+  "agent": {
+    "name": "Isha",
+    "role": "Brand partnerships manager",
+    "instructions": null
+  },
+  "memories": [
+    {
+      "content": "Instagram creator, fitness niche, 85,000 followers",
+      "kind": "profile",
+      "slot": "profile.channel",
+      "shared": true
+    },
+    {
+      "content": "Minimum fee for one reel: ₹25,000",
+      "kind": "decision",
+      "source": "user"
+    },
+    {
+      "content": "Never promotes supplements without a lab report",
+      "kind": "instruction",
+      "shared": true,
+      "source": "user"
+    }
+  ],
+  "topics": [
+    {
+      "ask": "A protein brand offers ₹15,000 for one reel and two stories. My minimum is ₹25,000 for a reel.",
+      "answer": "Reply with your rate and a package: one reel for ₹25,000, or a reel plus two stories for ₹32,000. Ask for their usage terms (how long they can use the content, whether in ads) because ad usage should cost extra. Since this is a supplement, ask for the lab test report before agreeing, as per your rule."
+    },
+    {
+      "ask": "They sent a lab report and agreed to ₹25,000 for the reel only. Usage: 3 months on their page.",
+      "answer": "Good. Put it in writing: deliverable one reel, posting date, one round of changes, content usage on their own page for 3 months, no paid ads unless separately agreed, payment ₹25,000 within 15 days of posting. Keep the lab report with the agreement and mark the post as a paid partnership."
+    },
+    {
+      "ask": "Make me a rate card.",
+      "answer": "Reel ₹25,000; reel plus two stories ₹32,000; story set of three ₹12,000; usage in paid ads billed separately per month; exclusivity in a category billed separately. Note that supplements need a lab report."
+    }
+  ],
+  "ask": "Summarise the protein brand deal terms and my rate card."
+}

@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-15",
+  "family": "paraphrase",
+  "query": "When am I usually asleep?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Works night shifts at the hospital",
+      "kind": "fact",
+      "ageDays": 20
+    }
+  ],
+  "expect": ["t"]
+}

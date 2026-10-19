@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-17",
+  "family": "paraphrase",
+  "query": "Which vehicle do I own?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Drives a white Maruti Swift",
+      "kind": "fact",
+      "ageDays": 20
+    }
+  ],
+  "expect": ["t"]
+}

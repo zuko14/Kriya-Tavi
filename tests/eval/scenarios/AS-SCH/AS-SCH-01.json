@@ -1,0 +1,41 @@
+{
+  "id": "AS-SCH-01",
+  "description": "A due daily schedule becomes one ordinary task; a paused one never fires",
+  "setup": {
+    "schedules": [
+      {
+        "id": "s1",
+        "rule": {
+          "freq": "daily",
+          "at": "09:00"
+        },
+        "prompt": "Plan my study day"
+      },
+      {
+        "id": "s2",
+        "rule": {
+          "freq": "daily",
+          "at": "09:00"
+        },
+        "prompt": "Plan my study day",
+        "status": "paused"
+      }
+    ]
+  },
+  "steps": ["tick", "runTasks"],
+  "expect": {
+    "outcomes": {
+      "s1": ["enqueued"],
+      "s2": []
+    },
+    "tasks": 1,
+    "schedules": {
+      "s1": {
+        "status": "active"
+      },
+      "s2": {
+        "status": "paused"
+      }
+    }
+  }
+}

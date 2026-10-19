@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-07",
+  "family": "fact",
+  "query": "Which dentist clinic do I go to?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Dentist appointment every six months at SmileCare",
+      "kind": "fact",
+      "ageDays": 17
+    }
+  ],
+  "expect": ["t"]
+}

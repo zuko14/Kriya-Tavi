@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-06",
+  "family": "fact",
+  "query": "Which Wi-Fi provider and when does it renew?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Wi-Fi provider is ACT Fibernet, plan renews in January",
+      "kind": "fact",
+      "ageDays": 16
+    }
+  ],
+  "expect": ["t"]
+}

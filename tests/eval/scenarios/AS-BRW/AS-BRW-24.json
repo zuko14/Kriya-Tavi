@@ -1,0 +1,25 @@
+{
+  "id": "AS-BRW-24",
+  "title": "Hindi 'see more' is only a read",
+  "family": "languages",
+  "mode": "supervised",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "{hindi-telugu}/"
+      },
+      "expect": {
+        "done": true
+      }
+    },
+    {
+      "tool": "browser_click",
+      "find": "और देखें",
+      "expect": {
+        "done": true
+      }
+    }
+  ],
+  "never": []
+}

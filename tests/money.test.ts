@@ -107,3 +107,22 @@ describe("money", () => {
     })
   })
 })
+
+describe("₹ caps (K2, AT-QUO-02)", () => {
+  it("converts a cap into a provider budget whose charge never passes the cap", async () => {
+    const { capToProviderMicroUsd } = await import("@/lib/money")
+    const rate = parseRate("84.25")!
+    // ₹10 at 84.25 and 1.5× markup
+    const budget = capToProviderMicroUsd(10_000_000, rate, 15_000)!
+    expect(budget).toBe(79_129)
+    expect(applyMarkup(usdToInr(budget, rate), 15_000)).toBeLessThanOrEqual(10_000_000)
+    // One micro-USD more would cross it
+    expect(applyMarkup(usdToInr(budget + 1, rate), 15_000)).toBeGreaterThan(10_000_000)
+  })
+
+  it("gives no budget without an exchange rate or a markup to divide by", async () => {
+    const { capToProviderMicroUsd } = await import("@/lib/money")
+    expect(capToProviderMicroUsd(10_000_000, null, 15_000)).toBeNull()
+    expect(capToProviderMicroUsd(10_000_000, parseRate("84.25"), 0)).toBeNull()
+  })
+})

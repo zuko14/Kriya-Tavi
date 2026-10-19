@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-26",
+  "family": "lang",
+  "query": "किराया कब देना है?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "किराया हर महीने 5 तारीख को देना है",
+      "kind": "fact",
+      "ageDays": 15
+    }
+  ],
+  "expect": ["t"]
+}

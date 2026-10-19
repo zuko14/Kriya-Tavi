@@ -1,0 +1,24 @@
+{
+  "id": "AS-MEM-39",
+  "family": "update",
+  "query": "Which GATE year am I targeting?",
+  "notes": [
+    {
+      "key": "old",
+      "content": "Target GATE 2026",
+      "kind": "profile",
+      "ageDays": 30,
+      "slot": "profile.goal",
+      "shared": true
+    }
+  ],
+  "expect": ["new"],
+  "updates": [
+    {
+      "key": "old",
+      "newKey": "new",
+      "content": "Target GATE 2027"
+    }
+  ],
+  "absent": ["old"]
+}

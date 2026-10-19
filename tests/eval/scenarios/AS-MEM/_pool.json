@@ -1,0 +1,162 @@
+[
+  {
+    "content": "Goes to the gym on Monday, Wednesday and Friday mornings",
+    "kind": "fact"
+  },
+  {
+    "content": "Likes filter coffee more than tea",
+    "kind": "preference"
+  },
+  {
+    "content": "Sister Divya lives in Bengaluru",
+    "kind": "relationship"
+  },
+  {
+    "content": "Uses an Android phone",
+    "kind": "fact"
+  },
+  {
+    "content": "Favourite cricket team is Sunrisers Hyderabad",
+    "kind": "fact"
+  },
+  {
+    "content": "Reads one non-fiction book a month",
+    "kind": "fact"
+  },
+  {
+    "content": "Wants meeting notes as bullet points",
+    "kind": "preference"
+  },
+  {
+    "content": "Allergic to peanuts",
+    "kind": "fact"
+  },
+  {
+    "content": "Learning Spanish on weekends",
+    "kind": "fact"
+  },
+  {
+    "content": "Prefers trains over flights for trips under 600 km",
+    "kind": "preference"
+  },
+  {
+    "content": "Mother's birthday is in March",
+    "kind": "fact"
+  },
+  {
+    "content": "Works best between 9 am and 1 pm",
+    "kind": "fact"
+  },
+  {
+    "content": "Has a cat named Biscuit",
+    "kind": "fact"
+  },
+  {
+    "content": "Uses Google Calendar for everything",
+    "kind": "fact"
+  },
+  {
+    "content": "Supports a local animal shelter every month",
+    "kind": "fact"
+  },
+  {
+    "content": "Dislikes long voice notes",
+    "kind": "preference"
+  },
+  {
+    "content": "Watches Telugu movies on Fridays",
+    "kind": "fact"
+  },
+  {
+    "content": "Friend Kunal is a chartered accountant in Mumbai",
+    "kind": "relationship"
+  },
+  {
+    "content": "Keeps a monthly budget in a spreadsheet",
+    "kind": "fact"
+  },
+  {
+    "content": "Prefers UPI payments to cash",
+    "kind": "preference"
+  },
+  {
+    "content": "Plays badminton on Sundays",
+    "kind": "fact"
+  },
+  {
+    "content": "Vegetarian on Tuesdays",
+    "kind": "fact"
+  },
+  {
+    "content": "Laptop is a 2022 ThinkPad",
+    "kind": "fact"
+  },
+  {
+    "content": "Wants reminders as phone calls, not messages",
+    "kind": "instruction"
+  },
+  {
+    "content": "Uncle runs a pharmacy in Guntur",
+    "kind": "relationship"
+  },
+  {
+    "content": "Started journaling in September",
+    "kind": "fact"
+  },
+  {
+    "content": "Does not drink alcohol",
+    "kind": "fact"
+  },
+  {
+    "content": "Likes window seats",
+    "kind": "preference"
+  },
+  {
+    "content": "Signed up for a half marathon",
+    "kind": "fact"
+  },
+  {
+    "content": "Grows tomatoes and chillies on the balcony",
+    "kind": "fact"
+  },
+  {
+    "content": "Prefers dark mode in every app",
+    "kind": "preference"
+  },
+  {
+    "content": "Cousin Arvind is studying in Germany",
+    "kind": "relationship"
+  },
+  {
+    "content": "Visits grandparents in Nellore every Diwali",
+    "kind": "fact"
+  },
+  {
+    "content": "Learning to play the veena",
+    "kind": "fact"
+  },
+  {
+    "content": "Takes the metro to work",
+    "kind": "fact"
+  },
+  {
+    "content": "Does yoga before bed",
+    "kind": "fact"
+  },
+  {
+    "content": "Likes podcasts about history",
+    "kind": "preference"
+  },
+  {
+    "content": "Bought a scooter last year",
+    "kind": "fact"
+  },
+  {
+    "content": "Volunteers at a library on the first Saturday of the month",
+    "kind": "fact"
+  },
+  {
+    "content": "Prefers formal English in emails to clients",
+    "kind": "preference"
+  }
+]

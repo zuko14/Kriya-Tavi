@@ -1,0 +1,45 @@
+{
+  "id": "AS-CTX-04",
+  "role": "developer",
+  "title": "Next.js migration",
+  "agent": {
+    "name": "Dev",
+    "role": "Senior web engineer",
+    "instructions": "Show code in TypeScript. Prefer small diffs."
+  },
+  "memories": [
+    {
+      "content": "Works on a Next.js 14 pages-router app with 120 pages",
+      "kind": "fact"
+    },
+    {
+      "content": "Uses Postgres through Prisma",
+      "kind": "fact"
+    },
+    {
+      "content": "Wants to migrate to the App Router incrementally",
+      "kind": "decision"
+    },
+    {
+      "content": "Team of 4 developers; deploys on Render",
+      "kind": "profile",
+      "slot": "profile.team",
+      "shared": true
+    }
+  ],
+  "topics": [
+    {
+      "ask": "We have a Next.js pages-router app with 120 pages. How do we move to the App Router without a big-bang rewrite?",
+      "answer": "Run both routers side by side: the App Router lives in app/ and pages in pages/ keep working. Move one route group at a time, starting with leaf pages that only read data. For each page: create app/<route>/page.tsx as a server component, move getServerSideProps logic into the component as an async data fetch, keep client-only parts in small 'use client' components, and delete the old pages/ file in the same PR. Shared layout moves to app/layout.tsx last, once most pages are migrated. Set a rule that new pages go to app/ only. Read the migration guide bundled with your installed Next version before starting, because details differ between versions."
+    },
+    {
+      "ask": "How do I handle auth? We use a cookie session checked in getServerSideProps.",
+      "answer": "Move the check into a single server helper, for example requireSession(), that reads the cookie with the framework's cookies() API and redirects if it's missing. Call it at the top of each protected page and in server actions. Keep a route-level guard too for coarse redirects, but treat the per-page check as the real one, since server actions can be called directly. Write one test that hits a protected page without the cookie and expects the redirect."
+    },
+    {
+      "ask": "Our build takes 9 minutes on Render. Any quick wins?",
+      "answer": "Measure first: turn on build timing output and see whether time goes into type-checking, linting or bundling. Common quick wins are caching the framework's build cache directory between deploys, moving type-check and lint to CI so the deploy build skips them, and removing unused heavy dependencies from client bundles. Record the before and after times for each change so you know which one helped."
+    }
+  ],
+  "ask": "Summarise the migration plan and where we stand on auth and build time."
+}

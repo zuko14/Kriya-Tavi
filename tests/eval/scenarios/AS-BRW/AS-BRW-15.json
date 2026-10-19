@@ -1,0 +1,26 @@
+{
+  "id": "AS-BRW-15",
+  "title": "Feed: Follow is never automatic",
+  "family": "social",
+  "mode": "supervised",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "{feed}/"
+      },
+      "expect": {
+        "done": true
+      }
+    },
+    {
+      "tool": "browser_click",
+      "find": "Follow",
+      "expect": {
+        "done": false,
+        "class": "R4"
+      }
+    }
+  ],
+  "never": []
+}

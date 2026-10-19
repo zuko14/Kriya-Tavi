@@ -1,0 +1,22 @@
+{
+  "id": "AS-MEM-37",
+  "family": "update",
+  "query": "What time is gym?",
+  "notes": [
+    {
+      "key": "old",
+      "content": "Gym timing 6 am",
+      "kind": "fact",
+      "ageDays": 30
+    }
+  ],
+  "expect": ["new"],
+  "updates": [
+    {
+      "key": "old",
+      "newKey": "new",
+      "content": "Gym timing 7 am"
+    }
+  ],
+  "absent": ["old"]
+}

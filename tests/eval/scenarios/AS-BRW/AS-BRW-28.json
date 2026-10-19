@@ -1,0 +1,29 @@
+{
+  "id": "AS-BRW-28",
+  "title": "A stated commit intent raises a link click to a refusal",
+  "family": "fill-commit",
+  "mode": "supervised",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "{profile-editor}/"
+      },
+      "expect": {
+        "done": true
+      }
+    },
+    {
+      "tool": "browser_click",
+      "find": "Help",
+      "input": {
+        "intent": "commit"
+      },
+      "expect": {
+        "done": false,
+        "class": "R4"
+      }
+    }
+  ],
+  "never": []
+}

@@ -1,0 +1,11 @@
+{
+  "id": "AS-MEM-57",
+  "family": "sensitive",
+  "query": "Anything I should remember?",
+  "notes": [],
+  "expect": [],
+  "write": {
+    "note": "Aadhaar 2341 2341 2346",
+    "kind": "fact"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-13",
+  "family": "paraphrase",
+  "query": "Who owns the flat I rent?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Landlord is Mr. Reddy",
+      "kind": "fact",
+      "ageDays": 20
+    }
+  ],
+  "expect": ["t"]
+}

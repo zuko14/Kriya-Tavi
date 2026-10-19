@@ -3,20 +3,28 @@
 import * as React from "react"
 import {
   BrainIcon,
+  CameraIcon,
+  CalendarClockIcon,
   CalendarIcon,
   CalendarPlusIcon,
   CheckIcon,
   ChevronRightIcon,
+  ClipboardListIcon,
   CircleSlashIcon,
   CornerDownRightIcon,
   EraserIcon,
   FileTextIcon,
+  GitBranchIcon,
   GlobeIcon,
+  ListChecksIcon,
   MailIcon,
   MailPlusIcon,
   NotebookTextIcon,
+  PlayIcon,
   SearchIcon,
+  SheetIcon,
   SplitIcon,
+  TargetIcon,
   WrenchIcon,
   XIcon,
   type LucideIcon,
@@ -49,9 +57,37 @@ const META: Record<string, Meta> = {
     label: "read",
     summary: (i) => str(i.url).replace(/^https?:\/\/(www\.)?/, ""),
   },
+  browser_open: {
+    icon: GlobeIcon,
+    label: "browse",
+    summary: (i) => str(i.url).replace(/^https?:\/\/(www\.)?/, ""),
+  },
+  browser_snapshot: { icon: GlobeIcon, label: "look at the page" },
+  browser_click: { icon: GlobeIcon, label: "click", summary: (i) => str(i.ref) },
+  browser_scroll: { icon: GlobeIcon, label: "scroll", summary: (i) => str(i.direction) },
+  browser_handoff: { icon: GlobeIcon, label: "over to you", summary: (i) => str(i.note) },
+  browser_close: { icon: GlobeIcon, label: "close the browser" },
   memory_write: { icon: BrainIcon, label: "remember", summary: (i) => str(i.note) },
   memory_forget: { icon: EraserIcon, label: "forget", summary: (i) => str(i.id) },
+  memory_update: { icon: BrainIcon, label: "update memory", summary: (i) => str(i.note) },
+  memory_search: {
+    icon: SearchIcon,
+    label: "search memory",
+    summary: (i) => str(i.query),
+  },
   assign: { icon: SplitIcon, label: "split the work" },
+  goal_create: { icon: TargetIcon, label: "start a goal", summary: (i) => str(i.title) },
+  goal_update: { icon: ListChecksIcon, label: "update a goal" },
+  schedule_create: {
+    icon: CalendarClockIcon,
+    label: "schedule",
+    summary: (i) => str(i.prompt),
+  },
+  schedule_update: {
+    icon: CalendarClockIcon,
+    label: "change a schedule",
+    summary: (i) => str(i.status),
+  },
   calendar_events: {
     icon: CalendarIcon,
     label: "calendar",
@@ -82,6 +118,126 @@ const META: Record<string, Meta> = {
     label: "delegate",
     summary: (i) => str(i.brief),
   },
+  // A8 connectors
+  github_search: { icon: GitBranchIcon, label: "github", summary: (i) => str(i.query) },
+  github_read_issue: { icon: GitBranchIcon, label: "read issue", summary: (i) => ref(i) },
+  github_read_pr: {
+    icon: GitBranchIcon,
+    label: "read pull request",
+    summary: (i) => ref(i),
+  },
+  github_comment: { icon: GitBranchIcon, label: "comment", summary: (i) => ref(i) },
+  github_create_issue: {
+    icon: GitBranchIcon,
+    label: "open issue",
+    summary: (i) => str(i.title),
+  },
+  github_label: { icon: GitBranchIcon, label: "label", summary: (i) => ref(i) },
+  github_open_pr: {
+    icon: GitBranchIcon,
+    label: "open pull request",
+    summary: (i) => str(i.title),
+  },
+  sheets_read: { icon: SheetIcon, label: "read sheet", summary: (i) => str(i.range) },
+  sheets_append: { icon: SheetIcon, label: "add rows", summary: (i) => str(i.range) },
+  sheets_update: { icon: SheetIcon, label: "update cells", summary: (i) => str(i.range) },
+  youtube_stats: { icon: PlayIcon, label: "youtube stats" },
+  instagram_insights: { icon: CameraIcon, label: "instagram stats" },
+  // A9 skills
+  skill_propose: {
+    icon: ListChecksIcon,
+    label: "save as skill",
+    summary: (i) => str(i.name),
+  },
+  skill_list: { icon: ListChecksIcon, label: "skills" },
+  skill_run: { icon: ListChecksIcon, label: "run skill", summary: (i) => str(i.skillId) },
+  ledger_list: { icon: ListChecksIcon, label: "accounts" },
+  ledger_draft_entry: { icon: ListChecksIcon, label: "draft entries" },
+  invoice_draft: {
+    icon: ListChecksIcon,
+    label: "draft invoice",
+    summary: (i) => str((i.client as { name?: string } | undefined)?.name),
+  },
+  facts_lookup: {
+    icon: ListChecksIcon,
+    label: "official facts",
+    summary: (i) => str(i.key ?? i.query),
+  },
+  obligation_add: {
+    icon: ListChecksIcon,
+    label: "add to Radar",
+    summary: (i) => str(i.title),
+  },
+  obligation_list: { icon: ListChecksIcon, label: "Radar" },
+  kit_prepare: {
+    icon: ClipboardListIcon,
+    label: "ready-to-apply kit",
+    summary: (i) => str(i.title),
+  },
+  kit_check: { icon: ClipboardListIcon, label: "check applied kit" },
+  instagram_publish: {
+    icon: CameraIcon,
+    label: "post on instagram",
+    summary: (i) => str(i.caption),
+  },
+}
+
+const ref = (i: Record<string, unknown>) =>
+  str(i.repo) && i.number ? `${str(i.repo)}#${i.number}` : str(i.repo)
+
+// A8 writes: the exact public action, field by field, then its long text
+const cellRows = (rows: unknown) =>
+  Array.isArray(rows) ? rows.map((r) => (Array.isArray(r) ? r.join("\t") : "")) : []
+const A8_ROWS: Record<string, (i: Record<string, unknown>) => [string, string][]> = {
+  github_comment: (i) => [["On", ref(i)]],
+  github_create_issue: (i) => [
+    ["Repository", str(i.repo)],
+    ["Title", str(i.title)],
+  ],
+  github_label: (i) => [
+    ["On", ref(i)],
+    ["Labels", list(i.labels)],
+  ],
+  github_open_pr: (i) => [
+    ["Repository", str(i.repo)],
+    ["Branch", `${str(i.branch)} → ${str(i.base) || "default branch"}`],
+    ["Title", str(i.title)],
+    ["Files", Array.isArray(i.files) ? i.files.map((f) => str(f?.path)).join(", ") : ""],
+  ],
+  sheets_append: (i) => [
+    ["Spreadsheet", str(i.spreadsheetId)],
+    ["After", str(i.range)],
+    ["Rows", String(cellRows(i.rows).length)],
+  ],
+  sheets_update: (i) => [
+    ["Spreadsheet", str(i.spreadsheetId)],
+    ["Overwrites", str(i.range)],
+  ],
+  instagram_publish: (i) => [
+    ["Image", str(i.imageUrl)],
+    ["Caption", str(i.caption)],
+  ],
+}
+const A8_TEXT: Record<string, (i: Record<string, unknown>) => string> = {
+  github_comment: (i) => str(i.body),
+  github_create_issue: (i) => str(i.body),
+  github_open_pr: (i) =>
+    Array.isArray(i.files)
+      ? i.files.map((f) => `── ${str(f?.path)}\n${str(f?.content)}`).join("\n\n")
+      : "",
+  sheets_append: (i) => cellRows(i.rows).join("\n"),
+  sheets_update: (i) => cellRows(i.rows).join("\n"),
+}
+const A8_NOTES: Record<string, string> = {
+  github_comment: "Posted on GitHub as you. Anyone who can see the repository sees it.",
+  github_create_issue:
+    "Opened on GitHub as you. Anyone who can see the repository sees it.",
+  github_label: "Added on GitHub as you; people watching the issue may be notified.",
+  github_open_pr:
+    "A new branch and a pull request on GitHub, as you. Nothing is merged: you or the maintainers decide.",
+  sheets_append: "Added to your Google Sheet as plain text.",
+  sheets_update: "Replaces those cells in your Google Sheet with this plain text.",
+  instagram_publish: "Posted publicly on your Instagram as you.",
 }
 
 export function toolName(part: ToolPart) {
@@ -92,7 +248,7 @@ function Pre({ children, className }: { children: React.ReactNode; className?: s
   return (
     <pre
       className={cn(
-        "max-h-80 overflow-auto rounded-md border bg-background/70 px-3 py-2 font-mono text-[11.5px] leading-relaxed break-words whitespace-pre-wrap text-foreground/90",
+        "max-h-80 overflow-auto rounded-md border bg-background/70 px-3 py-2 font-code text-[11.5px] leading-relaxed break-words whitespace-pre-wrap text-foreground/90",
         className
       )}
     >
@@ -167,7 +323,10 @@ function Details({ part }: { part: ToolPart }) {
         </div>
       ) : null
     case "memory_write":
+    case "memory_update":
       return <p className="text-[13px]">{str(input.note)}</p>
+    case "kit_prepare":
+      return output?.done ? <KitCard input={input} output={output} /> : null
     default:
       return (
         <div className="flex flex-col gap-2">
@@ -176,6 +335,91 @@ function Details({ part }: { part: ToolPart }) {
         </div>
       )
   }
+}
+
+// Sends a message as the person; provided by the thread view
+export const SendContext = React.createContext<((text: string) => void) | null>(null)
+
+// K9: the person copies each field into the site, then says it's applied;
+// the agent's kit_check reads the page to verify it (AT-KIT-02)
+function KitCard({
+  input,
+  output,
+}: {
+  input: Record<string, unknown>
+  output: Record<string, unknown>
+}) {
+  const send = React.useContext(SendContext)
+  const [copied, setCopied] = React.useState<number | null>(null)
+  const fields = Array.isArray(input.fields)
+    ? (input.fields as { label?: unknown; text?: unknown }[])
+    : []
+  const limits = Array.isArray(output.limits) ? (output.limits as (number | null)[]) : []
+  const checklist = Array.isArray(input.checklist) ? input.checklist : []
+  const link = safeHref(str(input.deepLink))
+  return (
+    <div className="flex flex-col gap-3">
+      {link && (
+        <a
+          href={link}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="text-[13px] font-medium break-all text-rigel hover:underline"
+        >
+          Open the form ↗
+        </a>
+      )}
+      <ol className="flex flex-col gap-3">
+        {fields.map((field, index) => {
+          const text = str(field.text)
+          const limit = limits[index]
+          return (
+            <li key={index} className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[12.5px] font-medium">{str(field.label)}</span>
+                <span className="font-mono text-[10.5px] text-faint">
+                  {text.length}
+                  {typeof limit === "number" ? ` / ${limit}` : ""} characters
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="xs"
+                  className="ml-auto min-h-11 sm:min-h-6"
+                  onClick={() => {
+                    void navigator.clipboard?.writeText(text).then(() => setCopied(index))
+                  }}
+                >
+                  {copied === index ? "Copied" : "Copy"}
+                </Button>
+              </div>
+              <Pre>{text}</Pre>
+            </li>
+          )
+        })}
+      </ol>
+      {checklist.length > 0 && (
+        <ul className="flex list-disc flex-col gap-1 pl-5 text-[12.5px]">
+          {checklist.map((item, index) => (
+            <li key={index}>{str(item)}</li>
+          ))}
+        </ul>
+      )}
+      {send && typeof output.kitId === "string" && (
+        <Button
+          type="button"
+          className="min-h-11 self-start"
+          onClick={() =>
+            send(
+              `I've applied the kit "${str(input.title)}". Please check it (kit ${output.kitId}).`
+            )
+          }
+        >
+          I&apos;ve applied it
+        </Button>
+      )}
+    </div>
+  )
 }
 
 // Answers a tool call waiting for approval; provided by the thread view
@@ -227,7 +471,7 @@ function ApprovalCard({ part }: { part: ToolPart }) {
           ? [["Page", str(input.url)]]
           : name === "web_search"
             ? [["Search", str(input.query)]]
-            : [["Details", JSON.stringify(input)]]
+            : (A8_ROWS[name]?.(input) ?? [["Details", JSON.stringify(input)]])
   const note =
     name === "calendar_create_event"
       ? list(input.attendees)
@@ -237,7 +481,7 @@ function ApprovalCard({ part }: { part: ToolPart }) {
         ? "Saved as a draft in your Gmail. Nothing is sent: you send it yourself."
         : name === "web_fetch" || name === "web_search"
           ? "Your private mail or documents are in this conversation, so web requests need your ok. Check that the address or search doesn't carry anything private."
-          : "This changes something outside Kriya."
+          : (A8_NOTES[name] ?? "This changes something outside Kriya.")
 
   const decide = async (approved: boolean) => {
     if (!respond || !approvalId) return
@@ -269,6 +513,7 @@ function ApprovalCard({ part }: { part: ToolPart }) {
       {name === "gmail_draft" && str(input.body) && (
         <Pre className="max-h-48">{str(input.body)}</Pre>
       )}
+      {A8_TEXT[name]?.(input) && <Pre className="max-h-48">{A8_TEXT[name](input)}</Pre>}
       <p className="text-[12px] text-muted-foreground">{note}</p>
       <div className="flex gap-2">
         <Button

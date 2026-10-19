@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-01",
+  "family": "fact",
+  "query": "What's my laptop budget?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Laptop budget is ₹80,000",
+      "kind": "fact",
+      "ageDays": 11
+    }
+  ],
+  "expect": ["t"]
+}

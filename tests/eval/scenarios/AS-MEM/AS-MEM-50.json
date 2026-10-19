@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-50",
+  "family": "gap",
+  "query": "Is there a PF transfer pending?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Old company PF account to be transferred",
+      "kind": "fact",
+      "ageDays": 700
+    }
+  ],
+  "expect": ["t"]
+}

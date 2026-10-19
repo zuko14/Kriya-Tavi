@@ -7,9 +7,17 @@ import { safeNext } from "@/lib/auth"
 
 export const metadata: Metadata = { title: "Sign in" }
 
-const NOTICES: Record<string, string> = {
-  link: "That link has expired or was already used. Sign in, or ask for a new one.",
-  account: "We couldn't load your account. Sign in again, or contact support.",
+// A used or expired sign-up link usually means the account already exists (a
+// mail app may have opened the link first), so it's said calmly, not as an error
+const NOTICES: Record<string, { message?: string; error?: string }> = {
+  "signup-link": {
+    message:
+      "Your account has been created. That email link was already used or has expired, so just sign in below. If your email still needs confirming, we'll offer a fresh link.",
+  },
+  link: {
+    error: "That link has expired or was already used. Sign in, or ask for a new one.",
+  },
+  account: { error: "We couldn't load your account. Sign in again, or contact support." },
 }
 
 export default async function LoginPage({

@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-11",
+  "family": "paraphrase",
+  "query": "How much can I spend on a new computer?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Laptop budget is ₹80,000",
+      "kind": "fact",
+      "ageDays": 20
+    }
+  ],
+  "expect": ["t"]
+}

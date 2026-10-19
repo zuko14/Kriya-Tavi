@@ -1,0 +1,22 @@
+{
+  "id": "AS-MEM-42",
+  "family": "contradiction",
+  "query": "Can I put a meeting on Sunday?",
+  "notes": [
+    {
+      "key": "p",
+      "content": "Never schedule anything on Sundays",
+      "kind": "preference",
+      "source": "user",
+      "shared": true,
+      "ageDays": 40
+    },
+    {
+      "key": "a",
+      "content": "Sunday afternoons are free for meetings",
+      "kind": "preference",
+      "ageDays": 5
+    }
+  ],
+  "expect": ["p"]
+}

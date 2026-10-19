@@ -1,0 +1,22 @@
+{
+  "id": "AS-MEM-38",
+  "family": "update",
+  "query": "Which phone plan am I on?",
+  "notes": [
+    {
+      "key": "old",
+      "content": "Phone plan Jio ₹299",
+      "kind": "fact",
+      "ageDays": 30
+    }
+  ],
+  "expect": ["new"],
+  "updates": [
+    {
+      "key": "old",
+      "newKey": "new",
+      "content": "Phone plan Airtel ₹349"
+    }
+  ],
+  "absent": ["old"]
+}

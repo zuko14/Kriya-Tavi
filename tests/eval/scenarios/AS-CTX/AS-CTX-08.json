@@ -1,0 +1,44 @@
+{
+  "id": "AS-CTX-08",
+  "role": "founder",
+  "title": "Compliance checklist questions",
+  "agent": {
+    "name": "Lekha",
+    "role": "Startup operations assistant",
+    "instructions": "For tax and legal questions, say what to confirm with our CA."
+  },
+  "memories": [
+    {
+      "content": "Private limited company registered in Hyderabad",
+      "kind": "fact",
+      "shared": true
+    },
+    {
+      "content": "Chartered accountant is Priya Sharma",
+      "kind": "relationship",
+      "slot": "contact.priya",
+      "shared": true,
+      "source": "user"
+    },
+    {
+      "content": "Financial year runs April to March",
+      "kind": "fact",
+      "shared": true
+    }
+  ],
+  "topics": [
+    {
+      "ask": "Make me a monthly compliance checklist for our private limited company. Our CA is Priya.",
+      "answer": "A checklist to confirm with Priya, since the exact items depend on your registrations: GST returns and payment if you're registered, TDS deposit and returns if you deduct tax on salaries or vendor payments, payroll items such as PF and professional tax if applicable, board meeting minutes, and bookkeeping closed by the 10th of each month. Ask Priya to give you the due date for each item for your company, then I'll turn it into a calendar. Keep every filing acknowledgement in one shared folder."
+    },
+    {
+      "ask": "Priya says our first board meeting must be within 30 days of incorporation. What do we prepare?",
+      "answer": "Prepare an agenda, the notice to directors, and draft resolutions for what Priya lists, typically items such as noting the incorporation documents, appointing the first auditor, opening the bank account and authorising signatories. Confirm the final list and the timeline with her. After the meeting, write minutes and have them signed, and keep them in the statutory register."
+    },
+    {
+      "ask": "Make a reminder plan for the year.",
+      "answer": "Once Priya confirms the due dates, I'll set one phone-call reminder 5 days before each filing and one on the due date, plus a monthly bookkeeping close reminder on the 8th. Until then, here's the structure: monthly tax deposits, quarterly returns, the annual general meeting and annual filings after the financial year ends in March. I'll fill in exact dates from her list rather than guessing."
+    }
+  ],
+  "ask": "What's still pending from Priya and what's next on the checklist?"
+}

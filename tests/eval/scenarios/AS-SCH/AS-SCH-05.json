@@ -1,0 +1,33 @@
+{
+  "id": "AS-SCH-05",
+  "description": "A goal over its monthly ₹ budget pauses its schedule",
+  "setup": {
+    "goal": {
+      "budgetMicroInr": 5000000,
+      "spentMicroInr": 5000000
+    },
+    "schedules": [
+      {
+        "id": "s1",
+        "rule": {
+          "freq": "daily",
+          "at": "09:00"
+        },
+        "prompt": "Plan my study day",
+        "goal": true
+      }
+    ]
+  },
+  "steps": ["tick"],
+  "expect": {
+    "outcomes": {
+      "s1": ["skipped_budget"]
+    },
+    "schedules": {
+      "s1": {
+        "status": "paused",
+        "pauseReason": "budget"
+      }
+    }
+  }
+}

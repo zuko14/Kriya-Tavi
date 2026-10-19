@@ -127,6 +127,18 @@ export function priceTask(
   }
 }
 
+// The person's ₹ cap (K2) as a provider budget for a task, with the same
+// owner-set rate and markup chargeTask uses. Floored, so the charge never
+// passes the cap. Null without a rate or a markup to divide by.
+export function capToProviderMicroUsd(
+  capMicroInr: number,
+  rateE4: bigint | null,
+  markupBps: number
+): number | null {
+  if (!rateE4 || markupBps <= 0) return null
+  return Number((BigInt(capMicroInr) * 100_000_000n) / (rateE4 * BigInt(markupBps)))
+}
+
 /* ───────────────────────────── display ──────────────────────────── */
 
 const inr = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" })

@@ -1,0 +1,27 @@
+{
+  "id": "AS-BRW-04",
+  "title": "Unknown site: reading works, Save refused",
+  "family": "assisted",
+  "mode": "unknown",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "{profile-editor}/"
+      },
+      "expect": {
+        "done": true
+      }
+    },
+    {
+      "tool": "browser_click",
+      "find": "Save",
+      "expect": {
+        "done": false,
+        "class": "R4",
+        "reasonIncludes": "terms"
+      }
+    }
+  ],
+  "never": []
+}

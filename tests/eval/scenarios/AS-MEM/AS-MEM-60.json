@@ -1,0 +1,11 @@
+{
+  "id": "AS-MEM-60",
+  "family": "sensitive",
+  "query": "Anything I should remember?",
+  "notes": [],
+  "expect": [],
+  "write": {
+    "note": "Account 50100234567891 with IFSC HDFC0001234",
+    "kind": "fact"
+  }
+}

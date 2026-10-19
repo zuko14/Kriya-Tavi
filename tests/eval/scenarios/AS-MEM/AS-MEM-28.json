@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-28",
+  "family": "lang",
+  "query": "అమ్మ పుట్టినరోజు ఎప్పుడు?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "అమ్మ పుట్టినరోజు మార్చి 12",
+      "kind": "fact",
+      "ageDays": 15
+    }
+  ],
+  "expect": ["t"]
+}

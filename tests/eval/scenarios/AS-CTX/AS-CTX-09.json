@@ -1,0 +1,41 @@
+{
+  "id": "AS-CTX-09",
+  "role": "founder",
+  "title": "Hiring the first engineer",
+  "agent": {
+    "name": "Kabir",
+    "role": "Hiring assistant",
+    "instructions": null
+  },
+  "memories": [
+    {
+      "content": "Startup with 3 people, building a logistics app in Flutter",
+      "kind": "fact",
+      "shared": true
+    },
+    {
+      "content": "Budget for first engineer: up to ₹18 lakh per year",
+      "kind": "decision",
+      "source": "user"
+    },
+    {
+      "content": "Wants someone in Bengaluru, hybrid",
+      "kind": "preference"
+    }
+  ],
+  "topics": [
+    {
+      "ask": "Write a job post for our first engineer: Flutter and backend, Bengaluru hybrid, up to ₹18 lakh.",
+      "answer": "Title: Founding engineer, Flutter + backend (Bengaluru, hybrid). We're three people building a logistics app that drivers and shop owners use daily. You'll own the Flutter app and the API behind it, ship weekly, talk to users and help pick our tools. You have: shipped a Flutter app to real users, built and run a backend in production, and you're comfortable owning features end to end. Compensation: up to ₹18 lakh a year plus ESOPs. Hybrid in Bengaluru, two office days a week. To apply, send a link to something you built and three lines on the hardest bug you fixed."
+    },
+    {
+      "ask": "How should the interview process look? We can't spend more than 4 hours per candidate.",
+      "answer": "Four steps within 4 hours: a 20-minute call on what they built, a 90-minute paid take-home or pairing session on a small real feature, a 60-minute review of their work with two of you, and a 30-minute founder conversation about how they like to work. Decide within 48 hours and tell every candidate the outcome."
+    },
+    {
+      "ask": "A candidate wants ₹22 lakh. Our budget is ₹18 lakh.",
+      "answer": "Say the budget plainly. Offer ₹18 lakh with a larger ESOP grant, or a written review at six months with a defined raise if agreed goals are met. Don't stretch the cash beyond what your runway allows; a founding engineer who leaves in six months costs more."
+    }
+  ],
+  "ask": "Summarise the hiring plan and the open decision on the ₹22 lakh candidate."
+}

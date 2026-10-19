@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-16",
+  "family": "paraphrase",
+  "query": "What type should I tell the donation camp?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Blood group is O positive",
+      "kind": "fact",
+      "ageDays": 20
+    }
+  ],
+  "expect": ["t"]
+}

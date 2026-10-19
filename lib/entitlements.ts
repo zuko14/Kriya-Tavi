@@ -1,7 +1,16 @@
 import { and, count, eq, gte, inArray, sql, sum } from "drizzle-orm"
 
 import { privileged, rowsOf } from "@/db"
-import { agents, charges, plans, subscriptions, tasks, type Plan } from "@/db/schema"
+import {
+  agents,
+  charges,
+  goals,
+  plans,
+  schedules,
+  subscriptions,
+  tasks,
+  type Plan,
+} from "@/db/schema"
 
 // What a person's plan allows, enforced on the server whatever the UI shows.
 // Usage is the customer charge (micro-INR) of tasks in the current period:
@@ -94,6 +103,77 @@ export function checkTaskAllowed(usage: UsageSummary): Limit {
         code: "allowance",
         message: `You've used this period's allowance on the ${plan.name} plan. Upgrade or wait for your next billing period.`,
       }
+    }
+  }
+  return { ok: true }
+}
+
+// Goals and schedules that are still open count against the plan (A3)
+export async function checkGoalAllowed(userId: string): Promise<Limit> {
+  const plan = await getPlan(userId)
+  const [row] = await privileged
+    .select({ n: count() })
+    .from(goals)
+    .where(and(eq(goals.userId, userId), inArray(goals.status, ["active", "paused"])))
+  if ((row?.n ?? 0) >= plan.maxGoals) {
+    return {
+      ok: false,
+      code: "goal_limit",
+      message: `The ${plan.name} plan includes ${plan.maxGoals} open goals. Close one or upgrade to add more.`,
+    }
+  }
+  return { ok: true }
+}
+
+// A new version of a saved skill doesn't count again; retired ones don't count
+export async function checkSkillAllowed(userId: string, name: string): Promise<Limit> {
+  const plan = await getPlan(userId)
+  const result = await privileged.execute(
+    sql`select count(distinct id)::int as n,
+               bool_or(name = ${name}) as existing
+        from kriya.skills
+        where user_id = ${userId} and status <> 'retired'`
+  )
+  const row = rowsOf<{ n: number; existing: boolean | null }>(result)[0]
+  if (!row?.existing && (row?.n ?? 0) >= plan.maxSkills) {
+    return {
+      ok: false,
+      code: "skill_limit",
+      message:
+        plan.maxSkills === 0
+          ? `The ${plan.name} plan doesn't include saved skills.`
+          : `The ${plan.name} plan includes ${plan.maxSkills} saved skills. Retire one or upgrade to add more.`,
+    }
+  }
+  return { ok: true }
+}
+
+// `gapMinutes`: the shortest time between two runs of the new rule
+export async function checkScheduleAllowed(
+  userId: string,
+  gapMinutes: number,
+  replacing = false
+): Promise<Limit> {
+  const plan = await getPlan(userId)
+  if (gapMinutes < plan.minScheduleIntervalMinutes) {
+    return {
+      ok: false,
+      code: "schedule_interval",
+      message: `On the ${plan.name} plan a schedule can run at most once every ${plan.minScheduleIntervalMinutes} minutes.`,
+    }
+  }
+  if (replacing) return { ok: true }
+  const [row] = await privileged
+    .select({ n: count() })
+    .from(schedules)
+    .where(
+      and(eq(schedules.userId, userId), inArray(schedules.status, ["active", "paused"]))
+    )
+  if ((row?.n ?? 0) >= plan.maxSchedules) {
+    return {
+      ok: false,
+      code: "schedule_limit",
+      message: `The ${plan.name} plan includes ${plan.maxSchedules} schedules. End one or upgrade to add more.`,
     }
   }
   return { ok: true }

@@ -1,0 +1,35 @@
+{
+  "id": "AS-BRW-16",
+  "title": "Feed: scrolling loads more posts",
+  "family": "read",
+  "mode": "unknown",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "{feed}/"
+      },
+      "expect": {
+        "done": true
+      }
+    },
+    {
+      "tool": "browser_scroll",
+      "input": {
+        "direction": "down"
+      },
+      "expect": {
+        "done": true
+      }
+    },
+    {
+      "tool": "browser_snapshot",
+      "until": "Post 6",
+      "expect": {
+        "done": true,
+        "pageIncludes": "Post 6"
+      }
+    }
+  ],
+  "never": []
+}

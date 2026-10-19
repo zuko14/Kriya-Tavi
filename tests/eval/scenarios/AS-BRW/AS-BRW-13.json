@@ -1,0 +1,26 @@
+{
+  "id": "AS-BRW-13",
+  "title": "Bill portal: downloads are refused",
+  "family": "failures",
+  "mode": "unknown",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "{bill-portal}/"
+      },
+      "expect": {
+        "done": true
+      }
+    },
+    {
+      "tool": "browser_click",
+      "find": "Download September bill",
+      "expect": {
+        "done": false,
+        "error": "blocked"
+      }
+    }
+  ],
+  "never": []
+}

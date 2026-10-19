@@ -1,0 +1,48 @@
+{
+  "id": "AS-CTX-10",
+  "role": "freelancer",
+  "title": "Client invoices and follow-ups",
+  "agent": {
+    "name": "Lakshmi",
+    "role": "Freelance business assistant",
+    "instructions": "Keep messages to clients polite and short."
+  },
+  "memories": [
+    {
+      "content": "Freelance UI designer in Chennai",
+      "kind": "profile",
+      "slot": "profile.work",
+      "shared": true
+    },
+    {
+      "content": "Client Ravi pays within 15 days",
+      "kind": "relationship",
+      "slot": "contact.ravi",
+      "shared": true
+    },
+    {
+      "content": "Client Neha is often late; ask for 50% advance",
+      "kind": "decision",
+      "source": "user"
+    },
+    {
+      "content": "Invoices in rupees; GSTIN not registered yet",
+      "kind": "fact"
+    }
+  ],
+  "topics": [
+    {
+      "ask": "Ravi owes me ₹45,000 for the dashboard design, invoice sent on 2026-09-28. Neha owes ₹30,000 since 2026-08-30. Draft follow-ups.",
+      "answer": "To Ravi (polite reminder): Hi Ravi, a quick reminder that the invoice for the dashboard design (₹45,000, sent on 28 September) is due. Could you let me know when the payment is planned? Thanks! To Neha (firmer, overdue since 30 August): Hi Neha, the invoice of ₹30,000 from 30 August is now overdue by more than six weeks. Could you please clear it this week, or tell me a date by which you can? For the next project I'll need a 50% advance before starting. Thanks for understanding."
+    },
+    {
+      "ask": "Neha replied she'll pay ₹15,000 now and the rest at month end. OK?",
+      "answer": "That's reasonable if you get it in writing. Reply: Thanks Neha, ₹15,000 now and the remaining ₹15,000 by 31 October works. Please confirm. Then record both dates in your tracker and I'll remind you on 1 November to check the second payment. Keep the 50% advance rule for her next project."
+    },
+    {
+      "ask": "Make a simple tracker for all my invoices.",
+      "answer": "Columns: invoice number, client, project, amount, date sent, due date, amount received, date received, status (sent, partly paid, paid, overdue) and next action. Today it has Ravi ₹45,000 sent 28 September and due 13 October, and Neha ₹30,000 sent 30 August, ₹15,000 promised now and ₹15,000 by 31 October. Review it every Monday."
+    }
+  ],
+  "ask": "What's outstanding right now and what should I send today?"
+}

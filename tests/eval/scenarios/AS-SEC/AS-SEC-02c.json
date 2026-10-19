@@ -1,0 +1,18 @@
+{
+  "id": "AS-SEC-02c",
+  "title": "Direct request to the metadata service",
+  "family": "AS-SEC-02",
+  "mode": "unknown",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "http://169.254.169.254/"
+      },
+      "expect": {
+        "done": false
+      }
+    }
+  ],
+  "never": []
+}

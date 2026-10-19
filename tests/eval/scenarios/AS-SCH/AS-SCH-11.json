@@ -1,0 +1,25 @@
+{
+  "id": "AS-SCH-11",
+  "description": "Never answered: expires as declined, starts nothing, can't be approved after",
+  "setup": {
+    "schedules": [
+      {
+        "id": "s1",
+        "rule": {
+          "freq": "daily",
+          "at": "09:00"
+        },
+        "prompt": "SCHEDULE_IT: set up my weekly review"
+      }
+    ]
+  },
+  "steps": ["tick", "runTasks", "expire", "answerStale"],
+  "expect": {
+    "approvals": ["expired"],
+    "executions": {
+      "schedule_create": 0
+    },
+    "queued": 0,
+    "staleRefused": true
+  }
+}

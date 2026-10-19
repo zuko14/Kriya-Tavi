@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-25",
+  "family": "lang",
+  "query": "जवाब किस भाषा में चाहिए?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "मुझे हिंदी में जवाब चाहिए",
+      "kind": "fact",
+      "ageDays": 15
+    }
+  ],
+  "expect": ["t"]
+}

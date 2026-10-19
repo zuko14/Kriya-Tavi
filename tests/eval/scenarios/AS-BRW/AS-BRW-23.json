@@ -1,0 +1,26 @@
+{
+  "id": "AS-BRW-23",
+  "title": "Telugu save button is a commit",
+  "family": "languages",
+  "mode": "supervised",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "{hindi-telugu}/"
+      },
+      "expect": {
+        "done": true
+      }
+    },
+    {
+      "tool": "browser_click",
+      "find": "సేవ్ చేయి",
+      "expect": {
+        "done": false,
+        "class": "R4"
+      }
+    }
+  ],
+  "never": []
+}

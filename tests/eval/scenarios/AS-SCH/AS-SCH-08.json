@@ -1,0 +1,25 @@
+{
+  "id": "AS-SCH-08",
+  "description": "Hours of missed interval runs fire once, not five times",
+  "setup": {
+    "schedules": [
+      {
+        "id": "s1",
+        "rule": {
+          "freq": "interval",
+          "everyMinutes": 60
+        },
+        "prompt": "Plan my study day",
+        "overdueMinutes": 300
+      }
+    ]
+  },
+  "steps": ["tick", "tick", "runTasks"],
+  "expect": {
+    "outcomes": {
+      "s1": ["enqueued"]
+    },
+    "tasks": 1,
+    "nextRunInFuture": ["s1"]
+  }
+}

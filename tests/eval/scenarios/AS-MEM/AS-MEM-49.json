@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-49",
+  "family": "gap",
+  "query": "When does the fridge warranty end?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Warranty of the fridge ends in 2027",
+      "kind": "fact",
+      "ageDays": 690
+    }
+  ],
+  "expect": ["t"]
+}

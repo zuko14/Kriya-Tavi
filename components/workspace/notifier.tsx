@@ -13,7 +13,9 @@ import {
   ToastPortal,
   ToastViewport,
 } from "@/components/ui/toast"
+import { useLiteMode } from "@/components/workspace/use-lite-mode"
 import type { KriyaEvent } from "@/lib/events"
+import { followWhileVisible } from "@/lib/lite"
 import { cn } from "@/lib/utils"
 
 // Lets you know when an agent finishes, fails or needs you: a chime, a
@@ -241,61 +243,67 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     }
   }, [])
 
+  // Lite mode (K10): no live connection while the tab is hidden
+  const lite = useLiteMode()
+
   React.useEffect(() => {
-    const source = new EventSource("/api/events")
-    source.onmessage = (message) => {
-      let event: KriyaEvent
-      try {
-        event = JSON.parse(message.data) as KriyaEvent
-      } catch {
-        return
-      }
-      router.refresh()
-      for (const listener of listeners.current) listener(event)
-      // A turn starting is news only for the page showing it
-      if (event.type === "turn-started" || !here.current.enabled) return
-
-      const { kind, status, title, body } = describe(event)
-      const looking = document.visibilityState === "visible" && document.hasFocus()
-      const onThread = here.current.pathname === event.href.split("?")[0]
-      // The thread you're reading already shows its own news
-      if (looking && onThread) return
-
-      chime(kind)
-      if (looking) {
-        const timeout = kind === "attention" ? 0 : 9000
-        const data: CardData = {
-          kind,
-          status,
-          name: event.name,
-          glyph: event.glyph,
-          href: event.href,
-          timeout,
+    const open = () => {
+      const source = new EventSource("/api/events")
+      source.onmessage = (message) => {
+        let event: KriyaEvent
+        try {
+          event = JSON.parse(message.data) as KriyaEvent
+        } catch {
+          return
         }
-        alerts.add({ title: event.name, description: body, timeout, data })
-        return
-      }
-      if ("Notification" in window && Notification.permission === "granted") {
-        // Shown on lock screens too, so it names the agent but not the reply
-        const notification = new Notification(title, {
-          body:
-            kind === "error"
-              ? "Open Kriya to see what happened."
-              : "Your reply is ready.",
-          tag: event.threadId,
-          icon: "/icon.svg",
-          silent: true,
-          requireInteraction: kind === "attention",
-        })
-        notification.onclick = () => {
-          window.focus()
-          router.push(event.href)
-          notification.close()
+        router.refresh()
+        for (const listener of listeners.current) listener(event)
+        // A turn starting is news only for the page showing it
+        if (event.type === "turn-started" || !here.current.enabled) return
+
+        const { kind, status, title, body } = describe(event)
+        const looking = document.visibilityState === "visible" && document.hasFocus()
+        const onThread = here.current.pathname === event.href.split("?")[0]
+        // The thread you're reading already shows its own news
+        if (looking && onThread) return
+
+        chime(kind)
+        if (looking) {
+          const timeout = kind === "attention" ? 0 : 9000
+          const data: CardData = {
+            kind,
+            status,
+            name: event.name,
+            glyph: event.glyph,
+            href: event.href,
+            timeout,
+          }
+          alerts.add({ title: event.name, description: body, timeout, data })
+          return
+        }
+        if ("Notification" in window && Notification.permission === "granted") {
+          // Shown on lock screens too, so it names the agent but not the reply
+          const notification = new Notification(title, {
+            body:
+              kind === "error"
+                ? "Open Kriya to see what happened."
+                : "Your reply is ready.",
+            tag: event.threadId,
+            icon: "/icon.svg",
+            silent: true,
+            requireInteraction: kind === "attention",
+          })
+          notification.onclick = () => {
+            window.focus()
+            router.push(event.href)
+            notification.close()
+          }
         }
       }
+      return source
     }
-    return () => source.close()
-  }, [router])
+    return followWhileVisible(open, lite, document)
+  }, [router, lite])
 
   const toggle = React.useCallback(() => {
     const askable = "Notification" in window && Notification.permission === "default"

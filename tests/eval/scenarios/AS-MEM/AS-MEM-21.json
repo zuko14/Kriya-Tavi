@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-21",
+  "family": "lang",
+  "query": "Sunday ki evariki phone cheyali?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Amma ki Sunday phone cheyali",
+      "kind": "fact",
+      "ageDays": 15
+    }
+  ],
+  "expect": ["t"]
+}

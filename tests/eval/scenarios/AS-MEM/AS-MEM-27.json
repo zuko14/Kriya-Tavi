@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-27",
+  "family": "lang",
+  "query": "సమాధానం ఏ భాషలో కావాలి?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "నాకు తెలుగులో సమాధానం కావాలి",
+      "kind": "fact",
+      "ageDays": 15
+    }
+  ],
+  "expect": ["t"]
+}

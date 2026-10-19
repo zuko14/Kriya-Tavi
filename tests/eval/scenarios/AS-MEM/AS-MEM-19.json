@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-19",
+  "family": "paraphrase",
+  "query": "Where do I hold my account?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Bank branch is SBI Kukatpally",
+      "kind": "fact",
+      "ageDays": 20
+    }
+  ],
+  "expect": ["t"]
+}

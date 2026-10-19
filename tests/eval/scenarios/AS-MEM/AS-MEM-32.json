@@ -1,0 +1,22 @@
+{
+  "id": "AS-MEM-32",
+  "family": "update",
+  "query": "What's my laptop budget?",
+  "notes": [
+    {
+      "key": "old",
+      "content": "Laptop budget is ₹60,000",
+      "kind": "fact",
+      "ageDays": 30
+    }
+  ],
+  "expect": ["new"],
+  "updates": [
+    {
+      "key": "old",
+      "newKey": "new",
+      "content": "Laptop budget is ₹80,000"
+    }
+  ],
+  "absent": ["old"]
+}

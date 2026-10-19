@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-02",
+  "family": "fact",
+  "query": "When is my rent due to the landlord?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Landlord is Mr. Reddy, rent due on the 5th",
+      "kind": "fact",
+      "ageDays": 12
+    }
+  ],
+  "expect": ["t"]
+}

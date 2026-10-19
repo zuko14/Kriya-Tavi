@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-09",
+  "family": "fact",
+  "query": "When does my car insurance renew?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Car insurance with ICICI Lombard renews in November",
+      "kind": "fact",
+      "ageDays": 19
+    }
+  ],
+  "expect": ["t"]
+}

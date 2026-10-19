@@ -1,0 +1,22 @@
+{
+  "id": "AS-MEM-43",
+  "family": "contradiction",
+  "query": "What's the trip budget?",
+  "notes": [
+    {
+      "key": "p",
+      "content": "Budget for the trip is ₹30,000",
+      "kind": "preference",
+      "source": "user",
+      "shared": true,
+      "ageDays": 40
+    },
+    {
+      "key": "a",
+      "content": "Trip budget is ₹50,000",
+      "kind": "preference",
+      "ageDays": 5
+    }
+  ],
+  "expect": ["p"]
+}

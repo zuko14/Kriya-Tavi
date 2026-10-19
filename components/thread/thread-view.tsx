@@ -30,7 +30,7 @@ import {
 import { Confirm } from "@/components/confirm"
 import { Glyph, SquadGlyph } from "@/components/glyph"
 import { Composer } from "@/components/thread/composer"
-import { ApprovalContext } from "@/components/thread/tool-call"
+import { ApprovalContext, SendContext } from "@/components/thread/tool-call"
 import { Transcript, type AgentLite } from "@/components/thread/transcript"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
@@ -56,7 +56,9 @@ import { ActivityPanel } from "@/components/workbench/activity"
 import { MemoryPanel } from "@/components/workbench/memory"
 import { useWorkspace } from "@/components/workspace/context"
 import { useNotifications } from "@/components/workspace/notifier"
+import { liteModeNow, useLiteMode } from "@/components/workspace/use-lite-mode"
 import type { KriyaMessage } from "@/lib/agent/tools"
+import { LITE_HEADER } from "@/lib/lite"
 import { suggestionsFor } from "@/lib/templates"
 import { tierName } from "@/lib/tiers"
 import { cn } from "@/lib/utils"
@@ -499,17 +501,21 @@ export function ThreadView(props: ThreadViewProps) {
   }
 
   const api = `/api/threads/${threadId}/turn`
-  const transport = React.useMemo(
-    () =>
-      new DefaultChatTransport<KriyaMessage>({
-        api,
-        prepareSendMessagesRequest: ({ messages, body }) => ({
-          body: { message: messages[messages.length - 1], agentId: body?.agentId },
-        }),
-        prepareReconnectToStreamRequest: () => ({ api }),
+  // Lite mode (K10): ask the server for the slower stream, decided at the
+  // moment of each request
+  useLiteMode()
+  const transport = React.useMemo(() => {
+    const headers = (): Record<string, string> =>
+      liteModeNow() ? { [LITE_HEADER]: "1" } : {}
+    return new DefaultChatTransport<KriyaMessage>({
+      api,
+      prepareSendMessagesRequest: ({ messages, body }) => ({
+        body: { message: messages[messages.length - 1], agentId: body?.agentId },
+        headers: headers(),
       }),
-    [api]
-  )
+      prepareReconnectToStreamRequest: () => ({ api, headers: headers() }),
+    })
+  }, [api])
 
   // A task handed over from the home screen (see components/home/ask.tsx).
   // Only read here: StrictMode may call this twice, so it's removed on send.
@@ -640,79 +646,81 @@ export function ThreadView(props: ThreadViewProps) {
     !!failure && ["daily_limit", "allowance"].includes(failure.code ?? "")
 
   const chat = (
-    <ApprovalContext value={respond}>
-      <div className="flex h-full min-h-0 flex-col">
-        <Transcript
-          messages={messages}
-          members={members}
-          status={chatStatus}
-          isSquad={kind === "squad"}
-          empty={<EmptyThread props={props} onPick={send} />}
-          footer={
-            failure ? (
-              <div
-                role="alert"
-                className={cn(
-                  "flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-[13px]",
-                  limitReached
-                    ? "border-betelgeuse/40 bg-betelgeuse-soft"
-                    : "border-destructive/30 bg-destructive/5"
-                )}
-              >
-                <TriangleAlertIcon
+    <SendContext value={send}>
+      <ApprovalContext value={respond}>
+        <div className="flex h-full min-h-0 flex-col">
+          <Transcript
+            messages={messages}
+            members={members}
+            status={chatStatus}
+            isSquad={kind === "squad"}
+            empty={<EmptyThread props={props} onPick={send} />}
+            footer={
+              failure ? (
+                <div
+                  role="alert"
                   className={cn(
-                    "mt-0.5 size-4 shrink-0",
-                    limitReached ? "text-betelgeuse" : "text-destructive"
+                    "flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-[13px]",
+                    limitReached
+                      ? "border-betelgeuse/40 bg-betelgeuse-soft"
+                      : "border-destructive/30 bg-destructive/5"
                   )}
-                />
-                <div className="flex min-w-0 flex-col gap-1">
-                  <span className="font-medium">
-                    {limitReached
-                      ? "You've reached your plan's limit"
-                      : "The task didn't finish"}
-                  </span>
-                  <span className="break-words text-muted-foreground">
-                    {failure.message}
-                  </span>
-                  {limitReached ? (
-                    <Link href="/account#plan" className="text-rigel hover:underline">
-                      See plans →
-                    </Link>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRefreshKey((key) => key + 1)
-                        if (isDesktop) setPanelOpen(true)
-                        else setSheetOpen(true)
-                      }}
-                      className="self-start text-rigel hover:underline"
-                    >
-                      See what happened →
-                    </button>
-                  )}
+                >
+                  <TriangleAlertIcon
+                    className={cn(
+                      "mt-0.5 size-4 shrink-0",
+                      limitReached ? "text-betelgeuse" : "text-destructive"
+                    )}
+                  />
+                  <div className="flex min-w-0 flex-col gap-1">
+                    <span className="font-medium">
+                      {limitReached
+                        ? "You've reached your plan's limit"
+                        : "The task didn't finish"}
+                    </span>
+                    <span className="break-words text-muted-foreground">
+                      {failure.message}
+                    </span>
+                    {limitReached ? (
+                      <Link href="/account#plan" className="text-rigel hover:underline">
+                        See plans →
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRefreshKey((key) => key + 1)
+                          if (isDesktop) setPanelOpen(true)
+                          else setSheetOpen(true)
+                        }}
+                        className="self-start text-rigel hover:underline"
+                      >
+                        See what happened →
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ) : null
-          }
-        />
-        <Composer
-          draftKey={threadId}
-          placeholder={
-            kind === "squad"
-              ? `Message ${addressee?.name ?? "the squad"}…`
-              : `Message ${props.owner.name}…`
-          }
-          busy={busy}
-          onSend={send}
-          onStop={halt}
-          members={kind === "squad" ? members : undefined}
-          addressee={kind === "squad" ? addressee : undefined}
-          onAddresseeChange={setAddresseeId}
-          tier={addressee?.model ?? null}
-        />
-      </div>
-    </ApprovalContext>
+              ) : null
+            }
+          />
+          <Composer
+            draftKey={threadId}
+            placeholder={
+              kind === "squad"
+                ? `Message ${addressee?.name ?? "the squad"}…`
+                : `Message ${props.owner.name}…`
+            }
+            busy={busy}
+            onSend={send}
+            onStop={halt}
+            members={kind === "squad" ? members : undefined}
+            addressee={kind === "squad" ? addressee : undefined}
+            onAddresseeChange={setAddresseeId}
+            tier={addressee?.model ?? null}
+          />
+        </div>
+      </ApprovalContext>
+    </SendContext>
   )
 
   const agentId = kind === "agent" ? members[0].id : null

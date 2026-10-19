@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-48",
+  "family": "gap",
+  "query": "Did I lend money to Kunal?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Lent ₹5,000 to Kunal",
+      "kind": "fact",
+      "ageDays": 680
+    }
+  ],
+  "expect": ["t"]
+}

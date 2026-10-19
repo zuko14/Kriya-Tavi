@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-30",
+  "family": "lang",
+  "query": "veena class eppudu?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Weekend lo veena class untundi",
+      "kind": "fact",
+      "ageDays": 15
+    }
+  ],
+  "expect": ["t"]
+}

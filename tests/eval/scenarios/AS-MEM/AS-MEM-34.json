@@ -1,0 +1,24 @@
+{
+  "id": "AS-MEM-34",
+  "family": "update",
+  "query": "Which year am I in?",
+  "notes": [
+    {
+      "key": "old",
+      "content": "B.Tech CSE 2nd year",
+      "kind": "profile",
+      "ageDays": 30,
+      "slot": "profile.year",
+      "shared": true
+    }
+  ],
+  "expect": ["new"],
+  "updates": [
+    {
+      "key": "old",
+      "newKey": "new",
+      "content": "B.Tech CSE 3rd year"
+    }
+  ],
+  "absent": ["old"]
+}

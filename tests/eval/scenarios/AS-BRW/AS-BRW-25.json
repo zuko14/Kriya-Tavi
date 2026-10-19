@@ -1,0 +1,27 @@
+{
+  "id": "AS-BRW-25",
+  "title": "Slow page: look again until the result appears",
+  "family": "read",
+  "mode": "unknown",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "{slow}/"
+      },
+      "expect": {
+        "done": true,
+        "pageIncludes": "Loading"
+      }
+    },
+    {
+      "tool": "browser_snapshot",
+      "until": "Show details",
+      "expect": {
+        "done": true,
+        "pageIncludes": "button \"Show details\""
+      }
+    }
+  ],
+  "never": []
+}

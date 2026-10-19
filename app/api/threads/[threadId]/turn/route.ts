@@ -10,6 +10,7 @@ import {
 } from "@/lib/agent/queue"
 import type { KriyaMessage } from "@/lib/agent/tools"
 import { authenticate } from "@/lib/auth"
+import { LITE_HEADER } from "@/lib/lite"
 import { log } from "@/lib/log"
 import { allow } from "@/lib/rate-limit"
 
@@ -39,6 +40,13 @@ const threadId = z.string().min(1).max(32)
 function fail(message: string, status = 400, code = "bad_request") {
   return Response.json({ error: message, code }, { status })
 }
+
+// Lite mode (K10): the browser asks for a slower stream on slow networks
+const lite = (request: Request) => ({
+  lite:
+    request.headers.get(LITE_HEADER) === "1" ||
+    new URL(request.url).searchParams.get("lite") === "1",
+})
 
 // Queue a turn and stream it as it runs in the worker
 export async function POST(
@@ -77,7 +85,7 @@ export async function POST(
       idempotencyKey: `msg:${id.data}:${parsed.data.message.id}`,
     })
     return createUIMessageStreamResponse({
-      stream: streamTask(user.id, task.id, request.signal),
+      stream: streamTask(user.id, task.id, request.signal, lite(request)),
     })
   } catch (error) {
     if (error instanceof TurnError) return fail(error.message, error.status, error.code)
@@ -98,7 +106,7 @@ export async function GET(
   const task = await activeTask(user.id, id.data)
   if (!task) return new Response(null, { status: 204 })
   return createUIMessageStreamResponse({
-    stream: streamTask(user.id, task.id, request.signal),
+    stream: streamTask(user.id, task.id, request.signal, lite(request)),
   })
 }
 

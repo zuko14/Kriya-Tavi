@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-04",
+  "family": "fact",
+  "query": "How fast does client Ravi pay?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Client Ravi pays invoices within 15 days",
+      "kind": "fact",
+      "ageDays": 14
+    }
+  ],
+  "expect": ["t"]
+}

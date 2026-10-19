@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-23",
+  "family": "lang",
+  "query": "shaadi kab hai?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Bhaiya ki shaadi December mein hai",
+      "kind": "fact",
+      "ageDays": 15
+    }
+  ],
+  "expect": ["t"]
+}

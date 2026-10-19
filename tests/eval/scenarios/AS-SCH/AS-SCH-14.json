@@ -1,0 +1,27 @@
+{
+  "id": "AS-SCH-14",
+  "description": "A one-time schedule fires once and ends",
+  "setup": {
+    "schedules": [
+      {
+        "id": "s1",
+        "rule": {
+          "freq": "once",
+          "startAt": "2026-01-05T09:00:00+05:30"
+        },
+        "prompt": "Plan my study day"
+      }
+    ]
+  },
+  "steps": ["tick", "tick", "runTasks"],
+  "expect": {
+    "outcomes": {
+      "s1": ["enqueued"]
+    },
+    "schedules": {
+      "s1": {
+        "status": "ended"
+      }
+    }
+  }
+}

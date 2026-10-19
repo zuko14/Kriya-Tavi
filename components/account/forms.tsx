@@ -11,9 +11,12 @@ import {
   deleteAccount,
   finishTestCheckout,
   saveProfile,
+  setLiteMode,
   type FormState,
 } from "@/actions/account"
 import { StateNotice, SubmitButton, TextField } from "@/components/auth/auth-kit"
+import { saveDataHint, setLiteChoice } from "@/components/workspace/use-lite-mode"
+import { liteMode } from "@/lib/lite"
 import { cn } from "@/lib/utils"
 
 export const LANGUAGES = [
@@ -38,7 +41,7 @@ export const USE_CASE_OPTIONS = [
 
 type Profile = { displayName: string | null; locale: string; useCase: string | null }
 
-function LanguageSelect({ defaultValue }: { defaultValue: string }) {
+export function LanguageSelect({ defaultValue }: { defaultValue: string }) {
   const id = React.useId()
   return (
     <div className="flex flex-col gap-1.5">
@@ -64,7 +67,13 @@ function LanguageSelect({ defaultValue }: { defaultValue: string }) {
   )
 }
 
-function UseCasePicker({ defaultValue }: { defaultValue: string | null }) {
+export function UseCasePicker({
+  defaultValue,
+  onChange,
+}: {
+  defaultValue: string | null
+  onChange?: (value: string) => void
+}) {
   const [value, setValue] = React.useState(defaultValue ?? "")
   return (
     <fieldset className="flex flex-col gap-2">
@@ -78,7 +87,10 @@ function UseCasePicker({ defaultValue }: { defaultValue: string | null }) {
             key={option.value}
             type="button"
             aria-pressed={value === option.value}
-            onClick={() => setValue(option.value)}
+            onClick={() => {
+              setValue(option.value)
+              onChange?.(option.value)
+            }}
             className={cn(
               "flex min-h-14 flex-col items-start gap-0.5 rounded-lg border px-3 py-2 text-left transition-colors",
               value === option.value
@@ -207,5 +219,61 @@ export function DeleteAccountForm() {
         <SubmitButton>Delete my account</SubmitButton>
       </div>
     </form>
+  )
+}
+
+// Lite mode (K10): the person's choice; until they make one, on while the
+// browser asks to save data (navigator.connection.saveData). Either way
+// they can switch it, and their choice then wins.
+export function LiteModeToggle({ chosen: initial }: { chosen: boolean | null }) {
+  const [chosen, setChosen] = React.useState(initial)
+  const [saveData, setSaveData] = React.useState<boolean | undefined>(undefined)
+  const [state, setState] = React.useState<FormState>(null)
+  const [pending, start] = React.useTransition()
+  React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSaveData(saveDataHint())
+  }, [])
+  const on = liteMode(chosen, saveData)
+  const toggle = () =>
+    start(async () => {
+      const result = await setLiteMode(!on)
+      setState(result)
+      if (result?.error) return
+      setChosen(!on)
+      setLiteChoice(!on)
+    })
+  return (
+    <div className="flex max-w-sm flex-col gap-2">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        disabled={pending}
+        onClick={toggle}
+        className="flex min-h-11 items-center justify-between gap-4 rounded-xl border px-3.5 text-left text-[14px] disabled:opacity-70"
+      >
+        <span>Lite mode</span>
+        <span
+          className={cn(
+            "relative h-6 w-10 shrink-0 rounded-full transition-colors",
+            on ? "bg-rigel" : "bg-muted"
+          )}
+        >
+          <span
+            className={cn(
+              "absolute top-0.5 size-5 rounded-full bg-background shadow transition-[left]",
+              on ? "left-[18px]" : "left-0.5"
+            )}
+          />
+        </span>
+      </button>
+      <p className="text-[12.5px] text-muted-foreground">
+        {chosen === null && saveData
+          ? "On because your browser is set to save data. You can turn it off."
+          : "Updates arrive a little slower, and alerts pause while Kriya is in the background. For slow networks and small data packs."}
+      </p>
+      <StateNotice state={state} />
+    </div>
   )
 }

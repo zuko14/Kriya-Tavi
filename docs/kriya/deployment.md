@@ -136,6 +136,24 @@ is missing or points at localhost; the error lists names, never values.
 | `KRIYA_TOKEN_KEY` | ✓ | ✓ | ✓ | for connected accounts | 32 random bytes, base64. Encrypts OAuth tokens; same value on web and worker. Losing it means everyone reconnects |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | ✓ | ✓ | ✓ | for Google | Calendar, Gmail, Drive. Worker uses them to refresh tokens |
 | `NOTION_CLIENT_ID` / `NOTION_CLIENT_SECRET` | ✓ | | ✓ | for Notion | Public integration |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | ✓ | | ✓ | for GitHub (A8) | GitHub App: connecting and revoking. Tokens aren't refreshed, so the worker doesn't need them |
+| `META_APP_ID` / `META_APP_SECRET` | ✓ | | ✓ | for Instagram (A8) | Meta app with Instagram permissions (app review) |
+| `KRIYA_AGENTS_CONNECTORS` | ✓ | ✓ | | | `on` offers GitHub, Sheets, YouTube and Instagram (default `off`; also in `/owner/config`) |
+| `KRIYA_AGENTS_UNDO` | ✓ | ✓ | | | `on` turns on the 10-minute Undo; the worker runs it (default `off`) |
+| `KRIYA_AGENTS_SKILLS` | ✓ | ✓ | | | `on` lets agents save skills for your approval and replay them (default `off`). Each plan also needs `max_skills` above 0 in `/owner` (default 0) |
+| `KRIYA_AGENTS_FILES` | ✓ | ✓ | | | `on` shows Account → Files and Shared links, receipt Download PDF and Share (with `agents.receipts`), and starts the worker's reading loop (default `off`) |
+| `KRIYA_FILE_READER_MODEL` | | ✓ | | | A model that reads PDFs and images; unset, those files wait unread. Model reads count toward `agents.maintenanceCapMicroUsd` (default 0 = none) |
+| `KRIYA_BROWSER_URL` / `KRIYA_BROWSER_SECRET` on **web** | ✓ | | ✓ | for PDFs (A5) | Receipt PDFs and share snapshots are printed by `kriya-browser`; same values as the worker |
+| `KRIYA_AGENTS_LOGIN_PROFILES` | ✓ | ✓ | | | A6: `on` shows Account → Logins (sign in by take-over, save, remove) and lets tasks use a saved login within the site's mode (default `off`). Needs `KRIYA_TOKEN_KEY` on web and worker, `KRIYA_BROWSER_URL`/`SECRET` on web, `KRIYA_BROWSER_LIVE_URL`, and each plan's `max_login_profiles` above 0 in `/owner` (default 0) |
+| `KRIYA_BROWSER_LIVE_URL` on **web** | ✓ | | ✓ | for take-over (A6) | The public `wss://` address that reaches `kriya-browser`'s `/live/<session>` route. Render private services aren't reachable from browsers, so this needs a public route to the service (open item, see `status.md` A6) |
+| `KRIYA_AGENTS_KITS` | ✓ | ✓ | | | K9: `kit_prepare` and `kit_check`, ready-to-apply text for sites where Kriya doesn't press Save (default `off`) |
+| `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_SECRET_KEY` on **worker** | | ✓ | ✓ | for files (A5) | Reading uploads and deleting old snapshots in the `kriya-files` bucket |
+| `KRIYA_AGENTS_LEDGER` | ✓ | ✓ | | | `on` turns on Accounts (A7): ledger entries, GST invoices, CA export (default `off`). Each plan also needs `ledger_enabled` in `/owner` (default false). Prepared records only: Kriya never files or pays |
+| `KRIYA_AGENTS_CROSS_CHECK` / `KRIYA_CROSS_CHECK_MODEL` | | ✓ | | | K7: a budget model judges cited claims the verbatim check couldn't decide, never money (default `off`, no model). Counts toward `agents.maintenanceCapMicroUsd` |
+| `KRIYA_AGENTS_WATCHERS` | ✓ | ✓ | | | K5: `schedule_create` can watch a page; unchanged pages make no task or model call. Needs `KRIYA_SCHEDULES_ENABLED=1` on the worker and `FIRECRAWL_API_KEY`. Each fetch is recorded as `web_fetch`, unpriced until the Firecrawl price is entered (RG-11) |
+| `KRIYA_AGENTS_IMPROVEMENT` | ✓ | ✓ | | | A12: `on` makes tasks use the active (or canary) policy version from `/owner/improve` and records which one; the worker rolls a canary back when its failure rate or cost worsens. `off` = the code baseline (default `off`). Needs migration `20261114000000` |
+| `KRIYA_AGENTS_RADAR` | ✓ | ✓ | | | K4: deadlines with quotes (`/radar`); reminders show in Kriya until phone-call reminders ship |
+| `KRIYA_AGENTS_FACTS` | ✓ | ✓ | | | K6: `facts_lookup` and the worker's fact job. Targets are listed in `lib/facts.ts` (empty by default); domains in `kriya.fact_sources` (`gov.in`, `nic.in`). Owner: `/owner/facts` to retract |
 | `KRIYA_SUPPORT_EMAIL` | ✓ | | | | Shown on limit and suspension pages |
 | `KRIYA_INFRA_MONTHLY_INR`, `KRIYA_PAYMENT_FEE_BPS` | ✓ | | | | Contribution estimate only |
 | `WORKER_CONCURRENCY` | | ✓ | | | Tasks per worker (default 4) |
@@ -203,6 +221,76 @@ yet" and agents don't get the tools.
 
 Adding calendar events and saving Gmail drafts always wait for the person's
 approval in the thread; sending email isn't supported.
+
+### GitHub, Sheets, YouTube, Instagram (A8, `agents.connectors`)
+
+Not set up yet (AB-06). Nothing here has been tried against the live
+services; check each step against the provider's current documentation.
+
+1. **Sheets and YouTube** are extra scopes on the Google client above:
+   `spreadsheets` (sensitive: Google verification before public use) and
+   `youtube.readonly`. People tick them in Account; they are never in the
+   default request.
+2. **GitHub**: create a GitHub App with callback
+   `https://<your domain>/api/connect/github/callback`, user authorization
+   on, permissions Issues and Pull requests read/write, Contents read/write,
+   Metadata read. Turn **off** "Expire user authorization tokens": Kriya
+   doesn't refresh GitHub tokens yet, so expiring ones ask the person to
+   reconnect every 8 hours.
+3. **Instagram**: a Meta app with Facebook Login, redirect URI
+   `https://<your domain>/api/connect/meta/callback`, permissions
+   `instagram_basic`, `instagram_content_publish`, `pages_show_list`,
+   `pages_read_engagement` (app review). Kriya pins Graph API `v21.0`
+   (`lib/connectors.ts`); confirm it is still supported (RG-4). Tokens last
+   about 60 days, then the person reconnects.
+
+Every write (comment, issue, label, pull request, rows, post) waits for the
+person's approval and is read back. With `agents.undo` on, calendar events,
+Gmail drafts, GitHub comments and labels can be undone, and GitHub issues
+closed, for 10 minutes; the worker runs the undo.
+
+### Agent browser (`kriya-browser`, optional)
+
+A Render **private service** built from `browser/Dockerfile` (in
+`render.yaml`). It has no database access and no secret but its own, and
+every page load goes through its egress guard. Without it, agents simply
+don't get browser tools. For now the browser only reads pages and hands
+steps to the person; it never fills or submits forms.
+
+1. Generate a secret once (at least 32 characters) and set
+   `KRIYA_BROWSER_SECRET` to the same value on `kriya-browser` and
+   `kriya-worker`:
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+   ```
+2. On the worker, set `KRIYA_BROWSER_URL` to the private service's internal
+   address (`http://kriya-browser:10000`, as shown on the service's page).
+3. Give the plans that should have it browser minutes in `/owner` (every
+   plan starts at 0), then switch `agents.browser` on in `/owner/config`.
+4. Not yet measured (blocker AB-08): whether Render allows Chromium's
+   sandbox in a private service, and how many sessions one instance holds.
+   Keep `BROWSER_MAX_SESSIONS` at 3 until that is measured on staging. The
+   sandbox is never turned off to make it start.
+
+Browser time is recorded in `kriya.resource_usage` as `browser_seconds`,
+unpriced until a hosting cost basis is entered.
+
+### Files and shares (A5, `agents.files`, optional)
+
+1. In Supabase → Storage, create a **private** bucket named `kriya-files`
+   (blocker AB-05). Don't add storage policies: only the server, with
+   `SUPABASE_SECRET_KEY`, reads or writes it. Objects are stored at
+   `<user id>/<file id>`. Not yet verified on a real project: that the
+   browser's direct `PUT` to the signed upload link isn't blocked by CORS.
+2. Set the web and worker variables above, and set each plan's
+   `max_file_mb`, `storage_mb` and `max_shares` in `/owner` (defaults 10,
+   100 and 5).
+3. Switch `agents.files` on. Receipt Download PDF and Share also need
+   `agents.receipts` and `kriya-browser`.
+
+`/share/<token>` is public on purpose (no sign-in), sends `noindex` and
+`no-referrer`, and shows only the snapshot made when the person shared.
+Each render is recorded in `resource_usage` as `pdf_render`, unpriced.
 
 ## 8. Verify
 

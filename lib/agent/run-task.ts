@@ -7,18 +7,21 @@ import {
   type ToolSet,
   type UIMessageChunk,
 } from "ai"
-import { and, asc, eq, inArray, sql } from "drizzle-orm"
+import { and, asc, desc, eq, inArray, isNull, lte, sql } from "drizzle-orm"
 import { nanoid } from "nanoid"
 
-import { privileged, rowsOf, withUser } from "@/db"
+import { privileged, rowsOf, withUser, type Tx } from "@/db"
 import {
   connections,
   memories,
+  messages,
   plans,
+  profiles,
   squadMembers,
   taskAttempts,
   taskEvents,
   tasks,
+  threadSummaries,
   threads,
   toolExecutions,
   type Agent,
@@ -29,6 +32,8 @@ import {
 import {
   assignmentBlock,
   buildInstructions,
+  buildInstructionsV2,
+  type MemoryContext,
   type MemoryNote,
 } from "@/lib/agent/instructions"
 import {
@@ -39,12 +44,23 @@ import {
   saveMessage,
   textOf,
 } from "@/lib/agent/messages"
+import { recordApprovals, redactInput } from "@/lib/agent/approvals"
+import { writeEpisode } from "@/lib/agent/episodes"
 import { chargeTask, recordUsage } from "@/lib/agent/metering"
+import { approvalFor, classifyTool, TOOL_CLASSES } from "@/lib/agent/policy"
+import { verificationOf } from "@/lib/agent/verify"
 import {
   createAssignTool,
+  createBrowserTools,
   createConnectorTools,
+  createKitTools,
   createDelegateTool,
+  createGoalTools,
   createMemoryTools,
+  createMemoryToolsV2,
+  createLedgerTools,
+  createRadarTools,
+  createSkillTools,
   createWebTools,
   SIDE_EFFECT_TOOLS,
   type Assignment,
@@ -54,8 +70,14 @@ import {
   type KriyaMessage,
   type ToolEnv,
 } from "@/lib/agent/tools"
-import { googleServices } from "@/lib/connectors"
+import { browserProvider, TaskBrowser } from "@/lib/browser/session"
+import { getSetting } from "@/lib/config"
+import { BASELINE_POLICY, bundleFor, stampTask, type Policy } from "@/lib/improve"
+import { EXTRA_GOOGLE_SERVICES, googleServices } from "@/lib/connectors"
 import { log } from "@/lib/log"
+import { enqueueSummary } from "@/lib/memory/maintenance"
+import { alwaysOnNotes, recallNotes } from "@/lib/memory/retrieve"
+import { renderSummary } from "@/lib/memory/summaries"
 import {
   createGatewayModel,
   fallbackModel,
@@ -64,6 +86,7 @@ import {
   resolveTier,
 } from "@/lib/models"
 import { isSecretsConfigured } from "@/lib/secrets"
+import { undoColumns } from "@/lib/undo"
 import { isWebConfigured } from "@/lib/web"
 
 export type WorkerContext = {
@@ -95,16 +118,25 @@ const PREVIEW_CHARS = 280
 // What the lead gets back from each member, at most
 const RESULT_CHARS = 12_000
 
-// Every side-effect tool waits for the person's approval of the exact call,
-// and so does any web request once private mail or documents are in context
+// Every tool lib/agent/policy.ts puts at R2–R4 waits for the person's
+// approval of the exact call, and so does any web request once private mail
+// or documents are in context
 const guardWeb = (_input: unknown, { messages }: { messages: ModelMessage[] }) =>
   privateContentSeen(messages) ? ("user-approval" as const) : undefined
-const APPROVALS = {
+const needsApproval = (name: string, input: unknown) =>
+  approvalFor(classifyTool(name, input)) === "user-approval"
+export const TOOL_APPROVALS = {
   ...Object.fromEntries(
-    [...SIDE_EFFECT_TOOLS].map((name) => [name, "user-approval" as const])
+    Object.keys(TOOL_CLASSES)
+      .filter((name) => needsApproval(name, {}))
+      .map((name) => [name, "user-approval" as const])
   ),
+  // A new rule waits; pausing or ending doesn't
+  schedule_update: (input: unknown) =>
+    needsApproval("schedule_update", input) ? ("user-approval" as const) : undefined,
   web_search: guardWeb,
   web_fetch: guardWeb,
+  browser_open: guardWeb,
 }
 
 // Model errors that a stronger model is likely to get past
@@ -170,7 +202,72 @@ class Publisher {
 
 /* ───────────────────────────── load ─────────────────────────────── */
 
-async function loadContext(task: Task) {
+// Memory v2 notes for each agent that may hold the turn: the always-on
+// blocks plus the notes that best match the person's latest message. How
+// many candidates and their weights come from the policy bundle (A12).
+async function loadMemoryV2(
+  tx: Tx,
+  task: Task,
+  members: Agent[],
+  history: KriyaMessage[],
+  summary: string | null,
+  policy: Policy
+) {
+  const ask = history.findLast((message) => message.role === "user")
+  const query = ask ? textOf(ask) : ""
+  const [profile] = await tx
+    .select({ locale: profiles.locale })
+    .from(profiles)
+    .where(eq(profiles.id, task.userId))
+  const memory = new Map<string, Omit<MemoryContext, "now">>()
+  for (const member of members) {
+    const scope = { userId: task.userId, agentId: member.id }
+    const always = await alwaysOnNotes(tx, scope)
+    const recalled = await recallNotes(tx, {
+      ...scope,
+      query,
+      limit: policy.bundle.budgets.recallCandidates,
+      weights: policy.bundle.retrieval,
+      exclude: [...always.profile, ...always.standing].map((note) => note.id),
+    })
+    memory.set(member.id, {
+      ...always,
+      recalled,
+      summary,
+      locale: profile?.locale ?? "en-IN",
+    })
+  }
+  return memory
+}
+
+// The thread's latest summary checkpoint and the messages it stands in for:
+// those leave the model's input (the person still sees them)
+async function loadCheckpoint(tx: Tx, threadId: string) {
+  const [latest] = await tx
+    .select()
+    .from(threadSummaries)
+    .where(eq(threadSummaries.threadId, threadId))
+    .orderBy(desc(threadSummaries.coversThrough))
+    .limit(1)
+  if (!latest) return { summary: null, covered: new Set<string>() }
+  const rows = await tx
+    .select({ id: messages.id })
+    .from(messages)
+    .where(
+      and(eq(messages.threadId, threadId), lte(messages.createdAt, latest.coversThrough))
+    )
+  return {
+    summary: renderSummary(latest.summary),
+    covered: new Set(rows.map((row) => row.id)),
+  }
+}
+
+async function loadContext(
+  task: Task,
+  memoryV2: boolean,
+  connectorsV2 = false,
+  policy = BASELINE_POLICY
+) {
   return withUser(task.userId, async (tx) => {
     const thread = await tx.query.threads.findFirst({
       where: eq(threads.id, task.threadId),
@@ -190,7 +287,7 @@ async function loadContext(task: Task) {
         ? [thread.agent]
         : []
     const notes = new Map<string, MemoryNote[]>()
-    if (members.length > 0) {
+    if (members.length > 0 && !memoryV2) {
       const rows = await tx
         .select({
           id: memories.id,
@@ -200,16 +297,28 @@ async function loadContext(task: Task) {
         })
         .from(memories)
         .where(
-          inArray(
-            memories.agentId,
-            members.map((member) => member.id)
+          and(
+            inArray(
+              memories.agentId,
+              members.map((member) => member.id)
+            ),
+            // Superseded, forgotten and archived notes are history, not memory
+            isNull(memories.invalidAt),
+            eq(memories.archived, false)
           )
         )
         .orderBy(asc(memories.createdAt))
+      // inArray leaves out shared notes, so agentId is set
       for (const row of rows)
-        notes.set(row.agentId, [...(notes.get(row.agentId) ?? []), row])
+        notes.set(row.agentId!, [...(notes.get(row.agentId!) ?? []), row])
     }
     const history = await loadMessages(tx, task.threadId)
+    const checkpoint = memoryV2
+      ? await loadCheckpoint(tx, task.threadId)
+      : { summary: null, covered: new Set<string>() }
+    const memory = memoryV2
+      ? await loadMemoryV2(tx, task, members, history, checkpoint.summary, policy)
+      : new Map<string, Omit<MemoryContext, "now">>()
     // What the person connected; tokens stay in lib/connectors.ts
     const accounts = isSecretsConfigured()
       ? await tx
@@ -217,10 +326,25 @@ async function loadContext(task: Task) {
           .from(connections)
       : []
     const connected: Connected = {
-      google: googleServices(accounts.find((a) => a.provider === "google")?.scopes ?? []),
+      google: googleServices(
+        accounts.find((a) => a.provider === "google")?.scopes ?? []
+      ).filter((service) => connectorsV2 || !EXTRA_GOOGLE_SERVICES.includes(service)),
       notion: accounts.some((a) => a.provider === "notion"),
+      // A8: absent, not false, with the switch off (prompt byte-identical)
+      ...(connectorsV2 && {
+        github: accounts.some((a) => a.provider === "github"),
+        meta: accounts.some((a) => a.provider === "meta"),
+      }),
     }
-    return { thread, members, notes, history, connected }
+    return {
+      thread,
+      members,
+      notes,
+      memory,
+      history,
+      covered: checkpoint.covered,
+      connected,
+    }
   })
 }
 
@@ -240,6 +364,39 @@ export async function runTask(task: Task, ctx: WorkerContext) {
   ctx.shutdown.addEventListener("abort", onShutdown)
 
   const [plan] = await privileged.select().from(plans).where(eq(plans.id, task.planId))
+  // Read once, so a task never mixes the two memory systems
+  const memoryV2 = (await getSetting("agents.memoryV2")) === "on"
+  // A12: the policy bundle, read once per task; off = the code baseline,
+  // unstamped, exactly as before
+  const improvement = (await getSetting("agents.improvement")) === "on"
+  const policy = improvement ? await bundleFor(task.userId) : BASELINE_POLICY
+  // Notes put in front of the model this task (memory v2)
+  const usedMemories = new Set<string>()
+  // A3: the Inbox and "What I did"; goal and schedule tools
+  const inbox = (await getSetting("agents.inbox")) === "on"
+  const goalTools = (await getSetting("agents.goals")) === "on"
+  // A8: GitHub, Sheets, YouTube and Instagram tools; the Undo window (K3)
+  const connectorsV2 = (await getSetting("agents.connectors")) === "on"
+  const undo = (await getSetting("agents.undo")) === "on"
+  const skillTools = (await getSetting("agents.skills")) === "on"
+  // A7: ledger tools need the switch and a plan with the ledger
+  const ledgerTools =
+    (await getSetting("agents.ledger")) === "on" && Boolean(plan?.ledgerEnabled)
+  // A13: watchers (inside schedule_create), Radar and facts tools
+  const watchers = (await getSetting("agents.watchers")) === "on"
+  const radar = (await getSetting("agents.radar")) === "on"
+  const facts = (await getSetting("agents.facts")) === "on"
+  // The agent browser (A4): switch on, plan minutes, kriya-browser configured
+  const provider =
+    (await getSetting("agents.browser")) === "on" && (plan?.browserMinutes ?? 0) > 0
+      ? browserProvider()
+      : null
+  // A6: saved sign-ins (agents.loginProfiles) and kits (K9, agents.kits)
+  const loginProfiles = (await getSetting("agents.loginProfiles")) === "on"
+  const kitTools = (await getSetting("agents.kits")) === "on"
+  const browser = provider
+    ? new TaskBrowser(provider, task, { profiles: loginProfiles })
+    : null
   let modelId = task.model ?? (await modelForTier(task.tier))
   await privileged
     .insert(taskAttempts)
@@ -253,6 +410,7 @@ export async function runTask(task: Task, ctx: WorkerContext) {
     })
     .onConflictDoNothing()
   await privileged.update(tasks).set({ model: modelId }).where(eq(tasks.id, task.id))
+  if (improvement) await stampTask(task.id, policy)
 
   const heartbeat = setInterval(async () => {
     try {
@@ -262,6 +420,7 @@ export async function runTask(task: Task, ctx: WorkerContext) {
       const row = rowsOf<{ cancel_requested: boolean }>(result)[0]
       if (!row) stop("lease_lost")
       else if (row.cancel_requested) stop("canceled")
+      else await browser?.heartbeat()
     } catch (error) {
       log.warn("heartbeat failed", { taskId: task.id, error })
     }
@@ -278,9 +437,9 @@ export async function runTask(task: Task, ctx: WorkerContext) {
   const publisher = new Publisher(task, attempt)
 
   try {
-    const context = await loadContext(task)
+    const context = await loadContext(task, memoryV2, connectorsV2, policy)
     if (!context) throw new Error("The thread for this task no longer exists.")
-    const { thread, members, notes, history, connected } = context
+    const { thread, members, notes, memory, history, covered, connected } = context
     const first = members.find((member) => member.id === task.input.agentId) ?? members[0]
     if (!first) throw new Error("This thread has no agents left in it.")
 
@@ -288,12 +447,20 @@ export async function runTask(task: Task, ctx: WorkerContext) {
     let current = first
     const held = [first.id]
     let brief: string | undefined
-    const capabilities = { web: isWebConfigured(), connected, writes: true }
+    const capabilities = {
+      web: isWebConfigured(),
+      connected,
+      writes: true,
+      // Absent, not false, with the switch off: the prompt stays byte-identical
+      ...(inbox && { citations: true }),
+    }
     const env: ToolEnv = {
       current: () => current,
       userId: task.userId,
       threadId: task.threadId,
+      taskId: task.id,
     }
+    const memoryTools = memoryV2 ? createMemoryToolsV2 : createMemoryTools
     const squadContext = (agent: Agent) =>
       thread.squad
         ? {
@@ -303,13 +470,26 @@ export async function runTask(task: Task, ctx: WorkerContext) {
             brief,
           }
         : undefined
-    const instructionsFor = (agent: Agent) =>
-      buildInstructions(
+    const promptFor = (
+      agent: Agent,
+      caps: typeof capabilities,
+      squad?: ReturnType<typeof squadContext>
+    ) => {
+      const guidance = policy.bundle.prompts.saveGuidance
+      if (!memoryV2)
+        return buildInstructions(agent, caps, notes.get(agent.id) ?? [], squad, guidance)
+      const v2 = buildInstructionsV2(
         agent,
-        capabilities,
-        notes.get(agent.id) ?? [],
-        squadContext(agent)
+        caps,
+        { ...memory.get(agent.id)!, now: new Date() },
+        squad,
+        guidance
       )
+      for (const id of v2.memoryIds) usedMemories.add(id)
+      return v2.text
+    }
+    const instructionsFor = (agent: Agent) =>
+      promptFor(agent, capabilities, squadContext(agent))
 
     let calls = 0
     let spentMicroUsd = 0
@@ -365,6 +545,10 @@ export async function runTask(task: Task, ctx: WorkerContext) {
           .set({
             status: ok ? "succeeded" : "failed",
             outputSummary: ok ? summarize(toolOutput.output) : null,
+            // Whole, in its own column: the summary above is cut (AF-10)
+            verification: ok ? verificationOf(toolOutput.output) : null,
+            // How to reverse it, for 10 minutes (K3)
+            ...(undo && ok && undoColumns(toolCall.toolName, toolOutput.output)),
             error: ok ? null : describeError(toolOutput.error),
             finishedAt: new Date(),
             durationMs: Math.round(toolExecutionMs),
@@ -415,14 +599,14 @@ export async function runTask(task: Task, ctx: WorkerContext) {
         // connected accounts either: nobody can approve a member's web
         // request, so private data and the web never share its context.
         const memberTools: ToolSet = {
-          ...createMemoryTools(memberEnv),
+          ...memoryTools(memberEnv),
           ...(capabilities.web ? createWebTools() : {}),
         }
         try {
           const sub = streamText({
             ...hooks,
             model: createGatewayModel(await modelForTier(await tierFor(agent))),
-            instructions: `${buildInstructions(agent, { ...capabilities, connected: { google: [], notion: false }, writes: false }, notes.get(agent.id) ?? [])}\n\n${assignmentBlock(lead, squadName)}`,
+            instructions: `${promptFor(agent, { ...capabilities, connected: { google: [], notion: false }, writes: false })}\n\n${assignmentBlock(lead, squadName)}`,
             prompt: `The person asked:\n${asked}\n\nYour part, from ${lead.name}:\n${slot.brief}`,
             tools: memberTools,
             stopWhen: isStepCount(ASSIGNMENT_STEPS),
@@ -472,9 +656,16 @@ export async function runTask(task: Task, ctx: WorkerContext) {
     }
 
     const tools: ToolSet = {
-      ...createMemoryTools(env),
+      ...memoryTools(env),
       ...(capabilities.web ? createWebTools() : {}),
+      ...(browser ? createBrowserTools(browser) : {}),
+      ...(kitTools ? createKitTools(env, browser) : {}),
       ...createConnectorTools(env, connected, { writes: true }),
+      ...(goalTools ? createGoalTools(env, { watchers }) : {}),
+      ...(radar || facts ? createRadarTools(env, { radar, facts }) : {}),
+      // A9: replay reaches the rest of this belt, so it can do no more than it
+      ...(skillTools ? createSkillTools(env, () => tools, browser) : {}),
+      ...(ledgerTools ? createLedgerTools(env) : {}),
       ...(thread.squad ? createAssignTool(runAssignments) : {}),
       ...(thread.squad
         ? createDelegateTool((targetId, handoverBrief) => {
@@ -496,12 +687,17 @@ export async function runTask(task: Task, ctx: WorkerContext) {
     const result = streamText({
       model: createGatewayModel(modelId),
       instructions: instructionsFor(first),
-      messages: await convertToModelMessages(history, {
-        tools,
-        ignoreIncompleteToolCalls: true,
-      }),
+      messages: await convertToModelMessages(
+        covered.size > 0
+          ? history.filter((message) => !covered.has(message.id))
+          : history,
+        {
+          tools,
+          ignoreIncompleteToolCalls: true,
+        }
+      ),
       tools,
-      toolApproval: APPROVALS,
+      toolApproval: TOOL_APPROVALS,
       stopWhen: isStepCount(task.stepBudget),
       abortSignal: controller.signal,
       maxRetries: 2,
@@ -534,13 +730,19 @@ export async function runTask(task: Task, ctx: WorkerContext) {
       originalMessages: history,
       generateMessageId: () => nanoid(),
       messageMetadata: ({ part }) => {
-        const base = { agentId: first.id, tier: task.tier, taskId: task.id }
+        const base = {
+          agentId: first.id,
+          tier: task.tier,
+          taskId: task.id,
+          ...(improvement && { policy: { version: policy.id, hash: policy.hash } }),
+        }
         if (part.type === "start") return base
         if (part.type === "finish") {
           return {
             ...base,
             usage: { ...usageMetadata },
             durationMs: Date.now() - startedAt,
+            ...(memoryV2 && { memoryIds: [...usedMemories] }),
           }
         }
         return undefined
@@ -565,6 +767,9 @@ export async function runTask(task: Task, ctx: WorkerContext) {
     clearInterval(heartbeat)
     clearTimeout(deadline)
     ctx.shutdown.removeEventListener("abort", onShutdown)
+    await browser
+      ?.close()
+      .catch((error) => log.error("browser close failed", { taskId: task.id, error }))
   }
 
   // Lost the lease, or the worker is stopping: leave the task to recovery,
@@ -675,6 +880,43 @@ export async function runTask(task: Task, ctx: WorkerContext) {
     }).catch((error) => log.error("reply save failed", { taskId: task.id, error }))
   }
 
+  // One batched update for every note the model was shown (memory v2 §5.2)
+  if (usedMemories.size > 0) {
+    await withUser(task.userId, (tx) =>
+      tx
+        .update(memories)
+        .set({ lastUsedAt: sql`now()`, useCount: sql`${memories.useCount} + 1` })
+        .where(inArray(memories.id, [...usedMemories]))
+    ).catch((error) =>
+      log.error("memory usage update failed", { taskId: task.id, error })
+    )
+  }
+  // A long thread gets a summary checkpoint in the background, never as a
+  // task (AF-12)
+  if (memoryV2) {
+    await enqueueSummary(task.userId, task.threadId).catch((error) =>
+      log.error("summary enqueue failed", { taskId: task.id, error })
+    )
+  }
+
+  // The Inbox and "What I did" (A3): what the reply waits on, and a record
+  // of what the task did, derived from its tool runs
+  if (inbox) {
+    const ref = { taskId: task.id }
+    if (reply) {
+      await recordApprovals({ ...task, reply }).catch((error) =>
+        log.error("approvals index failed", { ...ref, error })
+      )
+    }
+    await writeEpisode({
+      userId: task.userId,
+      taskId: task.id,
+      threadId: task.threadId,
+      agentId: task.agentId,
+      reply,
+    }).catch((error) => log.error("episode write failed", { ...ref, error }))
+  }
+
   await chargeTask(task).catch((error) =>
     log.error("charge failed", { taskId: task.id, error })
   )
@@ -707,18 +949,6 @@ export async function runTask(task: Task, ctx: WorkerContext) {
     attempt,
     ms: Date.now() - startedAt,
   })
-}
-
-// Tool inputs are kept as evidence, minus anything that looks like a secret
-function redactInput(input: unknown) {
-  const text = JSON.stringify(input ?? null)
-  if (text.length > 4_000) return { truncated: text.slice(0, 4_000) }
-  return JSON.parse(
-    text.replace(
-      /("(?:password|token|secret|otp|cvv|card)[^"]*"\s*:\s*)"[^"]*"/gi,
-      '$1"[redacted]"'
-    )
-  )
 }
 
 function summarize(output: unknown) {

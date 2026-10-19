@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-08",
+  "family": "fact",
+  "query": "Remind me my internship target companies",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Internship target companies: Bosch, Tata Elxsi, Qualcomm",
+      "kind": "fact",
+      "ageDays": 18
+    }
+  ],
+  "expect": ["t"]
+}

@@ -1,12 +1,21 @@
 import type { UIMessageChunk } from "ai"
 import { and, asc, desc, eq, gt, inArray, or } from "drizzle-orm"
 
-import { privileged, withUser } from "@/db"
-import { squadMembers, taskEvents, tasks, threads, type Task } from "@/db/schema"
+import { privileged, withUser, type Q } from "@/db"
+import {
+  approvals,
+  squadMembers,
+  taskEvents,
+  tasks,
+  threads,
+  type Task,
+  type TaskInput,
+} from "@/db/schema"
 import { loadMessages, saveMessage, textOf } from "@/lib/agent/messages"
 import type { KriyaMessage } from "@/lib/agent/tools"
-import { getMaxSteps } from "@/lib/config"
+import { getMaxSteps, getSetting } from "@/lib/config"
 import { checkTaskAllowed, usageSummary } from "@/lib/entitlements"
+import { capToProviderMicroUsd, parseRate } from "@/lib/money"
 import {
   isGatewayConfigured,
   ModelConfigError,
@@ -112,18 +121,23 @@ function taskRow(
   threadId: string,
   { first, plan, tier, steps }: Prepared,
   messageId: string,
-  idempotencyKey: string | null
+  idempotencyKey: string | null,
+  // A scheduled run (A3): its channel, schedule and ₹-capped budget
+  run: { scheduleId?: string; costBudgetMicroUsd?: number } = {}
 ) {
+  const input: TaskInput = run.scheduleId
+    ? { messageId, agentId: first.id, channel: "schedule", scheduleId: run.scheduleId }
+    : { messageId, agentId: first.id, channel: "web" }
   return {
     userId,
     threadId,
     agentId: first.id,
-    input: { messageId, agentId: first.id, channel: "web" as const },
+    input,
     planId: plan.id,
     tier,
     deadlineAt: new Date(Date.now() + plan.maxTaskSeconds * 1000 + QUEUE_GRACE_MS),
     stepBudget: steps,
-    costBudgetMicroUsd: plan.maxTaskCostMicroUsd,
+    costBudgetMicroUsd: run.costBudgetMicroUsd ?? plan.maxTaskCostMicroUsd,
     idempotencyKey,
   }
 }
@@ -201,6 +215,77 @@ export async function enqueueTurn({
   )
 }
 
+// A schedule's run (A3, AD-15): its prompt becomes a user message marked as
+// scheduled, and the task goes through the same prepare() checks as a turn
+// the person starts. The due time keys both, so a run recovered after a
+// crash is the same task. A person's ₹ cap per run becomes the task's
+// budget (K2), never above the plan's.
+export async function enqueueScheduled({
+  userId,
+  threadId,
+  agentId,
+  prompt,
+  scheduleId,
+  dueAt,
+  capMicroInr,
+}: {
+  userId: string
+  threadId: string
+  agentId: string
+  prompt: string
+  scheduleId: string
+  dueAt: Date
+  capMicroInr?: number | null
+}) {
+  const prepared = await prepare(userId, threadId, agentId)
+  const { thread, first, plan } = prepared
+  const key = `schedule:${scheduleId}:${dueAt.toISOString()}`
+  const message: KriyaMessage = {
+    id: `run-${scheduleId}-${dueAt.getTime()}`,
+    role: "user",
+    parts: [{ type: "text", text: prompt }],
+    metadata: {
+      channel: "schedule",
+      scheduleId,
+      ...(thread.squad && { agentId: first.id }),
+    },
+  }
+  const capped = capMicroInr
+    ? capToProviderMicroUsd(
+        capMicroInr,
+        parseRate(await getSetting("fx.usdInr")),
+        plan.markupBps
+      )
+    : null
+  // Without an exchange rate the cap can't be converted: the plan's budget
+  const costBudgetMicroUsd =
+    capped === null ? undefined : Math.max(1, Math.min(capped, plan.maxTaskCostMicroUsd))
+
+  return insertTask(userId, key, () =>
+    privileged.transaction(async (tx) => {
+      await saveMessage(tx, userId, threadId, message)
+      await tx
+        .update(threads)
+        .set({
+          title: thread.title ?? prompt.slice(0, 80),
+          preview: prompt.slice(0, 140),
+          activeAt: new Date(),
+        })
+        .where(and(eq(threads.id, threadId), eq(threads.userId, userId)))
+      const [task] = await tx
+        .insert(tasks)
+        .values(
+          taskRow(userId, threadId, prepared, message.id, key, {
+            scheduleId,
+            costBudgetMicroUsd,
+          })
+        )
+        .returning()
+      return task
+    })
+  )
+}
+
 // The person's answer to a tool call waiting for approval (a calendar event,
 // a Gmail draft). Checked against the saved message, never taken from the
 // browser: the approval must exist, be pending, and be in the person's own
@@ -217,6 +302,31 @@ export async function enqueueApproval({
   approvalId: string
   approved: boolean
 }) {
+  // The Inbox's index (A3): an approval that expired or was already
+  // answered can't be answered again, even from an old tab (AF-14). Without
+  // an index row (agents.inbox off), the message parts decide, as before.
+  const decided = and(
+    eq(approvals.userId, userId),
+    eq(approvals.threadId, threadId),
+    eq(approvals.id, approvalId)
+  )
+  const [indexed] = await privileged
+    .select({ status: approvals.status })
+    .from(approvals)
+    .where(decided)
+  if (indexed && indexed.status !== "pending") {
+    throw new TurnError(
+      "This request isn't waiting for an answer any more.",
+      409,
+      "stale"
+    )
+  }
+  const decide = (q: Q) =>
+    q
+      .update(approvals)
+      .set({ status: approved ? "approved" : "declined", decidedAt: new Date() })
+      .where(and(decided, eq(approvals.status, "pending")))
+
   const history = await withUser(userId, (tx) => loadMessages(tx, threadId))
   const last = history.at(-1)
   type Pending = { state?: string; approval?: { id?: string } }
@@ -256,6 +366,7 @@ export async function enqueueApproval({
       // Only the server writes messages; the thread was found through RLS
       await saveMessage(tx, userId, threadId, answered)
     })
+    await decide(privileged)
     return null
   }
 
@@ -264,6 +375,7 @@ export async function enqueueApproval({
   return insertTask(userId, key, () =>
     privileged.transaction(async (tx) => {
       await saveMessage(tx, userId, threadId, answered)
+      await decide(tx)
       const [task] = await tx
         .insert(tasks)
         .values(taskRow(userId, threadId, prepared, answered.id, key))
@@ -318,11 +430,19 @@ export async function cancelThreadTask(userId: string, threadId: string) {
 /* ───────────────────────────── stream ───────────────────────────── */
 
 const POLL_MS = 350
+// Lite mode (K10): slower checks for people on slow networks and data packs
+const LITE_POLL_MS = 1_500
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // Replays a task's stream from the start, then follows it until it ends.
 // Reads go through RLS, so only the task's owner can follow it.
-export function streamTask(userId: string, taskId: string, signal?: AbortSignal) {
+export function streamTask(
+  userId: string,
+  taskId: string,
+  signal?: AbortSignal,
+  { lite = false }: { lite?: boolean } = {}
+) {
+  const pollMs = lite ? LITE_POLL_MS : POLL_MS
   let attempt = -1
   let seq = -1
   return new ReadableStream<UIMessageChunk>({
@@ -389,7 +509,7 @@ export function streamTask(userId: string, taskId: string, signal?: AbortSignal)
             }
             break
           }
-          if (events.length === 0) await sleep(POLL_MS)
+          if (events.length === 0) await sleep(pollMs)
         }
       } catch (error) {
         console.error("[kriya] stream failed:", error)

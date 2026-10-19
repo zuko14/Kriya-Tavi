@@ -1,13 +1,20 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 import { asc, eq } from "drizzle-orm"
 
 import { signOut } from "@/actions/auth"
+import { listAboutYou } from "@/actions/memory"
+import { AboutYou } from "@/components/account/about-you"
 import {
   CancelPlanForm,
   DeleteAccountForm,
+  LiteModeToggle,
   ProfileForm,
 } from "@/components/account/forms"
 import { Connections } from "@/components/account/connections"
+import { Files } from "@/components/account/files"
+import { Logins } from "@/components/account/logins"
+import { Shares } from "@/components/account/shares"
 import { PlanCards } from "@/components/account/plan-cards"
 import { Notice } from "@/components/auth/auth-kit"
 import { ResetForm } from "@/components/auth/forms"
@@ -15,8 +22,12 @@ import { privileged } from "@/db"
 import { plans } from "@/db/schema"
 import { requireUser } from "@/lib/auth"
 import { billingProvider, currentSubscription } from "@/lib/billing"
+import { getSetting } from "@/lib/config"
 import { googleServices, isProviderConfigured, listConnections } from "@/lib/connectors"
 import { usageSummary } from "@/lib/entitlements"
+import { listFiles } from "@/lib/files"
+import { listLogins } from "@/queries/logins"
+import { listShares } from "@/lib/share"
 import { formatInr } from "@/lib/money"
 
 export const metadata: Metadata = { title: "Account" }
@@ -56,6 +67,13 @@ const CONNECT_ERRORS: Record<string, string> = {
   unknown: "That isn't something Kriya can connect to.",
 }
 
+const PROVIDER_NAMES: Record<string, string> = {
+  google: "Google",
+  notion: "Notion",
+  github: "GitHub",
+  meta: "Instagram",
+}
+
 const dateFormat: Intl.DateTimeFormatOptions = {
   day: "numeric",
   month: "short",
@@ -72,6 +90,10 @@ export default async function AccountPage({
   const accounts = await listConnections(user.id)
   const googleRow = accounts.find((a) => a.provider === "google")
   const notionRow = accounts.find((a) => a.provider === "notion")
+  // A8: GitHub and Instagram cards, Sheets and YouTube options
+  const connectorsV2 = (await getSetting("agents.connectors")) === "on"
+  const githubRow = accounts.find((a) => a.provider === "github")
+  const metaRow = accounts.find((a) => a.provider === "meta")
   const usage = await usageSummary(user.id)
   const subscription = await currentSubscription(user.id)
   const provider = billingProvider()
@@ -80,6 +102,17 @@ export default async function AccountPage({
     .from(plans)
     .where(eq(plans.active, true))
     .orderBy(asc(plans.sort))
+  const memoryV2 = (await getSetting("agents.memoryV2")) === "on"
+  // A5: Files and Shared links
+  const filesOn = (await getSetting("agents.files")) === "on"
+  // A6: Logins (saved sign-ins by take-over)
+  const loginsOn = (await getSetting("agents.loginProfiles")) === "on"
+  // A7: the way into Accounts
+  const ledgerOn = (await getSetting("agents.ledger")) === "on"
+  // A13: the way into Radar and watchers
+  const radarOn =
+    (await getSetting("agents.radar")) === "on" ||
+    (await getSetting("agents.watchers")) === "on"
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
@@ -165,8 +198,8 @@ export default async function AccountPage({
         >
           {connected && (
             <Notice tone="success">
-              {connected === "google" ? "Google" : "Notion"} is connected. Your agents can
-              use it from their next task.
+              {PROVIDER_NAMES[connected] ?? "Notion"} is connected. Your agents can use it
+              from their next task.
             </Notice>
           )}
           {connectError && (
@@ -188,11 +221,95 @@ export default async function AccountPage({
               google: isProviderConfigured("google"),
               notion: isProviderConfigured("notion"),
             }}
+            {...(connectorsV2 && {
+              more: {
+                github: githubRow ? { account: githubRow.account } : null,
+                meta: metaRow ? { account: metaRow.account } : null,
+                available: {
+                  github: isProviderConfigured("github"),
+                  meta: isProviderConfigured("meta"),
+                },
+              },
+            })}
           />
         </Section>
 
+        {memoryV2 && (
+          <Section
+            id="about-you"
+            title="About you"
+            description="What all your agents know about you. You can add, pin, confirm or forget anything, and export it all."
+          >
+            <AboutYou initial={await listAboutYou()} />
+          </Section>
+        )}
+
+        {ledgerOn && (
+          <Section
+            id="accounts"
+            title="Accounts"
+            description="Bills, income, GST invoices and an export for your CA. Prepared by Kriya from your records."
+          >
+            <Link
+              href="/accounts"
+              className="inline-flex min-h-11 w-fit items-center rounded-md border px-3 text-[13px] hover:bg-muted sm:min-h-8"
+            >
+              Open Accounts →
+            </Link>
+          </Section>
+        )}
+
+        {radarOn && (
+          <Section
+            id="radar"
+            title="Radar"
+            description="Deadlines with the exact words they came from, and the pages Kriya watches for you."
+          >
+            <Link
+              href="/radar"
+              className="inline-flex min-h-11 w-fit items-center rounded-md border px-3 text-[13px] hover:bg-muted sm:min-h-8"
+            >
+              Open Radar →
+            </Link>
+          </Section>
+        )}
+
+        {filesOn && (
+          <Section
+            id="files"
+            title="Files"
+            description="Bills, notes and documents your agents can read, and PDFs Kriya made for you. Stored privately; only you can open them."
+          >
+            <Files files={await listFiles(user.id)} />
+          </Section>
+        )}
+
+        {loginsOn && (
+          <Section
+            id="logins"
+            title="Logins"
+            description="Sites you signed in to in Kriya's browser, so agents can work there as you within each site's rules. Kriya keeps the session, never your password."
+          >
+            <Logins logins={await listLogins(user.id)} />
+          </Section>
+        )}
+
+        {filesOn && (
+          <Section
+            id="shared-links"
+            title="Shared links"
+            description="Read-only copies you shared. Each expires on its own; revoke one to stop it at once."
+          >
+            <Shares shares={await listShares(user.id)} />
+          </Section>
+        )}
+
         <Section id="profile" title="Profile">
           <ProfileForm profile={user.profile} />
+        </Section>
+
+        <Section id="display" title="Display">
+          <LiteModeToggle chosen={user.profile.liteMode} />
         </Section>
 
         <Section id="security" title="Password">

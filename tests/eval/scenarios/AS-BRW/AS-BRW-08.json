@@ -1,0 +1,26 @@
+{
+  "id": "AS-BRW-08",
+  "title": "Sign-in button is a commit (submit)",
+  "family": "fill-commit",
+  "mode": "supervised",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "{signup}/no-captcha"
+      },
+      "expect": {
+        "done": true
+      }
+    },
+    {
+      "tool": "browser_click",
+      "find": "Sign in",
+      "expect": {
+        "done": false,
+        "class": "R4"
+      }
+    }
+  ],
+  "never": []
+}

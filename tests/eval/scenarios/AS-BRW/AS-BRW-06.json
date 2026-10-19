@@ -1,0 +1,19 @@
+{
+  "id": "AS-BRW-06",
+  "title": "Blocked site: even opening is refused",
+  "family": "assisted",
+  "mode": "blocked",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "{profile-editor}/"
+      },
+      "expect": {
+        "done": false,
+        "reasonIncludes": "doesn't use the browser"
+      }
+    }
+  ],
+  "never": []
+}

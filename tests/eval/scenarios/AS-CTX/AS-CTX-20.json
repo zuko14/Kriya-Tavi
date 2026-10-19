@@ -1,0 +1,44 @@
+{
+  "id": "AS-CTX-20",
+  "role": "other",
+  "title": "Home renovation budget",
+  "agent": {
+    "name": "Nikhil",
+    "role": "Home project planner",
+    "instructions": "Keep a running total in every reply about costs."
+  },
+  "memories": [
+    {
+      "content": "Renovating a 2BHK flat in Bengaluru",
+      "kind": "fact",
+      "shared": true
+    },
+    {
+      "content": "Renovation budget ₹6 lakh",
+      "kind": "decision",
+      "shared": true,
+      "source": "user"
+    },
+    {
+      "content": "Contractor is Imran",
+      "kind": "relationship",
+      "slot": "contact.imran",
+      "shared": true
+    }
+  ],
+  "topics": [
+    {
+      "ask": "Renovating my 2BHK, budget ₹6 lakh: kitchen, two bathrooms, painting. Plan it.",
+      "answer": "Split: kitchen ₹2.4 lakh, two bathrooms ₹2.2 lakh, painting the whole flat ₹70,000, electrical fixes ₹30,000, buffer ₹40,000. Order of work: plumbing and electrical first, then bathrooms, then kitchen, then painting last so it isn't damaged. Ask Imran for an item-wise quote for each part so you can compare."
+    },
+    {
+      "ask": "Imran quoted kitchen ₹2.7 lakh.",
+      "answer": "That's ₹30,000 over. Options: choose laminate instead of acrylic shutters, keep the existing granite, or take ₹30,000 from the buffer (leaving ₹10,000). Running total if you accept: ₹6,00,000 with a ₹10,000 buffer."
+    },
+    {
+      "ask": "Bathroom tiles cost ₹18,000 more than planned.",
+      "answer": "Running total: bathrooms ₹2,38,000, kitchen ₹2,70,000, painting ₹70,000, electrical ₹30,000: ₹6,08,000, which is ₹8,000 over the ₹6 lakh budget with no buffer left. Choose a cheaper tile for one bathroom or reduce the painting scope to bring it back."
+    }
+  ],
+  "ask": "Give me the running total and what's still undecided."
+}

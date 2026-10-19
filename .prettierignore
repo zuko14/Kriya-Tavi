@@ -5,3 +5,4 @@ db/migrations
 package-lock.json
 public
 *.md
+.serena

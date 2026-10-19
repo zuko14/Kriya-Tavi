@@ -1,6 +1,12 @@
 import Link from "next/link"
 import { formatDistanceToNowStrict } from "date-fns"
-import { ChevronRightIcon, PlusIcon } from "lucide-react"
+import {
+  CheckIcon,
+  ChevronRightIcon,
+  InboxIcon,
+  PlusIcon,
+  TargetIcon,
+} from "lucide-react"
 
 import { Mascot } from "@/components/brand"
 import { Glyph, SquadGlyph } from "@/components/glyph"
@@ -8,7 +14,11 @@ import { NewAgentCard, TemplateGrid } from "@/components/home/actions"
 import { Ask } from "@/components/home/ask"
 import { UsageMeter } from "@/components/home/usage-meter"
 import { requireUser } from "@/lib/auth"
+import { getSetting } from "@/lib/config"
 import { cn } from "@/lib/utils"
+import { recentEpisodes } from "@/queries/episodes"
+import { getGoals } from "@/queries/goals"
+import { inboxCount } from "@/queries/inbox"
 import { getNavigation, getSystemStatus } from "@/queries/workspace"
 
 function SectionTitle({ children, href }: { children: React.ReactNode; href?: string }) {
@@ -32,6 +42,15 @@ function SectionTitle({ children, href }: { children: React.ReactNode; href?: st
 export default async function Home() {
   const user = await requireUser()
   const [status, nav] = await Promise.all([getSystemStatus(user), getNavigation(user.id)])
+  // Today (A3): what's waiting, open goals, what was done; each behind its switch
+  const inboxOn = (await getSetting("agents.inbox")) === "on"
+  const goalsOn = (await getSetting("agents.goals")) === "on"
+  const [waiting, done, goals] = await Promise.all([
+    inboxOn ? inboxCount(user.id) : null,
+    inboxOn ? recentEpisodes(user.id, 3) : [],
+    goalsOn ? getGoals(user.id) : [],
+  ])
+  const openGoals = goals.filter((g) => g.status === "active").slice(0, 3)
   const firstName = user.profile.displayName?.split(" ")[0]
   const hasAgents = nav.agents.length > 0
   // India time: the server may run anywhere
@@ -92,6 +111,71 @@ export default async function Home() {
           <>
             <Ask />
 
+            {(waiting !== null || openGoals.length > 0) && (
+              <section className="flex flex-col gap-2.5">
+                <SectionTitle href={goalsOn ? "/goals" : undefined}>Today</SectionTitle>
+                <ul className="flex flex-col gap-2">
+                  {waiting !== null && (
+                    <li>
+                      <Link
+                        href="/inbox"
+                        className="glass flex min-h-14 items-center gap-3 rounded-2xl px-4 py-2.5"
+                      >
+                        <InboxIcon className="size-4 shrink-0 text-rigel" />
+                        <span className="flex-1 text-[13.5px] font-medium">
+                          {waiting === 0
+                            ? "Nothing waiting for you"
+                            : `${waiting} ${waiting === 1 ? "thing" : "things"} waiting for you`}
+                        </span>
+                        <ChevronRightIcon className="size-4 text-faint" />
+                      </Link>
+                    </li>
+                  )}
+                  {openGoals.map((goal) => {
+                    const next = goal.plan.find((item) => item.status !== "done")
+                    return (
+                      <li key={goal.id}>
+                        <Link
+                          href={`/goals/${goal.id}`}
+                          className="glass flex min-h-14 items-center gap-3 rounded-2xl px-4 py-2.5"
+                        >
+                          <TargetIcon className="size-4 shrink-0 text-betelgeuse" />
+                          <span className="flex min-w-0 flex-1 flex-col leading-tight">
+                            <span className="truncate text-[13.5px] font-medium">
+                              {goal.title}
+                            </span>
+                            {next && (
+                              <span className="truncate font-mono text-[11px] text-muted-foreground">
+                                next: {next.text}
+                              </span>
+                            )}
+                          </span>
+                          <ChevronRightIcon className="size-4 text-faint" />
+                        </Link>
+                      </li>
+                    )
+                  })}
+                </ul>
+                {done.length > 0 && (
+                  <ul className="flex flex-col gap-1 px-1">
+                    {done.flatMap((episode) =>
+                      episode.done.map((action) => (
+                        <li key={action.executionId}>
+                          <Link
+                            href={episode.href}
+                            className="flex min-h-11 items-center gap-2 text-[13px] text-muted-foreground hover:text-foreground sm:min-h-8"
+                          >
+                            <CheckIcon className="size-3.5 shrink-0 text-ok" />
+                            <span className="truncate">{action.title}</span>
+                          </Link>
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                )}
+              </section>
+            )}
+
             {working.length > 0 && (
               <section className="flex flex-col gap-2.5">
                 <SectionTitle href="/tasks">Working now</SectionTitle>
@@ -134,15 +218,15 @@ export default async function Home() {
                         ? `/a/${agent.id}/${agent.latestThreadId}`
                         : `/a/${agent.id}`
                     }
-                    className="flex w-[72px] shrink-0 snap-start flex-col items-center gap-1.5 text-center"
+                    className="press flex w-[72px] shrink-0 snap-start flex-col items-center gap-1.5 text-center"
                   >
                     <span
                       className={cn(
-                        "relative rounded-full p-[3px] ring-2",
+                        "relative rounded-[34%] p-[3px] ring-2",
                         agent.busy ? "ring-rigel" : "ring-transparent"
                       )}
                     >
-                      <Glyph seed={agent.glyph} className="size-14 rounded-full" />
+                      <Glyph seed={agent.glyph} className="size-14 rounded-[30%]" />
                     </span>
                     <span className="w-full truncate text-[12px] font-medium">
                       {agent.name}
@@ -157,15 +241,18 @@ export default async function Home() {
                         ? `/s/${squad.id}/${squad.latestThreadId}`
                         : `/s/${squad.id}`
                     }
-                    className="flex w-[72px] shrink-0 snap-start flex-col items-center gap-1.5 text-center"
+                    className="press flex w-[72px] shrink-0 snap-start flex-col items-center gap-1.5 text-center"
                   >
                     <span
                       className={cn(
-                        "grid size-[62px] place-items-center rounded-full ring-2",
+                        "grid size-[62px] place-items-center rounded-[34%] ring-2",
                         squad.busy ? "ring-rigel" : "ring-transparent"
                       )}
                     >
-                      <SquadGlyph seeds={squad.glyphs} className="size-12" />
+                      <SquadGlyph
+                        seeds={squad.glyphs}
+                        className="size-14 rounded-[30%]"
+                      />
                     </span>
                     <span className="w-full truncate text-[12px] font-medium">
                       {squad.name}
@@ -174,9 +261,9 @@ export default async function Home() {
                 ))}
                 <Link
                   href="/agents"
-                  className="flex w-[72px] shrink-0 snap-start flex-col items-center gap-1.5 text-center text-muted-foreground"
+                  className="press flex w-[72px] shrink-0 snap-start flex-col items-center gap-1.5 text-center text-muted-foreground hover:text-foreground"
                 >
-                  <span className="grid size-[62px] place-items-center rounded-full border border-dashed">
+                  <span className="btn-glass size-[62px] rounded-[30%] border-dashed">
                     <PlusIcon className="size-5" />
                   </span>
                   <span className="text-[12px]">Add</span>

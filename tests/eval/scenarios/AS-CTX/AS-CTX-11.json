@@ -1,0 +1,36 @@
+{
+  "id": "AS-CTX-11",
+  "role": "freelancer",
+  "title": "Pricing a website project",
+  "agent": {
+    "name": "Rohan",
+    "role": "Pricing and proposal advisor",
+    "instructions": null
+  },
+  "memories": [
+    {
+      "content": "Freelance web developer; usual day rate ₹8,000",
+      "kind": "fact",
+      "source": "user"
+    },
+    {
+      "content": "Prefers fixed-price projects with clear scope",
+      "kind": "preference"
+    }
+  ],
+  "topics": [
+    {
+      "ask": "A bakery wants a 6-page website with an order form. How do I price it? My day rate is ₹8,000.",
+      "answer": "Estimate days by part: design 2 days, building 6 pages 3 days, order form with email notification 1.5 days, content entry and testing 1 day, changes and launch 1 day: 8.5 days, about ₹68,000. Add 15% for risk on a fixed price: ₹78,000. Offer two options: the full site at ₹78,000, or a 4-page version without the order form at about ₹52,000. State what's included (two rounds of changes) and what's extra (new pages, payment gateway)."
+    },
+    {
+      "ask": "They say ₹78,000 is too much, can I go to ₹60,000?",
+      "answer": "Cut scope rather than your rate: at ₹60,000 offer the 6 pages with a simple enquiry form instead of an order form, one round of changes, and the content entered by them. That's about 7 days of work. If they still want the order form, keep ₹78,000 or split it into a second phase later."
+    },
+    {
+      "ask": "Write the payment terms.",
+      "answer": "40% advance to start, 40% when the site is ready on the test link, 20% on launch. Invoices are payable within 7 days. Work pauses if a payment is more than 7 days late. Two rounds of changes are included; further changes are billed at ₹8,000 per day."
+    }
+  ],
+  "ask": "Summarise the options I offered the bakery and the terms."
+}

@@ -1,0 +1,39 @@
+{
+  "id": "AS-CTX-18",
+  "role": "business",
+  "title": "Staff shift schedule",
+  "agent": {
+    "name": "Farah",
+    "role": "Restaurant manager assistant",
+    "instructions": "Make schedules as tables."
+  },
+  "memories": [
+    {
+      "content": "Runs a restaurant in Hyderabad, open 11 am to 11 pm",
+      "kind": "profile",
+      "slot": "profile.business",
+      "shared": true
+    },
+    {
+      "content": "8 staff; each works 6 days a week, max 9 hours a day",
+      "kind": "instruction",
+      "shared": true,
+      "source": "user"
+    }
+  ],
+  "topics": [
+    {
+      "ask": "Make a weekly shift schedule for 8 staff, open 11 am to 11 pm, each works 6 days, max 9 hours.",
+      "answer": "Two shifts: morning 10:30 am–7:30 pm and evening 2:00 pm–11:00 pm, overlapping in the lunch-to-dinner gap. Four staff on each shift, each with one day off spread across the week so at least 3 people are on every shift every day. Weekend days have nobody off. I'll lay it out as a table once you give me the staff names and anyone's fixed day off."
+    },
+    {
+      "ask": "Names: Ali, Bhanu, Charan, Divya, Esha, Firoz, Ganesh, Hema. Ali and Divya want Monday off.",
+      "answer": "Morning shift: Ali (off Monday), Bhanu (off Tuesday), Charan (off Wednesday), Ganesh (off Thursday). Evening shift: Divya (off Monday), Esha (off Thursday), Firoz (off Tuesday), Hema (off Wednesday). Each shift keeps 3 people on its quietest weekdays and all 4 on Friday to Sunday."
+    },
+    {
+      "ask": "Esha is on leave next week.",
+      "answer": "Next week the evening shift has 3 people. Hema moves her day off from Wednesday to Monday only if Divya agrees to swap; otherwise Ganesh covers Esha's Friday to Sunday evenings with a 6-hour shift so nobody passes 9 hours. Confirm with both before publishing."
+    }
+  ],
+  "ask": "Show me this week's schedule state and the changes for Esha's leave."
+}

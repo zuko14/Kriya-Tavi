@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-03",
+  "family": "fact",
+  "query": "Which GATE exam centre did I prefer?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "GATE exam centre preference is Hyderabad",
+      "kind": "fact",
+      "ageDays": 13
+    }
+  ],
+  "expect": ["t"]
+}

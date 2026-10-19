@@ -1,6 +1,6 @@
-// Deterministic "constellation" glyphs. A seed always draws the same small
-// night-sky tile: a handful of stars on a 5×5 lattice joined into a figure,
-// with one bright star. Pure functions, so they render on the server.
+// Deterministic agent marks: a seed always draws the same small glass tile,
+// a two-tone aurora behind one emblem. Pure functions, so they render on the
+// server.
 
 function fnv1a(input: string) {
   let hash = 0x811c9dc5
@@ -11,68 +11,43 @@ function fnv1a(input: string) {
   return hash >>> 0
 }
 
-function mulberry32(seed: number) {
-  let a = seed
-  return () => {
-    a |= 0
-    a = (a + 0x6d2b79f5) | 0
-    let t = Math.imul(a ^ (a >>> 15), 1 | a)
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
-}
+// Hue pairs (base, glow) drawn from the brand: teal, terracotta, saffron and
+// their neighbours, chosen to read well on the cream and the night theme
+const PALETTES: [number, number][] = [
+  [195, 60], // teal → saffron
+  [185, 150], // deep teal → mint
+  [40, 75], // terracotta → gold
+  [265, 330], // indigo → rose
+  [300, 30], // plum → coral
+  [225, 190], // ocean → aqua
+  [160, 95], // emerald → lime-gold
+  [20, 340], // ember → berry
+  [245, 205], // midnight → sky
+  [55, 15], // amber → copper
+]
 
-// Hues that read well as a night sky, light or dark UI
-const HUES = [232, 214, 196, 252, 272, 292, 168, 150, 42, 58, 18, 340]
+export const EMBLEMS = [
+  "spark",
+  "orbit",
+  "wave",
+  "bloom",
+  "prism",
+  "crescent",
+  "loop",
+  "leaf",
+  "gem",
+  "rings",
+  "sun",
+  "hex",
+] as const
+export type Emblem = (typeof EMBLEMS)[number]
 
-export type Star = { x: number; y: number; r: number }
-export type GlyphSpec = {
-  hue: number
-  stars: Star[]
-  edges: [number, number][]
-}
-
-const LATTICE = [6, 11, 16, 21, 26]
+export type GlyphSpec = { base: number; glow: number; emblem: Emblem }
 
 export function glyphSpec(seed: string): GlyphSpec {
-  const random = mulberry32(fnv1a(seed || "kriya"))
-  const hue = HUES[Math.floor(random() * HUES.length)]
-  const count = 4 + Math.floor(random() * 3)
-
-  // Distinct lattice cells, jittered so figures don't look gridded
-  const cells = new Set<number>()
-  while (cells.size < count) cells.add(Math.floor(random() * 25))
-  const stars = [...cells].map((cell) => ({
-    x: LATTICE[cell % 5] + (random() - 0.5) * 2.4,
-    y: LATTICE[Math.floor(cell / 5)] + (random() - 0.5) * 2.4,
-    r: 0.9 + random() * 0.6,
-  }))
-
-  // Walk the stars nearest-first to make a figure that doesn't cross itself much
-  const order = [0]
-  const left = new Set(stars.map((_, i) => i).slice(1))
-  while (left.size) {
-    const last = stars[order[order.length - 1]]
-    let best = -1
-    let bestDistance = Infinity
-    for (const i of left) {
-      const d = (stars[i].x - last.x) ** 2 + (stars[i].y - last.y) ** 2
-      if (d < bestDistance) {
-        bestDistance = d
-        best = i
-      }
-    }
-    order.push(best)
-    left.delete(best)
-  }
-  const edges: [number, number][] = order.slice(1).map((star, i) => [order[i], star])
-  // Sometimes close a loop or branch, like real asterisms
-  if (count > 4 && random() > 0.45)
-    edges.push([order[0], order[2 + Math.floor(random() * (count - 2))]])
-
-  // The brightest star
-  const bright = Math.floor(random() * count)
-  stars[bright].r = 2
-
-  return { hue, stars, edges }
+  const hash = fnv1a(seed || "kriya")
+  const [base, glow] = PALETTES[hash % PALETTES.length]
+  // A different slice of the hash, so palette and emblem vary independently
+  const emblem = EMBLEMS[Math.floor(hash / PALETTES.length) % EMBLEMS.length]
+  return { base, glow, emblem }
 }

@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-22",
+  "family": "lang",
+  "query": "exam fees last date enti?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Exam fees ₹2,500 last date 30 November",
+      "kind": "fact",
+      "ageDays": 15
+    }
+  ],
+  "expect": ["t"]
+}

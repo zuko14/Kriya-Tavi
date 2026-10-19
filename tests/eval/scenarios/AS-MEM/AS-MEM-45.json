@@ -1,0 +1,22 @@
+{
+  "id": "AS-MEM-45",
+  "family": "contradiction",
+  "query": "Which currency for invoices?",
+  "notes": [
+    {
+      "key": "p",
+      "content": "Wants invoices in rupees",
+      "kind": "preference",
+      "source": "user",
+      "shared": true,
+      "ageDays": 40
+    },
+    {
+      "key": "a",
+      "content": "Invoices should be in dollars",
+      "kind": "preference",
+      "ageDays": 5
+    }
+  ],
+  "expect": ["p"]
+}

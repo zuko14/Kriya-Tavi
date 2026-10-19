@@ -1,0 +1,25 @@
+{
+  "id": "AS-SCH-15",
+  "description": "A ₹ cap per run becomes the task budget at the owner's rate",
+  "setup": {
+    "fx": "84.25",
+    "schedules": [
+      {
+        "id": "s1",
+        "rule": {
+          "freq": "daily",
+          "at": "09:00"
+        },
+        "prompt": "Plan my study day",
+        "capMicroInr": 1000000
+      }
+    ]
+  },
+  "steps": ["tick"],
+  "expect": {
+    "outcomes": {
+      "s1": ["enqueued"]
+    },
+    "taskBudget": 11869
+  }
+}

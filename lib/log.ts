@@ -4,17 +4,25 @@
 
 type Fields = Record<string, unknown>
 
-const SECRET_KEY = /pass(word)?|secret|token|api[-_]?key|authorization|cookie|signature/i
+const SECRET_KEY =
+  /pass(word)?|secret|token|api[-_]?key|authorization|cookie|signature|storage[-_]?state|(local|session)[-_]?storage|sealed/i
 const SECRET_VALUE =
-  /(sk-[a-z0-9-]{8,}|sb_secret_[a-z0-9_-]{8,}|eyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]+|rzp_(live|test)_[a-z0-9]{8,})/gi
+  /(sk-[a-z0-9-]{8,}|sb_secret_[a-z0-9_-]{8,}|eyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]+|rzp_(live|test)_[a-z0-9]{8,}|v(1|2_[0-9a-f]{8})\.[\w-]{16}\.[\w-]{22}\.[\w-]+)/gi
+// Cookie and Set-Cookie header lines inside a string
+const COOKIE_HEADER = /\b(set-cookie|cookie):[^\r\n]*/gi
+// A browser storage state (login profile) serialised into a string
+const STORAGE_STATE = /"(cookies|origins|localStorage)"\s*:\s*\[/
 
 function clean(value: unknown, depth = 0): unknown {
   if (value instanceof Error) {
     return { name: value.name, message: clean(value.message, depth + 1) }
   }
   if (typeof value === "string") {
+    if (STORAGE_STATE.test(value)) return "[redacted]"
     const text = value.length > 1_000 ? `${value.slice(0, 1_000)}…` : value
-    return text.replace(SECRET_VALUE, "[redacted]")
+    return text
+      .replace(SECRET_VALUE, "[redacted]")
+      .replace(COOKIE_HEADER, "$1: [redacted]")
   }
   if (value && typeof value === "object" && depth < 4) {
     return Object.fromEntries(

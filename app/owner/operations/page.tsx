@@ -5,7 +5,7 @@ import { formatDistanceToNowStrict } from "date-fns"
 import { ReconcileButton, RetryTaskButton } from "@/components/owner/forms"
 import { Empty, Section, Table, Td, Tile, Tiles } from "@/components/owner/ui"
 import { requireOwner } from "@/lib/auth"
-import { operations } from "@/lib/owner"
+import { backgroundCounts, operations } from "@/lib/owner"
 
 export const metadata: Metadata = { title: "Operations" }
 
@@ -14,7 +14,7 @@ const ago = (value: Date | null) =>
 
 export default async function OwnerOperations() {
   await requireOwner()
-  const ops = await operations()
+  const [ops, background] = await Promise.all([operations(), backgroundCounts()])
   const live = ops.workers.filter((worker) => worker.live)
 
   return (
@@ -47,6 +47,37 @@ export default async function OwnerOperations() {
           tone={ops.reconcile.pending ? "warn" : undefined}
         />
       </Tiles>
+
+      <Section
+        title="Background runs"
+        description="Goals, schedules, approvals and What I did records: counts only, never their content. Every fire is enqueued, skipped with a reason or failed; claimed runs are recovered after 2 minutes."
+      >
+        <Tiles>
+          <Tile label="open goals" value={background.openGoals} />
+          <Tile
+            label="schedules"
+            value={background.activeSchedules}
+            hint={`${background.pausedSchedules} paused`}
+          />
+          <Tile
+            label="runs (7 days)"
+            value={background.runs7d}
+            hint={`${background.enqueued7d} enqueued · ${background.skipped7d} skipped · ${background.failed7d} failed`}
+            tone={background.failed7d ? "warn" : undefined}
+          />
+          <Tile
+            label="claimed, not enqueued"
+            value={background.claimedNow}
+            tone={background.claimedNow ? "warn" : undefined}
+          />
+          <Tile
+            label="approvals pending"
+            value={background.pendingApprovals}
+            hint={`${background.expired7d} expired this week`}
+          />
+          <Tile label="records (7 days)" value={background.episodes7d} />
+        </Tiles>
+      </Section>
 
       <Section
         title="Cost reconciliation"

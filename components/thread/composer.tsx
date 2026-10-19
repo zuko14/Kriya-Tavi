@@ -141,7 +141,7 @@ export function Composer({
           {leading ??
             (members && addressee && onAddresseeChange ? (
               <DropdownMenu>
-                <DropdownMenuTrigger className="flex h-11 min-w-0 items-center gap-1.5 rounded-full border bg-background/50 px-3 text-[13px] hover:bg-accent sm:h-8 sm:text-[12px]">
+                <DropdownMenuTrigger className="btn-glass h-11 min-w-0 gap-1.5 px-3 text-[13px] sm:h-8 sm:text-[12px]">
                   <span className="font-mono text-[10.5px] text-muted-foreground">
                     to
                   </span>
@@ -194,14 +194,14 @@ export function Composer({
               title={listening ? "Stop voice typing" : "Speak your message"}
               disabled={disabled}
               className={cn(
-                "relative grid size-11 shrink-0 place-items-center rounded-xl border transition-colors disabled:opacity-30 sm:size-9",
+                "btn-glass size-11 shrink-0 disabled:opacity-30 sm:size-9",
                 listening
                   ? "border-destructive/40 bg-destructive/10 text-destructive"
-                  : "bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               {listening && (
-                <span className="absolute inset-0 animate-ping rounded-lg border border-destructive/40" />
+                <span className="absolute inset-0 animate-ping rounded-full border border-destructive/40" />
               )}
               <MicIcon className="size-4" />
             </button>
@@ -211,7 +211,7 @@ export function Composer({
               type="button"
               onClick={onStop}
               aria-label="Stop the agent"
-              className="grid size-11 shrink-0 place-items-center rounded-xl border bg-background text-foreground transition-colors hover:bg-accent sm:size-9"
+              className="btn-glass size-11 shrink-0 text-foreground sm:size-9"
             >
               <SquareIcon className="size-3 fill-current" />
             </button>
@@ -220,7 +220,7 @@ export function Composer({
               type="submit"
               aria-label="Send"
               disabled={!text.trim() || disabled}
-              className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground transition-opacity disabled:opacity-30 sm:size-9"
+              className="btn-liquid size-11 shrink-0 sm:size-9"
             >
               <ArrowUpIcon className="size-4" />
             </button>

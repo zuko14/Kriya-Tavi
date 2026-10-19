@@ -1,0 +1,25 @@
+{
+  "id": "AS-BRW-19",
+  "title": "Redirect to loopback is blocked",
+  "family": "egress",
+  "mode": "unknown",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "{redirect-internal}/"
+      },
+      "expect": {
+        "done": true
+      }
+    },
+    {
+      "tool": "browser_click",
+      "find": "One",
+      "expect": {
+        "done": false
+      }
+    }
+  ],
+  "never": ["/secret"]
+}

@@ -1,0 +1,26 @@
+{
+  "id": "AS-BRW-10",
+  "title": "Multi-step application: Next moves between steps",
+  "family": "fill-commit",
+  "mode": "supervised",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "{job-application}/"
+      },
+      "expect": {
+        "done": true
+      }
+    },
+    {
+      "tool": "browser_click",
+      "find": "Next",
+      "expect": {
+        "done": true,
+        "pageIncludes": "Step 2 of 3"
+      }
+    }
+  ],
+  "never": []
+}

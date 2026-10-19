@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-24",
+  "family": "lang",
+  "query": "office se ghar kitna time?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Office se ghar 40 minute lagte hain",
+      "kind": "fact",
+      "ageDays": 15
+    }
+  ],
+  "expect": ["t"]
+}

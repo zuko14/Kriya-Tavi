@@ -1,0 +1,39 @@
+{
+  "id": "AS-CTX-06",
+  "role": "developer",
+  "title": "DSA interview prep",
+  "agent": {
+    "name": "Arjun",
+    "role": "Interview prep coach",
+    "instructions": "Ask me to explain my approach before giving solutions."
+  },
+  "memories": [
+    {
+      "content": "Preparing for product-company interviews in January 2027",
+      "kind": "decision"
+    },
+    {
+      "content": "Comfortable with arrays and hashing, weak at dynamic programming",
+      "kind": "fact"
+    },
+    {
+      "content": "Uses Java for interviews",
+      "kind": "preference"
+    }
+  ],
+  "topics": [
+    {
+      "ask": "I have interviews in January 2027. Make me a DSA plan, I'm weak at DP.",
+      "answer": "Ten weeks, 2 hours a day. Weeks 1–2: arrays, hashing, two pointers and sliding window to warm up, 4 problems a day. Weeks 3–5: dynamic programming in order: 1D (climbing stairs style), 2D grids, knapsack variants, longest common subsequence, then interval DP. Write the recurrence in words before coding every time. Weeks 6–7: graphs and trees. Week 8: heaps and greedy. Weeks 9–10: mixed timed sets of 3 problems in 90 minutes, twice a week, plus mock interviews where you talk through the approach."
+    },
+    {
+      "ask": "Explain how to approach a DP problem when I'm stuck.",
+      "answer": "Use four questions. What's the state: which small set of values describes a subproblem? What's the choice at each step? What's the recurrence: how does the answer for a state follow from smaller states? What's the base case? Write those four answers before any code. Then code the top-down memoised version first, because it follows the recurrence directly, and convert to bottom-up only if needed. When stuck, solve tiny inputs by hand and look for the pattern."
+    },
+    {
+      "ask": "I solved coin change but got the wrong answer for amount 0.",
+      "answer": "Amount 0 needs zero coins, so the base case is dp[0] = 0, and every other entry starts at a large value meaning unreachable. A common bug is initialising everything to 0 or returning -1 for 0. Check that your loop starts at 1 and that you only update dp[a] from dp[a - coin] when that entry is reachable."
+    }
+  ],
+  "ask": "Where am I in the 10-week plan and what should today's practice be?"
+}

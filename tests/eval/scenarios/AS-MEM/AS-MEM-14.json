@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-14",
+  "family": "paraphrase",
+  "query": "Which grade is my kid in?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Daughter Meghana is in class 4 at DPS",
+      "kind": "fact",
+      "ageDays": 20
+    }
+  ],
+  "expect": ["t"]
+}

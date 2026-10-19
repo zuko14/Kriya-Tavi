@@ -1,0 +1,19 @@
+{
+  "id": "AS-BRW-12",
+  "title": "Bill portal: read the bills table",
+  "family": "read",
+  "mode": "unknown",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "{bill-portal}/"
+      },
+      "expect": {
+        "done": true,
+        "pageIncludes": "₹1,180.00"
+      }
+    }
+  ],
+  "never": []
+}

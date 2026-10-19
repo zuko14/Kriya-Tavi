@@ -1,0 +1,42 @@
+{
+  "id": "AS-CTX-13",
+  "role": "creator",
+  "title": "YouTube content calendar",
+  "agent": {
+    "name": "Tara",
+    "role": "YouTube channel planner",
+    "instructions": "Plan around one long video and two shorts a week."
+  },
+  "memories": [
+    {
+      "content": "Telugu tech review channel with 42,000 subscribers",
+      "kind": "profile",
+      "slot": "profile.channel",
+      "shared": true
+    },
+    {
+      "content": "Uploads on Sundays at 6 pm IST",
+      "kind": "preference"
+    },
+    {
+      "content": "Wants to reach 50,000 subscribers by March 2027",
+      "kind": "decision",
+      "source": "user"
+    }
+  ],
+  "topics": [
+    {
+      "ask": "Plan my next 8 weeks: one long video and two shorts a week, Telugu tech reviews.",
+      "answer": "Weeks 1–8 long videos: budget phone comparison, laptop for students under a set price, earbuds test, smartwatch for fitness, phone camera night test, best accessories for students, a viewer Q&A, and a year-end top 5. Shorts: one cut from each long video (the verdict in 40 seconds) and one quick tip (a phone setting, a hidden feature). Film long videos on Wednesday, edit Thursday–Friday, publish Sunday 6 pm IST. Thumbnails in Telugu with one English product name."
+    },
+    {
+      "ask": "My last video got 30% fewer views. What do I check?",
+      "answer": "Check in this order in YouTube Studio: impressions (did YouTube show it less?), click-through rate (did fewer people click the thumbnail?), and average view duration (did people leave early?). If impressions dropped, the topic had less demand; if CTR dropped, test a new thumbnail; if retention dropped, look at the first 30 seconds. Compare against your last five videos, not one."
+    },
+    {
+      "ask": "How do I get from 42,000 to 50,000 by March 2027?",
+      "answer": "That's 8,000 subscribers in about 5 months, around 1,600 a month. Look at which of your videos brought the most subscribers per view and make more of that type. Add an end screen to your best converter on every video, ask for the subscribe once with a reason, and keep the Sunday schedule without gaps."
+    }
+  ],
+  "ask": "Where are we in the 8-week plan and what's this week's shoot?"
+}

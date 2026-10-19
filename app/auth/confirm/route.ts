@@ -1,7 +1,7 @@
 import type { EmailOtpType } from "@supabase/supabase-js"
 import { NextResponse, type NextRequest } from "next/server"
 
-import { safeNext } from "@/lib/auth"
+import { appUrl, safeNext } from "@/lib/auth"
 import { createSupabase } from "@/lib/supabase"
 
 // Where links in Supabase's emails land: sign-up confirmation, password
@@ -26,13 +26,23 @@ export async function GET(request: NextRequest) {
     ok = !error
   }
 
-  const target = request.nextUrl.clone()
-  target.search = ""
+  // A link that was already used (a second tap, or a mail app that opened it
+  // first) fails here even though the account is confirmed. If that browser
+  // is signed in anyway, carry on; otherwise /login says the account exists.
+  if (!ok) ok = Boolean((await supabase.auth.getUser()).data.user)
+
+  // The app's public address, not the host Next saw: the new session cookie
+  // belongs to the address the email link used (Supabase's Site URL, which
+  // must equal KRIYA_APP_URL), and a different host would drop it
+  const target = new URL(appUrl())
   if (ok) {
     target.pathname = next
+    if (next === "/onboarding") target.searchParams.set("confirmed", "1")
   } else {
     target.pathname = "/login"
-    target.searchParams.set("error", "link")
+    // A sign-up link means the account exists; others (reset, email change)
+    // just expired
+    target.searchParams.set("error", next === "/onboarding" ? "signup-link" : "link")
   }
   return NextResponse.redirect(target)
 }

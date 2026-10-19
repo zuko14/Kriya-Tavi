@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-47",
+  "family": "gap",
+  "query": "Which company is my term insurance with?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Bought term insurance from LIC",
+      "kind": "fact",
+      "ageDays": 670
+    }
+  ],
+  "expect": ["t"]
+}

@@ -5,6 +5,7 @@ import type { ChatStatus } from "ai"
 import {
   ArrowDownIcon,
   BrainIcon,
+  CalendarClockIcon,
   ChevronRightIcon,
   CornerDownRightIcon,
 } from "lucide-react"
@@ -14,6 +15,12 @@ import { Glyph } from "@/components/glyph"
 import { Markdown } from "@/components/thread/markdown"
 import { SquadWork } from "@/components/thread/squad-work"
 import { ToolCall, toolName, type ToolPart } from "@/components/thread/tool-call"
+import { UsedMemories } from "@/components/thread/used-memories"
+import {
+  useWhatIDid,
+  WhatIDidCard,
+  type WhatIDidRecord,
+} from "@/components/thread/what-i-did"
 import {
   Collapsible,
   CollapsibleContent,
@@ -159,17 +166,29 @@ function UserMessage({
   const text = message.parts
     .flatMap((part) => (part.type === "text" ? [part.text] : []))
     .join("\n")
+  // Written by a schedule's run (A3), not typed by the person
+  const scheduled = message.metadata?.channel === "schedule"
 
   return (
     <div className="flex justify-end">
       <div className="flex max-w-[85%] flex-col items-end gap-1">
+        {scheduled && (
+          <span className="flex items-center gap-1.5 font-mono text-[10.5px] text-muted-foreground">
+            <CalendarClockIcon className="size-3.5" /> Scheduled run
+          </span>
+        )}
         {addressee && (
           <span className="flex items-center gap-1.5 font-mono text-[10.5px] text-muted-foreground">
             to <Glyph seed={addressee.glyph} className="size-3.5 rounded-[3px]" />{" "}
             {addressee.name}
           </span>
         )}
-        <div className="rounded-[20px] rounded-br-md bg-primary px-4 py-2.5 text-[14.5px] leading-relaxed whitespace-pre-wrap text-primary-foreground">
+        <div
+          className={cn(
+            "rounded-[20px] rounded-br-md px-4 py-2.5 text-[14.5px] leading-relaxed whitespace-pre-wrap",
+            scheduled ? "bg-muted text-foreground" : "bg-primary text-primary-foreground"
+          )}
+        >
           {text}
         </div>
       </div>
@@ -182,12 +201,17 @@ function AgentMessage({
   members,
   streaming,
   awaiting = false,
+  record,
+  receipts = false,
 }: {
   message: KriyaMessage
   members: AgentLite[]
   streaming: boolean
   // The latest message, finished: its requests can still be answered
   awaiting?: boolean
+  // "What I did" for the task behind this reply (A3, agents.inbox)
+  record?: WhatIDidRecord
+  receipts?: boolean
 }) {
   const parts = segments(message, members)
   const meta = message.metadata
@@ -242,8 +266,10 @@ function AgentMessage({
           {typeof meta.durationMs === "number" && (
             <span>{(meta.durationMs / 1000).toFixed(1)}s</span>
           )}
+          {meta.memoryIds?.length ? <UsedMemories ids={meta.memoryIds} /> : null}
         </div>
       )}
+      {!streaming && record && <WhatIDidCard record={record} receipts={receipts} />}
     </div>
   )
 }
@@ -280,6 +306,7 @@ export function Transcript({
 }) {
   const busy = status === "submitted" || status === "streaming"
   const last = messages[messages.length - 1]
+  const records = useWhatIDid(messages, busy)
 
   return (
     <StickToBottom className="relative min-h-0 flex-1" resize="smooth" initial="instant">
@@ -303,6 +330,8 @@ export function Transcript({
               members={members}
               streaming={busy && message === last}
               awaiting={!busy && message === last}
+              record={records?.records.find((r) => r.taskId === message.metadata?.taskId)}
+              receipts={records?.receipts}
             />
           ) : null
         )}

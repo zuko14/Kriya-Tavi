@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-20",
+  "family": "paraphrase",
+  "query": "Since when have I lived in this city?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Moved to Pune in June 2026",
+      "kind": "fact",
+      "ageDays": 20
+    }
+  ],
+  "expect": ["t"]
+}

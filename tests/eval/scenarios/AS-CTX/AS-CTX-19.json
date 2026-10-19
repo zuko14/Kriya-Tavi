@@ -1,0 +1,44 @@
+{
+  "id": "AS-CTX-19",
+  "role": "other",
+  "title": "Family wedding planning",
+  "agent": {
+    "name": "Saroja",
+    "role": "Event planning helper",
+    "instructions": null
+  },
+  "memories": [
+    {
+      "content": "Planning younger sister's wedding in Guntur",
+      "kind": "fact",
+      "shared": true
+    },
+    {
+      "content": "Total budget ₹12 lakh",
+      "kind": "decision",
+      "shared": true,
+      "source": "user"
+    },
+    {
+      "content": "Prefers updates as a short checklist",
+      "kind": "preference",
+      "shared": true,
+      "source": "user"
+    }
+  ],
+  "topics": [
+    {
+      "ask": "My sister's wedding is in February 2027 in Guntur, budget ₹12 lakh. Make a plan.",
+      "answer": "Split the ₹12 lakh: venue and decoration ₹3 lakh, food ₹3.5 lakh, clothes and jewellery ₹2.5 lakh, photography ₹80,000, invitations and return gifts ₹60,000, priest, music and rituals ₹50,000, travel and stay for guests ₹60,000, buffer ₹50,000. Book the venue and caterer first (by November), photographer by December, invitations printed in early January."
+    },
+    {
+      "ask": "Venue quoted ₹3.4 lakh, over by ₹40,000.",
+      "answer": "Take the ₹40,000 from the buffer only if the venue includes decoration; otherwise ask for a lower quote or a weekday rate. If you use the buffer, it drops to ₹10,000, so keep return gifts at ₹50,000 instead of ₹60,000 to rebuild it."
+    },
+    {
+      "ask": "Give me the checklist for November.",
+      "answer": "November: book venue (pay advance), book caterer and finalise menu tasting date, shortlist two photographers, finalise guest list count, start clothes shopping for the main ceremony."
+    }
+  ],
+  "ask": "Where are we on budget and the November checklist?"
+}

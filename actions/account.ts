@@ -18,9 +18,13 @@ import {
 } from "@/db/schema"
 import { requireUser } from "@/lib/auth"
 import { cancelSubscription, simulateTestPayment, startCheckout } from "@/lib/billing"
+import { getSetting } from "@/lib/config"
+import { getPlan } from "@/lib/entitlements"
 import { log } from "@/lib/log"
+import { PERSON_NOTE_MAX } from "@/lib/memory/person"
 import { allow } from "@/lib/rate-limit"
 import { createSupabase, createSupabaseAdmin } from "@/lib/supabase"
+import { createTeam, TeamError } from "@/lib/teams"
 import { templatesFor } from "@/lib/templates"
 
 export type FormState = { error?: string; message?: string } | null
@@ -98,7 +102,83 @@ export async function completeOnboarding(
   redirect(destination)
 }
 
+// "Meet your team" (A2, behind agents.rolePacks): who you are, the role
+// pack's agents you chose, and optionally a few things about you. The pack,
+// the plan's agent limit and the switch are all checked here, not in the form.
+export async function completeTeamOnboarding(
+  _: FormState,
+  form: FormData
+): Promise<FormState> {
+  const user = await requireUser()
+  if ((await getSetting("agents.rolePacks")) !== "on") {
+    return { error: "Teams aren't available yet. Reload the page." }
+  }
+  const parsed = parseProfile(form)
+  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  const members = z.array(z.string().max(40)).max(10).safeParse(form.getAll("member"))
+  if (!members.success) return { error: "Choose your team again." }
+  // Shared notes are read only by memory v2, so they're asked for only then
+  const askAbout =
+    (await getSetting("agents.memoryV2")) === "on" && field(form, "skipAbout") !== "1"
+  const about = askAbout
+    ? [...form.entries()]
+        .filter(([key, value]) => key.startsWith("about:") && typeof value === "string")
+        .slice(0, 8)
+        .map(([key, value]) => ({
+          slot: key.slice("about:".length, "about:".length + 64),
+          content: String(value).slice(0, PERSON_NOTE_MAX),
+        }))
+    : []
+  const plan = await getPlan(user.id)
+
+  let destination: string
+  try {
+    destination = await withUser(user.id, async (tx) => {
+      await tx
+        .update(profiles)
+        .set({
+          displayName: parsed.data.displayName,
+          locale: parsed.data.locale,
+          useCase: parsed.data.useCase ?? null,
+          onboardedAt: new Date(),
+        })
+        .where(eq(profiles.id, user.id))
+      return createTeam(tx, user.id, {
+        useCase: parsed.data.useCase,
+        members: members.data,
+        about,
+        maxAgents: plan.maxAgents,
+      })
+    })
+  } catch (error) {
+    if (error instanceof TeamError) return { error: error.message }
+    log.error("team onboarding failed", { error })
+    return { error: "Couldn't set up your team. Try again." }
+  }
+  revalidatePath("/", "layout")
+  redirect(destination)
+}
+
 /* ───────────────────────────── billing ──────────────────────────── */
+
+// Lite mode (K10): the person's explicit choice, or null if they haven't
+// made one (the browser's save-data hint decides meanwhile)
+export async function getLiteMode(): Promise<boolean | null> {
+  const user = await requireUser()
+  return user.profile.liteMode
+}
+
+// Lite mode (K10): the person's own setting, saved on their profile
+export async function setLiteMode(enabled: boolean): Promise<FormState> {
+  const user = await requireUser()
+  const parsed = z.boolean().safeParse(enabled)
+  if (!parsed.success) return { error: "That request wasn't valid." }
+  await withUser(user.id, (tx) =>
+    tx.update(profiles).set({ liteMode: parsed.data }).where(eq(profiles.id, user.id))
+  )
+  revalidatePath("/", "layout")
+  return { message: parsed.data ? "Lite mode is on." : "Lite mode is off." }
+}
 
 export async function choosePlan(_: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser()

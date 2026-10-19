@@ -1,7 +1,16 @@
 "use client"
 
 import * as React from "react"
-import { CalendarIcon, FileTextIcon, MailIcon, NotebookTextIcon } from "lucide-react"
+import {
+  CalendarIcon,
+  CameraIcon,
+  FileTextIcon,
+  GitBranchIcon,
+  MailIcon,
+  NotebookTextIcon,
+  PlayIcon,
+  SheetIcon,
+} from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import { disconnectAccount } from "@/actions/connections"
@@ -30,13 +39,33 @@ const GOOGLE = [
   },
 ] as const
 
+// A8: opt-in, never ticked for you
+const GOOGLE_MORE = [
+  {
+    id: "sheets",
+    label: "Sheets",
+    icon: SheetIcon,
+    detail: "Read sheets; add or change rows after you approve each change",
+  },
+  {
+    id: "youtube",
+    label: "YouTube",
+    icon: PlayIcon,
+    detail: "See your channel's views and subscribers. Read-only.",
+  },
+] as const
+
+type Account = { account: string | null } | null
+
 export type ConnectionView = {
   google: { account: string | null; services: string[] } | null
-  notion: { account: string | null } | null
+  notion: Account
   available: { google: boolean; notion: boolean }
+  // Only with agents.connectors on (A8)
+  more?: { github: Account; meta: Account; available: { github: boolean; meta: boolean } }
 }
 
-function Disconnect({ provider, name }: { provider: "google" | "notion"; name: string }) {
+function Disconnect({ provider, name }: { provider: string; name: string }) {
   const router = useRouter()
   return (
     <Confirm
@@ -79,8 +108,50 @@ function Card({
   )
 }
 
+// GitHub and Instagram: one button, like Notion
+function Simple({
+  provider,
+  name,
+  icon: Icon,
+  connected,
+  available,
+  subtitle,
+  again,
+}: {
+  provider: string
+  name: string
+  icon: typeof GitBranchIcon
+  connected: Account
+  available: boolean
+  subtitle: string
+  again: string
+}) {
+  return (
+    <Card
+      title={name}
+      subtitle={available || connected ? subtitle : "Not available on this server yet."}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <Icon className="size-4 text-muted-foreground" />
+        <form action={`/api/connect/${provider}`} method="get">
+          <Button
+            type="submit"
+            variant={connected ? "outline" : "default"}
+            className="h-11 sm:h-9"
+            disabled={!available}
+          >
+            {connected ? again : `Connect ${name}`}
+          </Button>
+        </form>
+        {connected && <Disconnect provider={provider} name={name} />}
+      </div>
+    </Card>
+  )
+}
+
 // Connecting is a plain GET form: the server route does the OAuth hand-off
-export function Connections({ google, notion, available }: ConnectionView) {
+export function Connections({ google, notion, available, more }: ConnectionView) {
+  const services = more ? [...GOOGLE, ...GOOGLE_MORE] : GOOGLE
   return (
     <div className="flex flex-col gap-3">
       <Card
@@ -99,7 +170,7 @@ export function Connections({ google, notion, available }: ConnectionView) {
             disabled={!available.google}
           >
             <legend className="sr-only">Google services</legend>
-            {GOOGLE.map(({ id, label, icon: Icon, detail }) => (
+            {services.map(({ id, label, icon: Icon, detail }) => (
               <label
                 key={id}
                 className="flex min-h-14 cursor-pointer items-center gap-3 px-3.5 py-2.5 has-disabled:cursor-not-allowed has-disabled:opacity-60"
@@ -113,7 +184,11 @@ export function Connections({ google, notion, available }: ConnectionView) {
                   type="checkbox"
                   name="service"
                   value={id}
-                  defaultChecked={google ? google.services.includes(id) : true}
+                  defaultChecked={
+                    google
+                      ? google.services.includes(id)
+                      : !GOOGLE_MORE.some((extra) => extra.id === id)
+                  }
                   className="size-5 shrink-0 accent-(--rigel)"
                 />
               </label>
@@ -153,6 +228,37 @@ export function Connections({ google, notion, available }: ConnectionView) {
           {notion && <Disconnect provider="notion" name="Notion" />}
         </div>
       </Card>
+
+      {more && (
+        <>
+          <Simple
+            provider="github"
+            name="GitHub"
+            icon={GitBranchIcon}
+            connected={more.github}
+            available={more.available.github}
+            subtitle={
+              more.github
+                ? `Connected as ${more.github.account ?? "your GitHub account"}`
+                : "Install Kriya's GitHub app on the repositories you choose. Agents read issues and pull requests; comments, issues, labels and pull requests wait for your approval."
+            }
+            again="Choose repositories again"
+          />
+          <Simple
+            provider="meta"
+            name="Instagram"
+            icon={CameraIcon}
+            connected={more.meta}
+            available={more.available.meta}
+            subtitle={
+              more.meta
+                ? `Connected as ${more.meta.account ? `@${more.meta.account}` : "your professional account"}`
+                : "For professional accounts linked to a Facebook Page. Agents see followers and post numbers; each post waits for your approval."
+            }
+            again="Reconnect"
+          />
+        </>
+      )}
     </div>
   )
 }

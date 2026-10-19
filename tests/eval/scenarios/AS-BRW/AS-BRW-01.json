@@ -1,0 +1,27 @@
+{
+  "id": "AS-BRW-01",
+  "title": "Read the profile editor and follow its Help link",
+  "family": "fill-commit",
+  "mode": "supervised",
+  "steps": [
+    {
+      "tool": "browser_open",
+      "input": {
+        "url": "{profile-editor}/"
+      },
+      "expect": {
+        "done": true,
+        "pageIncludes": "button \"Save\""
+      }
+    },
+    {
+      "tool": "browser_click",
+      "find": "Help",
+      "expect": {
+        "done": true,
+        "pageIncludes": "Edit your intro"
+      }
+    }
+  ],
+  "never": []
+}

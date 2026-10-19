@@ -1,0 +1,21 @@
+{
+  "id": "AS-SCH-13",
+  "description": "A scheduled reply that claims an action no tool did is marked not confirmed",
+  "setup": {
+    "schedules": [
+      {
+        "id": "s1",
+        "rule": {
+          "freq": "daily",
+          "at": "09:00"
+        },
+        "prompt": "CLAIM_IT: book my mock test"
+      }
+    ]
+  },
+  "steps": ["tick", "runTasks"],
+  "expect": {
+    "done": [],
+    "unconfirmed": 1
+  }
+}

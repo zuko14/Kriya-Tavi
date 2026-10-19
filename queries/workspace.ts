@@ -1,4 +1,4 @@
-import { asc, desc, eq, gte, inArray, sql } from "drizzle-orm"
+import { and, asc, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm"
 
 import { withUser, type Tx } from "@/db"
 import {
@@ -170,7 +170,8 @@ export async function getMemories(userId: string, agentId: string) {
     tx
       .select()
       .from(memories)
-      .where(eq(memories.agentId, agentId))
+      // Current notes; superseded and forgotten ones are history (memory v2)
+      .where(and(eq(memories.agentId, agentId), isNull(memories.invalidAt)))
       .orderBy(desc(memories.createdAt))
   )
 }

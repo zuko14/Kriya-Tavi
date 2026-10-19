@@ -37,8 +37,8 @@ export function NewSquadButton({ disabled }: { disabled?: boolean }) {
   )
 }
 
-// Seeds chosen so each template shows a distinct sky
-const templateSeeds = ["vidya-1", "arjun-7", "meera-3", "kabir-5", "tara-2"]
+// Seeds chosen so each template gets a distinct mark that fits its role
+const templateSeeds = ["vidya-18", "arjun-86", "meera-36", "kabir-241", "tara-24"]
 
 export function TemplateGrid() {
   const { nav, openAgentDialog } = useWorkspace()
@@ -54,16 +54,18 @@ export function TemplateGrid() {
           key={template.name}
           type="button"
           onClick={() => openAgentDialog({ template })}
-          className="group flex flex-col gap-3 rounded-xl border bg-surface/50 p-4 text-left transition-colors hover:border-input hover:bg-surface"
+          className="glass lift group flex flex-col gap-3 rounded-[22px] p-4 text-left"
         >
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-3">
             <Glyph
               seed={templateSeeds[agentTemplates.indexOf(template)]}
-              className="size-9"
+              className="size-11 rounded-[30%]"
             />
-            <div className="flex min-w-0 flex-col leading-tight">
-              <span className="text-[14px] font-semibold">{template.name}</span>
-              <span className="truncate font-mono text-[10.5px] text-muted-foreground">
+            <div className="flex min-w-0 flex-col gap-0.5 leading-tight">
+              <span className="text-[15px] font-semibold tracking-tight">
+                {template.name}
+              </span>
+              <span className="truncate font-mono text-[12px] text-muted-foreground">
                 {template.role}
               </span>
             </div>
@@ -71,8 +73,11 @@ export function TemplateGrid() {
           <p className="line-clamp-3 text-[12.5px] leading-relaxed text-muted-foreground">
             {template.instructions}
           </p>
-          <span className="mt-auto font-mono text-[11px] text-rigel opacity-70 transition-opacity group-hover:opacity-100">
-            create →
+          <span className="mt-auto inline-flex items-center gap-1 font-mono text-[12px] font-medium text-rigel">
+            Create
+            <span className="transition-transform duration-300 ease-[var(--ease-out)] group-hover:translate-x-1">
+              →
+            </span>
           </span>
         </button>
       ))}

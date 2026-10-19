@@ -1,0 +1,14 @@
+{
+  "id": "AS-MEM-05",
+  "family": "fact",
+  "query": "When does my passport expire?",
+  "notes": [
+    {
+      "key": "t",
+      "content": "Passport expires in August 2027",
+      "kind": "fact",
+      "ageDays": 15
+    }
+  ],
+  "expect": ["t"]
+}

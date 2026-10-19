@@ -1,0 +1,22 @@
+{
+  "id": "AS-MEM-36",
+  "family": "update",
+  "query": "How long does Neha take to pay?",
+  "notes": [
+    {
+      "key": "old",
+      "content": "Client Neha pays in 30 days",
+      "kind": "fact",
+      "ageDays": 30
+    }
+  ],
+  "expect": ["new"],
+  "updates": [
+    {
+      "key": "old",
+      "newKey": "new",
+      "content": "Client Neha pays in 45 days"
+    }
+  ],
+  "absent": ["old"]
+}

@@ -20,6 +20,10 @@
 :root {
   --radius: 0.75rem;
 
+  /* Motion: quick to respond, soft to settle */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
   --background: #f5efe7;
   --foreground: #13292b;
   --surface: #fffcf8;
@@ -60,6 +64,10 @@
   --glass-rim: rgb(255 255 255 / 0.9);
   --glass-edge: rgb(23 58 61 / 0.1);
   --glass-shadow: 0 1px 2px rgb(19 41 43 / 0.05), 0 12px 40px -12px rgb(19 41 43 / 0.16);
+  /* Light caught on the upper face of a pane, and bounced off the floor */
+  --glass-sheen: rgb(255 255 255 / 0.55);
+  --glass-floor: rgb(255 255 255 / 0.35);
+  --gloss: rgb(255 255 255 / 0.5);
   --aura-1: rgb(205 136 81 / 0.2);
   --aura-2: rgb(47 122 120 / 0.16);
   --aura-3: rgb(252 221 181 / 0.55);
@@ -105,6 +113,9 @@
   --glass-rim: rgb(255 255 255 / 0.1);
   --glass-edge: rgb(226 240 236 / 0.1);
   --glass-shadow: 0 1px 0 rgb(0 0 0 / 0.2), 0 18px 50px -18px rgb(0 0 0 / 0.7);
+  --glass-sheen: rgb(255 255 255 / 0.07);
+  --glass-floor: rgb(255 255 255 / 0.035);
+  --gloss: rgb(255 255 255 / 0.16);
   --aura-1: rgb(205 136 81 / 0.13);
   --aura-2: rgb(47 122 120 / 0.2);
   --aura-3: rgb(29 63 66 / 0.35);
@@ -113,7 +124,10 @@
 @theme inline {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
-  --font-mono: var(--font-jetbrains), ui-monospace, "SFMono-Regular", monospace;
+  /* `font-mono` is the secondary face (labels, roles, metadata): Geist.
+     Code keeps a true monospace through `font-code`. */
+  --font-mono: var(--font-geist), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-code: var(--font-jetbrains), ui-monospace, "SFMono-Regular", monospace;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -214,7 +228,7 @@
   kbd,
   pre,
   samp {
-    font-family: var(--font-mono);
+    font-family: var(--font-code);
     font-feature-settings: "zero" 1;
   }
   :focus-visible {
@@ -230,7 +244,7 @@
 @layer components {
   /* Small uppercase mono labels: section headers, keys, captions */
   .label-mono {
-    @apply font-mono text-[10.5px] font-medium tracking-[0.09em] text-muted-foreground uppercase;
+    @apply font-mono text-[10.5px] font-semibold tracking-[0.14em] text-muted-foreground uppercase;
   }
 
   /* Dotted engineering-paper backdrop */
@@ -272,22 +286,26 @@
 
   /* Liquid glass: a translucent pane with a bright top rim */
   .glass {
-    background: var(--glass-bg);
+    background:
+      linear-gradient(180deg, var(--glass-sheen), transparent 42%), var(--glass-bg);
     border: 1px solid var(--glass-edge);
     box-shadow:
       inset 0 1px 0 var(--glass-rim),
+      inset 0 -1px 0 var(--glass-floor),
       var(--glass-shadow);
-    backdrop-filter: blur(22px) saturate(160%);
-    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
   }
   .glass-strong {
-    background: var(--glass-strong);
+    background:
+      linear-gradient(180deg, var(--glass-sheen), transparent 42%), var(--glass-strong);
     border: 1px solid var(--glass-edge);
     box-shadow:
       inset 0 1px 0 var(--glass-rim),
+      inset 0 -1px 0 var(--glass-floor),
       var(--glass-shadow);
-    backdrop-filter: blur(28px) saturate(170%);
-    -webkit-backdrop-filter: blur(28px) saturate(170%);
+    backdrop-filter: blur(30px) saturate(190%);
+    -webkit-backdrop-filter: blur(30px) saturate(190%);
   }
 
   /* Soft environmental light behind glass */
@@ -318,17 +336,19 @@
       inset 0 -1px 0 rgb(0 0 0 / 0.25),
       0 10px 30px -10px rgb(23 58 61 / 0.7),
       0 2px 6px -2px rgb(23 58 61 / 0.4);
+    overflow: hidden;
     transition:
-      transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
-      box-shadow 160ms,
-      filter 160ms;
+      transform 420ms var(--ease-spring),
+      box-shadow 240ms var(--ease-out),
+      filter 240ms var(--ease-out);
   }
   .btn-liquid:hover {
     transform: translateY(-1px);
-    filter: brightness(1.08);
+    filter: brightness(1.06) saturate(1.05);
   }
   .btn-liquid:active {
-    transform: scale(0.97);
+    transform: scale(0.96);
+    transition-duration: 110ms;
   }
   .btn-liquid:disabled {
     opacity: 0.6;
@@ -345,6 +365,9 @@
       0 10px 34px -10px rgb(231 164 109 / 0.55);
   }
   .btn-glass {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -357,14 +380,88 @@
     backdrop-filter: blur(16px) saturate(160%);
     -webkit-backdrop-filter: blur(16px) saturate(160%);
     transition:
-      background 160ms,
-      transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+      background 240ms var(--ease-out),
+      transform 420ms var(--ease-spring);
   }
   .btn-glass:hover {
     background: var(--glass-strong);
   }
   .btn-glass:active {
-    transform: scale(0.97);
+    transform: scale(0.96);
+    transition-duration: 110ms;
+  }
+
+  /* The gel: a lens of light on the upper half of every liquid control, and
+     a band of light that sweeps across on hover */
+  .btn-liquid::before,
+  .btn-glass::before,
+  .gel::before {
+    content: "";
+    position: absolute;
+    inset: 1px 6% 48%;
+    z-index: -1;
+    border-radius: 999px 999px 60% 60% / 999px 999px 100% 100%;
+    background: linear-gradient(180deg, var(--gloss), transparent);
+    pointer-events: none;
+  }
+  .btn-liquid::after,
+  .gel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(
+      105deg,
+      transparent 35%,
+      rgb(255 255 255 / 0.28) 50%,
+      transparent 65%
+    );
+    transform: translateX(-120%);
+    pointer-events: none;
+  }
+  .btn-liquid:hover::after,
+  .gel:hover::after {
+    transform: translateX(120%);
+    transition: transform 900ms var(--ease-out);
+  }
+  .gel {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+  }
+
+  /* Liquid press for any control: springs back when released */
+  .press {
+    transition:
+      transform 420ms var(--ease-spring),
+      background-color 200ms var(--ease-out),
+      border-color 200ms var(--ease-out),
+      color 200ms var(--ease-out),
+      box-shadow 240ms var(--ease-out),
+      opacity 200ms var(--ease-out);
+  }
+  .press:active {
+    transform: scale(0.96);
+    transition-duration: 110ms;
+  }
+
+  /* Cards that lift a touch under the pointer and settle when pressed */
+  .lift {
+    transition:
+      transform 360ms var(--ease-out),
+      box-shadow 360ms var(--ease-out),
+      background-color 240ms var(--ease-out),
+      border-color 240ms var(--ease-out);
+  }
+  @media (hover: hover) {
+    .lift:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--glass-shadow);
+    }
+  }
+  .lift:active {
+    transform: scale(0.985);
+    transition-duration: 120ms;
   }
 
   .rise {
@@ -385,6 +482,29 @@
   }
 }
 
+/* Page changes (app/(workspace)/template.tsx): the old page lifts away, the
+   new one settles in. Only the content moves; navigation stays put. */
+::view-transition-old(.page-out) {
+  animation: page-out 140ms var(--ease-out) both;
+}
+::view-transition-new(.page-in) {
+  animation: page-in 340ms var(--ease-out) 60ms both;
+}
+@keyframes page-out {
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.995);
+    filter: blur(3px);
+  }
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(4px);
+  }
+}
+
 /* Browsers without backdrop-filter get solid panes, never see-through text */
 @supports not ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))) {
   .glass,
@@ -397,6 +517,9 @@
 /* Markdown inside agent replies */
 .prose-kriya {
   @apply text-[14px] leading-[1.7] text-foreground;
+}
+.prose-kriya :where(.font-mono, pre, code) {
+  font-family: var(--font-code);
 }
 .prose-kriya :where(p, ul, ol, pre, blockquote, table, h1, h2, h3, h4) + :where(*) {
   margin-top: 0.75em;
@@ -426,7 +549,7 @@
   @apply text-rigel underline decoration-rigel/40 underline-offset-[3px] hover:decoration-rigel;
 }
 .prose-kriya :where(:not(pre) > code) {
-  @apply rounded-[4px] bg-muted px-[0.35em] py-[0.1em] font-mono text-[0.86em];
+  @apply rounded-[4px] bg-muted px-[0.35em] py-[0.1em] font-code text-[0.86em];
 }
 .prose-kriya :where(blockquote) {
   @apply border-l-2 border-border pl-3 text-muted-foreground;

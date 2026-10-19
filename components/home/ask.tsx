@@ -95,7 +95,7 @@ export function Ask() {
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label="Choose who does this"
-        className="flex h-11 max-w-[55vw] min-w-0 items-center gap-1.5 rounded-full border bg-background/60 pr-2.5 pl-1.5 text-[13px] font-medium transition-colors hover:bg-accent sm:h-8 sm:max-w-64"
+        className="btn-glass h-11 max-w-[55vw] min-w-0 gap-1.5 pr-2.5 pl-1.5 text-[13px] sm:h-8 sm:max-w-64"
       >
         {agent ? (
           <Glyph seed={agent.glyph} className="size-6 rounded-full" />
@@ -198,7 +198,7 @@ export function Ask() {
               type="button"
               disabled={starting}
               onClick={() => start(text)}
-              className="min-h-11 shrink-0 snap-start rounded-full border bg-surface/60 px-4 text-left text-[13px] text-muted-foreground transition-colors hover:border-input hover:text-foreground disabled:opacity-50 sm:min-h-9"
+              className="btn-glass min-h-11 shrink-0 snap-start px-4 text-left text-[13px] font-normal text-muted-foreground hover:text-foreground disabled:opacity-50 sm:min-h-9"
             >
               {text}
             </button>

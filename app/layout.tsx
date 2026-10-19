@@ -29,6 +29,22 @@ const mono = localFont({
   display: "swap",
 })
 
+// The secondary face: labels, roles and metadata
+const geist = localFont({
+  src: [
+    {
+      path: "../node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2",
+      weight: "100 900",
+    },
+    {
+      path: "../node_modules/@fontsource-variable/geist/files/geist-latin-ext-wght-normal.woff2",
+      weight: "100 900",
+    },
+  ],
+  variable: "--font-geist",
+  display: "swap",
+})
+
 const fraunces = localFont({
   src: [
     {
@@ -85,7 +101,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en-IN"
       suppressHydrationWarning
-      className={cn(inter.variable, mono.variable, fraunces.variable)}
+      className={cn(inter.variable, mono.variable, geist.variable, fraunces.variable)}
     >
       {/* Browser extensions add attributes to <body> before React loads */}
       <body suppressHydrationWarning>

@@ -1,0 +1,23 @@
+{
+  "id": "AS-SCH-02",
+  "description": "Two workers claim the same due time at once: one run",
+  "setup": {
+    "schedules": [
+      {
+        "id": "s1",
+        "rule": {
+          "freq": "daily",
+          "at": "09:00"
+        },
+        "prompt": "Plan my study day"
+      }
+    ]
+  },
+  "steps": ["parallelTick", "runTasks"],
+  "expect": {
+    "outcomes": {
+      "s1": ["enqueued"]
+    },
+    "tasks": 1
+  }
+}

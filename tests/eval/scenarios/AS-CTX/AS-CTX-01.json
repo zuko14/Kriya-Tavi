@@ -1,0 +1,51 @@
+{
+  "id": "AS-CTX-01",
+  "role": "student",
+  "title": "GATE 2027 preparation plan",
+  "agent": {
+    "name": "Vidya",
+    "role": "Study planner for GATE CSE",
+    "instructions": "Keep plans realistic for a final-year student with college hours."
+  },
+  "memories": [
+    {
+      "content": "Final-year B.Tech CSE student",
+      "kind": "profile",
+      "slot": "profile.course",
+      "shared": true
+    },
+    {
+      "content": "Prefers short answers in Telugu-English",
+      "kind": "preference",
+      "shared": true,
+      "source": "user"
+    },
+    {
+      "content": "Weak in Theory of Computation, strong in DSA",
+      "kind": "fact"
+    },
+    {
+      "content": "Studies 3 hours on weekdays, 6 on weekends",
+      "kind": "fact"
+    },
+    {
+      "content": "Target: GATE CSE 2027, aiming for IIT Hyderabad M.Tech",
+      "kind": "decision"
+    }
+  ],
+  "topics": [
+    {
+      "ask": "Make me a 12-week plan for GATE CSE, I can do 3 hours on weekdays and 6 on weekends. Budget for books is ₹4,000.",
+      "answer": "Here's a 12-week plan built on 33 hours a week. Weeks 1–3: Discrete Maths and Engineering Maths, 2 hours theory and 1 hour previous-year questions each weekday; weekends for a full topic test. Weeks 4–6: Theory of Computation (your weak area) gets double time, with DFA/NFA drills daily and one regular-language proof set each weekend. Weeks 7–9: Operating Systems, DBMS and Computer Networks, one subject per week with a weekend mixed test. Weeks 10–12: Algorithms, Compiler Design and full-length mocks every Saturday, analysis on Sunday. For books within ₹4,000, pick one standard text per weak subject and use free previous-year papers for the rest. Check the official GATE 2027 notice for the exam dates before fixing the mock schedule."
+    },
+    {
+      "ask": "Which previous-year papers should I start with, and how many per week?",
+      "answer": "Start with the last 10 years, newest first, because the pattern changed over time. Do topic-wise sets during weeks 1–9 (about 25 questions a day from the topic you are studying) and switch to full papers in weeks 10–12, two per week under exam conditions. Track every wrong answer in one sheet with the topic, why you got it wrong and the fix. Re-attempt that sheet every Sunday; most marks come back from mistakes you repeat. If a topic shows more than 30% errors two weeks in a row, move 3 hours from your strongest subject to it."
+    },
+    {
+      "ask": "I missed 4 days because of college exams. How do I adjust without breaking the plan?",
+      "answer": "Don't try to make up all 12 hours at once. Move the missed Theory of Computation hours into the next two weekends (3 extra hours each), drop one of the two weekend mixed tests for those two weeks, and keep the weekday rhythm unchanged. That keeps the plan's shape and costs you one test, not a topic. If college exams come again before week 8, plan them in now as light weeks with only revision and previous-year questions."
+    }
+  ],
+  "ask": "Okay, summarise where I am in the plan and what this week should look like."
+}
