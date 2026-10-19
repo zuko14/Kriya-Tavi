@@ -12,6 +12,7 @@ ARG NODE_VERSION=24.20.0
 # Keep both equal to package-lock.json
 ARG PLAYWRIGHT_CORE_VERSION=1.64.1
 ARG TSX_VERSION=4.23.15
+ARG WS_VERSION=8.22.0
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
@@ -32,7 +33,7 @@ RUN arch="$(dpkg --print-architecture)" \
 
 WORKDIR /app
 RUN echo '{"type":"module","private":true}' > package.json \
- && npm install --no-save --no-package-lock "playwright-core@${PLAYWRIGHT_CORE_VERSION}" "tsx@${TSX_VERSION}" \
+ && npm install --no-save --no-package-lock "playwright-core@${PLAYWRIGHT_CORE_VERSION}" "tsx@${TSX_VERSION}" "ws@${WS_VERSION}" \
  && npx playwright-core install --with-deps chromium \
  && rm -rf /var/lib/apt/lists/* /root/.npm
 
