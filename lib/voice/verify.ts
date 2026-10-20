@@ -15,6 +15,7 @@ import {
 import { log } from "@/lib/log"
 
 import type { CallNotes } from "./dialogue"
+import { exotelConfigFromEnv, exotelTelephony } from "./exotel"
 import { checkOutcome, extractOutcome, observedFrom, type ModelCall } from "./outcome"
 import type { CallStatus, ProviderCall, TelephonyProvider } from "./providers"
 import { clock, outreachRetryAt, reportRetryAt } from "./schedule"
@@ -29,9 +30,11 @@ import { TERMINAL_CALL, TERMINAL_TASK, transition } from "./tasks"
 // is checked against the provider's API, and the API wins. Then the call and
 // its task are settled from what the database records, never from a model.
 
-// Providers by name; the worker and web register theirs at start (mock in
-// tests; Exotel in phase 5)
+// Providers by name: Exotel when its environment is set (web and worker),
+// the mock in tests
 const registry = new Map<string, TelephonyProvider>()
+const exotel = exotelConfigFromEnv()
+if (exotel) registry.set("exotel", exotelTelephony(exotel))
 export const registerTelephony = (provider: TelephonyProvider) =>
   registry.set(provider.name, provider)
 
@@ -138,7 +141,9 @@ export async function handleStatusWebhook(token: string, body: string, headers: 
 
   const to = FROM_PROVIDER[event.status]
   if (to && TERMINAL_ATTEMPT.includes(to)) {
-    await verifyAttempt(attempt.id, provider, event.providerCallId)
+    // Only with the call id the worker recorded, never the body's (F27); until
+    // then it's kept in call_events and the worker's watch verifies
+    if (attempt.providerCallId) await verifyAttempt(attempt.id, provider)
   } else if (to) {
     // Out of order or not ours to take: kept in call_events, state unchanged
     await transition(

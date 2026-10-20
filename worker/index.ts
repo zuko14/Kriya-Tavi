@@ -20,7 +20,9 @@ import { claimDueSchedules, recoverClaimedRuns, runDue } from "@/lib/schedules"
 import { profileJanitor } from "@/lib/browser/profiles"
 import { purgeExpired } from "@/lib/share"
 import { runUndos } from "@/lib/undo"
+import { exotelConfigFromEnv, exotelTelephony } from "@/lib/voice/exotel"
 import { voiceHousekeeping } from "@/lib/voice/housekeeping"
+import { voiceLoop } from "@/lib/voice/run-call"
 import { version } from "@/package.json"
 
 // The Kriya worker: claims queued tasks from Postgres and runs them. Any
@@ -296,13 +298,34 @@ async function undoLoop() {
 
 // Voice calls (docs/voice-assistant, D-05): lib/voice/run-call.ts voiceLoop,
 // with its own map and VOICE_CONCURRENCY, never this file's task slots (F6).
-// No real telephony provider exists before voice phase 5, and calls are
-// refused rather than faked (D-12), so for now the switch only says so.
+// Exotel only; it dials only with KRIYA_VOICE_LIVE=1, voice.liveCalls on and
+// to voice.testNumbers (run-call.ts). Missing config: no loop, never a fake.
 function startVoice() {
   if (process.env.KRIYA_VOICE_ENABLED !== "1") return
-  log.warn(
-    "voice: KRIYA_VOICE_ENABLED is set, but no telephony provider exists yet (voice phase 5); no calls are placed"
-  )
+  const exotel = exotelConfigFromEnv()
+  const callerId = process.env.EXOTEL_CALLER_ID?.trim()
+  const appUrl = process.env.KRIYA_APP_URL?.trim() ?? ""
+  const voiceUrl = process.env.KRIYA_VOICE_URL?.trim() ?? ""
+  if (
+    !exotel ||
+    !callerId ||
+    !appUrl.startsWith("https://") ||
+    !voiceUrl.startsWith("wss://")
+  ) {
+    log.warn(
+      "voice: needs the Exotel settings, EXOTEL_CALLER_ID, an https KRIYA_APP_URL and a wss KRIYA_VOICE_URL; no calls are placed"
+    )
+    return
+  }
+  void voiceLoop({
+    workerId: WORKER_ID,
+    provider: exotelTelephony(exotel),
+    appUrl,
+    voiceUrl,
+    callerId,
+    concurrency: Math.max(1, Number(process.env.VOICE_CONCURRENCY) || 2),
+    signal: shutdown.signal,
+  }).catch((error) => log.error("voice loop stopped", { error }))
 }
 
 async function beat() {

@@ -94,6 +94,12 @@ export const SETTINGS = {
     pattern: /^(on|off)$/,
     hint: "on or off",
   },
+  // Until phase 9 a real provider dials only these numbers (F25). Unset: none
+  "voice.testNumbers": {
+    env: "KRIYA_VOICE_TEST_NUMBERS",
+    pattern: /^\+91[6-9]\d{9}(,\+91[6-9]\d{9}){0,9}$/,
+    hint: "Comma-separated, e.g. +919876543210,+919812345678",
+  },
   // Agent platform switches (docs/agent-platform). Each is off by default,
   // and off means existing agents get the same prompt and tools as before.
   // Memory v2: typed, shared and retrieved memory, thread summaries

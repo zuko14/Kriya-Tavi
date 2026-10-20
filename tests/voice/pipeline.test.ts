@@ -597,6 +597,51 @@ describe("crash recovery (D1 = 0)", () => {
     expect((await attempts(id!))[0].status).toBe("unknown")
     expect((await taskStatus(task)).status).toBe("needs_owner")
   })
+
+  it("F25 a real provider dials only voice.testNumbers; none set means none", async () => {
+    const live = { ...mock, name: "exotel" as const }
+    await authorize()
+    let id = await claimNext(deps())
+    expect(await prepareAttempt(id!, deps(live))).toBeNull()
+    expect(
+      await q("select status, last_error_code from kriya.voice_calls where id = $1", [id])
+    ).toEqual([{ status: "blocked", last_error_code: "not_a_test_number" }])
+
+    vi.stubEnv("KRIYA_VOICE_TEST_NUMBERS", "+919812345678")
+    // A live provider also needs a telephony price (fails closed otherwise)
+    await seed(pg, "voice_prices", {
+      id: "exotel:outbound",
+      provider: "exotel",
+      product: "outbound",
+      unit: "second",
+      price_micro: 1_000,
+      currency: "INR",
+      effective_from: "2026-01-01T00:00:00Z",
+      checked_at: "2026-10-20T00:00:00Z",
+      source: "test quote",
+    })
+    await authorize({ recipientPhone: "98123 45678" })
+    id = await claimNext(deps())
+    expect(await prepareAttempt(id!, deps(live))).toMatchObject({ to: "+919812345678" })
+    vi.stubEnv("KRIYA_VOICE_TEST_NUMBERS", "")
+  })
+
+  it("F27 a final webhook before the worker records the call id never uses the body's id", async () => {
+    const getCall = vi.spyOn(mock, "getCall")
+    await authorize()
+    const id = await claimNext(deps())
+    const attempt = await prepareAttempt(id!, deps())
+    const body = JSON.stringify({
+      CallSid: "forged-call",
+      CustomField: attempt!.attemptId,
+      Status: "completed",
+      EventId: "e1",
+    })
+    const token = attempt!.statusUrl.split("/").at(-1)!
+    expect(await handleStatusWebhook(token, body, new Headers())).toEqual({ status: 200 })
+    expect(getCall).not.toHaveBeenCalled()
+    expect((await attempts(id!))[0].status).toBe("requested")
+  })
 })
 
 describe("T-WRK-01 the voice loop beside the agent queue", () => {

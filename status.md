@@ -824,6 +824,62 @@ vendor keys or spend is done and green; the exit needs the paid benchmark
   check (a report call and a verification call to the owner's phone) recorded
   here (moved from Phase 6, owner decision 2026-10-20).
 
+### Session 1 (2026-10-20, Claude Code / Opus 5.5, `main` in place, uncommitted): adapter, no live call
+
+Owner: Exotel trial account configured (`kriyaai2`, cluster sg,
+`api.exotel.com`, ExoPhone as CLI); asked for the adapter, wiring, tests and a
+controlled test-call script. **No call was placed this session.**
+
+- **Choice:** connect-to-flow (`Calls/connect` with `Url` = App Bazaar flow).
+  `Calls/connect` + `StreamUrl` bridges two numbers, so it doesn't fit a
+  one-leg voicebot. New variable `EXOTEL_FLOW_URL`.
+- **New:** `lib/voice/exotel.ts` (placeCall, getCall `?details=true`,
+  parseStatusEvent for JSON **and** form bodies, hangup),
+  `tests/voice/exotel.test.ts` (13 cases, synthetic/redacted fixtures),
+  `scripts/exotel-test-call.ts` (one call, test-number allow-list,
+  `KRIYA_VOICE_LIVE=1`, `--yes`, no DB, numbers masked).
+- **Changed:** `lib/voice/run-call.ts` `prepareAttempt` blocks a non-mock
+  provider's call to any number not in `voice.testNumbers`
+  (`not_a_test_number`). Unset means none. **F25 fixed**: stricter than the
+  per-user flag until Phase 9. `lib/voice/verify.ts`: Exotel is registered
+  from env; a final webhook is verified only with the worker-recorded call id
+  (**F27 fixed**). `lib/config.ts`: setting `voice.testNumbers`
+  (`KRIYA_VOICE_TEST_NUMBERS`). `worker/index.ts` `startVoice`: runs
+  `voiceLoop` with Exotel only when Exotel env, `EXOTEL_CALLER_ID`, https
+  `KRIYA_APP_URL` and wss `KRIYA_VOICE_URL` are all set. Otherwise it logs and
+  places no calls. `tests/voice/pipeline.test.ts`: F25 and F27 cases.
+- **Commands:** `npm run check`: exit 0. Typecheck, lint and format clean;
+  105 test files passed, 3 skipped; 1314 tests passed, 26 skipped.
+- **Unknowns (docs read 2026-10-20, to verify on the first call):**
+  - Callback content type: both are parsed (X5).
+  - Times have no zone: read as IST (X1).
+  - `Price` has no currency: kept raw, `reportedCost` null (X8).
+  - **No hangup API is documented**: `hangup` throws, callers log it, and
+    `TimeLimit` caps the call. A cancel while ringing can't stop the ring.
+  - How the per-attempt stream token reaches the Voicebot applet (X2). Until
+    then a live stream fails auth and closes (fail closed).
+- **Still blocking worker-placed live calls:**
+  - No `voice_prices` row for Exotel, so `overBudget` blocks (X8).
+  - `KRIYA_APP_URL` is localhost and `KRIYA_VOICE_URL` is unset.
+  - The privacy notice doesn't name Exotel (F15), so `EXOTEL_*` is not yet in
+    `SECRETS`/`lib/env.ts`.
+  - B4, B5, B8.
+- **Next exact action:** the owner creates a Greeting flow and sets
+  `EXOTEL_FLOW_URL`, then runs
+  `scripts/exotel-test-call.ts --to <own number>` (dry run), then with
+  `--yes`. Record the CallSid, observed statuses and redacted details here.
+- **First attempt (2026-10-20, run by the owner):** `Calls/connect.json`
+  answered **403**, so no call was placed. The error didn't include Exotel's
+  reason, so `exotel.ts` errors now carry `RestException.Message`, with digit
+  runs cut to the last 4. The test was updated, and exotel tests, tsc and
+  eslint are clean.
+- **Second attempt (2026-10-20, owner):** 403 "Your account is not yet KYC
+  compliant. This is mandatory before making outbound calls." This answers
+  X1: KYC is required even on the trial account. B3 and B8 still block.
+  Nothing to change in code. Next: the owner completes Exotel KYC (with Kriya
+  AI's entity documents; B8 asks whether the company is registered in India),
+  then reruns the script unchanged.
+
 ## Phase 6 — Owner reminders and spoken reports
 
 **Status:** COMPLETE 2026-10-20 (mock provider; live check moved to Phase 5)

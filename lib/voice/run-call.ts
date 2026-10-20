@@ -196,6 +196,11 @@ export async function prepareAttempt(callId: string, deps: VoiceDeps) {
     .where(eq(voiceCalls.id, callId))
   // The bundle this attempt runs on: the canary or the active version (D-17)
   const policy = owner ? await policyFor(owner.userId) : v1
+  // A real provider dials only test numbers until phase 9 (F25); none set = none
+  const testNumbers =
+    deps.provider.name === "mock"
+      ? null
+      : ((await getSetting("voice.testNumbers")) ?? "").split(",").filter(Boolean)
   return privileged.transaction(async (tx) => {
     const [call] = await tx
       .select()
@@ -234,6 +239,9 @@ export async function prepareAttempt(callId: string, deps: VoiceDeps) {
     if (call.cancelRequestedAt) return move("canceled")
     if ((call.windowEnd && now >= call.windowEnd) || call.attempts >= call.maxAttempts) {
       return move("exhausted")
+    }
+    if (testNumbers && !testNumbers.includes(call.toPhoneE164)) {
+      return move("blocked", { error_code: "not_a_test_number" })
     }
     if (call.kind === "outreach") {
       if (await suppressed(tx, task.recipientPhoneHash)) {
