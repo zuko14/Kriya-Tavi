@@ -10,12 +10,22 @@ import {
   mockTelephony,
   type Scenario,
 } from "@/lib/voice/mock"
-import { startPhoneVerification, verificationStatus } from "@/lib/voice/owner-report"
+import {
+  startPhoneVerification,
+  updatePreferences,
+  verificationStatus,
+} from "@/lib/voice/owner-report"
 import { claimNext, runCall } from "@/lib/voice/run-call"
 import { clock } from "@/lib/voice/schedule"
 import { runSession } from "@/lib/voice/session"
-import { confirmCall, createDraft, requestConfirmation } from "@/lib/voice/tasks"
+import {
+  confirmCall,
+  createDraft,
+  phoneHash,
+  requestConfirmation,
+} from "@/lib/voice/tasks"
 import { handleStatusWebhook, registerTelephony } from "@/lib/voice/verify"
+import { getPhoneSettings } from "@/queries/voice"
 import { createVoiceService } from "@/voice/index"
 
 import { createTestDb, createUser, type TestDb } from "../db/harness"
@@ -573,6 +583,51 @@ describe("voice commands after the report (VOICE_REMINDERS §7)", () => {
   })
 })
 
+describe("Phone & calls settings (UX spec §7)", () => {
+  it("shows the verified number masked, and saves preferences through the owner's session", async () => {
+    expect(await getPhoneSettings(user)).toMatchObject({
+      phone: "+91 90xxx xxx01",
+      timezone: "Asia/Kolkata",
+      quietStart: "21:30",
+      reportMaxAttempts: 3,
+    })
+    expect(
+      await updatePreferences(user, {
+        timezone: "Asia/Dubai",
+        quietStart: "22:00",
+        reportMaxAttempts: 5,
+        transcriptRetentionDays: 0,
+      })
+    ).toEqual({ ok: true })
+    expect(await getPhoneSettings(user)).toMatchObject({
+      timezone: "Asia/Dubai",
+      quietStart: "22:00",
+      reportMaxAttempts: 5,
+      transcriptRetentionDays: 0,
+    })
+  })
+
+  it("a new owner gets the defaults; the number can't be set this way", async () => {
+    const other = await createUser(pg)
+    await seed(pg, "voice_access", { user_id: other })
+    expect(await getPhoneSettings(other)).toMatchObject({
+      phone: null,
+      quietEnd: "08:00",
+    })
+    expect(await updatePreferences(other, { reportMode: "on_completion" })).toEqual({
+      ok: true,
+    })
+    // The session has no update grant on the number (D-13)
+    await expect(
+      updatePreferences(other, { ownerPhoneE164: OWNER_PHONE } as never)
+    ).rejects.toThrow()
+    expect(await getPhoneSettings(other)).toMatchObject({
+      phone: null,
+      reportMode: "on_completion",
+    })
+  })
+})
+
 describe("T-REM-08 number verification by keypad (D-13)", () => {
   const NEW_NUMBER = "+919000000002"
 
@@ -631,6 +686,30 @@ describe("T-REM-08 number verification by keypad (D-13)", () => {
       ok: true,
       status: "failed",
     })
+  })
+
+  // F33: the number typed in may be a stranger's
+  it("a suppressed number, or a fourth verification of a number in a day from any account, is refused", async () => {
+    const other = await createUser(pg)
+    await seed(pg, "voice_access", { user_id: other })
+    for (const who of [user, other, other]) {
+      expect((await startPhoneVerification(who, "90000 00002")).ok).toBe(true)
+    }
+    expect(await startPhoneVerification(user, "90000 00002")).toMatchObject({
+      ok: false,
+      code: "limit_number",
+    })
+    await seed(pg, "call_suppressions", {
+      phone_hash: phoneHash("+919000000003"),
+      reason: "recipient_opt_out",
+    })
+    expect(await startPhoneVerification(other, "90000 00003")).toMatchObject({
+      ok: false,
+      code: "suppressed",
+    })
+    expect(
+      await q("select 1 from kriya.voice_calls where to_phone_e164 = '+919000000003'")
+    ).toEqual([])
   })
 
   it("an expired code isn't dialled", async () => {

@@ -7,6 +7,7 @@ import {
   conversationTurns,
   voiceApprovals,
   voiceCalls,
+  voiceProfiles,
   voiceTasks,
 } from "@/db/schema"
 import { LANGUAGES } from "@/lib/voice/languages"
@@ -366,3 +367,27 @@ export async function getCall(userId: string, taskId: string) {
 }
 
 export type CallDetail = NonNullable<Awaited<ReturnType<typeof getCall>>>
+
+// "Phone & calls" in /account (UX spec §7). The number is masked here, so
+// the whole number never reaches the browser; defaults when there's no row
+export async function getPhoneSettings(userId: string) {
+  const [row] = await withUser(userId, (tx) =>
+    tx.select().from(voiceProfiles).where(eq(voiceProfiles.userId, userId))
+  )
+  const digits = row?.ownerPhoneE164?.replace(/^\+91/, "") ?? ""
+  return {
+    phone:
+      row?.ownerPhoneVerifiedAt && digits.length === 10
+        ? `+91 ${digits.slice(0, 2)}xxx xxx${digits.slice(8)}`
+        : null,
+    timezone: row?.timezone ?? "Asia/Kolkata",
+    quietStart: (row?.quietStart ?? "21:30").slice(0, 5),
+    quietEnd: (row?.quietEnd ?? "08:00").slice(0, 5),
+    reportMode: row?.reportMode ?? "scheduled",
+    reportMaxAttempts: row?.reportMaxAttempts ?? 3,
+    reportRetryMinutes: row?.reportRetryMinutes ?? 10,
+    transcriptRetentionDays: row?.transcriptRetentionDays ?? 30,
+  }
+}
+
+export type PhoneSettings = Awaited<ReturnType<typeof getPhoneSettings>>

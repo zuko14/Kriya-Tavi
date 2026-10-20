@@ -63,7 +63,7 @@ only your own row. Rules: AGENT_MASTER_PROMPT.md §4.
 | 4 | Dialogue engine, STT/TTS/LLM, outcomes, verification | IN_PROGRESS (2026-10-20: engine, outcomes, verification and L-text done on mocks; vendor adapters + paid benchmark open, B2, B6) | 2 (benchmark needs keys) |
 | 5 | Controlled live outbound calls (Exotel, test numbers) | BLOCKED | 3, 4, external approvals |
 | 6 | Owner reminders and spoken reports | COMPLETE 2026-10-20 (mock provider; the live check to the owner's phone moves to phase 5's exit; migration `20261022000000` not applied to staging) | 3, 4 (live check needs 5) |
-| 7 | Mobile UI | IN_PROGRESS (2026-10-20: 360 px browser checks on staging done with screenshots; §11.7 measured, F29 fixed, acceptance met on a mock call (F30 fixed); open: real-Android mic + TalkBack, F28, F31; Phase 6 parts deferred) | 3, 6 |
+| 7 | Mobile UI | IN_PROGRESS (2026-10-20: 360 px browser checks on staging done with screenshots; §11.7 measured, F29 fixed, acceptance met on a mock call (F30 fixed); Phone & calls built (F33 fixed); open: its 360 px check, real-Android mic + TalkBack, F28, F31) | 3, 6 |
 | 8 | Cost, limits, monitoring, owner dashboard | NOT_STARTED | 3, 4 |
 | 9 | Security, compliance, recovery, production readiness | NOT_STARTED | 5–8 |
 | 10 | Continuous improvement loop (D-17) | NOT_STARTED | 9 (foundations in 1, 4, 7) |
@@ -1235,6 +1235,44 @@ still needs the real-Android checks.
 - **Next exact action:** owner fixes `.env.local` (F28) and `DATABASE_URL`
   (F31), then does the Android mic + TalkBack check against the staging app;
   then Phase 6 adds the deferred parts.
+
+**Session 5 result (2026-10-20 ~16:55–17:30 IST, Claude Code / Opus 5.5,
+`main` in place after `2addc76`, uncommitted; owner: "Apply the migration to
+staging and start Phase 7's Phone & calls"):** `IN_PROGRESS`.
+
+- Staging migration: `npx tsx --env-file=.env scripts/migrate.ts --dry-run`
+  → `would apply 20261022000000_voice_verification.sql` (only that one); then
+  without `--dry-run` → `applied 20261022000000_voice_verification.sql`;
+  `--status` → all three voice migrations `applied`.
+- **F33 fixed first** (automated security review of `2addc76`): a
+  verification call skipped suppression and every per-number cap.
+  `startPhoneVerification` (`lib/voice/owner-report.ts`) now refuses a
+  suppressed number and allows at most 3 verifications per number per 24 h
+  across all accounts (database `now()`, advisory lock per number); dialling
+  (`lib/voice/run-call.ts`) re-checks suppression. Open for the owner:
+  verification calls still ignore calling hours.
+- "Phone & calls" built: `components/voice/phone-settings.tsx` (number
+  masked from the server, "Call me to verify" → 6-digit code in large type →
+  status in an `aria-live` region, polled every 3 s until final; timezone,
+  quiet hours, report mode, attempts, gap, transcript retention 0/7/30/90;
+  every control 44 px by class), `queries/voice.ts` `getPhoneSettings`
+  (through `withUser`; masks the number), `app/(workspace)/account/page.tsx`
+  (section `#phone`, only with `voiceAvailable`; "Reminders and results come
+  only as phone calls."; `StopAll`, UX §9).
+- Tests (`tests/voice/reminders.test.ts`, +3): F33 refusals across accounts;
+  settings masked and saved through the owner's session; a new owner gets
+  defaults and the number can't be set through preferences (column grant).
+- `npm run check` → "All matched files use Prettier code style!", **Test
+  Files 100 passed | 3 skipped (103), Tests 1256 passed | 26 skipped
+  (1282)**, exit 0. `npm run build` → exit 0, `ƒ /account`.
+- **Not done:** the 360 px browser check of `/account#phone` (light/dark,
+  44 px measured, screenshots). It needs a seeded staging test user, which
+  needs the owner's go-ahead each time (sessions 2–4), and F28 still blocks
+  local sign-in. No verification call can be placed: the worker doesn't run
+  the loop without a real provider (Phase 5).
+- **Next exact action:** owner approves seeding a staging test user (or fixes
+  F28); then open `/account#phone` at 360 px in light and dark, record
+  screenshots in `screenshots/voice-phase7/`, and delete the test data.
 
 ## Phase 8 — Cost, limits, monitoring
 

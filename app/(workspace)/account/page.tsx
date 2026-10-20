@@ -18,6 +18,8 @@ import { Shares } from "@/components/account/shares"
 import { PlanCards } from "@/components/account/plan-cards"
 import { Notice } from "@/components/auth/auth-kit"
 import { ResetForm } from "@/components/auth/forms"
+import { StopAll } from "@/components/voice/controls"
+import { PhoneSettings } from "@/components/voice/phone-settings"
 import { privileged } from "@/db"
 import { plans } from "@/db/schema"
 import { requireUser } from "@/lib/auth"
@@ -29,6 +31,8 @@ import { listFiles } from "@/lib/files"
 import { listLogins } from "@/queries/logins"
 import { listShares } from "@/lib/share"
 import { formatInr } from "@/lib/money"
+import { voiceAvailable } from "@/lib/voice/tasks"
+import { getPhoneSettings } from "@/queries/voice"
 
 export const metadata: Metadata = { title: "Account" }
 
@@ -113,6 +117,8 @@ export default async function AccountPage({
   const radarOn =
     (await getSetting("agents.radar")) === "on" ||
     (await getSetting("agents.watchers")) === "on"
+  // Voice phase 7: "Phone & calls", with voice access only (UX spec §7)
+  const voiceOn = await voiceAvailable(user.id)
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
@@ -233,6 +239,19 @@ export default async function AccountPage({
             })}
           />
         </Section>
+
+        {voiceOn && (
+          <Section
+            id="phone"
+            title="Phone & calls"
+            description="Reminders and results come only as phone calls."
+          >
+            <PhoneSettings settings={await getPhoneSettings(user.id)} />
+            <div className="flex justify-start">
+              <StopAll />
+            </div>
+          </Section>
+        )}
 
         {memoryV2 && (
           <Section

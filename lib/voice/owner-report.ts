@@ -1,6 +1,6 @@
 import { createHmac, randomInt, randomUUID, timingSafeEqual } from "node:crypto"
 
-import { and, eq, gt, inArray, isNull, max, ne } from "drizzle-orm"
+import { and, count, eq, gt, gte, inArray, isNull, max, ne, sql } from "drizzle-orm"
 
 import { privileged, withUser } from "@/db"
 import {
@@ -24,7 +24,14 @@ import {
   type QuietHours,
 } from "./schedule"
 import { parseIndianMobile, type VoiceTaskSpec } from "./schemas"
-import { createDraft, fail, transition, voiceAvailable } from "./tasks"
+import {
+  createDraft,
+  fail,
+  phoneHash,
+  suppressed,
+  transition,
+  voiceAvailable,
+} from "./tasks"
 
 // The owner's own calls (VOICE_REMINDERS.md, D-07, D-08, D-13): the report
 // call and the number-verification call. Fixed lines and fixed patterns,
@@ -507,9 +514,14 @@ export function verificationCall(ctx: {
   )
 }
 
+// Verification calls a number may get in 24 hours, from every account
+// together: the number typed in may be someone else's (F33)
+const VERIFICATIONS_PER_NUMBER_DAY = 3
+
 // The owner asks to verify a number (API §"Preferences and verification"):
 // a code to show on screen, and a verification call due now. Older codes
-// stop working. Rate limits are the action's (actions/voice.ts)
+// stop working. Per-account rate limits are the action's (actions/voice.ts);
+// suppression and the per-number cap are here
 export async function startPhoneVerification(userId: string, phoneInput: string) {
   if (!(await voiceAvailable(userId))) {
     return fail("voice_unavailable", "Phone calls aren't available on your account.")
@@ -523,13 +535,34 @@ export async function startPhoneVerification(userId: string, phoneInput: string)
   const id = randomUUID()
   const code = String(randomInt(0, 10 ** CODE_LENGTH)).padStart(CODE_LENGTH, "0")
   const hash = codeHash(id, code)
-  if (!hash) {
+  const numberHash = phoneHash(phone)
+  if (!hash || !numberHash) {
     log.warn("voice verification refused: KRIYA_PHONE_HASH_KEY is not set")
     return fail("voice_unavailable", "Phone calls aren't available on your account.")
   }
   const now = clock.now()
   const expiresAt = new Date(now.getTime() + VERIFICATION_MINUTES * 60_000)
-  await privileged.transaction(async (tx) => {
+  const refused = await privileged.transaction(async (tx) => {
+    if (await suppressed(tx, numberHash)) {
+      return fail("suppressed", "This number can't be called.")
+    }
+    // One count per number at a time, so two accounts can't both pass it
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${numberHash}))`)
+    const [recent] = await tx
+      .select({ n: count() })
+      .from(phoneVerifications)
+      .where(
+        and(
+          eq(phoneVerifications.phoneE164, phone),
+          gte(phoneVerifications.createdAt, sql`now() - interval '1 day'`)
+        )
+      )
+    if ((recent?.n ?? 0) >= VERIFICATIONS_PER_NUMBER_DAY) {
+      return fail(
+        "limit_number",
+        "This number has had several verification calls today. Try tomorrow."
+      )
+    }
     await tx
       .update(phoneVerifications)
       .set({ expiresAt: now })
@@ -561,7 +594,9 @@ export async function startPhoneVerification(userId: string, phoneInput: string)
       expiresAt,
       voiceCallId: call.id,
     })
+    return null
   })
+  if (refused) return refused
   log.info("voice verification started", { verificationId: id })
   return { ok: true as const, verificationId: id, code, expiresAt }
 }

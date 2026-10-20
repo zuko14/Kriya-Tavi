@@ -24,7 +24,7 @@ import {
   withinCallingHours,
 } from "./schedule"
 import { hashToken } from "./streams"
-import { suppressed, transition } from "./tasks"
+import { phoneHash, suppressed, transition } from "./tasks"
 import {
   finishOutcome,
   latestAttempt,
@@ -237,6 +237,11 @@ export async function prepareAttempt(callId: string, deps: VoiceDeps) {
           )
         )
       if (!code) return move("blocked", { error_code: "verification_closed" })
+      // The number may be someone else's, who opted out since (F33)
+      const hash = phoneHash(call.toPhoneE164)
+      if (!hash || (await suppressed(tx, hash))) {
+        return move("blocked", { error_code: "suppressed" })
+      }
     } else {
       // Owner calls go only to the verified number, never in quiet hours
       const [profile] = await tx
