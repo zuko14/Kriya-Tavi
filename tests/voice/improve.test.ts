@@ -16,6 +16,7 @@ import {
   proposeVersion,
   recordFeedback,
   recordOfflineGate,
+  rollback,
   runShadow,
   VOICE_GATE,
 } from "@/lib/voice/improve"
@@ -445,5 +446,69 @@ describe("transcript retention (privacy notice)", () => {
     ).toHaveLength(1)
     // Within retention nothing is deleted
     expect(await pruneTranscripts()).toBe(0)
+  })
+})
+
+describe("the loop can't be steered by a false report or a bad parent", () => {
+  it("a correction that claims 'agreed' where the checked outcome didn't say so is no severity-1 case", async () => {
+    const attempt = await connectedAttempt(optedIn)
+    await pg.query(
+      `update kriya.call_outcomes set interpreted = jsonb_set(interpreted, '{result}', '"declined"')
+       where call_attempt_id = $1`,
+      [attempt]
+    )
+    await computeMissingMetrics()
+    await recordFeedback(optedIn, {
+      callAttemptId: attempt,
+      field: "result",
+      was: "agreed",
+      shouldBe: "declined",
+      source: "app",
+    })
+    await groupCases()
+    const codes = await q<{ code: string }>(
+      "select code from kriya.voice_cases where $1 = any(attempt_ids)",
+      [attempt]
+    )
+    expect(codes.map((c) => c.code)).toEqual(["other"])
+  })
+
+  it("a candidate's parent must be v1 or an active or retired version", async () => {
+    for (const parentId of ["v2", "v404"]) {
+      // v2 was rolled back above; v404 doesn't exist
+      expect(
+        await proposeVersion({
+          bundle: candidate("v4", "Bye."),
+          parentId,
+          targets: [],
+          proposedBy: "test",
+        })
+      ).toMatchObject({ ok: false })
+    }
+  })
+
+  it("rolling back an active version never reinstates a parent that isn't retired: v1 instead", async () => {
+    const owner = await createUser(pg)
+    // v5 is active with parent v3 (rolled back, not retired)
+    const bundle = candidate("v5", "Thanks, goodbye.")
+    await seed(pg, "voice_policy_versions", {
+      id: "v5",
+      parent_id: "v3",
+      bundle,
+      bundle_hash: policyHash(bundle),
+      status: "active",
+      proposed_by: "test",
+    })
+    await setSetting("voice.policyVersion", "v5", owner)
+    await rollback("v5", "test", owner)
+    expect(
+      await q(
+        "select id, status from kriya.voice_policy_versions where id in ('v3', 'v5') order by id"
+      )
+    ).toEqual([
+      { id: "v3", status: "rolled_back" },
+      { id: "v5", status: "rolled_back" },
+    ])
+    expect((await policyFor(optedIn)).version).toBe("v1")
   })
 })

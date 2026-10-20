@@ -313,7 +313,9 @@ export async function groupCases() {
         where m.kind = 'owner_report' and c.status = 'exhausted' and c.delivered_at is null
       union all
       select case f.field
-               when 'result' then case when lower(coalesce(f.was, '')) = 'agreed'
+               -- A false agreement only where the checked outcome really said
+               -- agreed: a correction alone can't make a severity-1 case
+               when 'result' then case when o.interpreted ->> 'result' = 'agreed'
                                         and lower(coalesce(f.should_be, '')) <> 'agreed'
                                        then 'false_agreement' else 'other' end
                when 'agreed_times' then 'wrong_time_parse'
@@ -323,6 +325,7 @@ export async function groupCases() {
              f.call_attempt_id, coalesce(am.policy_version, 'v1'), ${week("f.created_at")}
         from kriya.voice_feedback f
         left join kriya.attempt_metrics am on am.call_attempt_id = f.call_attempt_id
+        left join kriya.call_outcomes o on o.call_attempt_id = f.call_attempt_id
         where f.created_at >= now() - interval '14 days'`)
   )
   const groups = new Map<
@@ -411,6 +414,19 @@ export async function proposeVersion(input: {
   if (bundle.version === v1.version) {
     return { ok: false as const, errors: ["version: v1 is the code bundle"] }
   }
+  const parentId = input.parentId ?? v1.version
+  if (parentId !== v1.version) {
+    const [parent] = await privileged
+      .select({ status: voicePolicyVersions.status })
+      .from(voicePolicyVersions)
+      .where(eq(voicePolicyVersions.id, parentId))
+    if (!parent || !["active", "retired"].includes(parent.status)) {
+      return {
+        ok: false as const,
+        errors: [`parentId: ${parentId} is not v1 or an active or retired version`],
+      }
+    }
+  }
   const cases = input.targets.length
     ? await privileged
         .select()
@@ -429,7 +445,7 @@ export async function proposeVersion(input: {
   await privileged.transaction(async (tx) => {
     await tx.insert(voicePolicyVersions).values({
       id: bundle.version,
-      parentId: input.parentId ?? v1.version,
+      parentId,
       bundle,
       bundleHash: policyHash(bundle),
       targets: input.targets,
@@ -636,18 +652,31 @@ export async function rollback(id: string, reason: string, actorId: string | nul
       .update(voicePolicyVersions)
       .set({ status: "rolled_back", canaryPercent: 0 })
       .where(eq(voicePolicyVersions.id, id))
+    // The parent comes back only if it's a stored, retired version with no
+    // open severity-1 case; anything else falls back to v1
+    let parent = v1.version
     if (row.status === "active" && row.parentId !== v1.version) {
-      await tx
-        .update(voicePolicyVersions)
-        .set({ status: "active" })
+      const [prior] = await tx
+        .select({ status: voicePolicyVersions.status })
+        .from(voicePolicyVersions)
         .where(eq(voicePolicyVersions.id, row.parentId))
+      if (
+        prior?.status === "retired" &&
+        (await openSevere(tx, row.parentId)).length === 0
+      ) {
+        await tx
+          .update(voicePolicyVersions)
+          .set({ status: "active" })
+          .where(eq(voicePolicyVersions.id, row.parentId))
+        parent = row.parentId
+      }
     }
     await audit(tx, actorId, "voice.policy.rollback", id, {
       reason,
       from: row.status,
-      to: row.parentId,
+      to: parent,
     })
-    return { from: row.status, parent: row.parentId }
+    return { from: row.status, parent }
   })
   if (!result) return null
   if (result.from === "active") {
