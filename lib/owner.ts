@@ -13,6 +13,8 @@ import {
   subscriptions,
   tasks,
   usageEvents,
+  voiceAccess,
+  voicePrices,
   workers,
 } from "@/db/schema"
 import {
@@ -22,7 +24,9 @@ import {
   SETTINGS,
   type SettingKey,
 } from "@/lib/config"
-import { applyMarkup, parseRate, usdToInr } from "@/lib/money"
+import { usageSummary } from "@/lib/entitlements"
+import { applyMarkup, parseRate, toMicroInr, usdToInr } from "@/lib/money"
+import { voiceSpendToday } from "@/lib/voice/metering"
 
 // Reads for the owner console. Everything here is aggregate or account
 // metadata: no conversation, memory or message content is ever selected.
@@ -521,5 +525,163 @@ export async function auditLog(filter?: string) {
     .orderBy(desc(auditEvents.createdAt))
     .limit(200)
 }
+
+/* ───────────────────────────── voice ────────────────────────────── */
+
+// Voice cost and operations (COST_AND_METERING §5–6): SQL aggregates over
+// usage, charges, calls and attempts only. Never what was said: no
+// transcript, outcome or note column is selected here (T-OWN-01)
+
+// Per currency, so USD converts once with the owner's rate
+const COST = sql`
+  coalesce(sum(coalesce(u.reported_cost_micro, u.estimated_cost_micro))
+    filter (where coalesce(u.reported_currency, u.estimated_currency) = 'INR'), 0)::bigint as inr,
+  coalesce(sum(coalesce(u.reported_cost_micro, u.estimated_cost_micro))
+    filter (where coalesce(u.reported_currency, u.estimated_currency) = 'USD'), 0)::bigint as usd,
+  coalesce(sum(u.reported_cost_micro) filter (where u.reported_currency is not null), 0)::bigint as reported,
+  count(*) filter (where u.reported_cost_micro is null and u.estimated_cost_micro is not null)::int as estimated,
+  count(*) filter (where u.reported_cost_micro is null and u.estimated_cost_micro is null)::int as unmetered`
+
+type CostRow = {
+  inr: string
+  usd: string
+  reported: string
+  estimated: number
+  unmetered: number
+}
+
+export async function voiceFinance(days = 30) {
+  const since = daysAgo(days)
+  const rate = parseRate(await getSetting("fx.usdInr"))
+  // Null when there's USD cost and no rate to convert it
+  const inr = (row: CostRow | undefined) => {
+    const usd = toMicroInr({ micro: n(row?.usd), currency: "USD" }, rate)
+    return n(row?.usd) === 0 ? n(row?.inr) : usd == null ? null : n(row?.inr) + usd
+  }
+  const byComponent = rowsOf<
+    CostRow & { component: string; provider: string; items: number }
+  >(
+    await privileged.execute(sql`
+      select u.component, u.provider, count(*)::int as items, ${COST}
+      from kriya.voice_usage u where u.created_at >= ${since}
+      group by 1, 2 order by 1, 2`)
+  ).map((row) => ({ ...row, microInr: inr(row) }))
+  // Busy, unanswered and failed attempts, apart (§6)
+  const failed = rowsOf<CostRow & { attempts: number }>(
+    await privileged.execute(sql`
+      select count(distinct a.id)::int as attempts, ${COST}
+      from kriya.call_attempts a
+      left join kriya.voice_usage u on u.call_attempt_id = a.id
+      where a.created_at >= ${since}
+        and a.status in ('busy', 'no_answer', 'rejected', 'failed', 'canceled')`)
+  )[0]
+  const [attempts] = rowsOf<{ attempts: number; tasks: number }>(
+    await privileged.execute(sql`
+      select count(*)::int as attempts, count(distinct c.voice_task_id)::int as tasks
+      from kriya.call_attempts a join kriya.voice_calls c on c.id = a.voice_call_id
+      where a.created_at >= ${since} and c.kind = 'outreach'`)
+  )
+  // Cost per successful task: all finished tasks' cost ÷ completed tasks
+  // whose result isn't call_failed (§6; failed tasks stay in the numerator)
+  const [tasksRow] = rowsOf<{
+    tasks: number
+    successful: number
+    unpriced: number
+    cost: string
+    charged: string
+  }>(
+    await privileged.execute(sql`
+      select count(*)::int as tasks,
+             count(*) filter (where t.status = 'completed' and t.result <> 'call_failed')::int as successful,
+             count(*) filter (where ch.status = 'unpriced')::int as unpriced,
+             coalesce(sum(ch.provider_cost_micro_inr), 0)::bigint as cost,
+             coalesce(sum(ch.charge_micro_inr), 0)::bigint as charged
+      from kriya.voice_charges ch join kriya.voice_tasks t on t.id = ch.voice_task_id
+      where t.finished_at >= ${since}`)
+  )
+  const [unpricedToday] = rowsOf<{ n: number }>(
+    await privileged.execute(sql`
+      select count(*)::int as n from kriya.voice_charges
+      where unmetered_items > 0
+        and created_at >= (date_trunc('day', now() at time zone 'Asia/Kolkata') at time zone 'Asia/Kolkata')`)
+  )
+  const feeBps = Number((await getSetting("finance.paymentFeeBps")) ?? NaN)
+  const cost = n(tasksRow?.cost)
+  const charged = n(tasksRow?.charged)
+  const fee = Number.isFinite(feeBps) ? applyMarkup(charged, feeBps) : null
+  return {
+    days,
+    byComponent,
+    failed: {
+      attempts: failed?.attempts ?? 0,
+      microInr: inr(failed),
+      unmetered: failed?.unmetered ?? 0,
+    },
+    attemptsPerTask: attempts?.tasks ? attempts.attempts / attempts.tasks : null,
+    tasks: tasksRow?.tasks ?? 0,
+    successful: tasksRow?.successful ?? 0,
+    unpricedTasks: tasksRow?.unpriced ?? 0,
+    costMicroInr: cost,
+    costPerSuccessMicroInr: tasksRow?.successful
+      ? Math.round(cost / tasksRow.successful)
+      : null,
+    chargedMicroInr: charged,
+    feeMicroInr: fee,
+    contributionMicroInr: fee == null ? null : charged - cost - fee,
+    unpricedToday: unpricedToday?.n ?? 0,
+  }
+}
+
+export async function voiceOperations() {
+  const cap = await getSetting("voice.dailySpendCapMicroInr")
+  const spent = await voiceSpendToday()
+  const capMicroInr = cap ? Number(cap) : null
+  const calls = rowsOf<{ kind: string; status: string; n: number }>(
+    await privileged.execute(sql`
+      select kind, status, count(*)::int as n from kriya.voice_calls
+      where status in ('scheduled', 'dialing', 'in_call', 'retry_wait', 'needs_owner', 'blocked')
+      group by 1, 2 order by 1, 2`)
+  )
+  const attempts = rowsOf<{ status: string; end_reason: string | null; n: number }>(
+    await privileged.execute(sql`
+      select status, end_reason, count(*)::int as n from kriya.call_attempts
+      where created_at >= now() - interval '1 day' group by 1, 2 order by 3 desc`)
+  )
+  const [stuck] = rowsOf<{ n: number }>(
+    await privileged.execute(sql`
+      select count(*)::int as n from kriya.voice_calls
+      where status in ('dialing', 'in_call') and lease_expires_at < now()`)
+  )
+  // Owners at 80 % of their allowance (§5)
+  const voiceUsers = await privileged
+    .select({ userId: voiceAccess.userId })
+    .from(voiceAccess)
+  const nearAllowance = (
+    await Promise.all(
+      voiceUsers.map(async ({ userId }) => ({ userId, ...(await usageSummary(userId)) }))
+    )
+  )
+    .filter((u) => u.usedPct != null && u.usedPct >= 80)
+    .map((u) => ({ userId: u.userId, usedPct: u.usedPct!, plan: u.plan.name }))
+  return {
+    spentMicroInr: spent.microInr,
+    unmeteredToday: spent.unmetered,
+    capMicroInr,
+    capPct:
+      capMicroInr && spent.microInr != null
+        ? Math.round((spent.microInr / capMicroInr) * 100)
+        : null,
+    calls,
+    attempts,
+    stuck: stuck?.n ?? 0,
+    nearAllowance,
+  }
+}
+
+export const voicePriceSheet = () =>
+  privileged
+    .select()
+    .from(voicePrices)
+    .orderBy(voicePrices.provider, voicePrices.product, desc(voicePrices.effectiveFrom))
 
 export { n }

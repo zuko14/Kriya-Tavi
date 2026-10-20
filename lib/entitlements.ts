@@ -9,6 +9,7 @@ import {
   schedules,
   subscriptions,
   tasks,
+  voiceCharges,
   type Plan,
 } from "@/db/schema"
 
@@ -64,11 +65,19 @@ export async function usageSummary(userId: string) {
     })
     .from(charges)
     .where(and(eq(charges.userId, userId), gte(charges.createdAt, since)))
+  // Voice tasks spend the same allowance (voice phase 8, F9)
+  const [voice] = await privileged
+    .select({
+      charge: sum(voiceCharges.chargeMicroInr).mapWith(Number),
+      unpriced: count(sql`case when ${voiceCharges.status} = 'unpriced' then 1 end`),
+    })
+    .from(voiceCharges)
+    .where(and(eq(voiceCharges.userId, userId), gte(voiceCharges.createdAt, since)))
   const [today] = await privileged
     .select({ n: count() })
     .from(tasks)
     .where(and(eq(tasks.userId, userId), gte(tasks.createdAt, istStart("day"))))
-  const usedMicroInr = spent?.charge ?? 0
+  const usedMicroInr = (spent?.charge ?? 0) + (voice?.charge ?? 0)
   const allowance = plan.includedUsageMicroInr
   return {
     plan,
@@ -78,7 +87,7 @@ export async function usageSummary(userId: string) {
     // A free plan with no rupee allowance is limited by task count alone
     usedPct:
       allowance > 0 ? Math.min(100, Math.round((usedMicroInr / allowance) * 100)) : null,
-    unpricedTasks: spent?.unpriced ?? 0,
+    unpricedTasks: (spent?.unpriced ?? 0) + (voice?.unpriced ?? 0),
     tasksToday: today?.n ?? 0,
   }
 }
@@ -94,6 +103,14 @@ export function checkTaskAllowed(usage: UsageSummary): Limit {
       message: `You've used today's ${plan.maxTasksPerDay} tasks on the ${plan.name} plan. They reset at midnight IST, or upgrade for more.`,
     }
   }
+  return checkAllowance(usage)
+}
+
+// A phone call spends the same allowance; the daily task count is for agents
+export const checkVoiceAllowed = (usage: UsageSummary): Limit => checkAllowance(usage)
+
+function checkAllowance(usage: UsageSummary): Limit {
+  const { plan } = usage
   if (usage.allowanceMicroInr > 0 && usage.usedMicroInr >= usage.allowanceMicroInr) {
     const cap =
       usage.allowanceMicroInr + (plan.overageAllowed ? plan.overageCapMicroInr : 0)

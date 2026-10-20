@@ -125,4 +125,17 @@ describe("₹ caps (K2, AT-QUO-02)", () => {
     expect(capToProviderMicroUsd(10_000_000, null, 15_000)).toBeNull()
     expect(capToProviderMicroUsd(10_000_000, parseRate("84.25"), 0)).toBeNull()
   })
+
+  // T-COST-03 (voice phase 8): mixed INR/USD items in micro-INR
+  it("converts voice amounts to micro-INR: INR as is, USD at the owner's rate, rounded half up", async () => {
+    const { toMicroInr } = await import("@/lib/money")
+    expect(toMicroInr({ micro: 1_234_567, currency: "INR" }, null)).toBe(1_234_567)
+    expect(toMicroInr({ micro: 1_000_000, currency: "USD" }, parseRate("84.25"))).toBe(
+      84_250_000
+    )
+    // 1 micro-USD at 84.25 is 84.25 micro-INR → 84; 2 → 168.5 → 169
+    expect(toMicroInr({ micro: 1, currency: "USD" }, parseRate("84.25"))).toBe(84)
+    expect(toMicroInr({ micro: 2, currency: "USD" }, parseRate("84.25"))).toBe(169)
+    expect(toMicroInr({ micro: 1_000_000, currency: "USD" }, null)).toBeNull()
+  })
 })

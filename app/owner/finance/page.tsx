@@ -4,13 +4,14 @@ import Link from "next/link"
 import { Bars, Empty, Section, Table, Td, Tile, Tiles } from "@/components/owner/ui"
 import { requireOwner } from "@/lib/auth"
 import { formatInr, formatPaise, formatUsd } from "@/lib/money"
-import { finance } from "@/lib/owner"
+import { finance, voiceFinance } from "@/lib/owner"
 
 export const metadata: Metadata = { title: "Finance" }
 
 export default async function OwnerFinance() {
   await requireOwner()
   const f = await finance(30)
+  const v = await voiceFinance(30)
   const totalCost = f.usage.reported + f.usage.estimated
   const perTask = f.taskCosts.tasks ? Math.round(totalCost / f.taskCosts.tasks) : 0
   const perSuccess = f.taskCosts.succeeded
@@ -167,6 +168,101 @@ export default async function OwnerFinance() {
           </Table>
         </Section>
       </div>
+
+      <Section
+        title="Phone calls"
+        description="Voice cost in INR: reported by providers, or estimated from your voice price sheet. Unmetered items have no price yet and are never counted as free."
+      >
+        {v.unpricedToday > 0 && (
+          <p
+            role="alert"
+            className="rounded-lg border border-destructive/40 px-3 py-2 text-[13px] text-destructive"
+          >
+            {v.unpricedToday} voice charge(s) today have unpriced items. Add the prices in{" "}
+            <Link href="/owner/config" className="underline">
+              Config
+            </Link>
+            .
+          </p>
+        )}
+        <Tiles>
+          <Tile
+            label="voice provider cost"
+            value={formatInr(v.costMicroInr)}
+            hint={`${v.tasks} finished tasks`}
+          />
+          <Tile
+            label="cost / successful call task"
+            value={
+              v.costPerSuccessMicroInr == null ? "—" : formatInr(v.costPerSuccessMicroInr)
+            }
+            hint={`${v.successful} completed, not call_failed`}
+          />
+          <Tile label="customer charges" value={formatInr(v.chargedMicroInr)} />
+          <Tile
+            label="contribution"
+            value={
+              v.contributionMicroInr == null
+                ? "fee not set"
+                : formatInr(v.contributionMicroInr)
+            }
+            hint="charges − cost − finance.paymentFeeBps"
+          />
+          <Tile
+            label="failed attempts"
+            value={
+              v.failed.microInr == null ? "FX rate not set" : formatInr(v.failed.microInr)
+            }
+            hint={`${v.failed.attempts} busy / unanswered / failed · ${v.failed.unmetered} unmetered`}
+            tone={v.failed.unmetered > 0 ? "warn" : undefined}
+          />
+          <Tile
+            label="attempts / task"
+            value={v.attemptsPerTask == null ? "—" : v.attemptsPerTask.toFixed(2)}
+          />
+          <Tile
+            label="unpriced tasks"
+            value={v.unpricedTasks}
+            tone={v.unpricedTasks > 0 ? "bad" : "good"}
+          />
+        </Tiles>
+        <Table
+          head={[
+            "component",
+            "provider",
+            "items",
+            "cost",
+            "reported",
+            "estimated",
+            "unmetered",
+          ]}
+        >
+          {v.byComponent.length === 0 && <Empty colSpan={7}>No voice usage yet.</Empty>}
+          {v.byComponent.map((row) => (
+            <tr key={`${row.component}:${row.provider}`}>
+              <Td>{row.component}</Td>
+              <Td className="font-mono text-[11.5px]">{row.provider}</Td>
+              <Td className="font-mono tabular-nums">{row.items}</Td>
+              <Td className="font-mono tabular-nums">
+                {row.microInr == null ? "FX rate not set" : formatInr(row.microInr)}
+              </Td>
+              <Td className="font-mono tabular-nums">
+                {row.items - row.estimated - row.unmetered}
+              </Td>
+              <Td className="font-mono tabular-nums">{row.estimated}</Td>
+              <Td
+                className={
+                  row.unmetered > 0
+                    ? "font-mono text-destructive tabular-nums"
+                    : "font-mono tabular-nums"
+                }
+              >
+                {row.unmetered}
+              </Td>
+            </tr>
+          ))}
+        </Table>
+      </Section>
 
       <Section title="Top users by provider cost">
         <Table head={["user", "tasks", "provider cost", "charged"]}>

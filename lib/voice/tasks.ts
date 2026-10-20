@@ -20,7 +20,7 @@ import {
   type VoiceCallStatus,
   type VoiceTaskStatus,
 } from "@/db/schema"
-import { getPlan } from "@/lib/entitlements"
+import { checkVoiceAllowed, getPlan, usageSummary, type Limit } from "@/lib/entitlements"
 import { log } from "@/lib/log"
 import { usageFromMetadata } from "@/lib/models"
 
@@ -55,6 +55,7 @@ export type VoiceErrorCode =
   | "suppressed"
   | "limit_daily"
   | "limit_number"
+  | "limit_allowance"
   | "quiet_hours"
   | "outside_calling_hours"
   | "stale_approval"
@@ -153,7 +154,9 @@ export const suppressed = async (q: Q, hash: string) =>
   ).length > 0
 
 // Daily outreach and per-number limits, and suppression (SECURITY §5)
-async function limits(q: Q, userId: string, plan: Plan, hash: string) {
+// `allowance` is read before the caller's transaction: usageSummary uses
+// its own connection, which would wait on the transaction's
+async function limits(q: Q, userId: string, plan: Plan, hash: string, allowance: Limit) {
   if (await suppressed(q, hash)) return fail("suppressed", "This number can't be called.")
   const authorized = (since: Date, extra = sql`true`) =>
     q
@@ -175,6 +178,8 @@ async function limits(q: Q, userId: string, plan: Plan, hash: string) {
   ) {
     return fail("limit_number", "This number has been called often this week. Try later.")
   }
+  // The plan's allowance, shared with agent tasks (COST_AND_METERING §5)
+  if (!allowance.ok) return fail("limit_allowance", allowance.message)
   return null
 }
 
@@ -326,6 +331,7 @@ export async function draftFromText(userId: string, text: string, model: Languag
 export async function requestConfirmation(userId: string, taskId: string) {
   const plan = await voicePlan(userId)
   if (!plan) return UNAVAILABLE
+  const allowance = checkVoiceAllowed(await usageSummary(userId))
   return privileged.transaction(async (tx) => {
     const task = await ownTask(tx, userId, taskId)
     if (!task) return NOT_FOUND
@@ -395,7 +401,7 @@ export async function requestConfirmation(userId: string, taskId: string) {
         "Tavi calls people between 9 AM and 9 PM, Monday to Saturday. Move the report later."
       )
     }
-    const refused = await limits(tx, userId, plan, task.recipientPhoneHash)
+    const refused = await limits(tx, userId, plan, task.recipientPhoneHash, allowance)
     if (refused) return refused
 
     // Exactly what the confirmation card shows (API_AND_EXECUTION_CONTRACTS §2)
@@ -444,6 +450,7 @@ export async function confirmCall(
 ) {
   const plan = await voicePlan(userId)
   if (!plan) return UNAVAILABLE
+  const allowance = checkVoiceAllowed(await usageSummary(userId))
   return privileged.transaction(async (tx) => {
     const [approval] = await tx
       .select({
@@ -467,7 +474,7 @@ export async function confirmCall(
     if (!pending || approval.row.payloadHash !== payloadHash) {
       return fail("stale_approval", "The details changed. Review the call again.")
     }
-    const refused = await limits(tx, userId, plan, task.recipientPhoneHash)
+    const refused = await limits(tx, userId, plan, task.recipientPhoneHash, allowance)
     if (refused) return refused
 
     await tx

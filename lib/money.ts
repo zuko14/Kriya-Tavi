@@ -27,6 +27,16 @@ export function usdToInr(microUsd: number, rateE4: bigint) {
   return Number(divRound(BigInt(microUsd) * rateE4, 10_000n))
 }
 
+// A provider amount in micro-INR (voice): INR as it is, USD through the
+// owner's rate. Null for USD without a rate, never a guess
+export function toMicroInr(
+  item: { micro: number; currency: "INR" | "USD" },
+  rateE4: bigint | null
+) {
+  if (item.currency === "INR") return item.micro
+  return rateE4 ? usdToInr(item.micro, rateE4) : null
+}
+
 // Basis points: 10000 = 1×, 15000 = 1.5×
 export function applyMarkup(microInr: number, bps: number) {
   return Number(divRound(BigInt(microInr) * BigInt(bps), 10_000n))

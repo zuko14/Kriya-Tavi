@@ -69,6 +69,23 @@ export const SETTINGS = {
     pattern: /^\d{1,4}$/,
     hint: "Basis points, e.g. 236 for 2.36%",
   },
+  // Voice (COST_AND_METERING §5): once today's voice cost (reported +
+  // estimated) reaches this, no new call is claimed. Unset: no live calls
+  "voice.dailySpendCapMicroInr": {
+    env: "KRIYA_VOICE_DAILY_SPEND_CAP_MICRO_INR",
+    pattern: /^\d{1,15}$/,
+    hint: "Micro-rupees per day, e.g. 500000000 for ₹500",
+  },
+  // Live calls (D-12, AGENTS.md voice rule 5): a real provider dials only
+  // while this is on and KRIYA_VOICE_LIVE=1 is set on the worker. Turning it
+  // off stops new dials within the settings cache window (T-SEC-04)
+  // Owner-only (no env), so it stays a second switch beside KRIYA_VOICE_LIVE
+  "voice.liveCalls": {
+    env: null,
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
   // Agent platform switches (docs/agent-platform). Each is off by default,
   // and off means existing agents get the same prompt and tools as before.
   // Memory v2: typed, shared and retrieved memory, thread summaries

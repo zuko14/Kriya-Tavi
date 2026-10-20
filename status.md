@@ -29,6 +29,7 @@ only your own row. Rules: AGENT_MASTER_PROMPT.md §4.
 
 | Phase | Agent | Branch / worktree | Claimed (IST) | Files held | Last update |
 | ----- | ----- | ----------------- | ------------- | ---------- | ----------- |
+| 8 | Claude Code / Opus 5.5 | `main` in place (after `d21b857`) | 2026-10-20 17:25 | `lib/voice/metering.ts`, `lib/money.ts`, `lib/entitlements.ts`, `lib/owner.ts`, `app/owner/{finance,operations,config}/page.tsx`, `app/(workspace)/usage/page.tsx`, `status.md` (own sections) | 2026-10-20 ~19:00: phase 8 session 2 and phase 9 prep, uncommitted; `npm run check` stopped (low memory) |
 
 ## Documents
 
@@ -64,8 +65,8 @@ only your own row. Rules: AGENT_MASTER_PROMPT.md §4.
 | 5 | Controlled live outbound calls (Exotel, test numbers) | BLOCKED | 3, 4, external approvals |
 | 6 | Owner reminders and spoken reports | COMPLETE 2026-10-20 (mock provider; the live check to the owner's phone moves to phase 5's exit; migration `20261022000000` not applied to staging) | 3, 4 (live check needs 5) |
 | 7 | Mobile UI | IN_PROGRESS (2026-10-20: 360 px browser checks on staging done with screenshots; §11.7 measured, F29 fixed, acceptance met on a mock call (F30 fixed); Phone & calls built and checked at 360 px (F33 fixed); open: real-Android mic + TalkBack, F28, F31) | 3, 6 |
-| 8 | Cost, limits, monitoring, owner dashboard | NOT_STARTED | 3, 4 |
-| 9 | Security, compliance, recovery, production readiness | NOT_STARTED | 5–8 |
+| 8 | Cost, limits, monitoring, owner dashboard | IN_PROGRESS (2026-10-20: metering, charges, allowance, daily cap, per-task budget, owner views and the `/usage` Calls row built; open: owner pages in a browser, C1 on real rows, F34) | 3, 4 |
+| 9 | Security, compliance, recovery, production readiness | IN_PROGRESS (prep on mocks 2026-10-20: live switches, T-SEC-02…04, gate evidence map; every gate open; 5 is BLOCKED) | 5–8 |
 | 10 | Continuous improvement loop (D-17) | NOT_STARTED | 9 (foundations in 1, 4, 7) |
 
 Order differs from the brief (D-15): durable orchestration (brief 5) and
@@ -1327,6 +1328,92 @@ staging and start Phase 7's Phone & calls"):** `IN_PROGRESS`.
   price appears that the owner didn't enter.
 - **Exit:** `npm run check` passes.
 
+**Session 1 (2026-10-20 ~17:25–18:20 IST, Claude Code / Opus 5.5, `main` in
+place after `d21b857`, uncommitted; owner: "claim and proceed to Phase 8"):**
+`IN_PROGRESS`.
+
+- Read: COST_AND_METERING.md (all); TEST_STRATEGY T-COST-01…06, T-OWN-01;
+  CHANGE_IMPACT rows for `lib/entitlements.ts`, `lib/config.ts`, `app/owner/*`,
+  `lib/owner.ts`, `lib/money.ts`. Found: no `voice.*` setting existed yet
+  (the CHANGE_IMPACT Phase 2 row expected them); `voice_prices`,
+  `voice_usage`, `voice_charges` were in place from Phase 1; telephony, STT,
+  TTS and LLM usage rows were already written.
+- Created: `lib/voice/metering.ts` (estimates from `voice_prices` by
+  provider+product and the latest effective price, units incl. 30/60 s
+  pulses and per attempt; LLM rows from the model catalogue like agent
+  metering; `sumVoiceCost` in micro-INR; one charge per terminal task,
+  `chargeFinishedVoiceTasks` sweep, `repriceVoiceTask` changes only
+  estimated/unpriced; `voiceSpendToday`; `dailyCapAllows`);
+  `actions/voice-prices.ts` (owner price sheet: zod, decimal → micro without
+  floats, `requireOwner`, audit row, reprices open charges);
+  `components/owner/voice-price-form.tsx`; `tests/voice/metering.test.ts`.
+- Changed: `lib/money.ts` (`toMicroInr` only); `lib/config.ts`
+  (`voice.dailySpendCapMicroInr`, with a pattern); `lib/entitlements.ts`
+  (`usageSummary` adds voice charges and their unpriced count;
+  `checkVoiceAllowed`; `checkTaskAllowed` unchanged in behaviour, its
+  allowance part shared); `lib/voice/tasks.ts` (`limits` refuses with
+  `limit_allowance`; the allowance is read before the transaction);
+  `lib/voice/run-call.ts` (`claimNext` refuses at the cap, and when the cap
+  is unset for any provider but the mock; `recoverVoice` charges finished
+  tasks); `lib/owner.ts` (`voiceFinance`, `voiceOperations`,
+  `voicePriceSheet`, aggregates only); `app/owner/finance` (voice tiles,
+  per-component table, unpriced banner), `app/owner/operations` (spend vs
+  cap, 80 % alerts, calls by state, attempts in 24 h, owners near their
+  allowance), `app/owner/config` ("Voice" settings group, price sheet);
+  `tests/money.test.ts` (T-COST-03, existing cases unchanged).
+- Found and fixed while testing: reading settings or model prices through
+  the shared client inside a transaction deadlocked on PGlite (one
+  connection) and would take a second pooled connection on Postgres (F31);
+  settings are now read before the transaction and catalogue prices through
+  it. The same for `usageSummary` inside confirmation.
+- Tests (`tests/voice/metering.test.ts`, 8): T-COST-01 (busy, no-answer and
+  answered attempts each one telephony row, null cost, charge `unpriced` with
+  3 unmetered), T-COST-02 (each attempt ended twice → one row), T-COST-04
+  (failed and cancelled tasks charged once, sweep idempotent; a 60 s-pulse
+  price reprices to `estimated` 600000 micro-INR with the busy attempt still
+  unmetered; a `final` charge unchanged; USD without a rate `unpriced`, then
+  `final` at 84.0000), T-COST-05 (`usageSummary` adds the voice charge; a
+  used-up allowance → `requestConfirmation` `limit_allowance`), T-COST-06
+  (cap reached → no claim; under it → claimed; unset → a real provider is
+  refused, the mock claims), T-OWN-01 (static: `lib/owner.ts` names no
+  transcript/outcome/note column; canary in a turn and an outcome never in
+  the voice views' output). `tests/money.test.ts` +1 (T-COST-03).
+- `npm run check` → "All matched files use Prettier code style!", **Test
+  Files 101 passed | 3 skipped (104), Tests 1265 passed | 26 skipped
+  (1291)**, exit 0; the existing pipeline tests pass unchanged (F9).
+  `npm run build` → exit 0 (`ƒ /owner/config`, `/owner/finance`,
+  `/owner/operations`).
+- Not done: the "Calls" row on `/usage` (UX §10; `app/(workspace)/usage/page.tsx`
+  has no CHANGE_IMPACT row, so it needs the owner's approval first); the
+  per-task cost budget projected before each dial (§5); the owner views
+  weren't opened in a browser; acceptance C1 needs real rows (no live call
+  before Phase 5). F34 (owner).
+- **Next exact action:** owner decides F34 and approves the `/usage` change;
+  then add the Calls row and the per-task budget check, and look at the
+  three owner pages in a browser.
+
+**Session 2 (2026-10-20 ~18:25–18:45 IST, same agent; owner: "Do what else
+needed to be done"):** `IN_PROGRESS`.
+
+- Per-task budget before each dial (§5): `overBudget` in
+  `lib/voice/metering.ts` (the task's cost so far + one full-length call at
+  the provider's `outbound` price; no telephony price → nothing projected;
+  USD without a rate → over, never dial blind). `prepareAttempt` blocks the
+  outreach call with `error_code: budget`; the task fails with "Another try
+  would go over this call's cost limit, so I stopped." (`queries/voice.ts`).
+  Not done: the in-call check at 100 % (kriya-voice).
+- `/usage` "phone calls · this period" row (UX §10), voice access only:
+  calls, minutes, charged (estimated until final), calls left today;
+  `getCallUsage` in `queries/voice.ts` through `withUser`. The owner's "do
+  what else needed" taken as the approval this file needed; recorded as a
+  CHANGE_IMPACT §3 row.
+- Tests (`tests/voice/metering.test.ts`, +2): the budget (no price → fits;
+  ₹0.005/s × 300 s > ₹1; ₹0.001/s fits; plus ₹0.80 spent → over); the Calls
+  row counts only the person's own calls (another user's ₹9 charge absent).
+  `npx vitest run tests/voice/metering.test.ts` → 10 passed. `tsc --noEmit`
+  clean.
+- F34 still open (owner).
+
 ## Phase 9 — Security, compliance, recovery, readiness
 
 **Status:** NOT_STARTED
@@ -1342,6 +1429,52 @@ staging and start Phase 7's Phone & calls"):** `IN_PROGRESS`.
   evidence; no open critical findings.
 - **Exit:** owner sign-off recorded here; every gate G-A…G-H in
   CHANGE_IMPACT_AND_SAFETY.md §6 has evidence.
+
+**Session 1, prep on mocks (2026-10-20 ~18:45–19:00 IST, Claude Code / Opus
+5.5, `main` in place, uncommitted; owner: "start the another phase according
+to the status.md"):** `IN_PROGRESS`. No voice phase is unblocked: 9 needs 5
+(BLOCKED: B3–B5, B8) and 10 needs 9; track A's only open phase, A11, waits
+on A10 (BLOCKED). Following A11's precedent, this is preparation that needs
+no account, counsel or live call. Every gate stays open.
+
+- **Found:** the live switches AGENTS.md voice rule 5 names
+  (`KRIYA_VOICE_LIVE`, `voice.liveCalls`) existed nowhere in code. Added:
+  `voice.liveCalls` in `lib/config.ts` (default off, owner-only, no env) and
+  `liveAllowed` in `claimNext` (`lib/voice/run-call.ts`): a real provider is
+  claimed for only with `KRIYA_VOICE_LIVE=1` **and** `voice.liveCalls = on`;
+  the mock needs neither. Phase 5 must keep both.
+- T-SEC-01 and T-SEC-05 already existed (`voice-service.test.ts`,
+  `session.test.ts`). Added: **T-SEC-02** (`session.test.ts`: every console
+  line of a whole call captured; no callee number in any spacing, no stream
+  secret, no phone-hash key); **T-SEC-03** (`boundaries.test.ts`: no secret
+  or vendor variable name in `.next/static/**/*.js`; skipped without a
+  build; ran here against the build from Phase 8 session 1); **T-SEC-04**
+  (`metering.test.ts`: a real provider isn't claimed with the switches off,
+  nor with only `KRIYA_VOICE_LIVE`; claimed with both; after the emergency
+  stop nothing is claimed and every call is cancelled). `npx vitest run
+  tests/voice/metering.test.ts tests/voice/boundaries.test.ts
+  tests/voice/session.test.ts` → **3 files, 28 passed**.
+- **`npm run check` not completed:** Claude Code stopped it because the
+  machine was low on memory (not a test failure). The last complete run, in
+  Phase 8 session 1 before these changes: 1265 passed | 26 skipped, exit 0.
+  `tsc --noEmit` is clean after all changes.
+- Gate evidence (CHANGE_IMPACT §6), as of now:
+
+  | Gate | Evidence | Open |
+  | --- | --- | --- |
+  | G-A | `npm run check` + `npm run build` passed after Phase 8 session 1 | a complete check after this session's changes |
+  | G-B | voice migrations + rollback on PGlite (`tests/db/migrations.test.ts`), applied to staging; RLS tests per table | rollback on staging |
+  | G-C | mocks: `pipeline.test.ts` "crash recovery (D1 = 0)" (T-Q-03/S16, T-Q-04, timeouts → unknown, no redial), S15/T-WH-02 duplicate webhooks, T-Q-07 | the EVALUATION_PLAN §4 fault-injection suite with D1/S1 counts; live |
+  | G-D | T-VER-01, 02, 03, 08 found by id (`outcome.test.ts`) | T-VER-04…07 not found by id; O2 bound |
+  | G-E | Phase 6: R1 = 100 % on `reminders.test.ts` (19) | live owner calls (Phase 5) |
+  | G-F | — | counsel Q1–Q10 (B4), A2P declaration (B5) |
+  | G-G | emergency stop and live switches tested on mocks (T-SEC-04); owner alerts on `/owner/operations` | rehearsals on staging, deploy during a live call, alert firing |
+  | G-H | automated reviews (F25–F27, F33) | independent code + security review |
+
+- **Next exact action:** re-run `npm run check` when the machine has memory
+  free; then look for or write T-VER-04…07 (TEST_STRATEGY) and the EVALUATION_PLAN
+  §4 fault-injection suite on mocks; everything else here waits on Phase 5,
+  counsel and an external review.
 
 ## Phase 10 — Continuous improvement loop
 

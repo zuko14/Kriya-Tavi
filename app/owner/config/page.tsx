@@ -9,8 +9,9 @@ import {
 } from "@/components/owner/forms"
 import { Empty, Section, Table, Td } from "@/components/owner/ui"
 import { requireOwner } from "@/lib/auth"
-import { formatUsd } from "@/lib/money"
-import { configView } from "@/lib/owner"
+import { formatInr, formatUsd } from "@/lib/money"
+import { VoicePriceForm } from "@/components/owner/voice-price-form"
+import { configView, voicePriceSheet } from "@/lib/owner"
 
 export const metadata: Metadata = { title: "Config" }
 
@@ -27,6 +28,12 @@ const GROUPS: { title: string; description: string; prefix: string[] }[] = [
       "The USD→INR rate is never fetched or invented: enter it with its source. Infrastructure and fee figures only feed the contribution estimate.",
     prefix: ["fx.", "finance."],
   },
+  {
+    title: "Voice",
+    description:
+      "Once today's voice cost (reported + estimated) reaches the daily cap, no new call is placed. Until it's set, only the mock provider may dial.",
+    prefix: ["voice."],
+  },
   { title: "Other", description: "", prefix: ["firecrawl.", "support."] },
 ]
 
@@ -39,6 +46,7 @@ const EVAL_TONE: Record<string, string> = {
 export default async function OwnerConfig() {
   await requireOwner()
   const config = await configView()
+  const prices = await voicePriceSheet()
 
   return (
     <>
@@ -106,6 +114,34 @@ export default async function OwnerConfig() {
               <Td>
                 <ModelToggle id={model.id} enabled={model.enabled} />
               </Td>
+            </tr>
+          ))}
+        </Table>
+      </Section>
+
+      <Section
+        title="Voice prices"
+        description="From written quotes only, each with its source. A component without a price stays unmetered (no estimate, never ₹0). Saving reprices estimated and unpriced voice charges; final ones never change."
+      >
+        <VoicePriceForm />
+        <Table head={["id", "unit", "price", "from", "source", "checked"]}>
+          {prices.length === 0 && (
+            <Empty colSpan={6}>No prices yet: every voice cost is unmetered.</Empty>
+          )}
+          {prices.map((price) => (
+            <tr key={price.id}>
+              <Td className="font-mono text-[11.5px]">{price.id}</Td>
+              <Td>{price.unit}</Td>
+              <Td className="font-mono tabular-nums">
+                {price.currency === "INR"
+                  ? formatInr(price.priceMicro)
+                  : formatUsd(price.priceMicro)}
+              </Td>
+              <Td>{price.effectiveFrom.toISOString().slice(0, 10)}</Td>
+              <Td className="max-w-56 truncate">
+                <span title={price.source}>{price.source}</span>
+              </Td>
+              <Td>{price.checkedAt.toISOString().slice(0, 10)}</Td>
             </tr>
           ))}
         </Table>

@@ -11,8 +11,15 @@ import {
   voiceProfiles,
   voiceTasks,
 } from "@/db/schema"
+import { getSetting } from "@/lib/config"
 import { log } from "@/lib/log"
 
+import {
+  chargeFinishedVoiceTasks,
+  dailyCapAllows,
+  fxSettings,
+  overBudget,
+} from "./metering"
 import { ACTIVE_POLICY } from "./policy/v1"
 import type { TelephonyProvider } from "./providers"
 import {
@@ -157,7 +164,19 @@ const sleep = (ms: number, signal?: AbortSignal) =>
     })
   })
 
+// Live calls need both switches (D-12): KRIYA_VOICE_LIVE=1 on the worker and
+// voice.liveCalls on in /owner/config. The mock provider places no real call
+async function liveAllowed(provider: string) {
+  if (provider === "mock") return true
+  return (
+    process.env.KRIYA_VOICE_LIVE === "1" && (await getSetting("voice.liveCalls")) === "on"
+  )
+}
+
 export async function claimNext(deps: VoiceDeps) {
+  if (!(await liveAllowed(deps.provider.name))) return null
+  // The platform's daily voice spend cap (COST_AND_METERING §5)
+  if (!(await dailyCapAllows(deps.provider.name))) return null
   const result = await privileged.execute(
     sql`select id from kriya.claim_voice_call(${deps.workerId}, ${deps.leaseSeconds ?? LEASE_SECONDS}, ${deps.maxLive ?? 2})`
   )
@@ -168,6 +187,7 @@ export async function claimNext(deps: VoiceDeps) {
 // as requested. Null when the call went another way (cancelled, closed,
 // blocked, deferred); the caller settles it.
 export async function prepareAttempt(callId: string, deps: VoiceDeps) {
+  const fx = await fxSettings()
   return privileged.transaction(async (tx) => {
     const [call] = await tx
       .select()
@@ -210,6 +230,9 @@ export async function prepareAttempt(callId: string, deps: VoiceDeps) {
     if (call.kind === "outreach") {
       if (await suppressed(tx, task.recipientPhoneHash)) {
         return move("blocked", { error_code: "suppressed" })
+      }
+      if (await overBudget(tx, task, deps.provider.name, fx)) {
+        return move("blocked", { error_code: "budget" })
       }
       if (!withinCallingHours(now)) return move("retry_wait", {}, nextCallingTime(now))
       const today = await tx.execute(sql`
@@ -481,6 +504,10 @@ export async function recoverVoice(deps: VoiceDeps) {
     await finishOutcome(attempt.id, deps.outcome ?? null, { lost: true })
   }
   if (taken.length) log.warn("voice calls recovered", { count: taken.length })
+  // One charge per finished task, however it ended
+  await chargeFinishedVoiceTasks().catch((error) =>
+    log.error("voice charges failed", { error })
+  )
   return taken
 }
 

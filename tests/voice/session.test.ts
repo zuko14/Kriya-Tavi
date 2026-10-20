@@ -293,6 +293,37 @@ describe("a connected call, end to end on mocks", () => {
     expect(mock.placed).toHaveLength(1)
   })
 
+  // Every log line of a whole call, web to worker to kriya-voice and back
+  it("T-SEC-02 no secret or phone number in the logs of a whole call", async () => {
+    const lines: string[] = []
+    const spies = (["log", "info", "warn", "error"] as const).map((level) =>
+      vi.spyOn(console, level).mockImplementation((...args) => {
+        lines.push(args.map(String).join(" "))
+      })
+    )
+    try {
+      const { attemptId, client, complete } = await dialAndConnect(await start())
+      const callee = stt.streams[0]
+      await heard(attemptId, 1)
+      callee.say("Hello?")
+      await heard(attemptId, 2)
+      callee.say("Yes, speaking.")
+      await heard(attemptId, 3)
+      callee.say("Yes, that works.")
+      await client.closed
+      await Promise.all(sessions)
+      await complete()
+    } finally {
+      for (const spy of spies) spy.mockRestore()
+    }
+    const all = lines.join("\n")
+    expect(all).toContain("voice outcome checked")
+    // The callee's number in any spacing, and the two secrets in use
+    expect(all.replace(/[\s-]/g, "")).not.toMatch(/9876543210/)
+    expect(all).not.toContain(SECRET)
+    expect(all).not.toContain("test-phone-hash-key-")
+  })
+
   it("T-DLG-05 barge-in: clear sent, synthesis stopped, the turn marked interrupted, the disclosure repeated", async () => {
     const { attemptId, client } = await dialAndConnect(await start(), false)
     await vi.waitFor(() => expect(client.audio()).toBeGreaterThan(0))

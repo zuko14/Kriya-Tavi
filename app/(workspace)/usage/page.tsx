@@ -8,6 +8,8 @@ import { usageSummary } from "@/lib/entitlements"
 import { formatInr } from "@/lib/money"
 import { tierName } from "@/lib/tiers"
 import { cn } from "@/lib/utils"
+import { voiceAvailable } from "@/lib/voice/tasks"
+import { getCallUsage } from "@/queries/voice"
 import { getUsage } from "@/queries/workspace"
 
 export const metadata: Metadata = { title: "Usage" }
@@ -44,6 +46,10 @@ export default async function Page() {
     usageSummary(user.id),
   ])
   const { totals } = usage
+  // Phone calls, with voice access only (UX spec §10)
+  const calls = (await voiceAvailable(user.id))
+    ? await getCallUsage(user.id, summary.since, summary.plan.maxOutreachCallsPerDay)
+    : null
 
   // Fill every day of the window so quiet days show as gaps
   const byDay = new Map(usage.daily.map((d) => [d.day, d]))
@@ -98,6 +104,26 @@ export default async function Page() {
             }
           />
         </div>
+
+        {calls && (
+          <section className="flex flex-col gap-3">
+            <h2 className="label-mono">phone calls · this period</h2>
+            <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-4">
+              <Stat label="calls" value={compact.format(calls.calls)} />
+              <Stat label="minutes" value={compact.format(calls.minutes)} />
+              <Stat
+                label="charged"
+                value={formatInr(calls.chargedMicroInr)}
+                hint={calls.estimated ? `${calls.estimated} estimated` : "all final"}
+              />
+              <Stat
+                label="left today"
+                value={String(calls.remainingToday)}
+                hint={`of ${summary.plan.maxOutreachCallsPerDay} a day`}
+              />
+            </div>
+          </section>
+        )}
 
         <section className="flex flex-col gap-3">
           <h2 className="label-mono">tasks per day</h2>

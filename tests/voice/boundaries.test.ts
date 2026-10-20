@@ -137,6 +137,35 @@ it("T-REM-07 voice code imports no notification channel", () => {
   }
 })
 
+// What the browser downloads names no secret or vendor variable. Needs a
+// build (npm run build); skipped without one
+const STATIC = path.join(ROOT, ".next", "static")
+it.skipIf(!fs.existsSync(STATIC))("T-SEC-03 the client bundle names no secret", () => {
+  const names = [
+    "EXOTEL_",
+    "KRIYA_VOICE_STREAM_SECRET",
+    "KRIYA_PHONE_HASH_KEY",
+    "KRIYA_TOKEN_KEY",
+    "OPENROUTER_API_KEY",
+    "SUPABASE_SECRET_KEY",
+    "RAZORPAY_KEY_SECRET",
+  ]
+  const found: string[] = []
+  const walk = (dir: string) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const file = path.join(dir, entry.name)
+      if (entry.isDirectory()) walk(file)
+      else if (entry.name.endsWith(".js")) {
+        const source = fs.readFileSync(file, "utf8")
+        for (const name of names)
+          if (source.includes(name)) found.push(`${entry.name}: ${name}`)
+      }
+    }
+  }
+  walk(STATIC)
+  expect(found).toEqual([])
+})
+
 describe("T-ENV-01 environment checks", () => {
   afterEach(() => {
     vi.unstubAllEnvs()

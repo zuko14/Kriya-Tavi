@@ -5,7 +5,8 @@ import { formatDistanceToNowStrict } from "date-fns"
 import { ReconcileButton, RetryTaskButton } from "@/components/owner/forms"
 import { Empty, Section, Table, Td, Tile, Tiles } from "@/components/owner/ui"
 import { requireOwner } from "@/lib/auth"
-import { backgroundCounts, operations } from "@/lib/owner"
+import { formatInr } from "@/lib/money"
+import { backgroundCounts, operations, voiceOperations } from "@/lib/owner"
 
 export const metadata: Metadata = { title: "Operations" }
 
@@ -14,7 +15,11 @@ const ago = (value: Date | null) =>
 
 export default async function OwnerOperations() {
   await requireOwner()
-  const [ops, background] = await Promise.all([operations(), backgroundCounts()])
+  const [ops, background, voice] = await Promise.all([
+    operations(),
+    backgroundCounts(),
+    voiceOperations(),
+  ])
   const live = ops.workers.filter((worker) => worker.live)
 
   return (
@@ -47,6 +52,102 @@ export default async function OwnerOperations() {
           tone={ops.reconcile.pending ? "warn" : undefined}
         />
       </Tiles>
+
+      <Section
+        title="Phone calls"
+        description="Today's voice spend against the daily cap (alert at 80 %), calls by state, attempts in the last 24 hours, and owners near their allowance. Counts only: nothing that was said."
+      >
+        {((voice.capPct ?? 0) >= 80 || voice.nearAllowance.length > 0) && (
+          <p
+            role="alert"
+            className="rounded-lg border border-destructive/40 px-3 py-2 text-[13px] text-destructive"
+          >
+            {(voice.capPct ?? 0) >= 80 &&
+              `Voice spend is at ${voice.capPct}% of today's cap. `}
+            {voice.nearAllowance.length > 0 &&
+              `${voice.nearAllowance.length} owner(s) at 80% or more of their allowance.`}
+          </p>
+        )}
+        <Tiles>
+          <Tile
+            label="voice spend today"
+            value={
+              voice.spentMicroInr == null
+                ? "FX rate not set"
+                : formatInr(voice.spentMicroInr)
+            }
+            hint={`${voice.unmeteredToday} unmetered items`}
+          />
+          <Tile
+            label="daily cap"
+            value={voice.capMicroInr == null ? "not set" : formatInr(voice.capMicroInr)}
+            hint={
+              voice.capPct == null ? "no live calls until set" : `${voice.capPct}% used`
+            }
+            tone={
+              voice.capPct == null
+                ? "warn"
+                : voice.capPct >= 100
+                  ? "bad"
+                  : voice.capPct >= 80
+                    ? "warn"
+                    : "good"
+            }
+          />
+          <Tile
+            label="stuck calls"
+            value={voice.stuck}
+            tone={voice.stuck ? "warn" : undefined}
+            hint="lease expired while dialing or on a call"
+          />
+          <Tile
+            label="needs the owner"
+            value={voice.calls
+              .filter((c) => c.status === "needs_owner")
+              .reduce((s, c) => s + c.n, 0)}
+          />
+        </Tiles>
+        <div className="grid gap-8 lg:grid-cols-2">
+          <Table head={["call", "state", "count"]}>
+            {voice.calls.length === 0 && <Empty colSpan={3}>No open calls.</Empty>}
+            {voice.calls.map((row) => (
+              <tr key={`${row.kind}:${row.status}`}>
+                <Td>{row.kind}</Td>
+                <Td>{row.status}</Td>
+                <Td className="font-mono tabular-nums">{row.n}</Td>
+              </tr>
+            ))}
+          </Table>
+          <Table head={["attempt ended", "reason", "24 h"]}>
+            {voice.attempts.length === 0 && <Empty colSpan={3}>No attempts today.</Empty>}
+            {voice.attempts.map((row) => (
+              <tr key={`${row.status}:${row.end_reason}`}>
+                <Td>{row.status}</Td>
+                <Td>{row.end_reason ?? "—"}</Td>
+                <Td className="font-mono tabular-nums">{row.n}</Td>
+              </tr>
+            ))}
+          </Table>
+        </div>
+        {voice.nearAllowance.length > 0 && (
+          <Table head={["owner", "plan", "allowance used"]}>
+            {voice.nearAllowance.map((row) => (
+              <tr key={row.userId}>
+                <Td>
+                  <Link
+                    href={`/owner/users/${row.userId}`}
+                    className="text-rigel hover:underline"
+                  >
+                    {row.userId}
+                  </Link>
+                </Td>
+                <Td>{row.plan}</Td>
+                <Td className="font-mono tabular-nums">{row.usedPct}%</Td>
+              </tr>
+            ))}
+          </Table>
+        )}
+      </Section>
 
       <Section
         title="Background runs"

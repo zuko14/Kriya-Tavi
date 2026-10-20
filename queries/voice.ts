@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, gt, inArray, sql } from "drizzle-orm"
 
-import { withUser, type Q } from "@/db"
+import { rowsOf, withUser, type Q } from "@/db"
 import {
   callAttempts,
   callOutcomes,
@@ -47,6 +47,7 @@ const FAILURES: Record<string, string> = {
   outside_calling_hours: "I only call people between 9 AM and 9 PM, Monday to Saturday.",
   window_closed: "The time to make this call ran out before it could be placed.",
   limit_daily: "You've reached today's calls.",
+  budget: "Another try would go over this call's cost limit, so I stopped.",
   blocked: "This call was stopped before dialling.",
 }
 
@@ -391,3 +392,40 @@ export async function getPhoneSettings(userId: string) {
 }
 
 export type PhoneSettings = Awaited<ReturnType<typeof getPhoneSettings>>
+
+// The "Calls" row on /usage (UX spec §10), this plan period: phone tasks,
+// minutes on the line, what they were charged (estimated until final), and
+// calls left today. Through the person's session; attempts by granted columns
+export async function getCallUsage(userId: string, since: Date, maxPerDay: number) {
+  const [row] = await withUser(userId, async (tx) =>
+    rowsOf<{
+      calls: number
+      seconds: number
+      charged: string | number
+      estimated: number
+      today: number
+    }>(
+      await tx.execute(sql`
+        select
+          (select count(*)::int from kriya.voice_tasks t
+            where t.authorized_at >= ${since.toISOString()}::timestamptz) as calls,
+          (select coalesce(sum(a.billable_seconds), 0)::int from kriya.call_attempts a
+            where a.created_at >= ${since.toISOString()}::timestamptz) as seconds,
+          (select coalesce(sum(c.charge_micro_inr), 0)::bigint from kriya.voice_charges c
+            where c.created_at >= ${since.toISOString()}::timestamptz) as charged,
+          (select count(*)::int from kriya.voice_charges c
+            where c.created_at >= ${since.toISOString()}::timestamptz
+              and c.status <> 'final') as estimated,
+          (select count(*)::int from kriya.voice_tasks t
+            where t.authorized_at >= (date_trunc('day', now() at time zone 'Asia/Kolkata')
+              at time zone 'Asia/Kolkata')) as today`)
+    )
+  )
+  return {
+    calls: row?.calls ?? 0,
+    minutes: Math.ceil((row?.seconds ?? 0) / 60),
+    chargedMicroInr: Number(row?.charged ?? 0),
+    estimated: row?.estimated ?? 0,
+    remainingToday: Math.max(0, maxPerDay - (row?.today ?? 0)),
+  }
+}
