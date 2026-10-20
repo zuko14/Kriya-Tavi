@@ -96,6 +96,20 @@ counsel, a person or a device):
 | 10 | Console views for versions and cases; the "Is this right?" button; the drift run (paid) |
 | Findings | F24–F27, F32, F33 (calling hours), F35 (shared gate module) |
 
+**Database advisors (2026-10-20 ~21:00 IST):** the Supabase security lints
+the owner reported are fixed by migration `20261115000000_database_lint.sql`
+(+ rollback), applied to the project (`migrate.ts`: `applied
+20261115000000_database_lint.sql`). 0011: the 14 functions pin
+`search_path = ''` (every body already qualified its tables). 0008: the 18
+server-only tables get an explicit permissive deny-all policy for `anon` and
+`authenticated` (no access change). Checked on the live database afterwards:
+0 unpinned functions, 0 RLS tables without a policy, 0 tables without RLS.
+`tests/db/lint.test.ts` keeps both at zero. The migration had to be
+versioned after track A's `202611xx` files, which run later by name.
+`npm run check`: Test Files 104 passed, Tests 1299 passed | 26 skipped,
+exit 0. Left for the owner: Auth → leaked password protection (a dashboard
+setting, not SQL).
+
 ## Current blockers
 
 | # | Blocker | Blocks | Needed from |
