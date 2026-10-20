@@ -9,6 +9,7 @@ import {
   numeric,
   pgSchema,
   primaryKey,
+  smallint,
   text,
   time,
   timestamp,
@@ -1131,6 +1132,8 @@ export const voiceProfiles = kriya.table("voice_profiles", {
   reportMaxAttempts: integer().notNull().default(3),
   reportRetryMinutes: integer().notNull().default(10),
   transcriptRetentionDays: integer().notNull().default(30),
+  // Voice phase 10: consent to content review for improvement (§6)
+  improvementOptIn: boolean().notNull().default(false),
   createdAt: createdAt(),
   updatedAt: createdAt(),
 })
@@ -1427,6 +1430,108 @@ export const voiceCharges = kriya.table("voice_charges", {
   chargeMicroInr: micro(),
   status: text({ enum: ["final", "estimated", "unpriced"] }).notNull(),
   createdAt: createdAt(),
+})
+
+/* Voice phase 10: the governed improvement loop (migration
+   20261023000000_voice_improvement.sql) */
+
+export const VOICE_POLICY_STATUSES = [
+  "draft",
+  "shadow",
+  "canary",
+  "active",
+  "retired",
+  "rolled_back",
+] as const
+
+export const voicePolicyVersions = kriya.table("voice_policy_versions", {
+  id: text().primaryKey(),
+  parentId: text().notNull().default("v1"),
+  bundle: jsonb().notNull(),
+  bundleHash: text().notNull(),
+  status: text({ enum: VOICE_POLICY_STATUSES }).notNull().default("draft"),
+  canaryPercent: integer().notNull().default(0),
+  targets: uuid().array().notNull().default([]),
+  evalReport: jsonb(),
+  shadowReport: jsonb(),
+  proposedBy: text().notNull(),
+  approvedBy: uuid(),
+  createdAt: createdAt(),
+  updatedAt: createdAt(),
+})
+
+export const attemptMetrics = kriya.table("attempt_metrics", {
+  callAttemptId: uuid().primaryKey(),
+  userId: uuid(),
+  policyVersion: text().notNull(),
+  kind: text({ enum: ["outreach", "owner_report", "verification"] }).notNull(),
+  attemptStatus: text().notNull(),
+  endReason: text(),
+  connected: boolean().notNull(),
+  verifierStatus: text(),
+  result: text(),
+  disclosurePlayed: boolean(),
+  turns: integer(),
+  lowConfTurns: integer(),
+  bargeins: integer(),
+  latencyP50Ms: integer("latency_p50_ms"),
+  latencyP95Ms: integer("latency_p95_ms"),
+  optOut: boolean().notNull().default(false),
+  wrongPerson: boolean().notNull().default(false),
+  billableSeconds: integer(),
+  costMicroInr: micro(),
+  createdAt: createdAt(),
+})
+
+export const voiceFeedback = kriya.table("voice_feedback", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: uuid().notNull(),
+  callAttemptId: uuid().notNull(),
+  field: text({
+    enum: ["result", "agreed_times", "proposed_times", "questions", "other"],
+  }).notNull(),
+  was: text(),
+  shouldBe: text(),
+  source: text({ enum: ["app", "voice"] }).notNull(),
+  createdAt: createdAt(),
+})
+
+export const VOICE_CASE_CODES = [
+  "false_agreement",
+  "missed_proposal",
+  "wrong_time_parse",
+  "ambiguity_not_asked",
+  "stt_entity_error",
+  "tts_mispronunciation",
+  "talked_over",
+  "slow_response",
+  "invalid_tool_call",
+  "disclosure_issue",
+  "injection_attempt",
+  "sensitive_request",
+  "wrong_person_handling",
+  "report_not_delivered",
+  "provider_mismatch",
+  "cost_overrun",
+  "provider_drift",
+  "other",
+] as const
+export type VoiceCaseCode = (typeof VOICE_CASE_CODES)[number]
+
+export const voiceCases = kriya.table("voice_cases", {
+  id: uuid().primaryKey().defaultRandom(),
+  code: text({ enum: VOICE_CASE_CODES }).notNull(),
+  severity: smallint().notNull(),
+  status: text({ enum: ["open", "fixed", "wontfix"] })
+    .notNull()
+    .default("open"),
+  policyVersion: text().notNull(),
+  week: date({ mode: "string" }).notNull(),
+  attemptIds: uuid().array().notNull().default([]),
+  scenarioIds: text().array().notNull().default([]),
+  fixedInVersion: text(),
+  createdAt: createdAt(),
+  updatedAt: createdAt(),
 })
 
 export const voiceAllowedTransitions = kriya.table(

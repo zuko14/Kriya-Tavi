@@ -20,7 +20,8 @@ import {
   fxSettings,
   overBudget,
 } from "./metering"
-import { ACTIVE_POLICY } from "./policy/v1"
+import { policyFor } from "./policy"
+import { v1 } from "./policy/v1"
 import type { TelephonyProvider } from "./providers"
 import {
   clock,
@@ -187,7 +188,14 @@ export async function claimNext(deps: VoiceDeps) {
 // as requested. Null when the call went another way (cancelled, closed,
 // blocked, deferred); the caller settles it.
 export async function prepareAttempt(callId: string, deps: VoiceDeps) {
+  // Read before the transaction: settings use their own connection
   const fx = await fxSettings()
+  const [owner] = await privileged
+    .select({ userId: voiceCalls.userId })
+    .from(voiceCalls)
+    .where(eq(voiceCalls.id, callId))
+  // The bundle this attempt runs on: the canary or the active version (D-17)
+  const policy = owner ? await policyFor(owner.userId) : v1
   return privileged.transaction(async (tx) => {
     const [call] = await tx
       .select()
@@ -286,7 +294,7 @@ export async function prepareAttempt(callId: string, deps: VoiceDeps) {
         voiceCallId: call.id,
         attempt: call.attempts + 1,
         // The behaviour bundle this attempt runs on (D-17, T-POL-01)
-        policyVersion: ACTIVE_POLICY.version,
+        policyVersion: policy.version,
         telephonyProvider: deps.provider.name,
         callbackTokenHash: hashToken(callbackToken),
         streamTokenHash: hashToken(streamToken),

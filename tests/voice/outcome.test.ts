@@ -1,5 +1,11 @@
+import { drizzle } from "drizzle-orm/pglite"
 import { MockLanguageModelV4 } from "ai/test"
-import { describe, expect, it } from "vitest"
+import { afterAll, beforeAll, describe, expect, it } from "vitest"
+
+import { setDatabaseForTests, type DB } from "@/db"
+import * as schema from "@/db/schema"
+import { clock } from "@/lib/voice/schedule"
+import { settleCall } from "@/lib/voice/verify"
 
 import type { CallNotes, Turn } from "@/lib/voice/dialogue"
 import {
@@ -9,6 +15,9 @@ import {
   type Interpreted,
 } from "@/lib/voice/outcome"
 import { specFor } from "@/scripts/voice-eval"
+
+import { asUser, createTestDb, createUser, type TestDb } from "../db/harness"
+import { callAttempt, seed, transition, voiceCall, voiceTask } from "../db/voice-fixtures"
 
 // Outcomes are checked by code against the notes the guards accepted and
 // the stored turns (CONVERSATION §6–7, EVALUATION_PLAN §6). The model's
@@ -231,5 +240,110 @@ describe("extractOutcome", () => {
     expect(result).toBeNull()
     expect(primary.doGenerateCalls).toHaveLength(1)
     expect(escalation.doGenerateCalls).toHaveLength(1)
+  })
+})
+
+// T-VER-04…07 (EVALUATION_PLAN §6): "completed" is never taken on anyone's
+// word. Against the database: the transition function, its guards, grants
+describe("completed only through the transition rules", () => {
+  let pg: TestDb
+  let user: string
+  const T0 = new Date("2026-10-13T14:00:00+05:30")
+
+  beforeAll(async () => {
+    pg = await createTestDb()
+    setDatabaseForTests(
+      drizzle({ client: pg, schema, casing: "snake_case" }) as unknown as DB
+    )
+    clock.now = () => new Date(T0)
+    user = await createUser(pg)
+    await seed(pg, "voice_profiles", { user_id: user })
+  })
+  afterAll(() => {
+    clock.now = () => new Date()
+  })
+
+  const awaitingReport = () => voiceTask(pg, user, { status: "awaiting_report" })
+  const statusOf = async (table: string, id: string) =>
+    (
+      await pg.query<{ status: string }>(
+        `select status from kriya.${table} where id = $1`,
+        [id]
+      )
+    ).rows[0].status
+
+  it("T-VER-04 a report answered but not played to its last mark isn't delivered; a retry is scheduled", async () => {
+    const task = await awaitingReport()
+    const call = await voiceCall(pg, user, task, {
+      kind: "owner_report",
+      status: "in_call",
+      attempts: 1,
+      max_attempts: 3,
+      window_end: new Date(T0.getTime() + 2 * 3_600_000).toISOString(),
+    })
+    await callAttempt(pg, user, call, {
+      status: "ended",
+      answered_at: T0.toISOString(),
+      connected_at: T0.toISOString(),
+      verified_at: T0.toISOString(),
+      end_reason: "callee_hangup",
+    })
+    await settleCall(call)
+    const [row] = (
+      await pg.query<{ status: string; delivered_at: string | null }>(
+        "select status, delivered_at from kriya.voice_calls where id = $1",
+        [call]
+      )
+    ).rows
+    expect(row).toEqual({ status: "retry_wait", delivered_at: null })
+    expect(await statusOf("voice_tasks", task)).toBe("awaiting_report")
+  })
+
+  it("T-VER-05 the person's session can't set a status, and neither can a direct write", async () => {
+    const task = await awaitingReport()
+    await expect(
+      asUser(pg, user, (tx) =>
+        tx.query("update kriya.voice_tasks set status = 'completed' where id = $1", [
+          task,
+        ])
+      )
+    ).rejects.toThrow(/permission denied/)
+    await expect(
+      pg.query("update kriya.voice_tasks set status = 'completed' where id = $1", [task])
+    ).rejects.toThrow(/only through kriya.voice_transition/)
+    expect(await statusOf("voice_tasks", task)).toBe("awaiting_report")
+  })
+
+  it("T-VER-06 kriya-voice (or any wrong actor) can't complete a task", async () => {
+    const task = await awaitingReport()
+    for (const actor of ["voice", "owner", "worker", "webhook"]) {
+      await expect(
+        transition(pg, "task", task, "completed", actor, { result: "agreed" })
+      ).rejects.toThrow(/can't move a voice task/)
+    }
+    expect(await statusOf("voice_tasks", task)).toBe("awaiting_report")
+  })
+
+  it("T-VER-07 awaiting_report → completed needs a delivered report call", async () => {
+    const task = await awaitingReport()
+    const report = await voiceCall(pg, user, task, { kind: "owner_report" })
+    await expect(
+      transition(pg, "task", task, "completed", "verifier", { result: "agreed" })
+    ).rejects.toThrow(/needs a delivered report call/)
+    await expect(
+      transition(pg, "task", task, "completed", "verifier", {
+        result: "agreed",
+        voice_call_id: report,
+      })
+    ).rejects.toThrow(/needs a delivered report call/)
+    await pg.query("update kriya.voice_calls set delivered_at = now() where id = $1", [
+      report,
+    ])
+    expect(
+      await transition(pg, "task", task, "completed", "verifier", {
+        result: "agreed",
+        voice_call_id: report,
+      })
+    ).toBe(true)
   })
 })

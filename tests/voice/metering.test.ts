@@ -240,6 +240,21 @@ describe("T-COST-05 voice charges spend the plan allowance", () => {
     const before = await usageSummary(user)
     expect(checkVoiceAllowed(before).ok).toBe(true)
 
+    // An unpriced call could hide any amount: no new call until it's priced
+    const unpriced = await finishedTask("failed", [])
+    await seed(pg, "voice_charges", {
+      user_id: user,
+      voice_task_id: unpriced.task,
+      cost_basis: "estimate",
+      unmetered_items: 1,
+      markup_bps: 15000,
+      status: "unpriced",
+    })
+    expect(checkVoiceAllowed(await usageSummary(user))).toMatchObject({ ok: false })
+    await pg.query("delete from kriya.voice_charges where voice_task_id = $1", [
+      unpriced.task,
+    ])
+
     const { task } = await finishedTask("completed", [])
     await seed(pg, "voice_charges", {
       user_id: user,
@@ -320,6 +335,24 @@ describe("T-COST-06 the platform daily spend cap stops claims", () => {
     expect(await claimNext(deps())).toBeNull()
     vi.stubEnv("KRIYA_VOICE_DAILY_SPEND_CAP_MICRO_INR", "10000000")
     expect(await claimNext(deps())).toBe(call)
+  })
+
+  it("unmetered spend today stops a real provider, not the mock", async () => {
+    const call = await dueCall()
+    vi.stubEnv("KRIYA_VOICE_DAILY_SPEND_CAP_MICRO_INR", "10000000")
+    vi.stubEnv("KRIYA_VOICE_LIVE", "1")
+    await setSetting("voice.liveCalls", "on", user)
+    await seed(pg, "voice_usage", {
+      request_key: `unmetered:${Math.random()}`,
+      user_id: user,
+      component: "telephony",
+      provider: "exotel",
+      product: "outbound",
+      usage_status: "missing",
+    })
+    expect(await claimNext(deps("exotel"))).toBeNull()
+    expect(await claimNext(deps())).toBe(call)
+    await setSetting("voice.liveCalls", null, user)
   })
 
   it("unset: a real provider is refused, the mock may dial", async () => {
@@ -414,8 +447,10 @@ describe("per-task budget before a dial (COST_AND_METERING §5)", () => {
       maxCallSeconds: 300,
     }
     const fx = await fxSettings()
-    // No telephony price: nothing to project
-    expect(await overBudget(privileged, task, "exotel", fx)).toBe(false)
+    // No telephony price: the mock has nothing to project; a real provider
+    // fails closed
+    expect(await overBudget(privileged, task, "mock", fx)).toBe(false)
+    expect(await overBudget(privileged, task, "exotel", fx)).toBe(true)
     // ₹0.005 a second × 300 s = ₹1.50 > ₹1.00
     await price({
       id: "exotel:outbound",

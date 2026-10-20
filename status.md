@@ -29,7 +29,6 @@ only your own row. Rules: AGENT_MASTER_PROMPT.md §4.
 
 | Phase | Agent | Branch / worktree | Claimed (IST) | Files held | Last update |
 | ----- | ----- | ----------------- | ------------- | ---------- | ----------- |
-| 8 | Claude Code / Opus 5.5 | `main` in place (after `d21b857`) | 2026-10-20 17:25 | `lib/voice/metering.ts`, `lib/money.ts`, `lib/entitlements.ts`, `lib/owner.ts`, `app/owner/{finance,operations,config}/page.tsx`, `app/(workspace)/usage/page.tsx`, `status.md` (own sections) | 2026-10-20 ~19:00: phase 8 session 2 and phase 9 prep, uncommitted; `npm run check` stopped (low memory) |
 
 ## Documents
 
@@ -66,8 +65,8 @@ only your own row. Rules: AGENT_MASTER_PROMPT.md §4.
 | 6 | Owner reminders and spoken reports | COMPLETE 2026-10-20 (mock provider; the live check to the owner's phone moves to phase 5's exit; migration `20261022000000` not applied to staging) | 3, 4 (live check needs 5) |
 | 7 | Mobile UI | IN_PROGRESS (2026-10-20: 360 px browser checks on staging done with screenshots; §11.7 measured, F29 fixed, acceptance met on a mock call (F30 fixed); Phone & calls built and checked at 360 px (F33 fixed); open: real-Android mic + TalkBack, F28, F31) | 3, 6 |
 | 8 | Cost, limits, monitoring, owner dashboard | IN_PROGRESS (2026-10-20: metering, charges, allowance, daily cap, per-task budget, owner views and the `/usage` Calls row built; open: owner pages in a browser, C1 on real rows, F34) | 3, 4 |
-| 9 | Security, compliance, recovery, production readiness | IN_PROGRESS (prep on mocks 2026-10-20: live switches, T-SEC-02…04, gate evidence map; every gate open; 5 is BLOCKED) | 5–8 |
-| 10 | Continuous improvement loop (D-17) | NOT_STARTED | 9 (foundations in 1, 4, 7) |
+| 9 | Security, compliance, recovery, production readiness | IN_PROGRESS (mock prep COMPLETE 2026-10-20: live switches, T-SEC-02…04, T-VER-01…08, fault suite D1 = 0 over 70 runs, legal drafts, transcript retention; G-A…G-D evidenced; G-E…G-H need Phase 5, counsel and an external review) | 5–8 |
+| 10 | Continuous improvement loop (D-17) | COMPLETE 2026-10-20 on test data (precondition Phase 9 not met: built at the owner's request; nothing changes until the owner promotes a version; content use waits for B11) | 9 (foundations in 1, 4, 7) |
 
 Order differs from the brief (D-15): durable orchestration (brief 5) and
 dialogue (brief 4) come before live calls (brief 3), so no call is placed before
@@ -1476,9 +1475,68 @@ no account, counsel or live call. Every gate stays open.
   §4 fault-injection suite on mocks; everything else here waits on Phase 5,
   counsel and an external review.
 
+**Session 2, mock prep completed (2026-10-20 ~19:10–20:30 IST, Claude Code /
+Opus 5.5, `main` after `85b9797`; owner: "COMPLETE PHASE 9 (Readiness,
+Recovery & Integrity on Mocks)"):** mock prep **COMPLETE**; the phase stays
+`IN_PROGRESS` (G-E…G-H need live calls, counsel and an external review).
+
+- Fixed first (automated security review of `85b9797`, both fail-open, F37):
+  `checkVoiceAllowed` refuses a new call while the plan has a rupee allowance
+  and any voice charge is unpriced (`unpricedVoiceTasks`; agent charges
+  unaffected, F9); for a real provider the daily cap refuses while anything
+  today is unmetered, and `overBudget` refuses without a telephony price or
+  with unmetered spend on the task. The mock is held only to what's priced.
+  Tests in `metering.test.ts` (13).
+- **T-VER-04…07** (`outcome.test.ts`, against the database): a report
+  answered but never played to its last mark → `retry_wait`, not delivered;
+  the person's session gets `permission denied` and a direct write as the
+  database owner hits the status trigger; `voice`, `owner`, `worker`,
+  `webhook` can't complete a task; `completed` needs a delivered report call
+  id. All eight T-VER ids now exist (01–03 and 08 before).
+- **Fault-injection suite** (`tests/voice/faults.test.ts`): 7 faults × 10
+  runs = 70 runs on the mock provider: busy twice → exhausted; duplicate and
+  reversed webhooks (S15); worker dies after `requested` with and without a
+  provider record (S16, T-Q-04); `placeCall` timeout → unknown → owner;
+  `placeCall` refused → failed → retry; the call drops while connected and
+  kriya-voice is lost (S14/S17) → `voice_lost`, no redial. R2 = 100 % (every
+  run in its expected state); **D1 = 0 extra rings** over every placed
+  attempt; no attempt after an `unknown` or connected one. Rule of three:
+  0 in 70 → ≤ ~4.3 % at 95 % (EVALUATION_PLAN §5); mocks only, so no claim
+  about real calls. Only the harness needed fixes on the way (unique
+  provider ids per run; a number per run, because the per-number limits
+  rightly stopped the 4th run; statuses at 0 ms within the watch window).
+- **Transcript retention was never enforced** (found while drafting the
+  privacy text, F36): `voice_profiles.transcript_retention_days` was stored
+  and read nowhere. Added `pruneTranscripts` in the new
+  `lib/voice/housekeeping.ts`, run by the worker janitor (`worker/index.ts`):
+  turns deleted after the owner's days (30 without a profile) from the
+  attempt's end, never while an outcome is pending; the outcome and signals
+  stay. Test in `improve.test.ts`.
+- **Legal drafts** (`lib/legal.ts`, still "Draft, pending legal review"):
+  privacy (what calls keep: text, not audio; the people called and the keyed
+  fingerprint for opt-outs; retention as built; call signals; content use
+  only with opt-in and after counsel, Q11; telephony and speech providers as
+  a processor, named before calls go live; the basis for people called
+  written as open, Q3); terms ("Phone calls": genuine personal reasons only,
+  no marketing or bulk; Kriya's limits; telecom rules open, Q1); AI
+  disclosure (confirm before any call, 9 AM–9 PM Mon–Sat, agreement only
+  within authority, results checked against what was said, reminders only
+  by phone and never on voicemail). `tests/readiness` 11/11.
+- Gate evidence, updated:
+
+  | Gate | Evidence | Open |
+  | --- | --- | --- |
+  | G-A | `npm run check` exit 0: Test Files 103 passed, Tests 1292 passed (Phase 10 session below) | `npm run build` after this session (not run; the owner pages didn't change this session) |
+  | G-B | migrations + rollbacks on PGlite incl. T-MIG-01 newest-first; RLS suites; voice migrations 1–3 on staging | a rollback rehearsed on staging; `20261023000000` not applied to staging |
+  | G-C | fault suite: D1 = 0, R2 = 100 % over 70 mock runs | the same on live calls |
+  | G-D | T-VER-01…08 pass | O2 bound on ≥ 300 runs incl. ≥ 50 live |
+  | G-E…G-H | — | Phase 5, counsel (B4), A2P (B5), an external review |
+- **Next exact action:** owner: counsel on Q1–Q11, Exotel (B3–B5, B8), then
+  Phase 5; an external security review.
+
 ## Phase 10 — Continuous improvement loop
 
-**Status:** NOT_STARTED
+**Status:** COMPLETE 2026-10-20 on test data (see the session below)
 
 - **Objective:** the governed loop of SELF_IMPROVEMENT.md running in
   production: metrics per attempt, owner feedback, weekly cases, regression
@@ -1502,6 +1560,73 @@ no account, counsel or live call. Every gate stays open.
   rollback.
 - **Rollback:** set `voice.policyVersion` to the previous active version.
 - **Exit:** `npm run check` passes; cycle evidence recorded here.
+
+**Session 1 (2026-10-20 ~19:40–20:30 IST, Claude Code / Opus 5.5, `main`
+after `85b9797`; owner: "IMPLEMENT PHASE 10"):** `COMPLETE` on test data.
+The precondition "Phase 9 COMPLETE" is not met; built at the owner's
+request. Nothing in production changes by itself: only the owner promotes a
+version, v1 stays the default, and call content is read only for opted-in
+owners in the shadow stage, which waits for counsel (B11) before real use.
+
+- Migration `20261023000000_voice_improvement.sql` + rollback:
+  `voice_policy_versions` (complete bundle + hash, status, canary %, targets,
+  reports; one active and one canary at a time; no user grant),
+  `attempt_metrics` (numbers and codes, select-own), `voice_feedback`
+  (select- and insert-own, only on one's own attempts; no grant on `id` or
+  `created_at`, so a correction can't be backdated), `voice_cases` (the
+  taxonomy as a check, unique per code + version + week, no grant),
+  `voice_profiles.improvement_opt_in` (default false). No foreign key to a
+  voice table, so rows outlive attempts and the voice core still rolls back
+  alone; T-MIG-01 updated to roll back newest-first (27 voice tables).
+  `db/schema.ts` mirrors it. **Not applied to staging.**
+- `lib/voice/policy/index.ts`: a strict bundle schema (only v1's tunable
+  keys; `disclosure`, `limits` or any other key refused), seven safety
+  sentences that must stay word for word, threshold bounds, a canonical
+  hash. `bundleFor` loads only canary/active, valid, hash-matching bundles,
+  else v1; `policyFor` picks the canary by a stable per-user hash, else
+  `voice.policyVersion`. `prepareAttempt` stamps it; kriya-voice runs the
+  stamped bundle for the whole call; outcome extraction uses its prompt.
+  The session still loads no agent or memory code (boundaries test).
+- `lib/voice/improve.ts`: per-attempt metrics (status, end reason, verifier
+  status, result code, disclosure played, turns, low-confidence turns,
+  barge-ins, latency p50/p95 from turn timing, opt-out, wrong person,
+  seconds, cost; null when not measured); `groupCases` (signals and the
+  owner's corrections → the §3.3 taxonomy; false agreement and disclosure
+  are severity 1; idempotent); `linkScenario`; `proposeVersion` (a valid
+  bundle; every target case has its regression scenario);
+  `recordOfflineGate` (zero-tolerance metrics, the target improves, ≥ 50
+  paired runs); `runShadow` (opted-in owners only; the report holds attempt
+  ids, no content); `advance` (owner only: shadow → 5 → 25 → 100 % →
+  active; blocked by an open severity-1 case); `rollback`;
+  `checkRollbacks` (automatic on severity 1, or the needs-review or
+  opt-out rate over its guard with ≥ 20 calls). The gate and guard formulas
+  are copies of track A's (F35).
+- Janitor (`worker/index.ts` → `voiceHousekeeping`): charges, metrics,
+  cases, rollbacks, then transcript pruning, each step isolated.
+  `lib/config.ts`: `voice.policyVersion` (default v1, owner-only);
+  `setSetting` takes a null actor for automatic rollbacks.
+  `actions/voice.ts`: `correctCallOutcome` (zod, rate limit, own attempts).
+- Tests (`tests/voice/improve.test.ts`, 8): fixed guards stay out of every
+  bundle (extra key, dropped safety sentence, wild threshold refused; a
+  hand-edited stored bundle never loads); metrics for every verified
+  attempt, once; cases with severity 1, idempotent, RLS on corrections; the
+  canary stable per user, widening only adds people; **the full cycle:
+  case → scenario → candidate → offline gate (a failing run stays a draft)
+  → shadow (n = only opted-in calls, agreement 1) → canary 5/25/100 →
+  active (`voice.policyVersion` = v2)**; **automatic rollback**: a
+  severity-1 case puts canary v3 at `rolled_back` 0 % and blocks advancing,
+  then one on active v2 hands back to v1; both audited with no actor;
+  transcript retention.
+- `npm run check` (after all of this turn's changes): "All matched files use
+  Prettier code style!", **Test Files 103 passed | 3 skipped (106), Tests
+  1292 passed | 26 skipped (1318)**, exit 0. A first run failed only
+  T-REM-07, on F35; fixed.
+- Not done: owner console views per policy version (§7); the "Is this
+  right?" button (the action exists); the drift run (§3.7, paid);
+  applying the migration to staging.
+- **Next exact action:** owner: apply `20261023000000` to staging when
+  wanted; a console view for versions and cases; counsel on Q11 before any
+  real shadow run.
 
 ---
 

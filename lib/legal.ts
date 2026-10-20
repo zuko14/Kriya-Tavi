@@ -11,7 +11,7 @@ export type LegalDoc = { title: string; summary: string; sections: LegalSection[
 export const LEGAL_STATUS = {
   draft: true,
   label: "Draft, pending legal review",
-  updated: "2026-10-18",
+  updated: "2026-10-20",
 }
 
 // Every outside service that may process a person's data, with what for.
@@ -45,6 +45,12 @@ export const PROCESSORS = [
     when: "When you pay",
   },
   {
+    name: "Telephony and speech providers for phone calls",
+    purpose:
+      "Place the calls you confirm, and turn speech into text and text into speech during them. Which providers is named here before phone calls go live",
+    when: "Only when you use phone calls",
+  },
+  {
     name: "Google, Notion, GitHub and Meta (Instagram)",
     purpose: "Only the accounts you connect, for the actions you ask for",
     when: "Only after you connect an account",
@@ -76,6 +82,15 @@ export const LEGAL_DOCS = {
           "Saved logins: if you sign in to a site in Kriya's browser and choose Save, Kriya keeps that site's session (its cookies and site storage), encrypted. Never your password. Used only for your own tasks on that site.",
           "Accounts (bills, ledger, invoices): figures you or your agents enter, for your own records. Nothing is filed or paid by Kriya.",
           "Usage: which model ran, tokens, time and cost per task, to bill fairly and show you what you spent.",
+          "Phone calls (once available on your account): the number and name you give for the person to call, what you asked Tavi to do, the text of what was said on each call (not an audio recording), the result Kriya checked from it, and when each call rang, was answered and ended. For reminder calls, your own number, verified by a call to it.",
+          "Call signals: numbers and codes about each call (how it ended, how long Tavi took to answer, cost), with no words from the call, to find and fix problems.",
+        ],
+      },
+      {
+        heading: "The people Tavi calls",
+        paragraphs: [
+          "When you ask Tavi to call someone, Kriya handles that person's number and what they say on the call, for your request only. Every call starts by saying it's an AI assistant calling on your behalf. Anyone who asks not to be called again isn't called again by Kriya, for anyone; Kriya keeps a keyed fingerprint of their number to honour that, not the number itself.",
+          `The legal basis for handling the details of people you ask Tavi to call is ${OPEN}.`,
         ],
       },
       {
@@ -100,6 +115,9 @@ export const LEGAL_DOCS = {
           "Screenshots taken as evidence: 30 days.",
           "Shared links: their copy is deleted 7 days after the link expires or you revoke it.",
           "Saved logins: deleted when you remove them, when they expire, or after 90 days unused.",
+          "What was said on a call: kept for the time you choose in Account → Phone & calls (none, 7, 30 or 90 days; 30 unless you change it), counted from the end of the call, then deleted. You can delete a call's transcript sooner at any time. The checked result of the call stays until you delete the call or your account.",
+          `Call signals (no words from the call): until you delete your account; how long Kriya should keep them afterwards is ${OPEN}.`,
+          `Using what was said on calls to improve Tavi: only if you opt in, and not before counsel confirms it's allowed (${OPEN}). Until then, improvements come from simulated and test calls.`,
           `Everything else (conversations, memory, files, records of what agents did, accounts): until you delete it or your account. How long Kriya should keep its own copy of some of these is ${OPEN}.`,
         ],
       },
@@ -163,6 +181,15 @@ export const LEGAL_DOCS = {
         ],
       },
       {
+        heading: "Phone calls",
+        items: [
+          "Ask Tavi to call only people you have a genuine reason to contact for yourself, never for marketing, surveys or bulk calling.",
+          "You confirm each call and what Tavi may agree to; you're responsible for those instructions. Tavi won't agree to more than you allowed.",
+          "Kriya limits how often a number can be called, calls only in daytime hours, and never calls again someone who asked not to be called. Kriya may refuse or stop a call.",
+          `How telecom rules for calls placed by software apply to Kriya, and what that requires of you, is ${OPEN}.`,
+        ],
+      },
+      {
         heading: "Plans and payment",
         paragraphs: [
           "Paid plans are billed monthly in rupees and can be cancelled at any time; they stay active until the end of the period you paid for. Prices are shown before you pay.",
@@ -209,6 +236,9 @@ export const LEGAL_DOCS = {
         items: [
           "In Kriya's browser, an agent uses only sites you've allowed, within each site's rules. When you take over, what you type goes to the site through Kriya's browser and isn't stored or recorded.",
           "When Kriya places a phone call for you (once that feature is available), the call starts by saying it's an AI assistant calling on your behalf. That sentence is fixed, never generated.",
+          "Tavi calls only a number you confirm, after you've seen exactly what it will say and ask, and only between 9 AM and 9 PM, Monday to Saturday.",
+          "On a call Tavi can only agree to what you allowed; anything else it says it will check with you. The result you see is checked against what was actually said, and marked for your review when it can't be confirmed.",
+          "Reminders and results come to you only as phone calls to your verified number. Tavi never leaves details on voicemail or with someone else who answers.",
           `Whether Kriya's browser should identify itself to websites as an AI agent is ${OPEN}.`,
         ],
       },

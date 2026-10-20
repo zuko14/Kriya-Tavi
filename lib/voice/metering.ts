@@ -195,9 +195,10 @@ async function computeCharge(
 }
 
 // The per-task budget before a dial (§5): what the task cost so far plus one
-// more call at the telephony price for its full length. No telephony price:
-// nothing to project, the spend so far still counts. Spend that can't be
-// converted (USD without a rate) counts as over: never dial blind
+// more call at the telephony price for its full length. Fails closed for a
+// real provider: no telephony price, or anything unmetered so far, counts as
+// over, as does spend that can't be converted (USD without a rate). The mock
+// costs nothing, so it's held only to what was priced
 export async function overBudget(
   q: Q,
   task: { id: string; costBudgetMicroInr: number; maxCallSeconds: number },
@@ -210,6 +211,8 @@ export async function overBudget(
     fx.rate
   )
   if (spent.needsRate) return true
+  const live = provider !== "mock"
+  if (live && spent.unmetered > 0) return true
   const call = {
     quantity: task.maxCallSeconds,
     unit: "second",
@@ -223,7 +226,7 @@ export async function overBudget(
     price && units != null
       ? toMicroInr({ micro: units * price.priceMicro, currency: price.currency }, fx.rate)
       : 0
-  if (projected == null) return true
+  if (projected == null || (live && units == null)) return true
   return spent.microInr + projected > task.costBudgetMicroInr
 }
 
@@ -314,8 +317,13 @@ export async function dailyCapAllows(providerName: string) {
     return false
   }
   const spent = await voiceSpendToday()
-  // Spend that can't be converted counts as over the cap: never dial blind
-  if (spent.microInr == null || spent.microInr >= cap) {
+  // Spend that can't be converted, or that has no price yet, counts as over
+  // the cap for a real provider: never dial blind
+  if (
+    spent.microInr == null ||
+    spent.microInr >= cap ||
+    (providerName !== "mock" && spent.unmetered > 0)
+  ) {
     log.warn("voice claim refused: daily spend cap reached", {
       spentMicroInr: spent.microInr,
       capMicroInr: cap,

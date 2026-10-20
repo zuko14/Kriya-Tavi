@@ -415,9 +415,11 @@ describe("migrations", () => {
   it("T-MIG-01 rolls the voice core back and applies it again, before the core rollback", async () => {
     const read = (dir: string, file: string) =>
       fs.readFileSync(path.join(process.cwd(), "supabase", dir, file), "utf8")
+    // 24 from the voice core, 3 voice_* tables from phase 10
+    const VOICE_TABLES = 27
     const pg = await createTestDb()
     await pg.exec(
-      "create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key); insert into supabase_migrations.schema_migrations values ('20261016000000'), ('20261020000000')"
+      "create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key); insert into supabase_migrations.schema_migrations values ('20261016000000'), ('20261020000000'), ('20261023000000')"
     )
     const added = async () =>
       (
@@ -441,13 +443,18 @@ describe("migrations", () => {
           [v]
         )
       ).rows.length
-    expect(await added()).toBe(24)
+    expect(await added()).toBe(VOICE_TABLES)
 
+    // Newest first (voice phase 10): its tables outlive attempts, without
+    // keys to them, so they're removed by their own rollback
+    await pg.exec(read("rollback", "20261023000000_voice_improvement.down.sql"))
+    expect(await version("20261023000000")).toBe(0)
     await pg.exec(read("rollback", "20261020000000_voice_core.down.sql"))
     expect(await added()).toBe(0)
     expect(await version("20261020000000")).toBe(0)
     await pg.exec(read("migrations", "20261020000000_voice_core.sql"))
-    expect(await added()).toBe(24)
+    await pg.exec(read("migrations", "20261023000000_voice_improvement.sql"))
+    expect(await added()).toBe(VOICE_TABLES)
     const { rows } = await pg.query(
       `select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
        where n.nspname = 'kriya' and c.relkind = 'r' and not c.relrowsecurity`
@@ -455,12 +462,14 @@ describe("migrations", () => {
     expect(rows).toEqual([])
 
     // F2: voice first, then the core; neither version stays recorded
+    await pg.exec(read("rollback", "20261023000000_voice_improvement.down.sql"))
     await pg.exec(read("rollback", "20261020000000_voice_core.down.sql"))
     await pg.exec(read("rollback", "20261016000000_kriya_core.down.sql"))
     expect(await version("20261020000000")).toBe(0)
     expect(await version("20261016000000")).toBe(0)
     await pg.exec(read("migrations", "20261016000000_kriya_core.sql"))
     await pg.exec(read("migrations", "20261020000000_voice_core.sql"))
-    expect(await added()).toBe(24)
+    await pg.exec(read("migrations", "20261023000000_voice_improvement.sql"))
+    expect(await added()).toBe(VOICE_TABLES)
   })
 })

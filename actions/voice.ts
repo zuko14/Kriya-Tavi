@@ -10,6 +10,7 @@ import {
   updatePreferences,
   verificationStatus,
 } from "@/lib/voice/owner-report"
+import { recordFeedback } from "@/lib/voice/improve"
 import { draftInputSchema } from "@/lib/voice/schemas"
 import {
   cancelVoiceTask,
@@ -182,4 +183,29 @@ export async function ownerPhoneVerificationStatus(verificationId: string) {
   if (!id.safeParse(verificationId).success) return INVALID
   if (await limited(user.id, "other")) return RATE_LIMITED
   return verificationStatus(user.id, verificationId)
+}
+
+// "Is this right?" on an outcome (SELF_IMPROVEMENT §3.2): the owner's
+// correction becomes feedback for the weekly cases. RLS limits it to the
+// owner's own attempts
+const feedbackSchema = z
+  .object({
+    callAttemptId: id,
+    field: z.enum(["result", "agreed_times", "proposed_times", "questions", "other"]),
+    was: z.string().trim().max(500).optional(),
+    shouldBe: z.string().trim().max(500).optional(),
+  })
+  .strict()
+
+export async function correctCallOutcome(input: unknown) {
+  const user = await requireUser()
+  const parsed = feedbackSchema.safeParse(input)
+  if (!parsed.success) return INVALID
+  if (await limited(user.id, "other")) return RATE_LIMITED
+  try {
+    return await recordFeedback(user.id, { ...parsed.data, source: "app" })
+  } catch {
+    // Someone else's attempt: RLS refuses the row
+    return INVALID
+  }
 }

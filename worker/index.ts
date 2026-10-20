@@ -20,6 +20,7 @@ import { claimDueSchedules, recoverClaimedRuns, runDue } from "@/lib/schedules"
 import { profileJanitor } from "@/lib/browser/profiles"
 import { purgeExpired } from "@/lib/share"
 import { runUndos } from "@/lib/undo"
+import { voiceHousekeeping } from "@/lib/voice/housekeeping"
 import { version } from "@/package.json"
 
 // The Kriya worker: claims queued tasks from Postgres and runs them. Any
@@ -142,6 +143,9 @@ async function janitor() {
   if (profiles.expired || profiles.abandoned || profiles.resealed) {
     log.info("login profiles tidied", profiles)
   }
+  // Voice: charges, transcript retention, improvement signals. Runs whether
+  // or not the voice loop does, since finished calls still need them
+  await voiceHousekeeping()
 }
 
 // Reading uploads (A5): one file at a time, its own loop and timer like the

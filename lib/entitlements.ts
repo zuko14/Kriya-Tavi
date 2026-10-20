@@ -88,6 +88,7 @@ export async function usageSummary(userId: string) {
     usedPct:
       allowance > 0 ? Math.min(100, Math.round((usedMicroInr / allowance) * 100)) : null,
     unpricedTasks: (spent?.unpriced ?? 0) + (voice?.unpriced ?? 0),
+    unpricedVoiceTasks: voice?.unpriced ?? 0,
     tasksToday: today?.n ?? 0,
   }
 }
@@ -107,7 +108,19 @@ export function checkTaskAllowed(usage: UsageSummary): Limit {
 }
 
 // A phone call spends the same allowance; the daily task count is for agents
-export const checkVoiceAllowed = (usage: UsageSummary): Limit => checkAllowance(usage)
+// Fails closed: with a rupee allowance, an unpriced call could hide any
+// amount, so no new call is confirmed until those are priced
+export function checkVoiceAllowed(usage: UsageSummary): Limit {
+  if (usage.allowanceMicroInr > 0 && usage.unpricedVoiceTasks > 0) {
+    return {
+      ok: false,
+      code: "allowance",
+      message:
+        "Some of your recent calls aren't priced yet, so Kriya can't tell how much of your allowance is left. Try again once they are.",
+    }
+  }
+  return checkAllowance(usage)
+}
 
 function checkAllowance(usage: UsageSummary): Limit {
   const { plan } = usage

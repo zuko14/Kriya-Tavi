@@ -19,7 +19,7 @@ import { Dialogue, type Reply } from "./dialogue"
 import { localDate } from "./languages"
 import type { ModelCall } from "./outcome"
 import { HANG_UP, reportCall, VerificationCall, verificationCall } from "./owner-report"
-import { ACTIVE_POLICY } from "./policy/v1"
+import { bundleFor } from "./policy"
 import type {
   MediaEvent,
   SpeechRecognitionProvider,
@@ -159,12 +159,14 @@ export async function runSession(call: LiveCall, deps: SessionDeps) {
   // The callee's dialogue: the outreach conversation, or the owner's own
   // report or verification call (VOICE_REMINDERS.md; fixed lines, no model)
   const kind = ctx.call.kind
+  // The bundle the worker stamped on this attempt (D-17): the whole call
+  // runs on one version
+  const policy = await bundleFor(ctx.attempt.policyVersion)
   const dialogue =
     kind === "outreach" && task && spec
       ? new Dialogue({
           spec,
-          // ponytail: one bundle exists; look up the attempt's policy_version once there are more (phase 10)
-          policy: ACTIVE_POLICY,
+          policy,
           model: deps.model,
           escalation: deps.escalation,
           today: localDate(clock.now(), spec.timezone),
@@ -376,7 +378,7 @@ export async function runSession(call: LiveCall, deps: SessionDeps) {
           confidence = Math.min(confidence ?? 1, event.confidence)
         }
         clearTimeout(silence)
-        silence = setTimeout(respond, ACTIVE_POLICY.thresholds.endpointSilenceMs)
+        silence = setTimeout(respond, policy.thresholds.endpointSilenceMs)
       } else if (event.type === "endpoint") {
         respond()
       } else if (event.type === "error") {

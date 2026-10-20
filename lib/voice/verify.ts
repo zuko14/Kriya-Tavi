@@ -19,6 +19,7 @@ import { checkOutcome, extractOutcome, observedFrom, type ModelCall } from "./ou
 import type { CallStatus, ProviderCall, TelephonyProvider } from "./providers"
 import { clock, outreachRetryAt, reportRetryAt } from "./schedule"
 import type { VoiceTaskSpec } from "./schemas"
+import { bundleFor } from "./policy"
 import { hashToken } from "./streams"
 import { TERMINAL_CALL, TERMINAL_TASK, transition } from "./tasks"
 
@@ -324,7 +325,14 @@ export async function finishOutcome(
   let status: "accepted" | "needs_review" = "needs_review"
   const extracted =
     notes && models
-      ? await extractOutcome({ spec, turns, notes, ...models }).catch(() => null)
+      ? await extractOutcome({
+          spec,
+          turns,
+          notes,
+          ...models,
+          // The extraction prompt of the bundle this attempt ran on (D-17)
+          policy: await bundleFor(row.attempt.policyVersion),
+        }).catch(() => null)
       : null
   if (!notes) reasons.push("no notes from the call")
   else if (!extracted) reasons.push("the outcome couldn't be extracted")

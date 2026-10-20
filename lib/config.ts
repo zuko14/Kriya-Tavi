@@ -79,6 +79,14 @@ export const SETTINGS = {
   // Live calls (D-12, AGENTS.md voice rule 5): a real provider dials only
   // while this is on and KRIYA_VOICE_LIVE=1 is set on the worker. Turning it
   // off stops new dials within the settings cache window (T-SEC-04)
+  // The behaviour bundle new calls run on (voice phase 10, D-17): v1 in code
+  // or a stored version the owner promoted. Setting it back is the rollback
+  "voice.policyVersion": {
+    env: null,
+    fallback: "v1",
+    pattern: /^v[0-9][a-z0-9.-]{0,38}$/,
+    hint: "A policy version id, e.g. v1",
+  },
   // Owner-only (no env), so it stays a second switch beside KRIYA_VOICE_LIVE
   "voice.liveCalls": {
     env: null,
@@ -312,7 +320,12 @@ export type SettingView = Awaited<ReturnType<typeof describeSetting>>
 
 // Validates and saves (null or "" removes the override). Callers must have
 // checked that the actor is an owner.
-export async function setSetting(key: SettingKey, value: string | null, actorId: string) {
+// actorId null: the system (an automatic voice policy rollback)
+export async function setSetting(
+  key: SettingKey,
+  value: string | null,
+  actorId: string | null
+) {
   const def: SettingDef = SETTINGS[key]
   const trimmed = value?.trim()
   if (!trimmed) {
