@@ -57,13 +57,13 @@ only your own row. Rules: AGENT_MASTER_PROMPT.md §4.
 | Phase | Name | Status | Depends on |
 | --- | --- | --- | --- |
 | 0 | Research, audit, requirements, decisions | IN_PROGRESS (documents done; awaiting owner approval) | — |
-| 1 | Domain model, migration, RLS, state machines | COMPLETE 2026-10-20 (on PGlite; not yet applied to Supabase: B2, B10, F12) | 0 approved |
+| 1 | Domain model, migration, RLS, state machines | COMPLETE 2026-10-20 (PGlite; applied to staging Supabase `kriya-tavi` 2026-10-20, Postgres 17) | 0 approved |
 | 2 | Provider interfaces, mocks, `kriya-voice` skeleton | COMPLETE 2026-10-20 (mocks only; Exotel framing unverified until X9; B9 open) | 1 |
 | 3 | Durable call orchestration on mocks | COMPLETE 2026-10-20 (mock provider; the worker doesn't start the loop until a real provider exists, phase 5) | 2 |
 | 4 | Dialogue engine, STT/TTS/LLM, outcomes, verification | IN_PROGRESS (2026-10-20: engine, outcomes, verification and L-text done on mocks; vendor adapters + paid benchmark open, B2, B6) | 2 (benchmark needs keys) |
 | 5 | Controlled live outbound calls (Exotel, test numbers) | BLOCKED | 3, 4, external approvals |
 | 6 | Owner reminders and spoken reports | NOT_STARTED | 3, 4 (live check needs 5) |
-| 7 | Mobile UI | IN_PROGRESS (2026-10-20: screens, stream and tests done; browser checks at 360 px, screenshots and the Android mic check open; Phase 6 parts deferred) | 3, 6 |
+| 7 | Mobile UI | IN_PROGRESS (2026-10-20: 360 px browser checks on staging done with screenshots; §11.7 measured, F29 fixed, acceptance met on a mock call (F30 fixed); open: real-Android mic + TalkBack, F28, F31; Phase 6 parts deferred) | 3, 6 |
 | 8 | Cost, limits, monitoring, owner dashboard | NOT_STARTED | 3, 4 |
 | 9 | Security, compliance, recovery, production readiness | NOT_STARTED | 5–8 |
 | 10 | Continuous improvement loop (D-17) | NOT_STARTED | 9 (foundations in 1, 4, 7) |
@@ -77,7 +77,7 @@ idempotency and recovery are proven.
 | # | Blocker | Blocks | Needed from |
 | --- | --- | --- | --- |
 | B1 | ~~Owner approval of DECISIONS.md D-01…D-16~~ Resolved 2026-10-20 (D-01…D-17 approved) | Phase 1 | Owner |
-| B2 | Platform not yet on real services: Supabase migrations unapplied, no OpenRouter run, no Render deploy (`docs/kriya/status.md`) | Phases 4 (benchmark), 5 | Owner |
+| B2 | Platform not yet on real services: Supabase migrations unapplied (2026-10-20: all applied to staging `kriya-tavi`, incl. both voice migrations), no OpenRouter run, no Render deploy (`docs/kriya/status.md`) | Phases 4 (benchmark), 5 | Owner |
 | B3 | Exotel account: KYC, AgentStream Voicebot enabled for outbound, ExoPhone CLI, cluster, quote (X1–X11) | Phase 5 | Owner + Exotel |
 | B4 | Counsel answers Q1–Q4 (A2P/TCCCPR status, CLI series, DPDP basis for recipients, disclosure wording) | Phase 5 (third-party calls), 9 | Owner + counsel |
 | B5 | A2P pre-declaration through Exotel (D-16) | Phase 5 | Owner + Exotel |
@@ -85,7 +85,7 @@ idempotency and recovery are proven.
 | B7 | TRAI Third Amendment primary text couldn't be read (scanned PDF); needs a human read or OCR | Phase 9 sign-off | Owner/counsel |
 | B8 | Is Kriya AI an India-registered company (Plivo and likely Exotel KYC need it)? | Phase 5 | Owner |
 | B9 | `.env.example` not readable by agents here (local guardrail); new variables must be added by the owner | Phase 2 | Owner |
-| B10 | Supabase Postgres version must be ≥ 15 for `on delete set null (column)` (F1); check `show server_version` on the project | Phase 1 apply to Supabase (not the PGlite tests) | Owner |
+| B10 | ~~Supabase Postgres version must be ≥ 15~~ Resolved 2026-10-20: `kriya-tavi` runs Postgres 17 (Supabase project list); voice migrations applied. Supabase Postgres version must be ≥ 15 for `on delete set null (column)` (F1); check `show server_version` on the project | Phase 1 apply to Supabase (not the PGlite tests) | Owner |
 | B11 | Counsel answer Q11 (using de-identified call content for improvement) | Phase 10 content use | Owner + counsel |
 
 ---
@@ -932,6 +932,177 @@ screenshots, §11.7 bars, the real-Android mic check); none could run here.
   `/calls/new` and a task at 360 px in light and dark, record screenshots and
   the §11.7 measurements here, and check the mic on a real Android phone.
   Then Phase 6 adds the deferred parts.
+
+**Session 2 result (2026-10-20 ~13:00–13:30 IST, Claude Code / Opus 5.5,
+`main` in place):** `IN_PROGRESS`. The 360 px browser checks ran on the
+staging Supabase project; the exit still has open items (below).
+
+- Owner instructions this session: apply the two pending voice migrations,
+  commit the working tree, run the dev server and the 360 px checks with
+  screenshots; "Yes, it's staging; seed it" (test data); cleanup through the
+  Supabase connector.
+- Migrations: `npx tsx --env-file=.env scripts/migrate.ts` →
+  `applied 20261020000000_voice_core.sql`, `applied
+  20261021000000_voice_queue.sql` (project `kriya-tavi`, Postgres 17 per the
+  Supabase project list; track A versions were already applied, so this was
+  the out-of-order case of F12, handled by `migrate.ts`).
+- `npm run check` before the commit: typecheck, lint, "All matched files use
+  Prettier code style!", **Test Files 98 passed | 3 skipped (101), Tests 1233
+  passed | 26 skipped (1259)**, exit 0.
+- Commit `94de49d` (local only, not pushed): all uncommitted voice work,
+  Phases 1–4 and 7, 97 files. The staged diff was scanned for keys and
+  connection strings first (none).
+- Test data (staging, owner-approved, **deleted afterwards**): one auth user
+  inserted with a confirmed email (no email sent), `voice_access`, a
+  non-default plan `voice-ui-test` with voice on, a `test` subscription, and
+  two drafts made by `createDraft` (fake numbers, no model). Cleanup check:
+  1 user and 1 plan deleted; 0 rows left in voice_tasks, voice_access,
+  subscriptions, voice_approvals, profiles, voice_transitions for that user.
+- Local-only overrides for the dev process (no file changed): a throwaway
+  `KRIYA_PHONE_HASH_KEY`, and `NEXT_PUBLIC_SUPABASE_URL`/publishable key of
+  `kriya-tavi`, because `.env.local` points Auth at a placeholder project
+  (F28).
+- Checks at 360 × 780 (Playwright Chromium), screenshots in
+  `screenshots/voice-phase7/`:
+  - Signed out, `/calls` → `/login?next=%2Fcalls`.
+  - `/calls`, `/calls/new`, a draft task, the confirm card: light and dark
+    (`calls-360-*`, `calls-new-360-*`, `task-draft-360-*`,
+    `confirm-card-360-*`, `confirm-card-shown-360-dark`,
+    `confirm-card-bottom-360-light`). `scrollWidth` 360 on every page, no
+    horizontal scroll.
+  - 44 px: every button on the card is ≥ 44 px high (Show all 78×44, Listen
+    to the opening 182×44, Not yet 70×44, Confirm & call 134×44, Stop
+    318×44); the dictation disc is 96×96. Only element under 44: the existing
+    header logo link (103×28), not Phase 7.
+  - Confirm card: "Confirm & call" disabled until "Show all", enabled after,
+    disabled again after reload (the pending approval is reused). Number
+    masked as `+91 90xxx xxx01`; cost shows "price not yet set". Nothing was
+    confirmed; no call was queued.
+  - T-UI-03: speech recognition stubbed to fail with `not-allowed` → "Microphone
+    access is blocked for Kriya in this browser."
+    (`calls-new-mic-denied-360-light`); removed → "Voice typing isn't
+    available in this browser; type instead."
+    (`calls-new-unsupported-360-light`). The real speech service was never
+    started.
+  - Reduced motion: `tavi-breathe` runs by default and no infinite animation
+    runs under `prefers-reduced-motion: reduce` (`/calls`, `/calls/new`,
+    task).
+  - Layout shift (PerformanceObserver, buffered): CLS 0 on `/calls`,
+    `/calls/new` and the task.
+  - SSE: the task page opens `/api/voice/tasks/<id>/stream`.
+  - Entry points: the command palette (Ctrl+K) shows "Phone calls" and opens
+    `/calls`. The Home row didn't appear for a user without agents (F29).
+  - Console: no application errors (only HMR socket errors from restarting
+    the dev server).
+- `npm run build` (after the checks): exit 0; routes `ƒ /calls`,
+  `ƒ /calls/[taskId]`, `ƒ /calls/new`.
+- **Not done (exit open):** 60 fps trace, screen reader pass, JS size vs the
+  largest route (§11.7); the real-Android `getUserMedia` + Web Speech check;
+  the acceptance flow past confirmation (followed and reviewed needs the worker
+  loop with the mock provider, which doesn't start until a real provider exists;
+  result hero and evidence chips not seen in a browser); whether a phone
+  without a keyboard can open the palette; F29.
+- New findings: F25–F27 (automated security review of `94de49d`, Phases 3–5
+  code, left for Phase 5), F28 (`.env.local` placeholder), F29 (Home entry).
+- Uncommitted after this session: `status.md`, `CHANGE_IMPACT_AND_SAFETY.md`,
+  `screenshots/voice-phase7/` (15 PNG, 1.4 MB).
+- Next action at the end of session 2: owner fixes `.env.local` (F28); render
+  the Home row outside `hasAgents` (F29); §11.7 measurements; Android check.
+  Session 3 below did the second and third.
+
+**Session 3 result (2026-10-20, Claude Code / Opus 5.5, `main` in place,
+uncommitted; owner: "go on"):** `IN_PROGRESS`.
+
+- F29 fixed: `app/(workspace)/home/page.tsx` keeps the "Phone calls" link in
+  one `callsLink` and renders it in both branches (above the templates when
+  there are no agents). Checked in the browser on staging: a voice user with
+  no agents sees it (318×56, light and dark, `home-entry-no-agents-360-*`),
+  and it opens `/calls`; `scrollWidth` 360.
+- Test data: re-seeded through the Supabase connector (user, voice_access,
+  plan `voice-ui-test`, `test` subscription; no drafts, no agents), deleted
+  afterwards; check: 0 users, plans, subscriptions, voice_access, profiles
+  left.
+- §11.7, measured:
+
+  | Bar | Result |
+  | --- | --- |
+  | 60 fps | Only `transform`/`opacity` animated (`tavi-breathe`, Tailwind ping/pulse/spin; one `transition-transform`). rAF frame times for 5 s at 4× CPU throttle (CDP) in desktop Chromium, 144 Hz display: `/calls/new` breathing 144 fps, p95 7.1 ms, 0 frames > 33 ms; Home scroll 141 fps, p95 7.1 ms, 1 of 706 > 33 ms. A proxy: not a DevTools trace on a real mid-range Android |
+  | Layout shift | CLS 0 on `/calls`, `/calls/new`, a task (session 2) |
+  | JS size | Entry JS per route from the build's client manifests, gzip: `/calls` 276 KB, `/calls/[taskId]` 278 KB, `/calls/new` 278 KB; largest route `/a/[agentId]/[threadId]` 586 KB. Under the largest: pass |
+  | Dark and light | All voice screens, both (session 2) |
+  | Reduced motion | No infinite animation under `reduce` (session 2) |
+  | Screen reader | Presence is `role="status"` `aria-live="polite"` and announces "Tell me who to call and what to ask"; every control on `/calls/new` has a name; captions are `role="log"` (`controls.tsx:201`, code only: rendered only during a live call). No real screen reader (TalkBack/NVDA) was run |
+  | 360 px | Pass (session 2) |
+  | No new dependency | `package.json` in `94de49d` adds only Phase 2/4 scripts (`dev:voice`, `voice`, `voice:eval`), no dependency |
+
+- After the fix: `tsc --noEmit`, `eslint` and `prettier --check` on the
+  changed file clean; `npm run check` → **Test Files 98 passed | 3 skipped
+  (101), Tests 1233 passed | 26 skipped (1259)**; `npm run build` exit 0
+  (`ƒ /calls`, `ƒ /calls/[taskId]`, `ƒ /calls/new`, `ƒ /home`).
+- **Still open (exit):** real-Android `getUserMedia` + Web Speech check;
+  a TalkBack pass; the acceptance flow past confirmation (worker loop with the
+  mock provider; result hero and evidence chips in a browser); whether a phone
+  without a keyboard can open the palette; F28 (owner).
+- Next action at the end of session 3: F28 (owner), the Android mic +
+  TalkBack check, then Phase 6. Session 4 below did the acceptance flow.
+
+**Session 4 result (2026-10-20 ~13:50–14:20 IST, Claude Code / Opus 5.5,
+`main` in place, uncommitted; owner: "continue the next", then "Yes, run it
+on staging" for one mock call):** `IN_PROGRESS`. **Acceptance met**; the exit
+still needs the real-Android checks.
+
+- F28: the owner approved fixing `.env.local`, but the local "Protect
+  secrets" guardrail blocks any command on that file; left to the owner (the
+  two lines are in this session's chat).
+- Acceptance run: a temporary script (deleted, never committed), run by the
+  owner in their own terminal because the guardrail keeps `.env` away from
+  the agent, replayed S01 from `tests/voice/session.test.ts` on staging: test
+  user, `createDraft` → `requestConfirmation` → `confirmCall` (the same
+  functions the confirm card calls), worker `claimNext` + `runCall` on the
+  mock provider, status webhooks, a local `kriya-voice` with mock STT/TTS and
+  the scripted model (no network beyond localhost, no real call, no paid
+  model). Script output: `voice call placed`, `voice stream connected`,
+  `voice session ended … turns: 7`, `voice outcome checked … accepted`,
+  `DONE: stream closed 1000; outcome accepted; task completed/agreed`.
+- Followed live on `/calls` at 360 px: list "LIVE 1 · My CA · On the call
+  now" (`calls-live-360-light`); the task shows `role="status"` "On the call
+  with My CA", the "Show what's being said" toggle (169×44) and the turns so
+  far (`task-live-360-light`, `task-live-360-dark`).
+- Reviewed: list "DONE 1 · My CA agreed to Wednesday the 21st at 3 PM"
+  (`calls-done-360-*`); the task's result hero "My CA agreed to Wednesday the
+  21st at 3 PM", "Verified by call records", AGREED chip with "heard in turn
+  5 →" (`#turn-5`, 44 px), full 7-turn transcript, "Delete transcript"
+  (`task-result-360-*`, `task-result-bottom-360-light`). `scrollWidth` 360;
+  every control 44 px.
+- Found and fixed on the way: **F30** (`lib/voice/run-call.ts`, a `Date`
+  bound in raw SQL that real Postgres rejects; every outreach call would have
+  failed before dialling). A Phase 3 file, fixed as a prerequisite for this
+  acceptance; `tests/voice/pipeline.test.ts` + `session.test.ts`: 2 files, 33
+  passed. Found, open (owner): **F31** (`DATABASE_URL` on the 5432 session
+  pooler; 15 clients ran out with the app and the script, HTTP 500 on
+  `/calls` until idle connections closed).
+- `npm run check` after the F30 fix: exit 0; "All matched files use
+  Prettier code style!"; **Test Files 98 passed | 3 skipped (101), Tests 1233
+  passed | 26 skipped (1259)**.
+- Script-only issues fixed during the run, not product bugs: claimed before
+  the database's `now()` reached `available_at` (clock skew; the worker
+  polls), a 5 s watch window copied from the test (the mock answers
+  "completed" whenever asked), missing `autoPlay`, reading the STT stream
+  before it opened.
+- Observations for the owner: (1) the transcript shows during a live call
+  even with "Show what's being said" unchecked; the toggle may be meant only
+  for live captions, so check against UX §11; (2) Tavi's goodbye says the same
+  thing twice ("I'll let Asha know … Asha will be informed"), with the
+  scripted model, so it may come from Phase 4's closing line.
+- Test data: five test users over the runs (four failed runs and one full
+  one), each removed; final check over every `kriya` table with `user_id`: 0
+  rows for all five ids; plan `voice-ui-test` deleted.
+- **Still open (exit):** real-Android `getUserMedia` + Web Speech check; a
+  TalkBack pass; whether a phone without a keyboard can open the palette;
+  F28, F31 (owner).
+- **Next exact action:** owner fixes `.env.local` (F28) and `DATABASE_URL`
+  (F31), then does the Android mic + TalkBack check against the staging app;
+  then Phase 6 adds the deferred parts.
 
 ## Phase 8 — Cost, limits, monitoring
 

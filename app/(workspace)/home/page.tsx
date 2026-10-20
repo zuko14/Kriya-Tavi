@@ -83,6 +83,19 @@ export default async function Home() {
     .filter((thread) => !thread.busy && thread.preview)
     .slice(0, 5)
 
+  // Voice phase 7: the way into /calls, with voice access only, with or
+  // without agents (F29)
+  const callsLink = voice && (
+    <Link
+      href="/calls"
+      className="glass flex min-h-14 items-center gap-3 rounded-2xl px-4 py-2.5"
+    >
+      <PhoneIcon className="size-4 shrink-0 text-rigel" />
+      <span className="flex-1 text-[13.5px] font-medium">Phone calls</span>
+      <ChevronRightIcon className="size-4 text-faint" />
+    </Link>
+  )
+
   return (
     <div className="relative min-h-0 flex-1 overflow-y-auto">
       <div
@@ -114,17 +127,7 @@ export default async function Home() {
           <>
             <Ask />
 
-            {/* Voice phase 7: the way into /calls, with voice access only */}
-            {voice && (
-              <Link
-                href="/calls"
-                className="glass flex min-h-14 items-center gap-3 rounded-2xl px-4 py-2.5"
-              >
-                <PhoneIcon className="size-4 shrink-0 text-rigel" />
-                <span className="flex-1 text-[13.5px] font-medium">Phone calls</span>
-                <ChevronRightIcon className="size-4 text-faint" />
-              </Link>
-            )}
+            {callsLink}
 
             {(waiting !== null || openGoals.length > 0) && (
               <section className="flex flex-col gap-2.5">
@@ -326,6 +329,7 @@ export default async function Home() {
           </>
         ) : (
           <section className="flex flex-col gap-4">
+            {callsLink}
             <p className="text-[14.5px] leading-relaxed text-muted-foreground">
               An agent is an assistant with a role, its own instructions and a memory you
               can see. Start from one of these, or make your own. Agents keep working when

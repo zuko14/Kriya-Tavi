@@ -149,7 +149,7 @@ export async function prepareAttempt(callId: string, deps: VoiceDeps) {
         join kriya.voice_calls c on c.id = a.voice_call_id
         join kriya.voice_tasks t on t.id = c.voice_task_id
         where t.recipient_phone_hash = ${task.recipientPhoneHash}
-          and c.kind = 'outreach' and a.requested_at >= ${dayStart(now)}`)
+          and c.kind = 'outreach' and a.requested_at >= ${dayStart(now).toISOString()}::timestamptz`)
       if ((rowsOf<{ n: number }>(today)[0]?.n ?? 0) >= PER_NUMBER_DAY) {
         return move("retry_wait", {}, tomorrowOpening(now))
       }
