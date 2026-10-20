@@ -63,7 +63,7 @@ only your own row. Rules: AGENT_MASTER_PROMPT.md §4.
 | 4 | Dialogue engine, STT/TTS/LLM, outcomes, verification | IN_PROGRESS (2026-10-20: engine, outcomes, verification and L-text done on mocks; vendor adapters + paid benchmark open, B2, B6) | 2 (benchmark needs keys) |
 | 5 | Controlled live outbound calls (Exotel, test numbers) | BLOCKED | 3, 4, external approvals |
 | 6 | Owner reminders and spoken reports | COMPLETE 2026-10-20 (mock provider; the live check to the owner's phone moves to phase 5's exit; migration `20261022000000` not applied to staging) | 3, 4 (live check needs 5) |
-| 7 | Mobile UI | IN_PROGRESS (2026-10-20: 360 px browser checks on staging done with screenshots; §11.7 measured, F29 fixed, acceptance met on a mock call (F30 fixed); Phone & calls built (F33 fixed); open: its 360 px check, real-Android mic + TalkBack, F28, F31) | 3, 6 |
+| 7 | Mobile UI | IN_PROGRESS (2026-10-20: 360 px browser checks on staging done with screenshots; §11.7 measured, F29 fixed, acceptance met on a mock call (F30 fixed); Phone & calls built and checked at 360 px (F33 fixed); open: real-Android mic + TalkBack, F28, F31) | 3, 6 |
 | 8 | Cost, limits, monitoring, owner dashboard | NOT_STARTED | 3, 4 |
 | 9 | Security, compliance, recovery, production readiness | NOT_STARTED | 5–8 |
 | 10 | Continuous improvement loop (D-17) | NOT_STARTED | 9 (foundations in 1, 4, 7) |
@@ -1270,9 +1270,41 @@ staging and start Phase 7's Phone & calls"):** `IN_PROGRESS`.
   needs the owner's go-ahead each time (sessions 2–4), and F28 still blocks
   local sign-in. No verification call can be placed: the worker doesn't run
   the loop without a real provider (Phase 5).
-- **Next exact action:** owner approves seeding a staging test user (or fixes
-  F28); then open `/account#phone` at 360 px in light and dark, record
-  screenshots in `screenshots/voice-phase7/`, and delete the test data.
+- Browser check attempt (after commit `28641d1`): the owner ran the seed
+  script (one confirmed user `44bf461c-…`, `voice_access`, plan
+  `voice-ui-test`, a `test` subscription; read-only check: all present).
+  Dev server started with `.env` loaded into its process (`process.loadEnvFile`;
+  `node --env-file` is refused because Next passes it on in `NODE_OPTIONS`).
+  Sign-in failed: `.env` has `NEXT_PUBLIC_SUPABASE_URL` for `kriya-tavi` but
+  no `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, so the key comes from
+  `.env.local`'s placeholder project (F28); Auth answers 401. Also: server
+  actions need `http://localhost:6796`, not `127.0.0.1` (proxy origin check).
+  Dev server stopped. **The test data is still on staging.**
+- Browser check, second try (owner fixed `.env.local`, F28): plain `npm run
+  dev` with a throwaway `KRIYA_PHONE_HASH_KEY`; signed in at
+  `http://localhost:6796` as the seeded user; onboarding completed (one agent,
+  removed with the user). At 360 × 780 (Playwright Chromium), `/account#phone`:
+  `scrollWidth` 360; every control 44 px high (number field 318×44, "Call me
+  to verify" 318×44, timezone 318×44, quiet hours 145×44 each, radio rows 44,
+  tries 119×44, gap 120×44, retention 318×44, Save 54×44, Stop all calls
+  106×44); no console errors. Light and dark set through `next-themes`
+  (`localStorage.theme`; emulated `prefers-color-scheme` doesn't change it,
+  the default is dark). Screenshots: `account-phone-360-{light,dark}.png`,
+  `account-phone-bottom-360-{light,dark}.png` in `screenshots/voice-phase7/`.
+- **Found and fixed:** after Save the form showed the old values again (the
+  database had the new one: `report_max_attempts` 5). React 19 resets a
+  `<form action={…}>` once the action ends, to the defaults from before the
+  refresh. `phone-settings.tsx` now submits with `onSubmit`; re-checked in
+  the browser: the field keeps 4 after Save. `prettier --check`, `eslint`,
+  `tsc --noEmit` clean.
+- Not pressed: "Call me to verify" (no call could be placed before Phase 5;
+  it would only show the code).
+- Cleanup (seed script `cleanup`): `{"users":0,"plans":0,"rowsLeft":{}}`
+  over every `kriya` table with `user_id`. Dev server stopped.
+- Uncommitted: `components/voice/phone-settings.tsx`, `status.md`, four
+  screenshots (332 KB).
+- **Next exact action:** commit these (owner); then the remaining Phase 7
+  exit items: real-Android mic + TalkBack; F31 (owner).
 
 ## Phase 8 — Cost, limits, monitoring
 

@@ -163,7 +163,15 @@ function Preferences({ settings }: { settings: Settings }) {
 
   const row = "flex flex-col gap-1.5 text-[13px]"
   return (
-    <form action={save} className="flex max-w-md flex-col gap-4">
+    // onSubmit, not action: React resets a form after its action, which would
+    // show the old values until the refresh lands
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        save(new FormData(e.currentTarget))
+      }}
+      className="flex max-w-md flex-col gap-4"
+    >
       <label className={row}>
         Timezone
         <select name="timezone" defaultValue={settings.timezone} className={field}>
