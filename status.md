@@ -72,6 +72,30 @@ Order differs from the brief (D-15): durable orchestration (brief 5) and
 dialogue (brief 4) come before live calls (brief 3), so no call is placed before
 idempotency and recovery are proven.
 
+### Wrap-up (2026-10-20 ~20:45 IST, Claude Code / Opus 5.5)
+
+All voice code that can be built and tested on mocks is in place for
+Phases 1–10, committed on `main` (local, not pushed; last `51b1af6`), and all
+four voice migrations are applied to the Supabase project (`scripts/migrate.ts
+--status`: `20261020000000`…`20261023000000` all `applied`, none pending).
+Last complete `npm run check` (before `51b1af6`): Test Files 103 passed,
+Tests 1292 passed | 26 skipped, exit 0; `51b1af6` itself: `improve.test.ts`
+11/11, `tsc` and `eslint` clean. The Coordination board holds no claims.
+
+Open, by phase (none of it is mock code; each needs an account, money,
+counsel, a person or a device):
+
+| Phase | Still open |
+| --- | --- |
+| 0 | Owner approval of the phase-0 documents |
+| 4 | Real STT/TTS adapters and the paid benchmark (B2, B6) |
+| 5 | BLOCKED: Exotel account, KYC, A2P (B3–B5, B8); enforce `test_numbers_only` (F25); the live checklist, incl. Phase 6's call to the owner's phone |
+| 7 | Real-Android mic + TalkBack check; F31 (`DATABASE_URL` pooler) |
+| 8 | Owner pages in a browser; C1 on real rows; F34 (owner) |
+| 9 | Counsel Q1–Q11 (B4, B7, B11), an external security review, G-E…G-H with live evidence |
+| 10 | Console views for versions and cases; the "Is this right?" button; the drift run (paid) |
+| Findings | F24–F27, F32, F33 (calling hours), F35 (shared gate module) |
+
 ## Current blockers
 
 | # | Blocker | Blocks | Needed from |
@@ -1527,7 +1551,7 @@ Recovery & Integrity on Mocks)"):** mock prep **COMPLETE**; the phase stays
   | Gate | Evidence | Open |
   | --- | --- | --- |
   | G-A | `npm run check` exit 0: Test Files 103 passed, Tests 1292 passed (Phase 10 session below) | `npm run build` after this session (not run; the owner pages didn't change this session) |
-  | G-B | migrations + rollbacks on PGlite incl. T-MIG-01 newest-first; RLS suites; voice migrations 1–3 on staging | a rollback rehearsed on staging; `20261023000000` not applied to staging |
+  | G-B | migrations + rollbacks on PGlite incl. T-MIG-01 newest-first; RLS suites; voice migrations 1–3 on staging | a rollback rehearsed on staging |
   | G-C | fault suite: D1 = 0, R2 = 100 % over 70 mock runs | the same on live calls |
   | G-D | T-VER-01…08 pass | O2 bound on ≥ 300 runs incl. ≥ 50 live |
   | G-E…G-H | — | Phase 5, counsel (B4), A2P (B5), an external review |
@@ -1578,7 +1602,8 @@ owners in the shadow stage, which waits for counsel (B11) before real use.
   `voice_profiles.improvement_opt_in` (default false). No foreign key to a
   voice table, so rows outlive attempts and the voice core still rolls back
   alone; T-MIG-01 updated to roll back newest-first (27 voice tables).
-  `db/schema.ts` mirrors it. **Not applied to staging.**
+  `db/schema.ts` mirrors it. Applied to the Supabase project by the owner
+  (2026-10-20; `migrate.ts --status`: all four voice migrations `applied`).
 - `lib/voice/policy/index.ts`: a strict bundle schema (only v1's tunable
   keys; `disclosure`, `limits` or any other key refused), seven safety
   sentences that must stay word for word, threshold bounds, a canonical
@@ -1622,11 +1647,12 @@ owners in the shadow stage, which waits for counsel (B11) before real use.
   1292 passed | 26 skipped (1318)**, exit 0. A first run failed only
   T-REM-07, on F35; fixed.
 - Not done: owner console views per policy version (§7); the "Is this
-  right?" button (the action exists); the drift run (§3.7, paid);
-  applying the migration to staging.
-- **Next exact action:** owner: apply `20261023000000` to staging when
-  wanted; a console view for versions and cases; counsel on Q11 before any
-  real shadow run.
+  right?" button (the action exists); the drift run (§3.7, paid).
+- Follow-up `51b1af6` (automated review of `d4aedc9`, F38): a false
+  agreement needs the checked outcome to have said `agreed`; a rollback
+  reinstates only a retired parent without an open severity-1 case, else v1.
+- **Next exact action:** a console view for versions and cases; counsel on
+  Q11 before any real shadow run.
 
 ---
 
