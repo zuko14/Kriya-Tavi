@@ -1,9 +1,16 @@
 import { randomBytes } from "node:crypto"
 
-import { and, eq, inArray, lt, sql } from "drizzle-orm"
+import { and, eq, gt, inArray, isNull, lt, sql } from "drizzle-orm"
 
 import { privileged, rowsOf } from "@/db"
-import { callAttempts, voiceCalls, voiceProfiles, voiceTasks } from "@/db/schema"
+import {
+  callAttempts,
+  callOutcomes,
+  phoneVerifications,
+  voiceCalls,
+  voiceProfiles,
+  voiceTasks,
+} from "@/db/schema"
 import { log } from "@/lib/log"
 
 import { ACTIVE_POLICY } from "./policy/v1"
@@ -76,7 +83,68 @@ export async function loadAttemptContext(attemptId: string, userId: string) {
   return row ?? null
 }
 
+// A verification call has no task: the attempt and its call only
+export async function loadVerificationContext(attemptId: string, userId: string) {
+  const [row] = await privileged
+    .select({ attempt: callAttempts, call: voiceCalls })
+    .from(callAttempts)
+    .innerJoin(
+      voiceCalls,
+      and(
+        eq(voiceCalls.id, callAttempts.voiceCallId),
+        eq(voiceCalls.userId, userId),
+        eq(voiceCalls.kind, "verification")
+      )
+    )
+    .where(and(eq(callAttempts.id, attemptId), eq(callAttempts.userId, userId)))
+  return row ?? null
+}
+
+// What an owner report says (VOICE_REMINDERS §5): the same task's outreach
+// attempts and the outcome of the one that connected. Still only that
+// task, by id and the owner's user id (T-SEC-05)
+export async function loadReportContext(taskId: string, userId: string) {
+  const attempts = await privileged
+    .select({
+      id: callAttempts.id,
+      status: callAttempts.status,
+      requestedAt: callAttempts.requestedAt,
+      connectedAt: callAttempts.connectedAt,
+    })
+    .from(callAttempts)
+    .innerJoin(
+      voiceCalls,
+      and(
+        eq(voiceCalls.id, callAttempts.voiceCallId),
+        eq(voiceCalls.voiceTaskId, taskId),
+        eq(voiceCalls.userId, userId),
+        eq(voiceCalls.kind, "outreach")
+      )
+    )
+    .where(eq(callAttempts.userId, userId))
+    .orderBy(callAttempts.attempt)
+  const connected = attempts.filter((a) => a.connectedAt).at(-1)
+  const [outcome] = connected
+    ? await privileged
+        .select({
+          status: callOutcomes.verifierStatus,
+          interpreted: callOutcomes.interpreted,
+        })
+        .from(callOutcomes)
+        .where(
+          and(
+            eq(callOutcomes.callAttemptId, connected.id),
+            eq(callOutcomes.userId, userId)
+          )
+        )
+    : []
+  return { attempts, outcome: outcome ?? null }
+}
+
 const LEASE_SECONDS = 30
+// A verification code: 3 tries, 10 minutes (D-13)
+export const VERIFICATION_TRIES = 3
+export const VERIFICATION_MINUTES = 10
 // Calls to one number by anyone in a day (SECURITY §5)
 const PER_NUMBER_DAY = 3
 
@@ -113,10 +181,10 @@ export async function prepareAttempt(callId: string, deps: VoiceDeps) {
       )
       .for("update")
     if (!call) return null
-    const [task] = await tx
-      .select()
-      .from(voiceTasks)
-      .where(eq(voiceTasks.id, call.voiceTaskId))
+    // A verification call has no task
+    const [task] = call.voiceTaskId
+      ? await tx.select().from(voiceTasks).where(eq(voiceTasks.id, call.voiceTaskId))
+      : []
     const now = clock.now()
     const move = async (
       to: string,
@@ -153,6 +221,22 @@ export async function prepareAttempt(callId: string, deps: VoiceDeps) {
       if ((rowsOf<{ n: number }>(today)[0]?.n ?? 0) >= PER_NUMBER_DAY) {
         return move("retry_wait", {}, tomorrowOpening(now))
       }
+    } else if (call.kind === "verification") {
+      // Only while its code can still be keyed in, to the number it's for.
+      // No quiet hours: the owner started it and is waiting on screen
+      const [code] = await tx
+        .select()
+        .from(phoneVerifications)
+        .where(
+          and(
+            eq(phoneVerifications.voiceCallId, call.id),
+            isNull(phoneVerifications.verifiedAt),
+            gt(phoneVerifications.expiresAt, now),
+            lt(phoneVerifications.tries, VERIFICATION_TRIES),
+            eq(phoneVerifications.phoneE164, call.toPhoneE164)
+          )
+        )
+      if (!code) return move("blocked", { error_code: "verification_closed" })
     } else {
       // Owner calls go only to the verified number, never in quiet hours
       const [profile] = await tx

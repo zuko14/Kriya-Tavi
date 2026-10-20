@@ -62,7 +62,7 @@ only your own row. Rules: AGENT_MASTER_PROMPT.md §4.
 | 3 | Durable call orchestration on mocks | COMPLETE 2026-10-20 (mock provider; the worker doesn't start the loop until a real provider exists, phase 5) | 2 |
 | 4 | Dialogue engine, STT/TTS/LLM, outcomes, verification | IN_PROGRESS (2026-10-20: engine, outcomes, verification and L-text done on mocks; vendor adapters + paid benchmark open, B2, B6) | 2 (benchmark needs keys) |
 | 5 | Controlled live outbound calls (Exotel, test numbers) | BLOCKED | 3, 4, external approvals |
-| 6 | Owner reminders and spoken reports | NOT_STARTED | 3, 4 (live check needs 5) |
+| 6 | Owner reminders and spoken reports | COMPLETE 2026-10-20 (mock provider; the live check to the owner's phone moves to phase 5's exit; migration `20261022000000` not applied to staging) | 3, 4 (live check needs 5) |
 | 7 | Mobile UI | IN_PROGRESS (2026-10-20: 360 px browser checks on staging done with screenshots; §11.7 measured, F29 fixed, acceptance met on a mock call (F30 fixed); open: real-Android mic + TalkBack, F28, F31; Phase 6 parts deferred) | 3, 6 |
 | 8 | Cost, limits, monitoring, owner dashboard | NOT_STARTED | 3, 4 |
 | 9 | Security, compliance, recovery, production readiness | NOT_STARTED | 5–8 |
@@ -782,11 +782,13 @@ vendor keys or spend is done and green; the exit needs the paid benchmark
 - **Acceptance:** every live attempt's final state equals the provider's call
   details; no duplicate rings; latency L1 measured live.
 - **Rollback:** `voice.liveCalls = off`; unset `KRIYA_VOICE_LIVE`.
-- **Exit:** checklist complete with evidence; owner sign-off.
+- **Exit:** checklist complete with evidence; owner sign-off; Phase 6's live
+  check (a report call and a verification call to the owner's phone) recorded
+  here (moved from Phase 6, owner decision 2026-10-20).
 
 ## Phase 6 — Owner reminders and spoken reports
 
-**Status:** NOT_STARTED
+**Status:** COMPLETE 2026-10-20 (mock provider; live check moved to Phase 5)
 
 - **Objective:** verified owner number, scheduled report calls with the D-08
   delivery criterion, bounded retries, and voice commands.
@@ -807,6 +809,136 @@ vendor keys or spend is done and green; the exit needs the paid benchmark
 - **Rollback:** cancel pending report calls; unset `KRIYA_VOICE_ENABLED`.
 - **Exit:** `npm run check` passes; live check to the owner's phone recorded
   after Phase 5.
+
+**Session plan (2026-10-20 ~14:45 IST, Claude Code / Opus 5.5, `main` in
+place after commit `0c4d014`, uncommitted):**
+
+- Preconditions: Phase 3 COMPLETE; Phase 4 IN_PROGRESS with its mock work
+  done and only the paid benchmark open. The owner chose to start Phase 6
+  on mocks anyway ("Phase 6 on mocks (Recommended)"). D-07, D-08, D-13
+  Approved. `npm run check` on `0c4d014`: 1233 passed | 26 skipped. Board:
+  empty.
+- Already in place (Phases 1–3): `voice_profiles`, `phone_verifications`,
+  `voice_calls.kind` incl. `owner_report`/`verification`, `delivered_at`,
+  `acknowledged_at`, `last_report_mark_at`, the task states
+  `awaiting_report`/`unreported` with SQL guards; the `owner_report` call
+  is created at confirmation; dialling checks the verified number and
+  quiet hours.
+- Missing: everything during an owner call (`runSession` is outreach-only),
+  settling owner calls (the code settles `in_call` only from an outcome),
+  the verification call, and the owner's actions.
+- **Conflict, resolved by the owner:** API §"Preferences and verification"
+  schedules `voice_calls(kind='verification')`, but `voice_calls.voice_task_id`
+  is NOT NULL with a foreign key to `voice_tasks`, and a verification has no
+  task. Owner: "New migration (Recommended)".
+- Create: `supabase/migrations/20261022000000_voice_verification.sql` +
+  rollback (`voice_task_id` nullable only for `kind = 'verification'`);
+  `lib/voice/owner-report.ts` (the owner call's dialogue, with the same
+  `opening`/`hear`/`played` shape as `Dialogue`: identity check, report
+  script from the verified outcome, acknowledgement, voice commands with
+  repeat-back; the verification call's DTMF code); `tests/voice/reminders.test.ts`.
+- Change: `lib/voice/session.ts` (pick the dialogue by call kind; DTMF;
+  silence → voicemail rule; owner calls settle from delivery, not an
+  outcome); `lib/voice/run-call.ts` (`loadReportContext`: that task's
+  outreach outcome only; verification dialling); `lib/voice/verify.ts`
+  (settle owner calls; a delivered report completes the task);
+  `lib/voice/tasks.ts` (cancel reports, remind again, preferences, start
+  verification; actor `owner`); `actions/voice.ts` (zod + rate limits);
+  `db/schema.ts` (`voiceTaskId` nullable, mirroring the migration).
+- Tests first: T-REM-01…08; S18, S19, S20, S29, S30; the worked example of
+  VOICE_REMINDERS §8.
+- Risks: (1) the boundary rule "kriya-voice reads a task only through
+  `loadAttemptContext`": the report needs the same task's outreach outcome,
+  so a sibling loader scoped by attempt, task and user; recorded as a
+  finding for the owner. (2) Owner intents are recognised by fixed patterns
+  (no model, no cost); unrecognised speech gets "I can't do that on this
+  call". (3) The migration is applied to staging only when the owner says so.
+- Deferred: the "Phone & calls" section in `/account` (Phase 7's file, after
+  this phase's actions exist).
+
+**Session state (2026-10-20 ~15:30 IST, stopped at the usage limit;
+`IN_PROGRESS`, uncommitted):**
+
+- Done: migration `20261022000000_voice_verification` + rollback
+  (`voice_task_id` nullable only for `kind = 'verification'`, also on
+  `voice_transitions`; no FK on `phone_verifications.voice_call_id`, because
+  one would stop the voice-core rollback, T-MIG-01); `db/schema.ts` mirrors it;
+  `tests/db/voice-verification.test.ts` 3/3 and `tests/db/migrations.test.ts`
+  pass. `lib/voice/owner-report.ts` (ReportCall, VerificationCall, reportText,
+  startPhoneVerification, verificationStatus); `languages.ts` `en.clock`,
+  `en.owner.*`; `session.ts` picks the dialogue by call kind, handles DTMF and
+  the silence/voicemail rule, and settles owner calls; `run-call.ts` has
+  `loadVerificationContext`, `loadReportContext` and verification dialling;
+  `verify.ts` settles owner calls from delivery (`retryAt`/`retryOrEnd`), a
+  delivered report completes the task, and no outcome is made for calls
+  without a task. `npx tsc --noEmit` exit 0.
+- `tests/voice/reminders.test.ts`: **8 of 16 pass** (hang-up before the last
+  mark, the §8 worked example, quiet hours, wrong person, voicemail, 3×
+  verification). **8 fail**: each one where the report is delivered then the
+  call settles. `voice_transition('task', …, 'completed', 'verifier',
+  {result})` raises at line 73 of the function body, i.e. `verifier` isn't an
+  allowed actor for that edge from the task's current status, or the status
+  isn't `awaiting_report` when the report settles. Next: print the task's
+  status at that point and the `awaiting_report → completed` rule; then fix
+  `followTask` (likely it runs while the task is still `in_progress`, or needs
+  another actor).
+- Not started: `actions/voice.ts` (preferences, startPhoneVerification,
+  verificationStatus with zod + rate limits); T-REM-07 import check in
+  `tests/voice/boundaries.test.ts`; full `npm run check`; finding F32 (the
+  `loadReportContext` boundary note) in CHANGE_IMPACT; the migration is **not**
+  applied to staging.
+
+**Session result (2026-10-20 ~16:20–16:50 IST, Claude Code / Opus 5.5,
+`main` in place; resumed from the session state above):** `COMPLETE` on
+mocks. Owner decision this session: "COMPLETE (mocks) (Recommended)": the
+live check to the owner's phone needs Phase 5 and moves to its exit.
+
+- Root cause of the 8 failures: not the actor or the task's status. The
+  task was `awaiting_report`, and `verifier` is allowed for `awaiting_report
+  → completed`. But `voice_transition()` also requires
+  `evidence.voice_call_id` to name a delivered `owner_report` call when a
+  report was requested ("completed needs a delivered report call"), and
+  `followTask` passed only `{result}`. Fix in `lib/voice/verify.ts`
+  (`followTask`): pass the delivered report's id. After it, 15/16 passed.
+- Same kind of bug in the last one (S19, voice "cancel the other
+  reminders"): `voice_transition()` cancels only a call with
+  `cancel_requested_at` set, and `cancelOthers` (`lib/voice/owner-report.ts`)
+  didn't set it. It now sets it in the same statement that picks the calls
+  (the pattern of `cancelVoiceTask`). Reminders: **16/16**.
+- `actions/voice.ts`: `updateVoicePreferences` (strict zod, partial: IANA
+  timezone, HH:mm quiet hours, report mode, attempts 1–5, retry 5–120 min,
+  retention 0–365 days, the SQL checks' bounds), `verifyOwnerPhone`
+  (→ `startPhoneVerification`; its own limit of 5 an hour per account, since
+  each one rings the phone, plus the per-address limit),
+  `ownerPhoneVerificationStatus` (uuid). All `requireUser()` first.
+  `lib/voice/owner-report.ts`: `updatePreferences` makes the profile row with
+  defaults (privileged, by user id; the session has no insert grant), then
+  updates through `withUser` (RLS + the column grant; the number isn't
+  editable).
+- `tests/voice/boundaries.test.ts`: **T-REM-07**: the import graph of every
+  `lib/voice/**` file reaches no `lib/events.ts`, `lib/connectors*`,
+  `components/workspace/notifier*` or `app/api/events/`, no mail/SMS/push
+  package, and no voice source uses `Notification`/`showNotification`.
+- Coverage map: T-REM-01 is `T-Q-07` in `tests/voice/pipeline.test.ts`
+  (confirming twice → one `owner_report`); S18 is the §8 worked example
+  (T-REM-03); T-REM-02…08, S19, S20, S29, S30 in `tests/voice/reminders.test.ts`.
+- F32 added to `CHANGE_IMPACT_AND_SAFETY.md` (open, owner): the two extra
+  loaders beside `loadAttemptContext`.
+- Also: restored the `## Phase 7 — Mobile UI` heading, which the previous
+  session's edit had removed.
+- Commands: `npx vitest run tests/voice/reminders.test.ts` → **Tests 16
+  passed (16)**; `npx vitest run tests/voice/boundaries.test.ts` → 8 passed;
+  `npm run check` → typecheck, lint, "All matched files use Prettier code
+  style!", **Test Files 100 passed | 3 skipped (103), Tests 1253 passed | 26
+  skipped (1279)**, exit 0 (a first run failed `format:check` on the two new
+  files; fixed with `prettier --write`).
+- Not done / open: migration `20261022000000_voice_verification` is **not**
+  applied to staging (needs the owner's go-ahead); the "Phone & calls"
+  section in `/account` (Phase 7, now unblocked: the actions exist); the live
+  check (Phase 5); F32 (owner).
+- **Next exact action:** owner decides F32 and whether to apply
+  `20261022000000` to staging; then Phase 7 builds "Phone & calls" on
+  `updateVoicePreferences` / `verifyOwnerPhone` / `ownerPhoneVerificationStatus`.
 
 ## Phase 7 — Mobile UI
 

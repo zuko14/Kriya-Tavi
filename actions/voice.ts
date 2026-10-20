@@ -5,6 +5,11 @@ import { z } from "zod"
 import { requireUser } from "@/lib/auth"
 import { createGatewayModel, modelForTier } from "@/lib/models"
 import { allowAll, clientIp } from "@/lib/rate-limit"
+import {
+  startPhoneVerification,
+  updatePreferences,
+  verificationStatus,
+} from "@/lib/voice/owner-report"
 import { draftInputSchema } from "@/lib/voice/schemas"
 import {
   cancelVoiceTask,
@@ -35,7 +40,13 @@ const RATE_LIMITED = fail(
 )
 
 // Per address on every voice action; per account for drafts and confirmations
-const LIMITS = { draft: [20, 3600], confirm: [10, 3600], other: [60, 60] } as const
+const LIMITS = {
+  draft: [20, 3600],
+  confirm: [10, 3600],
+  // Each one rings the owner's phone
+  verify: [5, 3600],
+  other: [60, 60],
+} as const
 
 async function limited(userId: string, kind: keyof typeof LIMITS) {
   const [max, seconds] = LIMITS[kind]
@@ -123,4 +134,52 @@ export async function voiceEntry() {
 export async function stopAllCalls() {
   const user = await requireUser()
   return emergencyStop(user.id)
+}
+
+const clockTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+const preferencesSchema = z
+  .object({
+    timezone: z
+      .string()
+      .max(64)
+      .refine((zone) => {
+        try {
+          new Intl.DateTimeFormat("en", { timeZone: zone })
+          return true
+        } catch {
+          return false
+        }
+      }),
+    quietStart: clockTime,
+    quietEnd: clockTime,
+    reportMode: z.enum(["scheduled", "on_completion"]),
+    reportMaxAttempts: z.number().int().min(1).max(5),
+    reportRetryMinutes: z.number().int().min(5).max(120),
+    transcriptRetentionDays: z.number().int().min(0).max(365),
+  })
+  .partial()
+  .strict()
+
+export async function updateVoicePreferences(input: unknown) {
+  const user = await requireUser()
+  const parsed = preferencesSchema.safeParse(input)
+  if (!parsed.success) return INVALID
+  if (await limited(user.id, "other")) return RATE_LIMITED
+  return updatePreferences(user.id, parsed.data)
+}
+
+// The code to show on screen, and a verification call to the number (D-13)
+export async function verifyOwnerPhone(phone: unknown) {
+  const user = await requireUser()
+  const parsed = z.string().trim().min(1).max(20).safeParse(phone)
+  if (!parsed.success) return INVALID
+  if (await limited(user.id, "verify")) return RATE_LIMITED
+  return startPhoneVerification(user.id, parsed.data)
+}
+
+export async function ownerPhoneVerificationStatus(verificationId: string) {
+  const user = await requireUser()
+  if (!id.safeParse(verificationId).success) return INVALID
+  if (await limited(user.id, "other")) return RATE_LIMITED
+  return verificationStatus(user.id, verificationId)
 }

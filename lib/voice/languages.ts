@@ -261,11 +261,89 @@ const en = {
   // "Thursday the 15th at 3:30 PM"
   speak(date: string, time: string) {
     const d = new Date(`${date}T00:00:00Z`)
-    const [h, m] = time.split(":").map(Number)
     const weekday = WEEKDAYS[d.getUTCDay()]
-    const clockText = `${h % 12 || 12}${m ? `:${pad(m)}` : ""} ${h < 12 ? "AM" : "PM"}`
     const day = d.getUTCDate()
-    return `${weekday[0].toUpperCase()}${weekday.slice(1)} the ${day}${ORDINAL(day)} at ${clockText}`
+    return `${weekday[0].toUpperCase()}${weekday.slice(1)} the ${day}${ORDINAL(day)} at ${en.clock(time)}`
+  },
+
+  // "15:30" → "3:30 PM"
+  clock(time: string) {
+    const [h, m] = time.split(":").map(Number)
+    return `${h % 12 || 12}${m ? `:${pad(m)}` : ""} ${h < 12 ? "AM" : "PM"}`
+  },
+
+  // The owner's own calls (VOICE_REMINDERS §4, §7; D-13): fixed lines and
+  // fixed patterns, no model. ponytail: keyword intents; a phrasing they
+  // miss gets "I can't do that on this call", never a guess
+  owner: {
+    greeting: (label: string, first: string) =>
+      `Hi, this is Kriya Tavi with your update about the call to ${label}. Is this ${first}?`,
+    askAgain: (first: string) => `Hello? Is this ${first}?`,
+    wrongPerson: "Sorry, wrong person. Goodbye.",
+    offer: "You can ask me something, or say 'that's all'.",
+    goodbye: "Thank you. Goodbye.",
+    cantDo: "I can't do that on this call; you can do it in the Kriya app.",
+    confirmCancel: (label: string) =>
+      `I'll cancel the other report calls about ${label}. Shall I go ahead?`,
+    cancelled: "Done, they're cancelled.",
+    nothingToCancel: "There are no other report calls to cancel.",
+    askWhen: "What time should I call you again?",
+    confirmRemind: (when: string) => `I'll call you again on ${when}. Shall I go ahead?`,
+    reminded: "Done, I'll call you then.",
+    quietHours:
+      "That's in your quiet hours, so I can't call you then. Please pick another time.",
+    unchanged: "OK, I've left it as it is.",
+    draftMade: (label: string) =>
+      `I've made a draft of a new call to ${label}. Nobody is called until you confirm it in the Kriya app.`,
+    times: (said: string[]) =>
+      said.length ? `Times mentioned: ${said.join(", ")}.` : "No times were mentioned.",
+
+    // The report, from the verified outcome at dial time (§5)
+    report: {
+      agreed: (label: string, when: string) => `${label} agreed to ${when}.`,
+      alternative: (label: string, when: string[]) =>
+        `${label} couldn't do that, and suggested ${when.join(" or ")}.`,
+      declined: (label: string) => `${label} declined.`,
+      wrongPerson: "The number reached the wrong person.",
+      unclear: (label: string) =>
+        `I spoke to ${label}, but the result wasn't clear. The details are in the Kriya app.`,
+      review: (label: string) =>
+        `I spoke to ${label}, but I couldn't confirm the result. Please check the Kriya app.`,
+      notYet: (label: string) => `I haven't called ${label} yet.`,
+      notReached: (label: string, at: string[], last: "busy" | "no_answer" | "failed") =>
+        `I haven't been able to reach ${label} yet. I tried ${
+          at.length === 1 ? "once" : at.length === 2 ? "twice" : `${at.length} times`
+        }, at ${at.length > 1 ? `${at.slice(0, -1).join(", ")} and ${at.at(-1)}` : at[0]}; ${
+          last === "busy"
+            ? "the line was busy"
+            : last === "no_answer"
+              ? "there was no answer"
+              : "the call didn't go through"
+        }.`,
+      questions: (asked: string[]) => `They asked: ${asked.join(" ")}`,
+    },
+
+    verify: {
+      ask: "Hi, this is Kriya Tavi. To verify this number, please key in the 6-digit code shown on your screen.",
+      keypad: "Please key in the code on your keypad.",
+      done: "Thank you, your number is verified. Goodbye.",
+      again: "That code didn't match. Please try again.",
+      failed: "That code didn't match. Please start again in the Kriya app. Goodbye.",
+    },
+
+    is: {
+      no: has(
+        /^\s*(no|nope|nahi|nahin)\b|\bwrong (number|person)\b|\bnot (me|him|her)\b/
+      ),
+      done: has(
+        /\b(that'?s all|that is all|nothing else|no,? thanks|bye|goodbye|got it|thanks|thank you|okay|ok)\b/
+      ),
+      repeat: has(/\b(repeat|say (that|it) again|come again|once more|pardon)\b/),
+      times: has(/\b(what|which) time\b|\bsuggest/),
+      cancel: has(/\bcancel\b/),
+      remind: has(/\bremind me\b|\bcall me (again|back|later|at|tomorrow|tonight)\b/),
+      callAgain: has(/\b(call|try) (him|her|them)\b.*\bagain\b|\bcall .* again\b/),
+    },
   },
 
   is: {

@@ -1236,7 +1236,8 @@ export type VoiceCallStatus = (typeof VOICE_CALL_STATUSES)[number]
 export const voiceCalls = kriya.table("voice_calls", {
   id: uuid().primaryKey().defaultRandom(),
   userId: uuid().notNull(),
-  voiceTaskId: uuid().notNull(),
+  // Null only for a verification call (20261022000000_voice_verification)
+  voiceTaskId: uuid(),
   kind: text({ enum: ["outreach", "owner_report", "verification"] }).notNull(),
   seq: integer().notNull(),
   toPhoneE164: text("to_phone_e164").notNull(),
@@ -1453,7 +1454,8 @@ export type VoiceActor = (typeof VOICE_ACTORS)[number]
 export const voiceTransitions = kriya.table("voice_transitions", {
   id: bigserial({ mode: "number" }).primaryKey(),
   userId: uuid().notNull(),
-  voiceTaskId: uuid().notNull(),
+  // Null only for a verification call's moves
+  voiceTaskId: uuid(),
   entity: text({ enum: ["task", "call", "attempt"] }).notNull(),
   entityId: uuid().notNull(),
   fromStatus: text().notNull(),

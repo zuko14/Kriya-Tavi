@@ -108,6 +108,35 @@ it("no client component imports lib/voice", () => {
   expect(offenders).toEqual([])
 })
 
+// Owner reminders are phone calls only (VOICE_REMINDERS §1, voice rule 10):
+// no voice module reaches the in-app notifier, /api/events, a connector
+// that sends mail or messages, or an SMS/email/push package
+it("T-REM-07 voice code imports no notification channel", () => {
+  const sources = fs
+    .readdirSync(path.join(ROOT, "lib/voice"), { recursive: true, encoding: "utf8" })
+    .filter((f) => /\.tsx?$/.test(f))
+    .map((f) => `lib/voice/${f.replaceAll("\\", "/")}`)
+  expect(sources.length).toBeGreaterThan(10)
+  for (const file of sources) {
+    const { files, packages } = importGraph(file)
+    expect(
+      files.filter((f) =>
+        /^(lib\/events\.ts|lib\/connectors|components\/workspace\/notifier|app\/api\/events\/)/.test(
+          f
+        )
+      ),
+      file
+    ).toEqual([])
+    expect(
+      packages.filter((p) => /mail|sms|push|twilio|whatsapp|firebase|resend/i.test(p)),
+      file
+    ).toEqual([])
+    expect(fs.readFileSync(path.join(ROOT, file), "utf8"), file).not.toMatch(
+      /\bnew Notification\b|showNotification|navigator\.vibrate/
+    )
+  }
+})
+
 describe("T-ENV-01 environment checks", () => {
   afterEach(() => {
     vi.unstubAllEnvs()

@@ -8,6 +8,7 @@ import {
   callSuppressions,
   conversationTurns,
   voiceCalls,
+  voiceProfiles,
   voiceUsage,
 } from "@/db/schema"
 import { log } from "@/lib/log"
@@ -17,17 +18,18 @@ import { CHUNK_SAMPLES, chunks } from "./audio"
 import { Dialogue, type Reply } from "./dialogue"
 import { localDate } from "./languages"
 import type { ModelCall } from "./outcome"
+import { HANG_UP, reportCall, VerificationCall, verificationCall } from "./owner-report"
 import { ACTIVE_POLICY } from "./policy/v1"
 import type {
   MediaEvent,
   SpeechRecognitionProvider,
   SpeechSynthesisProvider,
 } from "./providers"
-import { loadAttemptContext } from "./run-call"
-import { clock } from "./schedule"
+import { loadAttemptContext, loadVerificationContext } from "./run-call"
+import { clock, type QuietHours } from "./schedule"
 import type { VoiceTaskSpec } from "./schemas"
 import { transition } from "./tasks"
-import { finishOutcome } from "./verify"
+import { finishOutcome, settleCall } from "./verify"
 
 // One connected call in kriya-voice (VOICE_ARCHITECTURE §2–8): the callee's
 // audio goes to STT, finished utterances to the dialogue engine, its replies
@@ -57,9 +59,15 @@ export type SessionDeps = {
   heartbeatMs?: number
   // How long to wait for the answered webhook when the stream comes first
   connectWaitMs?: number
+  // Owner calls: silence after Tavi's turn before asking again (§4)
+  silenceMs?: number
 }
 
 const HEARTBEAT_MS = 5_000
+// Two silences of 4 s after the greeting = the 8 s voicemail rule
+// (VOICE_REMINDERS §4, §9); owner calls end by 180 s (voice.reportMaxSeconds)
+const SILENCE_MS = 4_000
+const OWNER_CALL_SECONDS = 180
 
 // answered → connected. The stream can arrive before the provider's
 // answered webhook, so wait for it a little. ponytail: a short poll; check
@@ -85,7 +93,9 @@ async function connect(attemptId: string, waitMs: number) {
 }
 
 export async function runSession(call: LiveCall, deps: SessionDeps) {
-  const ctx = await loadAttemptContext(call.attemptId, call.userId)
+  const ctx =
+    (await loadAttemptContext(call.attemptId, call.userId)) ??
+    (await loadVerificationContext(call.attemptId, call.userId))
   if (!ctx) {
     log.error("voice session without its attempt", { attemptId: call.attemptId })
     return call.close(1011)
@@ -107,7 +117,9 @@ export async function runSession(call: LiveCall, deps: SessionDeps) {
   )
 
   const attemptId = call.attemptId
-  const spec = ctx.task.spec as VoiceTaskSpec
+  // A verification call has no task
+  const task = "task" in ctx ? ctx.task : null
+  const spec = task?.spec as VoiceTaskSpec | undefined
   const chunkMs = (CHUNK_SAMPLES * 1000) / deps.sampleRate
   const startedAt = Date.now()
   const meter = (
@@ -120,7 +132,7 @@ export async function runSession(call: LiveCall, deps: SessionDeps) {
       .insert(voiceUsage)
       .values({
         userId: call.userId,
-        voiceTaskId: ctx.task.id,
+        voiceTaskId: task?.id ?? null,
         callAttemptId: attemptId,
         ...values,
       })
@@ -144,20 +156,33 @@ export async function runSession(call: LiveCall, deps: SessionDeps) {
       })
     }
 
-  const dialogue = new Dialogue({
-    spec,
-    // ponytail: one bundle exists; look up the attempt's policy_version once there are more (phase 10)
-    policy: ACTIVE_POLICY,
-    model: deps.model,
-    escalation: deps.escalation,
-    today: localDate(clock.now(), spec.timezone),
-    maxCallSeconds: ctx.task.maxCallSeconds,
-    onModelCall: llm("llm"),
-  })
+  // The callee's dialogue: the outreach conversation, or the owner's own
+  // report or verification call (VOICE_REMINDERS.md; fixed lines, no model)
+  const kind = ctx.call.kind
+  const dialogue =
+    kind === "outreach" && task && spec
+      ? new Dialogue({
+          spec,
+          // ponytail: one bundle exists; look up the attempt's policy_version once there are more (phase 10)
+          policy: ACTIVE_POLICY,
+          model: deps.model,
+          escalation: deps.escalation,
+          today: localDate(clock.now(), spec.timezone),
+          maxCallSeconds: task.maxCallSeconds,
+          onModelCall: llm("llm"),
+        })
+      : kind === "owner_report" && task
+        ? await reportCall({ ...ctx, task }, await quietHoursOf(call.userId))
+        : verificationCall(ctx)
+  const outreach = dialogue instanceof Dialogue ? dialogue : null
+  const maxSeconds =
+    kind === "outreach" && task
+      ? task.maxCallSeconds
+      : Math.min(task?.maxCallSeconds ?? OWNER_CALL_SECONDS, OWNER_CALL_SECONDS)
   const stt = deps.stt.open({
-    language: spec.language,
+    language: spec?.language ?? "en-IN",
     sampleRate: deps.sampleRate,
-    hints: [spec.owner.displayName, spec.recipient.label],
+    hints: spec ? [spec.owner.displayName, spec.recipient.label] : [],
   })
 
   // Turns and notes are stored as the call goes, so a crash loses little
@@ -186,13 +211,15 @@ export async function runSession(call: LiveCall, deps: SessionDeps) {
     observed: { disclosurePlayed, turns: dialogue.turns.map((t) => t.seq) },
     interpreted: { notes: dialogue.notes },
   })
-  const saveNotes = () =>
-    privileged
+  // The outreach call's outcome as it goes; owner calls have none
+  const saveNotes = async () => {
+    if (!outreach || !task) return
+    await privileged
       .insert(callOutcomes)
       .values({
         userId: call.userId,
         callAttemptId: attemptId,
-        voiceTaskId: ctx.task.id,
+        voiceTaskId: task.id,
         ...live(),
       })
       .onConflictDoUpdate({
@@ -200,6 +227,7 @@ export async function runSession(call: LiveCall, deps: SessionDeps) {
         set: live(),
         setWhere: sql`${callOutcomes.verifierStatus} = 'pending'`,
       })
+  }
   const playedTurn = (seq: number, playedMs: number, interrupted: boolean) =>
     privileged
       .update(conversationTurns)
@@ -265,15 +293,17 @@ export async function runSession(call: LiveCall, deps: SessionDeps) {
     hangUp("tts_failed")
   }
 
-  // The provider played a turn to its end
+  // The provider played a turn to its end. An owner report is delivered
+  // here (D-08), before the turn is recorded as played
   async function played(seq: number) {
     if (speaking?.seq !== seq) return
     const turn = speaking
     speaking = null
     if (seq === 0) disclosurePlayed = true
-    dialogue.played(seq, true)
+    await dialogue.played(seq, true)
     await playedTurn(seq, (sent - turn.from) * chunkMs, false)
     if (turn.end) hangUp(null)
+    else listenForSilence()
   }
 
   // Barge-in (T-DLG-05): the callee talks over Tavi. Drop what hasn't
@@ -286,8 +316,24 @@ export async function runSession(call: LiveCall, deps: SessionDeps) {
     call.clear()
     const heard = Math.max(0, call.playedChunks - turn.from)
     sent = call.playedChunks
-    dialogue.played(turn.seq, false)
+    await dialogue.played(turn.seq, false)
     await playedTurn(turn.seq, heard * chunkMs, true)
+  }
+
+  // Owner calls: nothing said for a while after Tavi's turn (the voicemail
+  // rule, VOICE_REMINDERS §4). Any speech or key press stops the wait
+  let hush: NodeJS.Timeout | undefined
+  function listenForSilence() {
+    clearTimeout(hush)
+    if (outreach) return
+    const owner = dialogue as Exclude<typeof dialogue, Dialogue>
+    hush = setTimeout(() => {
+      queue = queue.then(async () => {
+        const reply = owner.silence()
+        if (reply === HANG_UP) hangUp(owner.endReason)
+        else if (reply) await speak(reply)
+      })
+    }, deps.silenceMs ?? SILENCE_MS)
   }
 
   /* ─────────────────────────── listening ────────────────────────── */
@@ -319,10 +365,12 @@ export async function runSession(call: LiveCall, deps: SessionDeps) {
   const listening = (async () => {
     for await (const event of stt.events) {
       if (event.type === "partial" && event.text.trim()) {
+        clearTimeout(hush)
         // ponytail: barge-in on the first recognised words, not raw speech
         // energy; a cough makes no words. Tune with recordings (L2)
         await bargeIn()
       } else if (event.type === "final" && event.text.trim()) {
+        clearTimeout(hush)
         heard.push(event.text)
         if (event.confidence !== null) {
           confidence = Math.min(confidence ?? 1, event.confidence)
@@ -356,7 +404,7 @@ export async function runSession(call: LiveCall, deps: SessionDeps) {
       log.warn("voice heartbeat failed", { attemptId, error })
     }
   }, deps.heartbeatMs ?? HEARTBEAT_MS)
-  const limit = setTimeout(() => hangUp("max_duration"), ctx.task.maxCallSeconds * 1000)
+  const limit = setTimeout(() => hangUp("max_duration"), maxSeconds * 1000)
 
   await saveNotes()
   queue = queue.then(() => speak(dialogue.opening()))
@@ -368,6 +416,15 @@ export async function runSession(call: LiveCall, deps: SessionDeps) {
     if (value.type === "audio") stt.write(value.pcm)
     else if (value.type === "mark" && /^t\d+$/.test(value.name)) {
       await played(Number(value.name.slice(1)))
+    } else if (value.type === "dtmf" && dialogue instanceof VerificationCall) {
+      // The keyed digits go to the code check only; never stored or logged
+      clearTimeout(hush)
+      const digit = value.digit
+      queue = queue.then(async () => {
+        const reply = await dialogue.key(digit)
+        await persist()
+        if (reply) await speak(reply)
+      })
     } else if (value.type === "stop") endReason ??= "callee_hangup"
   }
 
@@ -376,6 +433,7 @@ export async function runSession(call: LiveCall, deps: SessionDeps) {
   clearInterval(heartbeat)
   clearTimeout(limit)
   clearTimeout(silence)
+  clearTimeout(hush)
   const last = speaking as { abort: AbortController } | null
   last?.abort.abort()
   const billed = await stt.close().catch(() => ({ billedSeconds: null }))
@@ -385,7 +443,7 @@ export async function runSession(call: LiveCall, deps: SessionDeps) {
     requestKey: `${attemptId}:stt:1`,
     component: "stt",
     provider: deps.stt.name,
-    product: spec.language,
+    product: spec?.language ?? "en-IN",
     quantity: billed.billedSeconds === null ? null : Math.ceil(billed.billedSeconds),
     unit: "second",
     usageStatus: billed.billedSeconds === null ? "missing" : "reported",
@@ -403,26 +461,40 @@ export async function runSession(call: LiveCall, deps: SessionDeps) {
       optional: true,
     }
   )
+  // An owner call says why it hung up (not_owner, voicemail)
+  if (!outreach)
+    endReason = (dialogue as { endReason: string | null }).endReason ?? endReason
   const reason = endReason ?? (endedByUs ? "tavi_hangup" : "callee_hangup")
   await privileged
     .update(callAttempts)
     .set({ endReason: sql`coalesce(${callAttempts.endReason}, ${reason})` })
     .where(eq(callAttempts.id, attemptId))
   // "Don't call me again" (CONVERSATION §8): no one calls this number again
-  if (dialogue.notes.optOut) {
+  if (outreach?.notes.optOut && task) {
     await privileged
       .insert(callSuppressions)
       .values({
-        phoneHash: ctx.task.recipientPhoneHash,
+        phoneHash: task.recipientPhoneHash,
         reason: "recipient_opt_out",
         sourceAttemptId: attemptId,
       })
       .onConflictDoNothing()
   }
   log.info("voice session ended", { attemptId, turns: dialogue.turns.length })
+  // An owner call settles from its delivery, not an outcome
+  if (!outreach) return settleCall(ctx.call.id)
   await finishOutcome(attemptId, {
     model: deps.model,
     escalation: deps.escalation,
     onModelCall: llm("extract"),
   })
+}
+
+// The owner's quiet hours, for "remind me again at …"
+async function quietHoursOf(userId: string): Promise<QuietHours> {
+  const [profile] = await privileged
+    .select()
+    .from(voiceProfiles)
+    .where(eq(voiceProfiles.userId, userId))
+  return profile ?? { timezone: "Asia/Kolkata", quietStart: "21:30", quietEnd: "08:00" }
 }

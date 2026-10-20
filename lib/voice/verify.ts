@@ -20,7 +20,7 @@ import type { CallStatus, ProviderCall, TelephonyProvider } from "./providers"
 import { clock, outreachRetryAt, reportRetryAt } from "./schedule"
 import type { VoiceTaskSpec } from "./schemas"
 import { hashToken } from "./streams"
-import { TERMINAL_TASK, transition } from "./tasks"
+import { TERMINAL_CALL, TERMINAL_TASK, transition } from "./tasks"
 
 // Provider truth for voice calls (CONVERSATION_AND_VERIFICATION.md §7,
 // TELEPHONY_PROVIDER_ASSESSMENT.md §2.3). Status webhooks are unsigned, so a
@@ -223,7 +223,8 @@ export async function recordAttemptEnd(attemptId: string) {
     .from(callAttempts)
     .innerJoin(voiceCalls, eq(voiceCalls.id, callAttempts.voiceCallId))
     .where(eq(callAttempts.id, attemptId))
-  if (!row || row.attempt.connectedAt) return
+  // Outcomes belong to tasks; a verification call has none
+  if (!row || row.attempt.connectedAt || !row.taskId) return
   await privileged
     .insert(callOutcomes)
     .values({
@@ -267,12 +268,15 @@ export async function finishOutcome(
       spec: voiceTasks.spec,
       taskId: voiceTasks.id,
       callId: voiceCalls.id,
+      kind: voiceCalls.kind,
     })
     .from(callAttempts)
     .innerJoin(voiceCalls, eq(voiceCalls.id, callAttempts.voiceCallId))
     .innerJoin(voiceTasks, eq(voiceTasks.id, voiceCalls.voiceTaskId))
     .where(eq(callAttempts.id, attemptId))
   if (!found) return
+  // Owner calls have no outcome: they settle from their delivery
+  if (found.kind !== "outreach") return settleCall(found.callId)
   // A session that died before writing anything still gets an outcome
   await privileged
     .insert(callOutcomes)
@@ -413,11 +417,15 @@ export async function settleCall(callId: string) {
     }
     if (call.status === "in_call") {
       if (!last || !TERMINAL_ATTEMPT.includes(last.status) || !last.verifiedAt) return
-      const [outcome] = await tx
-        .select({ status: callOutcomes.verifierStatus })
-        .from(callOutcomes)
-        .where(eq(callOutcomes.callAttemptId, last.id))
-      if (!outcome || outcome.status === "pending") return
+      // An outreach call settles from its checked outcome; an owner call
+      // from its delivery (D-08)
+      if (call.kind === "outreach") {
+        const [outcome] = await tx
+          .select({ status: callOutcomes.verifierStatus })
+          .from(callOutcomes)
+          .where(eq(callOutcomes.callAttemptId, last.id))
+        if (!outcome || outcome.status === "pending") return
+      }
       await transition(
         tx,
         "call",
@@ -425,6 +433,11 @@ export async function settleCall(callId: string) {
         call.cancelRequestedAt ? "canceled" : "settled",
         call.cancelRequestedAt ? "worker" : "verifier"
       )
+      // A report not heard to its end goes round again (VOICE_REMINDERS §3)
+      if (call.kind === "owner_report" && !call.cancelRequestedAt && !call.deliveredAt) {
+        await transition(tx, "call", call.id, "retry_wait", "worker")
+        await retryOrEnd(tx, call)
+      }
       await tx
         .update(voiceCalls)
         .set({ leaseOwner: null, leaseExpiresAt: null })
@@ -437,20 +450,8 @@ export async function settleCall(callId: string) {
         // We may have rung someone and can't prove it: the owner decides
         await transition(tx, "call", call.id, "needs_owner", "worker")
       } else {
-        const now = clock.now()
-        let next: Date | null = outreachRetryAt(now)
-        if (call.kind !== "outreach") {
-          const [profile] = await tx
-            .select()
-            .from(voiceProfiles)
-            .where(eq(voiceProfiles.userId, call.userId))
-          next = profile ? reportRetryAt(now, profile, profile.reportRetryMinutes) : null
-        }
-        if (
-          call.attempts < call.maxAttempts &&
-          next &&
-          (!call.windowEnd || next < call.windowEnd)
-        ) {
+        const next = await retryAt(tx, call)
+        if (next) {
           await transition(tx, "call", call.id, "retry_wait", "worker")
           await tx
             .update(voiceCalls)
@@ -465,8 +466,40 @@ export async function settleCall(callId: string) {
         .set({ leaseOwner: null, leaseExpiresAt: null })
         .where(eq(voiceCalls.id, call.id))
     }
-    await followTask(tx, call.voiceTaskId)
+    if (call.voiceTaskId) await followTask(tx, call.voiceTaskId)
   })
+}
+
+// When a call may be tried again, or null once it's done: attempts used,
+// window closed, or (owner calls) the next try falls in quiet hours
+async function retryAt(tx: Q, call: typeof voiceCalls.$inferSelect) {
+  const now = clock.now()
+  let next: Date | null = outreachRetryAt(now)
+  if (call.kind !== "outreach") {
+    const [profile] = await tx
+      .select()
+      .from(voiceProfiles)
+      .where(eq(voiceProfiles.userId, call.userId))
+    next = profile ? reportRetryAt(now, profile, profile.reportRetryMinutes) : null
+  }
+  return call.attempts < call.maxAttempts &&
+    next &&
+    (!call.windowEnd || next < call.windowEnd)
+    ? next
+    : null
+}
+
+// A call in retry_wait: its next try, or exhausted
+async function retryOrEnd(tx: Q, call: typeof voiceCalls.$inferSelect) {
+  const next = await retryAt(tx, call)
+  if (next) {
+    await tx
+      .update(voiceCalls)
+      .set({ availableAt: next })
+      .where(eq(voiceCalls.id, call.id))
+  } else {
+    await transition(tx, "call", call.id, "exhausted", "worker")
+  }
 }
 
 // The task's state follows its calls (DATA_MODEL §3.1)
@@ -552,10 +585,18 @@ async function followTask(tx: Q, taskId: string) {
         ? said
         : "unclear"
       : resultOf(last?.status)
-  if (!task.reportRequested) {
-    await transition(tx, "task", task.id, "completed", "verifier", { result })
-  } else if (report?.status === "exhausted") {
-    // A delivered report completes the task in voice phase 6
+  const reports = calls.filter((c) => c.kind === "owner_report")
+  const delivered = reports.find((c) => c.deliveredAt)
+  if (!task.reportRequested || delivered) {
+    // No report asked for, or one was heard to its end (D-08)
+    await transition(tx, "task", task.id, "completed", "verifier", {
+      result,
+      ...(delivered && { voice_call_id: delivered.id }),
+    })
+  } else if (
+    report?.status === "exhausted" &&
+    !reports.some((c) => !TERMINAL_CALL.includes(c.status))
+  ) {
     await transition(tx, "task", task.id, "unreported", "worker", {
       voice_call_id: report.id,
       result,
