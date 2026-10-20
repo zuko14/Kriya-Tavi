@@ -1,0 +1,99 @@
+{
+  "id": "S10-agreed-then-changed",
+  "provider_script": [
+    {
+      "status": "ringing",
+      "atMs": 0
+    },
+    {
+      "status": "answered",
+      "atMs": 4000
+    },
+    {
+      "status": "completed",
+      "atMs": 60000
+    }
+  ],
+  "callee": [
+    {
+      "say": "Hello?"
+    },
+    {
+      "say": "Yes."
+    },
+    {
+      "say": "Yes, that works."
+    },
+    {
+      "say": "Actually, can we make it 4 pm?",
+      "bargeIn": true
+    },
+    {
+      "say": "Yes."
+    }
+  ],
+  "variants": [
+    [
+      "Hello?",
+      "Yes.",
+      "Yes, that works.",
+      {
+        "say": "Actually, can we make it 4 pm?",
+        "bargeIn": true
+      },
+      "Yes."
+    ],
+    [
+      "Hello?",
+      "Yes.",
+      "Yes, that works.",
+      {
+        "say": "Wait, 4 pm instead.",
+        "bargeIn": true
+      },
+      "Yes."
+    ],
+    [
+      "Hello?",
+      "Yes.",
+      "Yes, that works.",
+      {
+        "say": "One second, make that 4 pm.",
+        "bargeIn": true
+      },
+      "Yes."
+    ],
+    [
+      "Hello?",
+      "Yes.",
+      "Yes, that works.",
+      {
+        "say": "Hold on, actually 16:00 is better.",
+        "bargeIn": true
+      },
+      "Yes."
+    ],
+    [
+      "Hello?",
+      "Yes.",
+      "Yes, that works.",
+      {
+        "say": "Oh, change it to 4 pm please.",
+        "bargeIn": true
+      },
+      "Yes."
+    ]
+  ],
+  "gold": {
+    "dialogue": {
+      "result": "agreed",
+      "agreed": [
+        {
+          "date": "2026-10-21",
+          "time": "16:00"
+        }
+      ],
+      "end": "done"
+    }
+  }
+}

@@ -290,6 +290,17 @@ async function undoLoop() {
   }
 }
 
+// Voice calls (docs/voice-assistant, D-05): lib/voice/run-call.ts voiceLoop,
+// with its own map and VOICE_CONCURRENCY, never this file's task slots (F6).
+// No real telephony provider exists before voice phase 5, and calls are
+// refused rather than faked (D-12), so for now the switch only says so.
+function startVoice() {
+  if (process.env.KRIYA_VOICE_ENABLED !== "1") return
+  log.warn(
+    "voice: KRIYA_VOICE_ENABLED is set, but no telephony provider exists yet (voice phase 5); no calls are placed"
+  )
+}
+
 async function beat() {
   await privileged
     .update(workers)
@@ -307,6 +318,7 @@ async function main() {
   void undoLoop()
   void extractLoop()
   void crossCheckLoop()
+  startVoice()
 
   let lastRecover = 0
   let lastJanitor = 0

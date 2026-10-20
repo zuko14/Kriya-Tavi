@@ -12,6 +12,9 @@ const SECRET_VALUE =
 const COOKIE_HEADER = /\b(set-cookie|cookie):[^\r\n]*/gi
 // A browser storage state (login profile) serialised into a string
 const STORAGE_STATE = /"(cookies|origins|localStorage)"\s*:\s*\[/
+// Phone numbers are personal data (voice): E.164 with a +, and Indian
+// mobiles written with an optional 0 or 91 prefix
+const PHONE = /\+\d(?:[\s-]?\d){7,14}|\b(?:0|91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}\b/g
 
 function clean(value: unknown, depth = 0): unknown {
   if (value instanceof Error) {
@@ -23,6 +26,7 @@ function clean(value: unknown, depth = 0): unknown {
     return text
       .replace(SECRET_VALUE, "[redacted]")
       .replace(COOKIE_HEADER, "$1: [redacted]")
+      .replace(PHONE, "[redacted]")
   }
   if (value && typeof value === "object" && depth < 4) {
     return Object.fromEntries(

@@ -1,0 +1,77 @@
+{
+  "id": "S01-answered-accepted",
+  "spec": {
+    "goal": {
+      "type": "schedule_meeting",
+      "date": "2026-10-21",
+      "preferred": "15:00",
+      "acceptable": [
+        {
+          "from": "15:00",
+          "to": "15:00"
+        }
+      ]
+    },
+    "authority": {
+      "mayAcceptWithinAcceptable": true,
+      "mayProposeAlternatives": false
+    }
+  },
+  "provider_script": [
+    {
+      "status": "ringing",
+      "atMs": 0
+    },
+    {
+      "status": "answered",
+      "atMs": 4000
+    },
+    {
+      "status": "completed",
+      "atMs": 64000
+    }
+  ],
+  "callee": [
+    {
+      "say": "Hello?",
+      "afterMs": 500
+    },
+    {
+      "say": "Yes, three PM tomorrow works for me.",
+      "afterTaviTurn": 2
+    },
+    {
+      "say": "Yes, that's right.",
+      "afterTaviTurn": 3
+    }
+  ],
+  "gold": {
+    "connection_status": "connected",
+    "result": "agreed",
+    "agreed_times": [
+      {
+        "date": "2026-10-21",
+        "time": "15:00"
+      }
+    ],
+    "read_back": true,
+    "dialogue": {
+      "result": "agreed",
+      "agreed": [
+        {
+          "date": "2026-10-21",
+          "time": "15:00"
+        }
+      ],
+      "end": "done"
+    }
+  },
+  "variants": [
+    ["Hello?", "Yes, three PM tomorrow works for me.", "Yes, that's right."],
+    ["Hello?", "Yes, speaking.", "Yes, that works."],
+    ["Haan, hello?", "Yes, this is him.", "Sure, 3 is fine."],
+    ["Hello, who's this?", "Yes, I'm the CA.", "Yeah, that works for me."],
+    ["Yes?", "Correct.", "Okay, done."],
+    ["Hello", "That's right.", "Yes, 3 PM tomorrow is perfect."]
+  ]
+}

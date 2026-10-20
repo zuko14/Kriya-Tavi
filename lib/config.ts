@@ -344,6 +344,8 @@ export const SECRETS = [
   "GITHUB_CLIENT_SECRET",
   "META_APP_ID",
   "META_APP_SECRET",
+  // Voice (phase 3): HMAC key for recipient number hashes (limits, opt-outs)
+  "KRIYA_PHONE_HASH_KEY",
 ] as const
 
 export type SecretName = (typeof SECRETS)[number]

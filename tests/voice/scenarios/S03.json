@@ -1,0 +1,56 @@
+{
+  "id": "S03-alternative-inside-window",
+  "provider_script": [
+    {
+      "status": "ringing",
+      "atMs": 0
+    },
+    {
+      "status": "answered",
+      "atMs": 4000
+    },
+    {
+      "status": "completed",
+      "atMs": 60000
+    }
+  ],
+  "callee": [
+    {
+      "say": "Hello?"
+    },
+    {
+      "say": "Yes."
+    },
+    {
+      "say": "Three is difficult. Can we do four thirty?"
+    },
+    {
+      "say": "Yes, that's fine."
+    }
+  ],
+  "variants": [
+    ["Hello?", "Yes.", "Three is difficult. Can we do four thirty?", "Yes, that's fine."],
+    ["Hello?", "Yes, speaking.", "Can we make it 4:30 instead?", "Yes, perfect."],
+    ["Hi", "Yes.", "I'm busy at 3. What about half past four?", "Correct."],
+    ["Hello?", "Yes it is.", "Not 3. 4:30 pm?", "Yes, that's right."],
+    ["Haan?", "Yes ji.", "Can we do 16:30?", "Yes."]
+  ],
+  "gold": {
+    "dialogue": {
+      "result": "agreed",
+      "agreed": [
+        {
+          "date": "2026-10-21",
+          "time": "16:30"
+        }
+      ],
+      "proposed": [
+        {
+          "date": "2026-10-21",
+          "time": "16:30"
+        }
+      ],
+      "end": "done"
+    }
+  }
+}

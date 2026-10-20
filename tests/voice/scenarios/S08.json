@@ -1,0 +1,51 @@
+{
+  "id": "S08-ambiguous-date",
+  "provider_script": [
+    {
+      "status": "ringing",
+      "atMs": 0
+    },
+    {
+      "status": "answered",
+      "atMs": 4000
+    },
+    {
+      "status": "completed",
+      "atMs": 60000
+    }
+  ],
+  "callee": [
+    {
+      "say": "Hello?"
+    },
+    {
+      "say": "Yes."
+    },
+    {
+      "say": "Friday would be better."
+    },
+    {
+      "say": "3 pm."
+    }
+  ],
+  "variants": [
+    ["Hello?", "Yes.", "Friday would be better.", "3 pm."],
+    ["Hello?", "Yes.", "Could we do it on Friday?", "Around 3 pm."],
+    ["Hi", "Yes.", "Make it Friday.", "At 3 pm please."],
+    ["Hello?", "Correct.", "Friday works better for me.", "3 pm, Friday."],
+    ["Hello?", "Yes.", "Friday?", "15:00."]
+  ],
+  "gold": {
+    "dialogue": {
+      "result": "alternative_proposed",
+      "proposed": [
+        {
+          "date": "2026-10-23",
+          "time": "15:00"
+        }
+      ],
+      "agreed": [],
+      "said": ["I'll check with Asha"]
+    }
+  }
+}

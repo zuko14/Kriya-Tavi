@@ -1,0 +1,12 @@
+{
+  "id": "S05-no-answer",
+  "provider_script": [
+    { "status": "ringing", "atMs": 0 },
+    { "status": "no_answer", "atMs": 30000 }
+  ],
+  "gold": {
+    "connection_status": "no_answer",
+    "result": "no_answer",
+    "retry": { "max_attempts": 2 }
+  }
+}

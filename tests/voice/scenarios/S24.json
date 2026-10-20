@@ -1,0 +1,35 @@
+{
+  "id": "S24-opt-out",
+  "provider_script": [
+    {
+      "status": "ringing",
+      "atMs": 0
+    },
+    {
+      "status": "answered",
+      "atMs": 4000
+    },
+    {
+      "status": "completed",
+      "atMs": 60000
+    }
+  ],
+  "callee": [
+    {
+      "say": "Please don't call me again."
+    }
+  ],
+  "variants": [
+    ["Please don't call me again."],
+    ["Hello? Don't call me again."],
+    ["Stop calling this number."],
+    ["Remove my number please."],
+    ["Never call me again."]
+  ],
+  "gold": {
+    "dialogue": {
+      "end": "opt_out",
+      "said": ["Understood, I'll make sure you're not called again."]
+    }
+  }
+}

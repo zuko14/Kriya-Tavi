@@ -22,10 +22,12 @@
     "dev": "next dev --hostname 127.0.0.1 --port 6796",
     "dev:worker": "tsx watch --env-file-if-exists=.env worker/index.ts",
     "dev:browser": "tsx watch --env-file-if-exists=.env browser/index.ts",
+    "dev:voice": "tsx watch --env-file-if-exists=.env voice/index.ts",
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "worker": "tsx worker/index.ts",
     "browser": "tsx browser/index.ts",
+    "voice": "tsx voice/index.ts",
     "test": "vitest run",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
@@ -36,6 +38,7 @@
     "owner:grant": "tsx scripts/grant-owner.ts",
     "models:sync": "tsx scripts/sync-models.ts",
     "models:eval": "tsx scripts/eval-models.ts",
+    "voice:eval": "tsx --env-file-if-exists=.env scripts/voice-eval.ts",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm test"
   },
   "dependencies": {

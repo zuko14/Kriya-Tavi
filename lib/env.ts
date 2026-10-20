@@ -9,8 +9,12 @@ const notLocal = (value: string) =>
   /localhost|127\.0\.0\.1|0\.0\.0\.0/.test(value) ? "points at a local address" : null
 const https = (value: string) =>
   value.startsWith("https://") ? null : "must start with https://"
+const long = (value: string) =>
+  value.length >= 32 ? null : "needs at least 32 characters"
 
-const REQUIRED: Record<"web" | "worker", Check[]> = {
+type Service = "web" | "worker" | "voice"
+
+const REQUIRED: Record<Service, Check[]> = {
   web: [
     { name: "DATABASE_URL", why: "Supabase Postgres connection", test: notLocal },
     { name: "NEXT_PUBLIC_SUPABASE_URL", why: "Supabase Auth", test: https },
@@ -25,9 +29,18 @@ const REQUIRED: Record<"web" | "worker", Check[]> = {
     { name: "DATABASE_URL", why: "Supabase Postgres connection", test: notLocal },
     { name: "OPENROUTER_API_KEY", why: "model calls" },
   ],
+  // kriya-voice (voice phase 2): reads only the stream's own attempt
+  voice: [
+    { name: "DATABASE_URL", why: "Supabase Postgres connection", test: notLocal },
+    {
+      name: "KRIYA_VOICE_STREAM_SECRET",
+      why: "Basic auth on the media WebSocket",
+      test: long,
+    },
+  ],
 }
 
-const OPTIONAL: Record<"web" | "worker", Check[]> = {
+const OPTIONAL: Record<Service, Check[]> = {
   web: [
     {
       name: "OPENROUTER_API_KEY",
@@ -66,6 +79,10 @@ const OPTIONAL: Record<"web" | "worker", Check[]> = {
       name: "KRIYA_BROWSER_LIVE_URL",
       why: "take-over and saved logins (kriya-browser's public wss:// live view)",
     },
+    {
+      name: "KRIYA_PHONE_HASH_KEY",
+      why: "phone calls (voice): hashes numbers for limits and opt-outs",
+    },
   ],
   worker: [
     {
@@ -97,9 +114,10 @@ const OPTIONAL: Record<"web" | "worker", Check[]> = {
     },
     { name: "SUPABASE_SECRET_KEY", why: "reading uploaded files (kriya-files bucket)" },
   ],
+  voice: [],
 }
 
-export function checkEnvironment(service: "web" | "worker") {
+export function checkEnvironment(service: Service) {
   const production = process.env.NODE_ENV === "production"
   const problems = REQUIRED[service].flatMap(({ name, why, test }) => {
     const value = process.env[name]?.trim()

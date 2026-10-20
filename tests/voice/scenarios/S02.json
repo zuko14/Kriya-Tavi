@@ -1,0 +1,13 @@
+{
+  "id": "S02-busy",
+  "provider_script": [
+    { "status": "ringing", "atMs": 0 },
+    { "status": "busy", "atMs": 6000 }
+  ],
+  "gold": {
+    "connection_status": "busy",
+    "result": "busy",
+    "retry": { "count": 1, "min_gap_minutes": 15 },
+    "interpretation": null
+  }
+}

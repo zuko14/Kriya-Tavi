@@ -27,11 +27,21 @@ const PROTECTED = [
   "/accounts",
   // A13: Radar and watchers
   "/radar",
+  // Voice phase 7: phone calls (with the slash, /calls itself but not /callsx)
+  "/calls/",
 ]
 // A5: file downloads. /share/ stays public on purpose (K8, AT-SHR-05)
-const PROTECTED_API = ["/api/threads", "/api/events", "/api/files/", "/api/browser/live/"]
+const PROTECTED_API = [
+  "/api/threads",
+  "/api/events",
+  "/api/files/",
+  "/api/browser/live/",
+  // Voice phase 7: a task's live status
+  "/api/voice/tasks/",
+]
 const AUTH_PAGES = ["/login", "/signup"]
-const WEBHOOKS = ["/api/billing/webhook"]
+// Voice status webhooks carry a per-attempt token instead (voice phase 3)
+const WEBHOOKS = ["/api/billing/webhook", "/api/voice/exotel/status/"]
 
 function allowedOrigins(request: NextRequest) {
   const origins = new Set([request.nextUrl.origin])

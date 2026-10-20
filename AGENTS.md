@@ -106,7 +106,9 @@ Planned in `docs/voice-assistant/`; progress in the root `status.md`.
 8. Voice status changes only through `kriya.voice_transition()`. Neither the
    browser nor a model may set a task or call to completed.
 9. The live-call model acts only through `createCallTools()` in
-   `lib/agent/tools.ts`: notes on the current call and `end_call`. These run in
+   `lib/agent/call-tools.ts` (re-exported from `lib/agent/tools.ts`, kept apart
+   so `kriya-voice` loads no connector or secret code; owner decision
+   2026-10-20): notes on the current call and `end_call`. These run in
    `kriya-voice`, never on the web server, and no in-call tool may place calls,
    send messages or read other data. The call itself is the side effect the
    owner approved; calls are placed only by `kriya-worker`.

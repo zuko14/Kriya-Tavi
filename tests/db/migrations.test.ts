@@ -411,4 +411,56 @@ describe("migrations", () => {
     await pg.exec(read("migrations", "20261106000000_login_profiles.sql"))
     expect(await added()).toBe(9)
   })
+
+  it("T-MIG-01 rolls the voice core back and applies it again, before the core rollback", async () => {
+    const read = (dir: string, file: string) =>
+      fs.readFileSync(path.join(process.cwd(), "supabase", dir, file), "utf8")
+    const pg = await createTestDb()
+    await pg.exec(
+      "create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key); insert into supabase_migrations.schema_migrations values ('20261016000000'), ('20261020000000')"
+    )
+    const added = async () =>
+      (
+        await pg.query(
+          `select relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
+             where n.nspname = 'kriya' and c.relkind = 'r'
+               and (relname like 'voice\\_%' or relname like 'call\\_%'
+                    or relname in ('phone_verifications', 'conversation_turns'))
+           union all select column_name from information_schema.columns
+             where table_schema = 'kriya' and table_name = 'plans'
+               and column_name in ('voice_enabled', 'max_outreach_calls_per_day',
+                 'max_call_seconds', 'max_attempts_per_call', 'max_voice_task_cost_micro_inr')
+           union all select proname from pg_proc
+             where proname in ('voice_transition', 'voice_status_guard', 'voice_transitions_frozen')`
+        )
+      ).rows.length
+    const version = async (v: string) =>
+      (
+        await pg.query(
+          "select 1 from supabase_migrations.schema_migrations where version = $1",
+          [v]
+        )
+      ).rows.length
+    expect(await added()).toBe(24)
+
+    await pg.exec(read("rollback", "20261020000000_voice_core.down.sql"))
+    expect(await added()).toBe(0)
+    expect(await version("20261020000000")).toBe(0)
+    await pg.exec(read("migrations", "20261020000000_voice_core.sql"))
+    expect(await added()).toBe(24)
+    const { rows } = await pg.query(
+      `select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
+       where n.nspname = 'kriya' and c.relkind = 'r' and not c.relrowsecurity`
+    )
+    expect(rows).toEqual([])
+
+    // F2: voice first, then the core; neither version stays recorded
+    await pg.exec(read("rollback", "20261020000000_voice_core.down.sql"))
+    await pg.exec(read("rollback", "20261016000000_kriya_core.down.sql"))
+    expect(await version("20261020000000")).toBe(0)
+    expect(await version("20261016000000")).toBe(0)
+    await pg.exec(read("migrations", "20261016000000_kriya_core.sql"))
+    await pg.exec(read("migrations", "20261020000000_voice_core.sql"))
+    expect(await added()).toBe(24)
+  })
 })

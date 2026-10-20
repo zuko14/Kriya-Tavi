@@ -8,12 +8,14 @@ import {
   ListChecksIcon,
   MessageSquareIcon,
   MoonIcon,
+  PhoneIcon,
   PlusIcon,
   SettingsIcon,
   UsersIcon,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 
+import { voiceEntry } from "@/actions/voice"
 import { Glyph, SquadGlyph } from "@/components/glyph"
 import { useWorkspace } from "@/components/workspace/context"
 import {
@@ -33,6 +35,11 @@ export function CommandPalette() {
     useWorkspace()
   const { resolvedTheme, setTheme } = useTheme()
   const open = dialog?.kind === "palette"
+  // Voice phase 7: "Phone calls" only with voice access (asked when opened)
+  const [voice, setVoice] = React.useState(false)
+  React.useEffect(() => {
+    if (open) voiceEntry().then(setVoice, () => {})
+  }, [open])
 
   React.useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -153,6 +160,12 @@ export function CommandPalette() {
               <ListChecksIcon />
               Tasks
             </CommandItem>
+            {voice && (
+              <CommandItem value="phone calls call tavi" onSelect={() => go("/calls")}>
+                <PhoneIcon />
+                Phone calls
+              </CommandItem>
+            )}
             <CommandItem value="usage cost rupees spend" onSelect={() => go("/usage")}>
               <ActivityIcon />
               Usage

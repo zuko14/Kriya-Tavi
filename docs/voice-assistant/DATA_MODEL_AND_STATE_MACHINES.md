@@ -84,7 +84,7 @@ results inside `conversation_turns` (no separate table until needed);
 _follow-up plans_ are child `voice_tasks` (`parent_task_id`) plus the
 `next_action` in an outcome; _owner reminders_ are `voice_calls` with
 `kind = 'owner_report'`; _task execution evidence_ is `call_events` +
-`voice_transitions.evidence` + `call_attempts.verification`; _audit events_ are
+`voice_transitions.evidence` + `call_attempts.provider_snapshot`; _audit events_ are
 `voice_transitions` (state) and the existing `kriya.audit_events` (owner-console
 actions); _provider and model references_ are columns on `call_attempts`
 (`telephony_provider`, `stt_provider`, `tts_provider`, `tts_voice`,
@@ -212,7 +212,7 @@ Indexes: `(available_at) where status in ('scheduled','retry_wait')`;
 | `billable_seconds` | int | From the provider; null = not reported |
 | `last_report_mark_at` | timestamptz | Owner reports: mark of the final chunk (D-08) |
 | `verified_at` | timestamptz | After `getCall()` reconciliation |
-| `verification` | jsonb | Normalized provider snapshot (redacted) |
+| `provider_snapshot` | jsonb | Normalized provider snapshot (redacted). Not `verification`: an existing track A test counts every `kriya` column of that name (F13) |
 
 Column grants to authenticated exclude the two token hashes and `stream_owner`.
 

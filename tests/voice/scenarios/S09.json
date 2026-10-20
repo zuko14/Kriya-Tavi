@@ -1,0 +1,50 @@
+{
+  "id": "S09-ambiguous-time",
+  "provider_script": [
+    {
+      "status": "ringing",
+      "atMs": 0
+    },
+    {
+      "status": "answered",
+      "atMs": 4000
+    },
+    {
+      "status": "completed",
+      "atMs": 60000
+    }
+  ],
+  "callee": [
+    {
+      "say": "Hello?"
+    },
+    {
+      "say": "Yes."
+    },
+    {
+      "say": "Can we do it at 4?"
+    },
+    {
+      "say": "Yes."
+    }
+  ],
+  "variants": [
+    ["Hello?", "Yes.", "Can we do it at 4?", "Yes."],
+    ["Hello?", "Yes.", "4 o'clock?", "Yes, 4."],
+    ["Hi", "Yes.", "Better at 4.", "Correct."],
+    ["Hello?", "Yes.", "How about at 4?", "That's right."],
+    ["Hello?", "Yes.", "4?", "Yes, fine."]
+  ],
+  "gold": {
+    "dialogue": {
+      "result": "agreed",
+      "agreed": [
+        {
+          "date": "2026-10-21",
+          "time": "16:00"
+        }
+      ],
+      "said": ["at 4 PM?"]
+    }
+  }
+}

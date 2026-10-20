@@ -1,0 +1,115 @@
+{
+  "id": "S11-unclear-speech",
+  "provider_script": [
+    {
+      "status": "ringing",
+      "atMs": 0
+    },
+    {
+      "status": "answered",
+      "atMs": 4000
+    },
+    {
+      "status": "completed",
+      "atMs": 60000
+    }
+  ],
+  "callee": [
+    {
+      "say": "Hello?"
+    },
+    {
+      "say": "Yes."
+    },
+    {
+      "say": "Can we do 4:30?",
+      "confidence": 0.4
+    },
+    {
+      "say": "Can we do 4:30?",
+      "confidence": 0.95
+    },
+    {
+      "say": "Yes."
+    }
+  ],
+  "variants": [
+    [
+      "Hello?",
+      "Yes.",
+      {
+        "say": "Can we do 4:30?",
+        "confidence": 0.4
+      },
+      {
+        "say": "Can we do 4:30?",
+        "confidence": 0.95
+      },
+      "Yes."
+    ],
+    [
+      "Hello?",
+      "Yes.",
+      {
+        "say": "4:30 would suit me.",
+        "confidence": 0.4
+      },
+      {
+        "say": "4:30 would suit me.",
+        "confidence": 0.95
+      },
+      "Yes."
+    ],
+    [
+      "Hello?",
+      "Yes.",
+      {
+        "say": "How about at 4:30 pm?",
+        "confidence": 0.4
+      },
+      {
+        "say": "How about at 4:30 pm?",
+        "confidence": 0.95
+      },
+      "Yes."
+    ],
+    [
+      "Hello?",
+      "Yes.",
+      {
+        "say": "Half past four?",
+        "confidence": 0.4
+      },
+      {
+        "say": "Half past four?",
+        "confidence": 0.95
+      },
+      "Yes."
+    ],
+    [
+      "Hello?",
+      "Yes.",
+      {
+        "say": "Make it 16:30.",
+        "confidence": 0.4
+      },
+      {
+        "say": "Make it 16:30.",
+        "confidence": 0.95
+      },
+      "Yes."
+    ]
+  ],
+  "gold": {
+    "dialogue": {
+      "result": "agreed",
+      "agreed": [
+        {
+          "date": "2026-10-21",
+          "time": "16:30"
+        }
+      ],
+      "said": ["Sorry, could you say that again?"]
+    }
+  }
+}

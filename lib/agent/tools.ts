@@ -104,6 +104,8 @@ import {
   proposeSkill,
   runSkill,
 } from "@/lib/skills"
+import { acceptableTimesRule, draftFieldsSchema } from "@/lib/voice/schemas"
+import { createDraft } from "@/lib/voice/tasks"
 import { webFetch, webSearch } from "@/lib/web"
 
 // The tool belt an agent carries. Every tool acts on behalf of whichever
@@ -1417,6 +1419,42 @@ export function createLedgerTools(env: ToolEnv) {
   }
 }
 
+/* ──────────────────────────── phone calls ───────────────────────── */
+
+// The in-call tools live apart, in lib/agent/call-tools.ts, so kriya-voice
+// loads none of this file; they are never part of KriyaTools (D-14, F8)
+export { createCallTools } from "@/lib/agent/call-tools"
+
+// Voice access only (run-task.ts, F5). Drafts a call for the person to
+// review: no approval, no call scheduled. It changes nothing outside Kriya,
+// so it isn't a side-effect tool; only the person confirms (D-09)
+export function createProposeCallTool(env: ToolEnv) {
+  return {
+    propose_call: tool({
+      description:
+        "Draft a phone call Kriya Tavi will make for the person: who to call, why, and what Tavi may agree to. Nobody is called until the person confirms the exact details in Kriya. Fill in only what they told you.",
+      inputSchema: draftFieldsSchema
+        .omit({ idempotencyKey: true, threadId: true })
+        .refine(...acceptableTimesRule),
+      execute: async (input) => {
+        const key = createHash("sha256").update(JSON.stringify(input)).digest("hex")
+        const result = await createDraft(env.userId, {
+          ...input,
+          threadId: env.threadId,
+          // The same call proposed twice in one task is one draft
+          idempotencyKey: `${env.taskId ?? env.threadId}:${key.slice(0, 32)}`,
+        })
+        if (!result.ok) return { error: result.message, fields: result.fields }
+        return {
+          taskId: result.taskId,
+          href: `/calls/${result.taskId}`,
+          note: "A draft. The person reviews and confirms it in Kriya; until then nobody is called. You can't confirm it.",
+        }
+      },
+    }),
+  }
+}
+
 export function createDelegateTool(
   delegate: (agentId: string, brief: string) => Delegation
 ) {
@@ -1521,7 +1559,9 @@ export type KriyaTools = Omit<ReturnType<typeof createMemoryTools>, "memory_writ
   ReturnType<typeof createGoalTools> &
   ReturnType<typeof createSkillTools> &
   ReturnType<typeof createLedgerTools> &
-  Partial<RadarTools>
+  Partial<RadarTools> &
+  // Voice access only; the in-call tools never join (F8)
+  Partial<ReturnType<typeof createProposeCallTool>>
 
 type RadarTools = {
   [K in "facts_lookup" | "obligation_add" | "obligation_list"]: NonNullable<

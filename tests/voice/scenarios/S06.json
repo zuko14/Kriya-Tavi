@@ -1,0 +1,39 @@
+{
+  "id": "S06-wrong-person",
+  "provider_script": [
+    {
+      "status": "ringing",
+      "atMs": 0
+    },
+    {
+      "status": "answered",
+      "atMs": 4000
+    },
+    {
+      "status": "completed",
+      "atMs": 60000
+    }
+  ],
+  "callee": [
+    {
+      "say": "Hello?"
+    },
+    {
+      "say": "No, you have the wrong person."
+    }
+  ],
+  "variants": [
+    ["Hello?", "No, you have the wrong person."],
+    ["Hello?", "Wrong number."],
+    ["Hello?", "There's no CA here, wrong number."],
+    ["Who? Wrong number, sorry."],
+    ["Hello?", "I'm not his CA. Wrong person."]
+  ],
+  "gold": {
+    "dialogue": {
+      "result": "wrong_person",
+      "end": "wrong_person",
+      "notSaid": ["3 PM", "meet you"]
+    }
+  }
+}

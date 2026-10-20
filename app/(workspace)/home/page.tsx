@@ -4,6 +4,7 @@ import {
   CheckIcon,
   ChevronRightIcon,
   InboxIcon,
+  PhoneIcon,
   PlusIcon,
   TargetIcon,
 } from "lucide-react"
@@ -16,6 +17,7 @@ import { UsageMeter } from "@/components/home/usage-meter"
 import { requireUser } from "@/lib/auth"
 import { getSetting } from "@/lib/config"
 import { cn } from "@/lib/utils"
+import { voiceAvailable } from "@/lib/voice/tasks"
 import { recentEpisodes } from "@/queries/episodes"
 import { getGoals } from "@/queries/goals"
 import { inboxCount } from "@/queries/inbox"
@@ -51,6 +53,7 @@ export default async function Home() {
     goalsOn ? getGoals(user.id) : [],
   ])
   const openGoals = goals.filter((g) => g.status === "active").slice(0, 3)
+  const voice = await voiceAvailable(user.id)
   const firstName = user.profile.displayName?.split(" ")[0]
   const hasAgents = nav.agents.length > 0
   // India time: the server may run anywhere
@@ -110,6 +113,18 @@ export default async function Home() {
         {hasAgents ? (
           <>
             <Ask />
+
+            {/* Voice phase 7: the way into /calls, with voice access only */}
+            {voice && (
+              <Link
+                href="/calls"
+                className="glass flex min-h-14 items-center gap-3 rounded-2xl px-4 py-2.5"
+              >
+                <PhoneIcon className="size-4 shrink-0 text-rigel" />
+                <span className="flex-1 text-[13.5px] font-medium">Phone calls</span>
+                <ChevronRightIcon className="size-4 text-faint" />
+              </Link>
+            )}
 
             {(waiting !== null || openGoals.length > 0) && (
               <section className="flex flex-col gap-2.5">

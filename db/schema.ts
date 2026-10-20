@@ -10,6 +10,7 @@ import {
   pgSchema,
   primaryKey,
   text,
+  time,
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core"
@@ -97,6 +98,12 @@ export const plans = kriya.table("plans", {
   sort: integer().notNull().default(0),
   razorpayPlanId: text(),
   updatedAt: createdAt(),
+  // Voice (voice phase 1); 0 and false mean voice is off on the plan
+  voiceEnabled: boolean().notNull().default(false),
+  maxOutreachCallsPerDay: integer().notNull().default(0),
+  maxCallSeconds: integer().notNull().default(300),
+  maxAttemptsPerCall: integer().notNull().default(2),
+  maxVoiceTaskCostMicroInr: micro().notNull().default(0),
 })
 
 export const SUBSCRIPTION_STATUSES = [
@@ -1094,6 +1101,366 @@ export const workers = kriya.table("workers", {
   startedAt: createdAt(),
   heartbeatAt: createdAt(),
   stoppedAt: at(),
+})
+
+/* ───────────────────────────── voice ────────────────────────────── */
+
+// Voice assistant (voice phase 1). Statuses change only through
+// kriya.voice_transition(); the person's session can't update these tables.
+
+export const voiceAccess = kriya.table("voice_access", {
+  userId: uuid().primaryKey(),
+  grantedBy: uuid(),
+  testNumbersOnly: boolean().notNull().default(true),
+  createdAt: createdAt(),
+})
+
+export const voiceProfiles = kriya.table("voice_profiles", {
+  userId: uuid().primaryKey(),
+  // Named: snake_case casing would read "owner_phone_e_164"
+  ownerPhoneE164: text("owner_phone_e164"),
+  ownerPhoneVerifiedAt: at(),
+  timezone: text().notNull().default("Asia/Kolkata"),
+  language: text().notNull().default("en-IN"),
+  // "HH:MM:SS"
+  quietStart: time().notNull().default("21:30"),
+  quietEnd: time().notNull().default("08:00"),
+  reportMode: text({ enum: ["scheduled", "on_completion"] })
+    .notNull()
+    .default("scheduled"),
+  reportMaxAttempts: integer().notNull().default(3),
+  reportRetryMinutes: integer().notNull().default(10),
+  transcriptRetentionDays: integer().notNull().default(30),
+  createdAt: createdAt(),
+  updatedAt: createdAt(),
+})
+
+export const phoneVerifications = kriya.table("phone_verifications", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: uuid().notNull(),
+  phoneE164: text("phone_e164").notNull(),
+  codeHash: text().notNull(),
+  tries: integer().notNull().default(0),
+  expiresAt: at().notNull(),
+  verifiedAt: at(),
+  voiceCallId: uuid(),
+  createdAt: createdAt(),
+})
+
+export const VOICE_TASK_STATUSES = [
+  "draft",
+  "awaiting_confirmation",
+  "authorized",
+  "in_progress",
+  "needs_owner",
+  "awaiting_report",
+  "completed",
+  "unreported",
+  "failed",
+  "cancelled",
+  "expired",
+] as const
+export type VoiceTaskStatus = (typeof VOICE_TASK_STATUSES)[number]
+
+export const VOICE_TASK_RESULTS = [
+  "agreed",
+  "alternative_proposed",
+  "declined",
+  "no_answer",
+  "busy",
+  "wrong_person",
+  "unclear",
+  "call_failed",
+] as const
+
+export const voiceTasks = kriya.table("voice_tasks", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: uuid().notNull(),
+  parentTaskId: uuid(),
+  threadId: text(),
+  status: text({ enum: VOICE_TASK_STATUSES }).notNull().default("draft"),
+  result: text({ enum: VOICE_TASK_RESULTS }),
+  language: text().notNull().default("en-IN"),
+  recipientLabel: text().notNull(),
+  recipientName: text(),
+  recipientPhoneE164: text("recipient_phone_e164").notNull(),
+  recipientPhoneHash: text().notNull(),
+  purpose: text().notNull(),
+  // Shape: CONVERSATION_AND_VERIFICATION.md §2 (voice phase 3 adds its zod schema)
+  spec: jsonb().notNull().$type<Record<string, unknown>>(),
+  specVersion: integer().notNull().default(1),
+  reportAt: at(),
+  reportRequested: boolean().notNull().default(true),
+  planId: text().notNull(),
+  maxCallSeconds: integer().notNull(),
+  costBudgetMicroInr: micro().notNull(),
+  approvalId: uuid(),
+  cancelRequestedAt: at(),
+  idempotencyKey: text(),
+  errorCode: text(),
+  error: text(),
+  authorizedAt: at(),
+  finishedAt: at(),
+  createdAt: createdAt(),
+  updatedAt: createdAt(),
+})
+
+export const voiceApprovals = kriya.table("voice_approvals", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: uuid().notNull(),
+  voiceTaskId: uuid().notNull(),
+  kind: text({ enum: ["outreach_call", "follow_up_call", "scope_change"] }).notNull(),
+  payload: jsonb().notNull().$type<Record<string, unknown>>(),
+  payloadHash: text().notNull(),
+  status: text({ enum: ["pending", "approved", "declined", "expired", "superseded"] })
+    .notNull()
+    .default("pending"),
+  expiresAt: at().notNull(),
+  decidedAt: at(),
+  createdAt: createdAt(),
+})
+
+export const VOICE_CALL_STATUSES = [
+  "scheduled",
+  "dialing",
+  "in_call",
+  "retry_wait",
+  "settled",
+  "exhausted",
+  "canceled",
+  "blocked",
+  "needs_owner",
+] as const
+export type VoiceCallStatus = (typeof VOICE_CALL_STATUSES)[number]
+
+export const voiceCalls = kriya.table("voice_calls", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: uuid().notNull(),
+  voiceTaskId: uuid().notNull(),
+  kind: text({ enum: ["outreach", "owner_report", "verification"] }).notNull(),
+  seq: integer().notNull(),
+  toPhoneE164: text("to_phone_e164").notNull(),
+  status: text({ enum: VOICE_CALL_STATUSES }).notNull().default("scheduled"),
+  notBefore: at().notNull(),
+  windowEnd: at(),
+  availableAt: at().notNull(),
+  attempts: integer().notNull().default(0),
+  maxAttempts: integer().notNull(),
+  leaseOwner: text(),
+  leaseExpiresAt: at(),
+  heartbeatAt: at(),
+  cancelRequestedAt: at(),
+  deliveredAt: at(),
+  acknowledgedAt: at(),
+  lastErrorCode: text(),
+  createdAt: createdAt(),
+  updatedAt: createdAt(),
+})
+
+export const CALL_ATTEMPT_STATUSES = [
+  "created",
+  "requested",
+  "initiated",
+  "ringing",
+  "answered",
+  "connected",
+  "ended",
+  "busy",
+  "no_answer",
+  "rejected",
+  "failed",
+  "canceled",
+  "unknown",
+] as const
+export type CallAttemptStatus = (typeof CALL_ATTEMPT_STATUSES)[number]
+
+// The token hashes and streamOwner aren't granted to the person's session:
+// select named columns there, never the whole row
+export const callAttempts = kriya.table("call_attempts", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: uuid().notNull(),
+  voiceCallId: uuid().notNull(),
+  attempt: integer().notNull(),
+  status: text({ enum: CALL_ATTEMPT_STATUSES }).notNull().default("created"),
+  policyVersion: text().notNull(),
+  telephonyProvider: text(),
+  sttProvider: text(),
+  ttsProvider: text(),
+  ttsVoice: text(),
+  llmModel: text(),
+  providerCallId: text(),
+  callbackTokenHash: text().notNull(),
+  streamTokenHash: text().notNull(),
+  streamTokenUsedAt: at(),
+  streamOwner: text(),
+  streamHeartbeatAt: at(),
+  requestedAt: at(),
+  initiatedAt: at(),
+  ringingAt: at(),
+  answeredAt: at(),
+  connectedAt: at(),
+  endedAt: at(),
+  endReason: text(),
+  billableSeconds: integer(),
+  lastReportMarkAt: at(),
+  verifiedAt: at(),
+  providerSnapshot: jsonb(),
+  createdAt: createdAt(),
+  updatedAt: createdAt(),
+})
+
+export const callEvents = kriya.table("call_events", {
+  id: bigserial({ mode: "number" }).primaryKey(),
+  userId: uuid(),
+  callAttemptId: uuid(),
+  provider: text().notNull(),
+  source: text({ enum: ["status_webhook", "stream", "verify"] }).notNull(),
+  dedupeKey: text().notNull(),
+  status: text(),
+  occurredAt: at(),
+  receivedAt: createdAt(),
+  payload: jsonb(),
+})
+
+export const conversationTurns = kriya.table("conversation_turns", {
+  id: bigserial({ mode: "number" }).primaryKey(),
+  userId: uuid().notNull(),
+  callAttemptId: uuid().notNull(),
+  seq: integer().notNull(),
+  speaker: text({ enum: ["tavi", "callee", "owner"] }).notNull(),
+  text: text().notNull(),
+  startMs: integer(),
+  endMs: integer(),
+  sttConfidence: numeric({ precision: 4, scale: 3 }),
+  interrupted: boolean().notNull().default(false),
+  playedMs: integer(),
+  createdAt: createdAt(),
+})
+
+export const callOutcomes = kriya.table("call_outcomes", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: uuid().notNull(),
+  callAttemptId: uuid().notNull().unique(),
+  voiceTaskId: uuid().notNull(),
+  schemaVersion: integer().notNull().default(1),
+  // Shapes: CONVERSATION_AND_VERIFICATION.md §6
+  observed: jsonb().notNull().$type<Record<string, unknown>>(),
+  interpreted: jsonb().$type<Record<string, unknown>>(),
+  extractionModel: text(),
+  verifierStatus: text({ enum: ["pending", "accepted", "needs_review", "rejected"] })
+    .notNull()
+    .default("pending"),
+  verifierNotes: text(),
+  createdAt: createdAt(),
+  updatedAt: createdAt(),
+})
+
+// No user_id: one owner can't learn another's contacts
+export const callSuppressions = kriya.table("call_suppressions", {
+  phoneHash: text().primaryKey(),
+  reason: text({ enum: ["recipient_opt_out", "abuse_report", "owner_block"] }).notNull(),
+  sourceAttemptId: uuid(),
+  createdAt: createdAt(),
+})
+
+export const voicePrices = kriya.table("voice_prices", {
+  id: text().primaryKey(),
+  provider: text().notNull(),
+  product: text().notNull(),
+  unit: text({
+    enum: [
+      "second",
+      "minute_pulse_60",
+      "minute_pulse_30",
+      "attempt",
+      "character",
+      "audio_second",
+    ],
+  }).notNull(),
+  priceMicro: micro().notNull(),
+  currency: text({ enum: ["INR", "USD"] }).notNull(),
+  effectiveFrom: at().notNull(),
+  source: text().notNull(),
+  checkedAt: at().notNull(),
+  updatedAt: createdAt(),
+})
+
+export const voiceUsage = kriya.table("voice_usage", {
+  id: uuid().primaryKey().defaultRandom(),
+  requestKey: text().notNull().unique(),
+  userId: uuid(),
+  voiceTaskId: uuid(),
+  callAttemptId: uuid(),
+  component: text({ enum: ["telephony", "stt", "tts", "llm"] }).notNull(),
+  provider: text().notNull(),
+  product: text().notNull(),
+  quantity: bigint({ mode: "number" }),
+  unit: text(),
+  inputTokens: integer(),
+  outputTokens: integer(),
+  usageStatus: text({ enum: ["reported", "counted", "missing"] }).notNull(),
+  reportedCostMicro: micro(),
+  reportedCurrency: text({ enum: ["INR", "USD"] }),
+  estimatedCostMicro: micro(),
+  estimatedCurrency: text({ enum: ["INR", "USD"] }),
+  priceId: text(),
+  costSource: text({ enum: ["provider", "estimate", "reconciled"] }),
+  reconciliation: text({ enum: ["pending", "matched", "mismatch", "unavailable"] })
+    .notNull()
+    .default("pending"),
+  raw: jsonb(),
+  createdAt: createdAt(),
+})
+
+export const voiceCharges = kriya.table("voice_charges", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: uuid(),
+  voiceTaskId: uuid().unique(),
+  planId: text(),
+  providerCostMicroInr: micro(),
+  costBasis: text({ enum: ["provider", "estimate", "none"] }).notNull(),
+  unmeteredItems: integer().notNull().default(0),
+  fxUsdInr: numeric({ precision: 12, scale: 4 }),
+  fxSource: text(),
+  markupBps: integer().notNull(),
+  chargeMicroInr: micro(),
+  status: text({ enum: ["final", "estimated", "unpriced"] }).notNull(),
+  createdAt: createdAt(),
+})
+
+export const voiceAllowedTransitions = kriya.table(
+  "voice_allowed_transitions",
+  {
+    entity: text({ enum: ["task", "call", "attempt"] }).notNull(),
+    fromStatus: text().notNull(),
+    toStatus: text().notNull(),
+    actors: text().array().notNull(),
+    evidence: text().array().notNull().default([]),
+  },
+  (t) => [primaryKey({ columns: [t.entity, t.fromStatus, t.toStatus] })]
+)
+
+export const VOICE_ACTORS = [
+  "owner",
+  "worker",
+  "voice",
+  "webhook",
+  "verifier",
+  "janitor",
+] as const
+export type VoiceActor = (typeof VOICE_ACTORS)[number]
+
+export const voiceTransitions = kriya.table("voice_transitions", {
+  id: bigserial({ mode: "number" }).primaryKey(),
+  userId: uuid().notNull(),
+  voiceTaskId: uuid().notNull(),
+  entity: text({ enum: ["task", "call", "attempt"] }).notNull(),
+  entityId: uuid().notNull(),
+  fromStatus: text().notNull(),
+  toStatus: text().notNull(),
+  actor: text({ enum: VOICE_ACTORS }).notNull(),
+  evidence: jsonb().notNull().$type<Record<string, unknown>>().default({}),
+  createdAt: createdAt(),
 })
 
 /* ──────────────────────────── relations ─────────────────────────── */

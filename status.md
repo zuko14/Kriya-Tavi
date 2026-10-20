@@ -57,13 +57,13 @@ only your own row. Rules: AGENT_MASTER_PROMPT.md §4.
 | Phase | Name | Status | Depends on |
 | --- | --- | --- | --- |
 | 0 | Research, audit, requirements, decisions | IN_PROGRESS (documents done; awaiting owner approval) | — |
-| 1 | Domain model, migration, RLS, state machines | NOT_STARTED | 0 approved |
-| 2 | Provider interfaces, mocks, `kriya-voice` skeleton | NOT_STARTED | 1 |
-| 3 | Durable call orchestration on mocks | NOT_STARTED | 2 |
-| 4 | Dialogue engine, STT/TTS/LLM, outcomes, verification | NOT_STARTED | 2 (benchmark needs keys) |
+| 1 | Domain model, migration, RLS, state machines | COMPLETE 2026-10-20 (on PGlite; not yet applied to Supabase: B2, B10, F12) | 0 approved |
+| 2 | Provider interfaces, mocks, `kriya-voice` skeleton | COMPLETE 2026-10-20 (mocks only; Exotel framing unverified until X9; B9 open) | 1 |
+| 3 | Durable call orchestration on mocks | COMPLETE 2026-10-20 (mock provider; the worker doesn't start the loop until a real provider exists, phase 5) | 2 |
+| 4 | Dialogue engine, STT/TTS/LLM, outcomes, verification | IN_PROGRESS (2026-10-20: engine, outcomes, verification and L-text done on mocks; vendor adapters + paid benchmark open, B2, B6) | 2 (benchmark needs keys) |
 | 5 | Controlled live outbound calls (Exotel, test numbers) | BLOCKED | 3, 4, external approvals |
 | 6 | Owner reminders and spoken reports | NOT_STARTED | 3, 4 (live check needs 5) |
-| 7 | Mobile UI | NOT_STARTED | 3, 6 |
+| 7 | Mobile UI | IN_PROGRESS (2026-10-20: screens, stream and tests done; browser checks at 360 px, screenshots and the Android mic check open; Phase 6 parts deferred) | 3, 6 |
 | 8 | Cost, limits, monitoring, owner dashboard | NOT_STARTED | 3, 4 |
 | 9 | Security, compliance, recovery, production readiness | NOT_STARTED | 5–8 |
 | 10 | Continuous improvement loop (D-17) | NOT_STARTED | 9 (foundations in 1, 4, 7) |
@@ -76,7 +76,7 @@ idempotency and recovery are proven.
 
 | # | Blocker | Blocks | Needed from |
 | --- | --- | --- | --- |
-| B1 | Owner approval of DECISIONS.md D-01…D-16 | Phase 1 | Owner |
+| B1 | ~~Owner approval of DECISIONS.md D-01…D-16~~ Resolved 2026-10-20 (D-01…D-17 approved) | Phase 1 | Owner |
 | B2 | Platform not yet on real services: Supabase migrations unapplied, no OpenRouter run, no Render deploy (`docs/kriya/status.md`) | Phases 4 (benchmark), 5 | Owner |
 | B3 | Exotel account: KYC, AgentStream Voicebot enabled for outbound, ExoPhone CLI, cluster, quote (X1–X11) | Phase 5 | Owner + Exotel |
 | B4 | Counsel answers Q1–Q4 (A2P/TCCCPR status, CLI series, DPDP basis for recipients, disclosure wording) | Phase 5 (third-party calls), 9 | Owner + counsel |
@@ -117,7 +117,7 @@ idempotency and recovery are proven.
 
 ## Phase 1 — Domain model, migration, RLS, state machines
 
-**Status:** NOT_STARTED
+**Status:** COMPLETE (2026-10-20, Claude Code; on PGlite, not yet applied to Supabase)
 
 - **Objective:** the voice tables, transition function and RLS exist and are
   proven by tests; nothing calls them yet.
@@ -159,11 +159,117 @@ idempotency and recovery are proven.
   events are no-ops; wrong actor/evidence raises.
 - **Rollback:** run the down migration (tested); the feature has no callers.
 - **Exit:** `npm run check` passes; results pasted here.
-- **Blockers:** B1.
+- **Blockers:** B1 (resolved 2026-10-20: D-01…D-17 approved, see Owner approvals).
+
+**Session plan (2026-10-20 09:46 IST, Claude Code / Opus 5.5, `main` in place,
+uncommitted):**
+
+- Preflight: `git status --short` clean; `main` at `d8ed1d5`; `npm run check`
+  exit 0 (typecheck, lint, format pass; **863 passed, 26 skipped / 81 files**).
+  The "82 tests" figure above predates track A; the baseline held unchanged
+  this session is the full current suite.
+- Create: `supabase/migrations/20261020000000_voice_core.sql`,
+  `supabase/rollback/20261020000000_voice_core.down.sql`,
+  `tests/db/voice-rls.test.ts` (T-RLS-*, T-DB-01, T-DB-02, T-FK-01),
+  `tests/db/voice-transitions.test.ts` (T-SM-01…05), `tests/voice/log.test.ts`
+  (T-LOG-01; `tests/voice/` is an allowed new path, CHANGE_IMPACT §3).
+- Change: `db/schema.ts` (add the voice tables and the five `plans` columns;
+  existing definitions untouched); `lib/log.ts` (phone-number value
+  redaction); `tests/db/migrations.test.ts` (add T-MIG-01, existing cases
+  untouched).
+- Not changing `lib/entitlements.ts`: `Plan` is inferred from `db/schema.ts`,
+  so the new plan columns are typed with no edit there.
+- Tests first: T-LOG-01, T-SM-01…05, T-RLS-*, T-DB-01, T-DB-02, T-FK-01,
+  T-MIG-01.
+- Risks and mitigations:
+  1. The voice migration's timestamp (`20261020…`) sorts **before** the 14
+     track A migrations (`20261101…`–`20261114…`). PGlite applies files in
+     name order, so `npm test` proves every track A migration still applies on
+     top. `scripts/migrate.ts` applies pending versions by set membership, so
+     it works too. The Supabase CLI (`supabase db push`) refuses
+     out-of-order versions on a database that already has later ones applied
+     (needs `--include-all`). Recorded as F12; B2 says no migration has been
+     applied to Supabase yet.
+  2. Phone redaction could over-redact amounts, ids or timestamps → T-LOG-01
+     negative cases, plus the existing AT-SEC-03 log test must stay green.
+  3. `kriya.transition` is a session setting any privileged session can set,
+     so the status trigger is a guard against accidents for the privileged
+     role. The security boundary for people is "no update grant at all". The
+     function resets the setting after its own update.
+  4. `call_attempts.policy_version` has no FK to track A's
+     `kriya.policy_versions`: that table is created by a later migration, and
+     the voice loop's versions are its own (D-17).
+- Open questions: none blocking. B10 (Supabase Postgres ≥ 15) applies only to
+  applying this migration to Supabase, not to the PGlite tests.
+
+**Session result (2026-10-20 10:10 IST, Claude Code / Opus 5.5):** `COMPLETE`
+
+- Files created: `supabase/migrations/20261020000000_voice_core.sql`,
+  `supabase/rollback/20261020000000_voice_core.down.sql`,
+  `tests/db/voice-fixtures.ts` (shared rows for the two voice DB tests),
+  `tests/db/voice-rls.test.ts`, `tests/db/voice-transitions.test.ts`,
+  `tests/voice/log.test.ts`.
+- Files changed: `db/schema.ts` (voice tables + five `plans` fields, additive),
+  `lib/log.ts` (one `PHONE` pattern in `clean()`),
+  `tests/db/migrations.test.ts` (T-MIG-01 appended), `status.md`,
+  `docs/voice-assistant/DECISIONS.md` (status column: D-01…D-17 Approved),
+  `docs/voice-assistant/CHANGE_IMPACT_AND_SAFETY.md` (F12–F14),
+  `docs/voice-assistant/DATA_MODEL_AND_STATE_MACHINES.md`,
+  `SECURITY_AND_COMPLIANCE.md`, `CONVERSATION_AND_VERIFICATION.md` (column
+  rename, F13).
+- What exists: 16 tables (`voice_access`, `voice_profiles`,
+  `phone_verifications`, `voice_tasks`, `voice_approvals`, `voice_calls`,
+  `call_attempts`, `call_events`, `conversation_turns`, `call_outcomes`,
+  `call_suppressions`, `voice_prices`, `voice_usage`, `voice_charges`,
+  `voice_allowed_transitions` (51 edges), `voice_transitions`), the five plan
+  columns (defaults = voice off), `kriya.voice_transition()`, status-guard
+  triggers on tasks/calls/attempts, append-only trigger on
+  `voice_transitions`. Nothing calls them yet.
+- Tests added and results (all pass): T-LOG-01 (22 cases incl. negatives:
+  `₹1,20,000`, UUIDs, ISO timestamps, epoch ms/s, migration versions, numeric
+  fields); T-SM-01 (every edge × every allowed actor, plus timestamps),
+  T-SM-02…05; T-RLS-* for all 16 tables (own-rows read, no insert/update/
+  delete except `voice_profiles` preference columns and own
+  `conversation_turns` delete, token-hash and `stream_owner` columns not
+  selectable, five tables unreadable, `voice_transition` not executable by a
+  person); T-DB-01; T-DB-02; T-FK-01 (thread delete, parent-task delete,
+  account delete); T-MIG-01 (voice down/up, then voice down + core down + up).
+  `npx vitest run` on the four phase files: **87 passed (87)**.
+- `npm run check` (2026-10-20 10:05): typecheck pass, lint pass, "All matched
+  files use Prettier code style!", **Test Files 81 passed | 3 skipped (84),
+  Tests 937 passed | 26 skipped (963)**, exit 0. The 863 baseline tests pass
+  unchanged (937 − 74 new).
+- `npm run build`: exit 0 (run because every page imports `db/schema.ts`).
+- Exit criteria: `npm run check` passes ✔. Acceptance: a browser session
+  can't change any voice status ✔ (T-SM-04, no update grant); out-of-order
+  events are no-ops ✔ (T-SM-03); wrong actor/evidence raises ✔ (T-SM-02,
+  T-SM-05). Every new table has RLS ✔ (existing migrations test + T-MIG-01).
+  Rollback tested ✔.
+- Deviations: (1) `call_attempts.verification` → `provider_snapshot`, because
+  an existing track A test counts every `kriya` column named `verification`
+  (F13; docs updated). (2) `voice_usage` FKs are `deferrable initially
+  deferred`, or account deletion fails (F14). (3) `voice_transitions` gained a
+  `voice_task_id` column (FK, cascade) so deleting a task removes its history,
+  as DATA_MODEL §5 requires ("Cascade"). (4) `lib/entitlements.ts` not
+  changed: `Plan` is inferred from `db/schema.ts`. (5) Evidence rules the doc
+  left open were set conservatively and are in the edge table: e.g.
+  `→ failed` needs `error_code`, `authorized → in_progress` needs
+  `voice_call_id`, any cancel needs `cancel_requested_at` on the row and (for
+  tasks) no live attempt. Phase 3 may adjust them in a new migration.
+- Not tested: applying to a real Supabase project (no database connection
+  was made). Before that: B10 (`show server_version` ≥ 15) and F12 (use
+  `npm run db:migrate`, or `supabase db push --include-all`).
+- New findings: F12 (migration order vs track A), F13, F14 in
+  CHANGE_IMPACT_AND_SAFETY.md §1.
+- **Next exact action:** Phase 2 (provider interfaces, mocks, `kriya-voice`
+  skeleton). B9 still stands: new env variables in `.env.example` need the
+  owner. Phase 3's claim/heartbeat/recover functions must change status only
+  through `kriya.voice_transition()` (or set `kriya.transition` the same way),
+  and must select `call_attempts` by named columns in a person's session.
 
 ## Phase 2 — Provider interfaces, mocks, `kriya-voice` skeleton
 
-**Status:** NOT_STARTED
+**Status:** COMPLETE (2026-10-20, Claude Code; on mocks; B9 open for `.env.example`)
 
 - **Objective:** typed provider contracts, a scenario-driven mock, audio
   framing utilities, and a `kriya-voice` service that accepts a mock stream.
@@ -194,9 +300,121 @@ idempotency and recovery are proven.
 - **Exit:** `npm run check` + `npm run build` pass; results here.
 - **Blockers:** B9 (owner adds variables to `.env.example`).
 
+**Session plan (2026-10-20 10:20 IST, Claude Code / Opus 5.5, `main` in place,
+uncommitted; Phase 1's changes from this session are also still uncommitted):**
+
+- Preflight: Phase 1 COMPLETE; board empty; `npm run check` re-run before the
+  first edit (result in the session result).
+- Dependency review: **none added.** `ws` 8.22.0 (MIT, `node_modules/ws/
+  package.json`) and `@types/ws` 8.18.2 are already in `package.json`, added
+  by track A for `kriya-browser`.
+- Create: `lib/voice/providers.ts` (contracts, TELEPHONY §4),
+  `lib/voice/audio.ts` (PCM ↔ base64 LE, 1,600-sample chunks = 3,200 bytes,
+  8↔16 kHz resampling, Exotel JSON framing as a `MediaCodec`),
+  `lib/voice/mock.ts` (scenario-driven telephony, scripted STT, TTS, and a
+  mock Exotel stream client), `lib/voice/streams.ts` (one-use stream token
+  claim: hash + status + `call_sid` match, one `update … returning`),
+  `voice/index.ts` (HTTP `/health`, `WS /media/exotel`, Basic auth before
+  upgrade, token claim after `start`, outgoing queue paced by marks (≤ 2
+  chunks ahead), `clear`, drain on SIGTERM), tests `tests/voice/audio.test.ts`,
+  `tests/voice/mock.test.ts`, `tests/voice/voice-service.test.ts` (T-SEC-01,
+  drain, acceptance), `tests/voice/boundaries.test.ts` (T-IMP-01, T-ENV-01),
+  `tests/voice/scenarios/S01.json`, `S02.json`, `S05.json`, `S15.json`.
+- Change: `lib/env.ts` (a `voice` service: `DATABASE_URL`,
+  `KRIYA_VOICE_STREAM_SECRET`; nothing new for web or worker), `package.json`
+  (`voice`, `dev:voice` scripts only), `render.yaml` (new `kriya-voice`
+  service only; existing services untouched), `docs/kriya/deployment.md` (the
+  new service and its two variables).
+- Not changing `lib/config.ts` this phase: no code reads a `voice.*` setting
+  yet, and `KRIYA_VOICE_STREAM_SECRET` lives only on `kriya-voice`, so listing it
+  in `SECRETS` would show "not set" in the owner console (which reports the
+  web service's environment). T-CFG-01 moves to the phase that adds the first
+  `voice.*` setting.
+- Risks: (1) Exotel's JSON nesting (`start.call_sid`,
+  `media.payload`, `mark.name`) is from the docs' field list, not a real
+  payload: the parser is the one place to fix after X9. (2) Pacing by marks
+  depends on Exotel echoing a mark per chunk; to verify on the account. (3)
+  F7: `voice/index.ts` must not pull in `server-only`/`next`/auth modules →
+  T-IMP-01 walks the import graph.
+- Questions for the owner: B9 — one variable for `.env.example`
+  (`KRIYA_VOICE_STREAM_SECRET`), listed in the session
+  result.
+
+**Session result (2026-10-20 11:05 IST, Claude Code / Opus 5.5):** `COMPLETE`
+
+- Files created: `lib/voice/providers.ts`, `lib/voice/audio.ts`,
+  `lib/voice/mock.ts`, `lib/voice/streams.ts`, `voice/index.ts`,
+  `tests/voice/audio.test.ts`, `tests/voice/mock.test.ts`,
+  `tests/voice/voice-service.test.ts`, `tests/voice/boundaries.test.ts`,
+  `tests/voice/scenarios/S01.json`, `S02.json`, `S05.json`, `S15.json`.
+- Files changed: `lib/env.ts` (a `voice` service: `DATABASE_URL`,
+  `KRIYA_VOICE_STREAM_SECRET` ≥ 32 chars; web and worker lists untouched),
+  `package.json` (scripts `voice`, `dev:voice`; no dependency change),
+  `render.yaml` (new `kriya-voice` web service only, `healthCheckPath:
+  /health`, `maxShutdownDelaySeconds: 300`; existing services untouched),
+  `docs/kriya/deployment.md` (new "Voice service" section),
+  `docs/voice-assistant/CHANGE_IMPACT_AND_SAFETY.md` (F15), and the secret's
+  rename in IMPLEMENTATION_PLAN, SECURITY_AND_COMPLIANCE §6,
+  TELEPHONY_PROVIDER_ASSESSMENT §2.3.
+- Tests added (all pass): audio framing (8: LE base64, 3,200-byte chunks with
+  silence padding, chunk durations, 8↔16 kHz resampling, Exotel
+  parse/serialize, malformed input ignored, 320-byte rule); mock providers
+  (13: four scenario files well formed, webhooks correlated by attempt, S02
+  busy, S05 no answer, S15 duplicates share a dedupe key and late events
+  arrive out of order, S01 completed, placeCall failures on demand, hangup,
+  STT/TTS mocks incl. abort); `kriya-voice` (12): health; **T-SEC-01** — no or
+  wrong Basic auth → 401 with the attempt untouched, other paths → 404,
+  wrong `call_sid` / unknown token / attempt not dialed → close 1008 with the
+  attempt untouched, token accepted once, no `start` → 1008; acceptance —
+  audio and DTMF pass through, at most two chunks ahead of playback, the
+  caller's own marks come back after playback, `clear` empties the queue and
+  stale marks release nothing, `stop` closes with 1000; **drain** — stops
+  taking streams (503, `accepting: false`), waits for the live call, ends
+  calls still running at the window with 1001; weak secret refused.
+  Boundaries (6): **T-IMP-01** for `voice/index.ts` and `worker/index.ts`
+  (no `server-only`, `next/*`, `lib/auth|supabase|rate-limit|owner`), the
+  voice service loads no `lib/agent/*`, no `"use client"` file imports
+  `lib/voice`; **T-ENV-01** worker with no voice variables doesn't throw in
+  production; `voice` service names a missing/short secret without showing it.
+- `npm run check` (2026-10-20 ~11:00): typecheck pass, lint pass, "All
+  matched files use Prettier code style!", **Test Files 85 passed | 3 skipped
+  (88), Tests 976 passed | 26 skipped (1002)**, exit 0 (937 before + 39 new).
+- `npm run build`: exit 0.
+- Smoke run: `npx tsx voice/index.ts` with a throwaway local secret and port
+  → `GET /health` returned `{"ok":true,"accepting":true,"calls":0}`, log line
+  `"service":"voice","message":"kriya-voice listening"`. **Not verified
+  here:** the SIGTERM → drain path of the real process (Windows' `kill` ends
+  the process without delivering SIGTERM to Node; `drain()` itself is covered
+  by the tests; Render runs Linux).
+- Exit criteria: `npm run check` + `npm run build` pass ✔. Acceptance ✔ (see
+  tests). Security: secrets from env only ✔; `lib/voice` kept out of client
+  bundles by the boundaries test (not `server-only`, which F7 forbids) ✔.
+- Deviations: (1) No `ws` review needed: `ws` 8.22.0 (MIT) was already a
+  dependency (track A). (2) `lib/config.ts` unchanged: no code reads a
+  `voice.*` setting yet, and a `kriya-voice`-only secret in `SECRETS` would
+  show "not set" in the owner console; T-CFG-01 moves to the phase that adds
+  the first setting. (3) The stream secret is `KRIYA_VOICE_STREAM_SECRET`, not
+  `EXOTEL_STREAM_SECRET` (F15). (4) `ProviderCall.reportedCost.micro` is a
+  `number`, matching every other micro amount in the repo, not the doc's
+  `bigint`. (5) Worker env vars (`KRIYA_VOICE_URL`) aren't added to
+  `render.yaml`/`lib/env.ts` until Phase 3 reads them. (6) Pacing uses one
+  internal mark per chunk (`~gen.n`), so it depends on the provider echoing
+  marks; to verify on the Exotel account.
+- Open items / owner: **B9** — add to `.env.example`:
+  `KRIYA_VOICE_STREAM_SECRET=` (kriya-voice only; ≥ 32 random characters).
+  **X9** — capture one real (redacted) `start` and `media` message to confirm
+  the JSON nesting `exotelCodec` assumes. Audio arriving between `start` and
+  the token check is dropped (≈ first 100 ms).
+- **Next exact action:** Phase 3 (durable call orchestration on mocks). It
+  should: add a unique index on `call_attempts.stream_token_hash` in its
+  migration (the token lookup is a scan today); renew
+  `stream_heartbeat_at` from `kriya-voice` every 5 s and move the attempt
+  `answered → connected` (actor `voice`) once the dialogue owns the call;
+  read the owner's settings through `voice.*` keys with patterns (T-CFG-01).
+
 ## Phase 3 — Durable call orchestration on mocks
 
-**Status:** NOT_STARTED
+**Status:** COMPLETE (2026-10-20, Claude Code; on the mock provider)
 
 - **Objective:** draft → confirm → scheduled → dialing → retries → settled,
   with idempotency, leases, recovery, cancel and webhooks, all on the mock
@@ -231,9 +449,134 @@ idempotency and recovery are proven.
 - **Exit:** `npm run check` passes; results here.
 - **Blockers:** none beyond Phase 2.
 
+**Session plan (2026-10-20 11:15 IST, Claude Code / Opus 5.5, `main` in place,
+uncommitted; Phases 1–2 of this session are uncommitted too):**
+
+- Preflight: Phase 2 COMPLETE; board empty; last `npm run check` (Phase 2
+  exit) 976 passed / 26 skipped, re-run before the first edit.
+- Migration `20261021000000_voice_queue.sql` (+ rollback): unique indexes on
+  `call_attempts.stream_token_hash` and `callback_token_hash`;
+  `claim_voice_call(worker, lease, max_live)` (scheduled/retry_wait, due by
+  `available_at` and `not_before` on DB `now()`, not cancelled, `skip locked`,
+  advisory lock per user, one live outreach call per user, global cap),
+  `heartbeat_voice_call`, `recover_voice_calls(worker, lease)` (expires
+  pending approvals and unconfirmed tasks; takes over calls whose lease
+  expired, for the app to reconcile). One new edge, `task authorized →
+  failed` (worker/janitor, `error_code`): today an authorized task whose
+  outreach window closes before any dial has no way out.
+- New: `lib/voice/schemas.ts` (zod spec per CONVERSATION §2, structured draft
+  input, Indian mobile → E.164, refusals), `lib/voice/schedule.ts` (third-party
+  calling hours 09:00–21:00 IST Mon–Sat, quiet hours in the owner's timezone,
+  report window, retry times), `lib/voice/tasks.ts` (draft, request
+  confirmation, confirm, decline, cancel, emergency stop; limits and
+  suppression), `lib/voice/run-call.ts` (claim → re-check → attempt
+  `requested` committed → `placeCall` → watch with heartbeat until terminal;
+  cancel → hangup; recovery; the voice loop with its own map), `lib/voice/
+  verify.ts` (webhook handling, provider reconciliation — the API wins —,
+  settling calls and tasks, telephony `voice_usage` rows with null cost),
+  `actions/voice.ts`, `app/api/voice/exotel/status/[token]/route.ts`.
+- Change: `proxy.ts` (`/api/voice/exotel/status/` in `WEBHOOKS`, exact
+  prefix), `worker/index.ts` (voice loop behind `KRIYA_VOICE_ENABLED=1`, own
+  `voiceRunning` map and `VOICE_CONCURRENCY`, errors caught; idle without a
+  telephony provider — none is real until Phase 5), `lib/config.ts`
+  (`KRIYA_PHONE_HASH_KEY` in `SECRETS`: web hashes numbers at draft time),
+  `lib/env.ts` (`KRIYA_PHONE_HASH_KEY` optional on web). `render.yaml`
+  unchanged this phase (no live calls; adding a secret to `kriya-web` would
+  prompt on Blueprint sync — Phase 5).
+- Tests first: `tests/db/voice-queue.test.ts` (T-Q-01), `tests/voice/
+  schedule.test.ts`, `tests/voice/pipeline.test.ts` (T-Q-02…08, T-WH-01…03,
+  T-COST-01, S02, S05, S15, S16, T-WRK-01), `tests/voice/webhook.test.ts`
+  (route + T-WH-04 on `proxy`), `tests/voice/actions.test.ts`. T-IMP-01 is
+  re-run (it already walks the worker's graph).
+- Risks: (1) D1 = 0 — a dial only after its attempt row commits as
+  `requested`, and an attempt that can't be proven is never redialled for a
+  third party. (2) F6 — the voice loop can't take agent task slots. (3)
+  Holidays: SECURITY §5 says national holidays are off, but there's no
+  holiday list in the repo and I won't invent one; Sundays only, recorded as
+  open. (4) Outreach window end isn't specified: `report_at` if set, else
+  `not_before` + 24 h, recorded. (5) HTTP 429 handling is left to the Exotel
+  adapter (Phase 5): the mock doesn't produce it.
+- Questions: none blocking.
+
+**Session result (2026-10-20 ~13:40 IST, Claude Code / Opus 5.5):** `COMPLETE`
+
+- Created: `supabase/migrations/20261021000000_voice_queue.sql` +
+  `supabase/rollback/20261021000000_voice_queue.down.sql`;
+  `lib/voice/schemas.ts`, `schedule.ts`, `tasks.ts`, `run-call.ts`,
+  `verify.ts`; `actions/voice.ts`; `app/api/voice/exotel/status/[token]/route.ts`;
+  tests `tests/db/voice-queue.test.ts`, `tests/voice/schedule.test.ts`,
+  `pipeline.test.ts`, `webhook.test.ts`, `actions.test.ts`.
+- Changed: `proxy.ts` (one exact prefix in `WEBHOOKS`), `worker/index.ts`
+  (`startVoice()`: logs that no calls are placed — see deviation 1),
+  `lib/config.ts` (`KRIYA_PHONE_HASH_KEY` in `SECRETS`), `lib/env.ts` (same,
+  optional on web), `lib/voice/providers.ts` + `mock.ts` (optional
+  `findByAttempt` for recovery), `db/schema.ts` (four `…E164` columns named
+  explicitly, F16), `tests/db/voice-rls.test.ts` (T-DB-02 uses Drizzle's own
+  casing, F16), `tests/db/voice-fixtures.ts` (unique token hashes per
+  attempt, needed by the new unique indexes),
+  `docs/voice-assistant/CHANGE_IMPACT_AND_SAFETY.md` (F16, F17).
+- Database: unique indexes on both token hashes; `claim_voice_call` (global
+  advisory lock, global cap, one live outreach call per person, due by DB
+  `now()`), `heartbeat_voice_call`, `recover_voice_calls` (expires
+  approvals and unconfirmed tasks; takes over lapsed leases). New edges
+  `task authorized → failed`, `call scheduled → exhausted`, `call dialing →
+  blocked` (F17). Functions return ids only, so the voice-core rollback still
+  works with the queue applied (T-MIG-01 green).
+- Tests (all pass): T-Q-01 (claim: due times, cancel, per-person outreach,
+  report calls not held up, global cap, two claims differ, not callable by a
+  person), heartbeat, recovery, queue down/up; schedule (calling hours,
+  Saturday → Monday, 15-min retry, quiet hours across midnight and in other
+  zones incl. a DST change, report window, retries never in quiet hours);
+  pipeline: T-Q-02 (attempt `requested` when `placeCall` runs), T-Q-03/S16
+  (crash after requested, provider has it → reconciled, one `placeCall`),
+  T-Q-04 (no record → `unknown` → call and task `needs_owner`, no redial),
+  T-Q-05 (retry moved to the next opening; window closed → exhausted), T-Q-06
+  (scheduled cancel at once; ringing call hung up within a heartbeat), T-Q-07
+  (same key → same task; confirm twice → one set of calls), T-Q-08 (daily
+  limit; suppression at confirm and at dial; 3/day per number → deferred to
+  tomorrow without an attempt), S02, S05, S15, T-WH-01…03, T-COST-01
+  (telephony rows, cost null), T-WRK-01 (agent `claim_task` works while a
+  voice call is dialing; a throwing provider doesn't stop the voice loop),
+  rejected/timeout `placeCall`, emergency stop, voice access, number
+  validation, quiet-hours and unverified-number refusals, another person's
+  task → `not_found`; webhook route (404, 413, 400, 200) and **T-WH-04**
+  (exact prefix; look-alike paths and other POSTs still 403); actions
+  (session identity only, user id in input ignored, field errors, rate
+  limits, stop never rate limited). T-IMP-01 re-run green.
+- **Acceptance (D1 = 0):** in every fault case above (crash after
+  `requested` with and without a provider record, duplicate and
+  out-of-order webhooks, forged final webhook, timeout, cancel mid-ring) the
+  mock records at most one `placeCall` per intended attempt.
+- `npm run check` (2026-10-20 ~13:35): typecheck, lint pass, "All matched
+  files use Prettier code style!", **Test Files 90 passed | 3 skipped (93),
+  Tests 1031 passed | 26 skipped (1057)**, exit 0 (976 before + 55 new).
+  `npm run build`: exit 0 (route `ƒ /api/voice/exotel/status/[token]`).
+- Deviations: (1) **The worker doesn't start `voiceLoop` yet.** The loop
+  (own map, concurrency, errors caught) is in `lib/voice/run-call.ts` and
+  tested; but no real telephony provider exists before Phase 5, and running
+  the mock in a deployed worker would fake calls (D-12: refuse, never fake).
+  `KRIYA_VOICE_ENABLED=1` logs that no calls are placed. Phase 5 starts the
+  loop with the Exotel provider and adds `VOICE_CONCURRENCY`. (2) Phase 1
+  defect fixed here (F16). (3) Three new edges (F17) and a strict
+  `transition()`. (4) Not handled: HTTP 429 from the provider (Exotel adapter,
+  Phase 5); national holidays (no list exists; Sundays only); a stale
+  `connected` stream (kriya-voice heartbeat, Phase 4). Outreach window = report
+  time, else 24 h (ponytail-marked default). (5) `render.yaml` unchanged: no
+  live calls, and a new secret on `kriya-web` would prompt on Blueprint sync.
+- Owner items: add `KRIYA_PHONE_HASH_KEY=` to `.env.example` (B9; web; 32+
+  random bytes) when voice is deployed.
+- **Next exact action:** Phases 4 (dialogue, STT/TTS/LLM, outcome extraction,
+  verification) and 7 (UI on these actions) can now run, in parallel with
+  each other per IMPLEMENTATION_PLAN §1. Phase 4 must: move attempts
+  `answered → connected` (actor `voice`) and calls `dialing → in_call` when
+  kriya-voice takes the stream, heartbeat `stream_heartbeat_at` and add
+  stale-stream recovery, write `call_outcomes` so `in_call → settled` and
+  `awaiting_report` follow from an accepted outcome, and load a policy
+  bundle for `call_attempts.policy_version` (now `"baseline"`).
+
 ## Phase 4 — Dialogue, speech, outcomes, verification
 
-**Status:** NOT_STARTED
+**Status:** IN_PROGRESS (2026-10-20, Claude Code; free L-text part this session, paid benchmark blocked on B2/B6)
 
 - **Objective:** a bounded English dialogue engine with barge-in, outcome
   extraction and verification, proven on L-text (free) and benchmarked on
@@ -272,6 +615,148 @@ idempotency and recovery are proven.
 - **Exit:** `npm run check` passes; benchmark recorded; thresholds met or the
   shortfall recorded as a blocker (no rounding up).
 - **Blockers:** B2, B6 for the benchmark.
+
+**Session plan (2026-10-20 05:59 IST by the machine clock, Claude Code / Opus
+5.5, `main` in place, uncommitted; Phases 1–3 are uncommitted too):**
+
+- Preflight: Phase 3 COMPLETE; board empty; decisions D-04, D-09, D-10, D-11,
+  D-14, D-17 Approved. `npm run check` before the first edit: typecheck, lint,
+  format pass; **Test Files 90 passed | 3 skipped (93), Tests 1031 passed | 26
+  skipped (1057)**, exit 0. `git status`: only Phases 1–3's own changes.
+- **Conflict found and decided by the owner (2026-10-20, this session):**
+  AGENTS.md voice rule 9 / D-14 put `createCallTools()` in
+  `lib/agent/tools.ts`, run by `kriya-voice`; Phase 2's boundaries test says
+  `kriya-voice` loads nothing of `lib/agent/`, and importing `tools.ts` would
+  load `lib/secrets.ts` + `lib/connectors.ts` into the voice process. Owner
+  chose: new `lib/agent/call-tools.ts` (only `ai` + `zod`), re-exported from
+  `tools.ts`; the boundaries test narrows to "only `lib/agent/call-tools.ts`";
+  AGENTS.md rule 9 and D-14 wording updated.
+- Create: `lib/voice/policy/v1.ts` (the bundle: prompts, wording, thresholds,
+  lexicons; fixed guards stay in code), `lib/voice/languages.ts` (`en-IN`:
+  disclosure, time/date normalizer, affirmative/hedge/negative lexicons, OTP
+  and card redaction), `lib/voice/dialogue.ts` (state machine §3, guards,
+  budgets, escalation once, fixed replies for §8), `lib/agent/call-tools.ts`,
+  `lib/voice/outcome.ts` (observed/interpreted schemas, extraction with
+  escalation, max 2 tries), `lib/voice/session.ts` (one connected call: STT →
+  dialogue → TTS, barge-in with `clear`, marks → `played_ms`, turns, heartbeat,
+  usage rows), `lib/voice/spec.ts` (LLM spec extraction for drafts),
+  `scripts/voice-eval.ts`, scenario files, tests.
+- Change: `lib/agent/tools.ts` (`createProposeCallTool`, re-export
+  `createCallTools`; `KriyaTools` gains only `propose_call`), `lib/agent/
+  run-task.ts` (voice availability + the tool when available),
+  `lib/agent/instructions.ts` (capability line only with voice),
+  `components/thread/tool-call.tsx`, `components/workbench/activity.tsx`,
+  `actions/voice.ts` (`extractCallDraft`), `lib/config.ts` (`voice.model`,
+  `voice.escalationModel`), `package.json` (`voice:eval`), `voice/index.ts`
+  (played-chunk count; sessions only when speech providers exist),
+  `lib/voice/run-call.ts` (`loadAttemptContext`, stale-stream recovery, bundle
+  version on attempts), `lib/voice/verify.ts` (observed rows, settle `in_call`
+  from an accepted / needs-review outcome, outcome checks),
+  `lib/voice/tasks.ts` (export voice availability), `tests/voice/
+  boundaries.test.ts` (owner-approved narrowing).
+- Tests first: T-NORM-01, T-DLG-01…07, T-VER-01…03 and 08 (04 is Phase 6's
+  report delivery; 05–07 already pass as T-SM-04/05), T-AGT-01, T-AGT-02,
+  T-POL-01, T-IMP-01 extended, T-SEC-05; L-text scenarios on the scripted
+  model.
+- Not this session: STT/TTS vendor adapters (`lib/voice/stt|tts/<vendor>.ts`)
+  and the paid benchmark. Vendor choice is what the benchmark decides (B6);
+  writing adapters against APIs I can't call would be guessing. The session
+  code runs on the provider interfaces (mocks in tests).
+- Risks: (1) the stream may start before the `answered` webhook, and only
+  `answered → connected` exists → the session waits briefly for `answered`
+  (to verify on Exotel, X9). (2) `voice_tasks.result` has no
+  `callback_requested` → mapped to `unclear` on the task, kept in the outcome.
+  (3) Extraction runs in `kriya-voice` at stream end (and in worker recovery),
+  not inside the webhook request (a model call there would slow the provider's
+  retry clock): a deviation from CONVERSATION §7, recorded. (4) Closing the
+  stream is how Tavi ends a call; whether Exotel hangs up then is unverified
+  (Phase 5).
+- Questions: none open (call-tools location decided above).
+
+**Session result (2026-10-20 06:47 IST by the machine clock, Claude Code /
+Opus 5.5):** `IN_PROGRESS`. Everything that can be built and proven without
+vendor keys or spend is done and green; the exit needs the paid benchmark
+(B2, B6) and the STT/TTS adapters it chooses.
+
+- Created: `lib/voice/policy/v1.ts` (bundle: prompts, wording, endpointing and
+  confidence thresholds only), `lib/voice/languages.ts` (`en-IN`: fixed lines,
+  time/date normalizer, lexicons, OTP/card/phone redaction), `lib/voice/
+  dialogue.ts` (state machine, guards, budgets, escalation once,
+  `resultFromNotes`), `lib/agent/call-tools.ts`, `lib/voice/outcome.ts`
+  (observed/interpreted, extraction with escalation, deterministic checks),
+  `lib/voice/session.ts` (STT → dialogue → TTS, barge-in with `clear`, marks →
+  `played_ms`, turns, heartbeat, cancel, max duration, opt-out suppression,
+  llm/tts/stt usage rows), `lib/voice/spec.ts` (draft from free text),
+  `scripts/voice-eval.ts`, scenarios `S03 S04 S06 S07 S08 S09 S10 S11 S22 S23
+  S24 S28` (+ variants and dialogue gold on `S01`); tests `normalize`,
+  `dialogue`, `outcome`, `session`, `agent`, `spec`, `draft-action`
+  (+ `fair-model.ts` helper).
+- Changed: `lib/agent/tools.ts` (`createProposeCallTool`, re-export of
+  `createCallTools`; `KriyaTools` gains only `propose_call`),
+  `lib/agent/run-task.ts` (voice availability → tool + capability),
+  `lib/agent/instructions.ts` (one line only with voice and writes),
+  `components/thread/tool-call.tsx`, `components/workbench/activity.tsx`,
+  `actions/voice.ts` (`extractCallDraft`), `lib/voice/{verify,run-call,
+  tasks,schemas}.ts`, `voice/index.ts` (`playedChunks`; streams refused while
+  no speech vendor exists), `package.json` (`voice:eval`),
+  `tests/voice/boundaries.test.ts` (new case, existing cases unchanged),
+  `AGENTS.md` rule 9 and D-14 (F18), `CHANGE_IMPACT_AND_SAFETY.md` (F18–F23).
+  Not changed: `lib/config.ts` (no code reads a `voice.*` model setting until
+  vendors and the live service are wired; T-CFG-01 moves with them).
+- Tests (all pass): **T-NORM-01** (59 cases); **T-DLG-01** (fixed disclosure,
+  repeated when talked over), **-02** (tools outside the state, a tool that
+  doesn't exist), **-03** (hedges, wrong read-back, model-only yes), **-04**
+  (outside window/date/authority → proposal + "I'll check"; a time the callee
+  never said is refused), **-05** (barge-in on the stream: `clear` sent,
+  synthesis aborted, turn `interrupted` with `played_ms`), **-06** (80 %
+  duration, 2 tools/turn, escalation once then polite close, 40 model turns,
+  3 turns without progress), **-07** (injection, OTP never stored or shown to
+  the model, opt-out, bot question, emergency); **T-VER-01, -02, -08** plus
+  commitment, citation and contradiction checks (T-VER-03 and 05–07 already
+  pass from Phases 1 and 3; T-VER-04 is Phase 6's report delivery);
+  **T-AGT-01**, **T-AGT-02** (prompt byte-identical without voice);
+  **T-POL-01** (attempts stamped `v1`; wording/thresholds from the bundle);
+  **T-SEC-05**; **T-IMP-01** extended; end to end on mocks: S01 (dial →
+  webhooks → stream → dialogue → outcome accepted → task `completed`/`agreed`,
+  usage llm 2 · tts 4 · stt 1 · telephony 1), S13, S17, S24. L-text: 13
+  scenario files × 5–6 phrasings on the scripted model, all pass.
+- `npm run check` (2026-10-20 ~06:45): typecheck pass, lint 0 errors (1
+  warning: an unused `eslint-disable` in `tests/voice/session.test.ts`,
+  removed afterwards; `npx eslint` on that file clean), "All matched files use
+  Prettier code style!", **Test Files 97 passed | 3 skipped (100), Tests 1223
+  passed | 26 skipped (1249)**, exit 0 (1031 before + 192 new; the existing
+  tests unchanged). `npm run build`: exit 0.
+- Exit criteria: `npm run check` ✔. **Benchmark ✘ not run** (B-STT, B-TTS,
+  B-LLM need vendor keys, an OpenRouter key and the owner's go-ahead on spend:
+  B2, B6). **Thresholds (EVALUATION_PLAN §4 Phase 4 column) not measured**: the
+  scripted model proves the code paths, not O1/O2/T1/L1/L2 for a real model;
+  no number is claimed.
+- Deviations: (1) No STT/TTS vendor adapters: the benchmark chooses the
+  vendors, and adapters written against APIs I can't call would be guesses.
+  (2) Extraction runs in `kriya-voice` at stream end and in worker recovery,
+  not in the webhook (F23). (3) `extractCallDraft` is a new action that fills
+  the card; `draftCall` still takes the completed card, because a task row
+  needs a number (API §2 said `draftCall` takes text). (4) `end_call` is
+  allowed in every state after the opening (its reasons include `declined`
+  and `wrong_person`), wider than CONVERSATION §3's table. (5) Message and
+  question goals close after the callee's reply, without a model turn
+  (ponytail-marked). (6) A bare time ("at 3") is confirmed through the
+  read-back ("…at 3 PM?") rather than a separate AM/PM question. (7)
+  Barge-in fires on the first recognised words, not on raw speech energy
+  (ponytail-marked; tune in L2). (8) The stream may arrive before the
+  answered webhook: the session waits up to 5 s, then refuses (to check on
+  Exotel, X9). (9) Findings F19, F20, F22 fixed here.
+- Not tested: real STT/TTS/LLM vendors; real Exotel stream framing and event
+  order; whether closing the stream hangs up an Exotel call (Phase 5);
+  `voice:eval -- --text --model …` was written but **not run** (paid).
+- **Next exact action:** owner provides an OpenRouter key and approves the
+  spend for `npm run voice:eval -- --text --model deepseek/deepseek-v4-flash`
+  (L-text on a real model, B-LLM part); then chooses 2–3 STT/TTS vendors and
+  provides keys (B6) so the next session can write `lib/voice/stt|tts/
+  <vendor>.ts` from their docs, run B-STT/B-TTS per EVALUATION_PLAN §3, record
+  `docs/voice-assistant/benchmarks/<date>.md`, add `voice.stt`/`voice.tts`/
+  `voice.model` settings (T-CFG-01) and wire `runSession` in `voice/index.ts`.
+  Phase 7 (UI) can start now on these actions.
 
 ## Phase 5 — Controlled live outbound calls
 
@@ -325,7 +810,7 @@ idempotency and recovery are proven.
 
 ## Phase 7 — Mobile UI
 
-**Status:** NOT_STARTED
+**Status:** IN_PROGRESS (2026-10-20, Claude Code)
 
 - **Objective:** the screens in UX_AND_INTERACTION_SPEC.md.
 - **Read first:** UX_AND_INTERACTION_SPEC.md; API_AND_EXECUTION_CONTRACTS.md §2, §4.
@@ -346,6 +831,107 @@ idempotency and recovery are proven.
 - **Acceptance:** the canonical scenario can be created, confirmed, followed
   and reviewed on a phone browser (mock provider).
 - **Exit:** `npm run check` + `npm run build`; screenshots listed here.
+
+**Session plan (2026-10-20 06:53 IST by the machine clock, Claude Code / Opus
+5.5, `main` in place, uncommitted):**
+
+- Preflight: Phase 3 actions exist; Phase 4's draft extraction exists; D-18
+  approved this session; `npm run check` before the first edit: **1223 passed
+  | 26 skipped**, exit 0. Board: only this row.
+- Scope (owner, 2026-10-20): everything except what needs Phase 6 — the
+  "Phone & calls" settings section in `/account`, owner-number verification,
+  report times on new calls and report delivery in the outcome. Those wait for
+  Phase 6.
+- Create: `queries/voice.ts` (list and one task, through `withUser`, attempts
+  by granted columns only; result lines and failure texts from §5–6 computed
+  on the server), `app/(workspace)/calls/page.tsx`, `calls/new/page.tsx`,
+  `calls/[taskId]/page.tsx`, `components/voice/presence.tsx` (§11.1, CSS only
+  from existing keyframes), `components/voice/new-call.tsx` (dictation → draft
+  card → `draftCall`), `components/voice/confirm-card.tsx` (§3/§11.3),
+  `components/voice/controls.tsx` (stop, stop all, live refresh, delete
+  transcript), `app/api/voice/tasks/[taskId]/stream/route.ts` (SSE, §4 API).
+- Change: `proxy.ts` (`/calls` in `PROTECTED`, `/api/voice/tasks` in
+  `PROTECTED_API`), `components/workspace/command-palette.tsx` and
+  `app/(workspace)/home/page.tsx` (entry only with voice access; a sixth
+  bottom tab doesn't fit at 360 px, so `bottom-nav.tsx` is unchanged),
+  `actions/voice.ts` (`deleteTranscript`, `voiceEntry`).
+- Tests first: T-UI-01 (card from the server payload; edit → `stale_approval`),
+  result lines never overstate, list sections, SSE route ownership, proxy
+  prefixes. T-UI-02/03 need a browser on the running app.
+- Risks: (1) T-UI-02 (360 px, screenshots) and the real-Android mic check need
+  the app running against a database with the voice migrations; none is
+  applied to Supabase (B2, F12) and I won't connect to it — recorded as not
+  done unless a local run is possible. (2) The level ring uses interim-result
+  pulses, not `getUserMedia` (the Android conflict is unverified). (3) No
+  `createFollowUp`, "Is this right?" (needs Phase 10's `voice_feedback`) or
+  draft field editing (`updateDraft` not built): left out and recorded.
+- Questions: none open.
+
+**Session result (2026-10-20 07:12 IST by the machine clock, Claude Code /
+Opus 5.5):** `IN_PROGRESS`. The screens, stream and server logic are built
+and tested. The exit needs browser checks on the running app (T-UI-02/03,
+screenshots, §11.7 bars, the real-Android mic check); none could run here.
+
+- Created: `queries/voice.ts`, `app/(workspace)/calls/page.tsx`,
+  `calls/new/page.tsx`, `calls/[taskId]/page.tsx`,
+  `app/api/voice/tasks/[taskId]/stream/route.ts`, `components/voice/
+  presence.tsx`, `confirm-card.tsx`, `controls.tsx`, `new-call.tsx`,
+  `tests/voice/ui.test.ts`.
+- Changed: `proxy.ts` (`/calls/` in `PROTECTED`, `/api/voice/tasks/` in
+  `PROTECTED_API`; exact prefixes), `app/(workspace)/home/page.tsx` ("Phone
+  calls" row with voice access only), `components/workspace/
+  command-palette.tsx` ("Phone calls" with voice access only),
+  `actions/voice.ts` (`deleteCallTranscript`, `voiceEntry`),
+  `lib/voice/tasks.ts` (`deleteTranscript`, through `withUser`),
+  `docs/voice-assistant/DECISIONS.md` (D-18 Approved),
+  `CHANGE_IMPACT_AND_SAFETY.md` (F24). Unchanged: `bottom-nav.tsx` (a sixth
+  tab doesn't fit at 360 px, so §1 is decided as Home + palette),
+  `globals.css`, `package.json` (no dependency, §11.7).
+- Built: `/calls` (Live / Needs you / Upcoming / Done, sticky headers, Stop
+  all, Mascot empty state); `/calls/new` (tap-to-dictate presence disc reusing
+  `useDictation`, editable text, on-device/speech-service note, unsupported
+  and mic-blocked messages, server draft → a question for each missing field,
+  `draftCall`); `/calls/[taskId]` (draft → "Review and confirm" → card from
+  the server's payload with masked number, "Show all" required, countdown,
+  "Listen to the opening" via `speechSynthesis` on tap, `btn-liquid` confirm,
+  `vibrate(12)` where supported; per-call status lines; live stream with
+  opt-in captions; result hero with "Verified by call records" / "Needs your
+  review"; agreed/suggested/questions with "heard in turn n →" links;
+  transcript with "(cut off)"; delete transcript; Stop / Stop and hang up);
+  SSE stream per API §4 (owner only, 1 s live / 5 s idle, 10 min).
+- Tests (`tests/voice/ui.test.ts`, 10, all pass): **T-UI-01** (card renders
+  from the server's payload; full number hidden; confirm disabled until shown;
+  declining and asking again makes the old card `stale_approval`); list
+  sections and lines; "agreed" only from an accepted outcome; another
+  person's calls invisible (RLS); outcome evidence and cut-off turns; §6
+  failure text; stream 401/404 for signed-out / someone else / bad id, first
+  event is the task; proxy: `/calls/…` → login, stream API → 401, `/callsx`
+  untouched. The boundaries test still passes (no client file imports
+  `lib/voice`).
+- `npm run check` (2026-10-20 ~07:10): typecheck, lint, "All matched files use
+  Prettier code style!", **Test Files 98 passed | 3 skipped (101), Tests 1233
+  passed | 26 skipped (1259)**, exit 0. `npm run build`: exit 0; routes
+  `ƒ /calls`, `ƒ /calls/new`, `ƒ /calls/[taskId]`.
+- **Not done (exit open):** T-UI-02 (360 px, 44 px targets, screenshots),
+  T-UI-03 (mic denied / unsupported in a real browser), §11.7 bars (60 fps
+  trace, layout shift, dark/light, reduced motion, screen reader, JS size vs
+  the largest route), the real-Android check of `getUserMedia` with Web Speech.
+  All need the app running against a database with the voice migrations; none
+  is applied to Supabase (B2, F12), and I didn't connect to it.
+- Deferred by the owner: "Phone & calls" in `/account`, owner-number
+  verification, report times on new calls, report delivery in the outcome
+  (Phase 6). Left out: "Draft a follow-up call" (`createFollowUp` not built),
+  "Is this right?" (needs Phase 10's `voice_feedback`), editing a draft's
+  fields (`updateDraft` not built; the card's second button is "Not yet",
+  back to draft), the "Calls" row on `/usage` (Phase 8).
+- Deviations: the level ring pulses on interim results, not a microphone level
+  (§11.2 fallback; the Android conflict is unverified); the draft editor lives
+  on `/calls/new` (a task row needs a number, Phase 4 deviation 3).
+- **Next exact action:** apply the voice migrations to a staging Supabase
+  project (owner: B2/B10/F12) or run a local Supabase, then open `/calls`,
+  `/calls/new` and a task at 360 px in light and dark, record screenshots and
+  the §11.7 measurements here, and check the mic on a real Android phone.
+  Then Phase 6 adds the deferred parts.
 
 ## Phase 8 — Cost, limits, monitoring
 
@@ -430,7 +1016,12 @@ idempotency and recovery are proven.
 
 ## Owner approvals
 
-_None yet._
+| Date (IST) | Approval | How recorded |
+| --- | --- | --- |
+| 2026-10-20 | **Approved D-01 … D-16** | Owner, in the Claude Code session, wrote: "I approve D-01 to D-16, start Phase 1" |
+| 2026-10-20 | **Approved D-17** | Owner, same session, answering the agent's question ("Approve D-17 (Recommended)") |
+
+| 2026-10-20 | **Approved D-18**; Phase 7 builds everything except the parts that need Phase 6 (the "Phone & calls" settings, owner-number verification, report delivery), which are deferred until Phase 6 | Owner, in the Claude Code session, answering the agent's questions ("Approve D-18 (Recommended)"; "Build the rest, defer those (Recommended)") |
 
 ---
 

@@ -168,3 +168,27 @@ services:
         value: "3"
       - key: BROWSER_SESSION_MAX_SECONDS
         value: "900"
+
+  # The voice service (docs/voice-assistant, D-03): accepts the telephony
+  # provider's media WebSocket for connected calls; never places calls. Inert
+  # until the worker places calls (voice phases 3 and 5). On a deploy it stops
+  # taking streams and lets live calls finish, up to the 300 s below.
+  - type: web
+    name: kriya-voice
+    runtime: node
+    region: singapore
+    buildCommand: npm ci
+    startCommand: npm run voice
+    healthCheckPath: /health
+    maxShutdownDelaySeconds: 300
+    envVars:
+      - fromGroup: kriya-shared
+      # Reads only the connected stream's own attempt
+      - key: DATABASE_URL
+        sync: false
+      # Basic auth on the media WebSocket: at least 32 random characters,
+      # also given to the provider in the stream URL (voice phase 5)
+      - key: KRIYA_VOICE_STREAM_SECRET
+        sync: false
+      - key: DB_POOL_MAX
+        value: "4"

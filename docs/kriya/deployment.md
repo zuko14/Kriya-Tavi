@@ -292,6 +292,25 @@ unpriced until a hosting cost basis is entered.
 `no-referrer`, and shows only the snapshot made when the person shared.
 Each render is recorded in `resource_usage` as `pdf_render`, unpriced.
 
+### Voice service (`kriya-voice`, not yet in use)
+
+A Render **web service** in `render.yaml` (voice phase 2,
+`docs/voice-assistant/`). It accepts the telephony provider's media
+WebSocket for a connected call and never places calls. Nothing places calls
+yet (voice phases 3 and 5), so it sits idle; leaving it out of the Blueprint
+changes nothing else.
+
+| Variable | Secret | Required | Notes |
+| --- | :-: | :-: | --- |
+| `DATABASE_URL` | ✓ | ✓ | Same pooler URL as the worker; it reads only the connected stream's attempt |
+| `KRIYA_VOICE_STREAM_SECRET` | ✓ | ✓ | At least 32 random characters (same command as `KRIYA_BROWSER_SECRET`). Basic auth on `wss://…/media/exotel`; given to the provider in the stream URL in voice phase 5 |
+| `DB_POOL_MAX` | | | `4` in `render.yaml` |
+
+It starts with `npm run voice`, answers `GET /health` with
+`{ ok, accepting, calls }`, and on a deploy (SIGTERM) stops taking new
+streams and waits for live calls to end, up to `maxShutdownDelaySeconds:
+300` (Render's maximum), before closing them.
+
 ## 8. Verify
 
 - [ ] `GET /api/health` returns `{"ok":true}`.

@@ -79,6 +79,7 @@ const TOOL_LABELS: Record<string, string> = {
   skill_run: "Ran a saved skill",
   ledger_list: "Looked at your accounts",
   ledger_draft_entry: "Drafted ledger entries for your review",
+  propose_call: "Drafted a phone call for you to confirm",
   invoice_draft: "Drafted an invoice",
   facts_lookup: "Looked up an official fact",
   obligation_add: "Added a deadline to your Radar",

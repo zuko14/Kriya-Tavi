@@ -100,7 +100,7 @@ code doesn't depend on that choice.
    credentials and uses that answer (the verification step of
    `OutcomeVerifier`). If Exotel later documents signatures, verify them too.
 2. **Stream authentication.** Use both Basic auth in the URL (a static secret
-   from `EXOTEL_STREAM_SECRET`) and a per-attempt one-time token in the custom
+   from `KRIYA_VOICE_STREAM_SECRET`) and a per-attempt one-time token in the custom
    parameters. `kriya-voice` accepts the stream only if the token matches an
    attempt in state `initiated`/`ringing`/`answered`, hasn't been used, and
    `start.call_sid` equals the attempt's provider call id. Request IP

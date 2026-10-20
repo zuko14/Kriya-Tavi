@@ -1,0 +1,17 @@
+{
+  "id": "S15-duplicate-out-of-order",
+  "provider_script": [
+    { "status": "ringing", "atMs": 0 },
+    { "status": "answered", "atMs": 5000 },
+    { "status": "ringing", "atMs": 0 },
+    { "status": "answered", "atMs": 5000 },
+    { "status": "completed", "atMs": 45000 },
+    { "status": "completed", "atMs": 45000 }
+  ],
+  "billable_seconds": 40,
+  "gold": {
+    "connection_status": "connected",
+    "final_provider_status": "completed",
+    "distinct_events": 3
+  }
+}

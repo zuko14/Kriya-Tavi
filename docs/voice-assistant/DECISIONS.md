@@ -1,7 +1,7 @@
 # Kriya Tavi voice: architecture decisions
 
 Each decision has an id that the other documents and `status.md` refer to.
-Status is **Proposed** until the owner approves it; a coding agent must not
+Status is **Proposed** until the owner approves it (D-01…D-18 approved by the owner on 2026-10-20, recorded in `status.md`); a coding agent must not
 start a phase whose decisions are still Proposed without that approval being
 recorded in `status.md`.
 
@@ -10,24 +10,24 @@ in `COMPETITOR_RESEARCH.md` and `TELEPHONY_PROVIDER_ASSESSMENT.md`.
 
 | Id   | Decision                                                                           | Status   |
 | ---- | ---------------------------------------------------------------------------------- | -------- |
-| D-01 | Hybrid build: Kriya's own TypeScript orchestration, managed telephony/STT/TTS      | Proposed |
-| D-02 | Exotel primary, Plivo secondary, Twilio excluded for India                         | Proposed |
-| D-03 | A new Render web service, `kriya-voice`, terminates call audio                     | Proposed |
-| D-04 | Chained STT → LLM → TTS; speech-to-speech deferred                                 | Proposed |
-| D-05 | Voice work gets its own tables and queue, beside `kriya.tasks`                     | Proposed |
-| D-06 | State transitions only through SQL functions with an allow-list                    | Proposed |
-| D-07 | Owner reminders are phone calls only; no fallback channel                          | Proposed |
-| D-08 | "Delivered" means the full report was played on a connected call                   | Proposed |
-| D-09 | Every call to a third party needs explicit in-app confirmation                     | Proposed |
-| D-10 | Recording off; transcripts as text with a retention limit                          | Proposed |
-| D-11 | English first; language is data, not code                                          | Proposed |
-| D-12 | Live calling behind three switches and an allow-list                               | Proposed |
-| D-13 | Owner number verified by a call with a keypad code, not SMS                        | Proposed |
-| D-14 | In-call tools live in `lib/agent/tools.ts` as a separate, bounded set              | Proposed |
-| D-15 | Phase order changed: durability and dialogue on mocks before live calls            | Proposed |
-| D-16 | Automated calls are treated as A2P under TRAI's Third Amendment until counsel says otherwise | Proposed |
-| D-17 | Self-improvement is a governed loop: cases → regression scenarios → gated, versioned, rolled-out policy changes; never autonomous | Proposed |
-| D-18 | Premium voice UI built only from existing components and tokens; no new UI dependency | Proposed |
+| D-01 | Hybrid build: Kriya's own TypeScript orchestration, managed telephony/STT/TTS      | Approved |
+| D-02 | Exotel primary, Plivo secondary, Twilio excluded for India                         | Approved |
+| D-03 | A new Render web service, `kriya-voice`, terminates call audio                     | Approved |
+| D-04 | Chained STT → LLM → TTS; speech-to-speech deferred                                 | Approved |
+| D-05 | Voice work gets its own tables and queue, beside `kriya.tasks`                     | Approved |
+| D-06 | State transitions only through SQL functions with an allow-list                    | Approved |
+| D-07 | Owner reminders are phone calls only; no fallback channel                          | Approved |
+| D-08 | "Delivered" means the full report was played on a connected call                   | Approved |
+| D-09 | Every call to a third party needs explicit in-app confirmation                     | Approved |
+| D-10 | Recording off; transcripts as text with a retention limit                          | Approved |
+| D-11 | English first; language is data, not code                                          | Approved |
+| D-12 | Live calling behind three switches and an allow-list                               | Approved |
+| D-13 | Owner number verified by a call with a keypad code, not SMS                        | Approved |
+| D-14 | In-call tools live in `lib/agent/tools.ts` as a separate, bounded set              | Approved |
+| D-15 | Phase order changed: durability and dialogue on mocks before live calls            | Approved |
+| D-16 | Automated calls are treated as A2P under TRAI's Third Amendment until counsel says otherwise | Approved |
+| D-17 | Self-improvement is a governed loop: cases → regression scenarios → gated, versioned, rolled-out policy changes; never autonomous | Approved |
+| D-18 | Premium voice UI built only from existing components and tokens; no new UI dependency | Approved |
 
 ---
 
@@ -191,8 +191,10 @@ Codes expire in 10 minutes, are stored hashed and allow 3 tries.
 ## D-14 In-call tools
 
 **Decision.** The live dialogue model gets a small, separate tool set,
-`createCallTools()` in `lib/agent/tools.ts` (AGENTS.md: agents act only through
-tools there). These tools only write Kriya state for the current call attempt
+`createCallTools()` in `lib/agent/call-tools.ts`, re-exported from
+`lib/agent/tools.ts` (AGENTS.md: agents act only through tools there). Its own
+file so `kriya-voice` loads none of the agent tool belt's connector and token
+code (owner decision 2026-10-20, voice phase 4; F18). These tools only write Kriya state for the current call attempt
 (`note_proposed_time`, `note_agreement`, `note_question_for_owner`,
 `note_wrong_person`, `note_callback_request`, `end_call`; full list in
 CONVERSATION_AND_VERIFICATION.md §5). None places a call, sends a message or reads other data. The call

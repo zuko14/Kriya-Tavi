@@ -59,6 +59,7 @@ import {
   createMemoryTools,
   createMemoryToolsV2,
   createLedgerTools,
+  createProposeCallTool,
   createRadarTools,
   createSkillTools,
   createWebTools,
@@ -87,6 +88,7 @@ import {
 } from "@/lib/models"
 import { isSecretsConfigured } from "@/lib/secrets"
 import { undoColumns } from "@/lib/undo"
+import { voiceAvailable } from "@/lib/voice/tasks"
 import { isWebConfigured } from "@/lib/web"
 
 export type WorkerContext = {
@@ -386,6 +388,8 @@ export async function runTask(task: Task, ctx: WorkerContext) {
   const watchers = (await getSetting("agents.watchers")) === "on"
   const radar = (await getSetting("agents.radar")) === "on"
   const facts = (await getSetting("agents.facts")) === "on"
+  // Voice phase 4: propose_call and its prompt line, with voice access only (F4, F5)
+  const voice = await voiceAvailable(task.userId)
   // The agent browser (A4): switch on, plan minutes, kriya-browser configured
   const provider =
     (await getSetting("agents.browser")) === "on" && (plan?.browserMinutes ?? 0) > 0
@@ -453,6 +457,7 @@ export async function runTask(task: Task, ctx: WorkerContext) {
       writes: true,
       // Absent, not false, with the switch off: the prompt stays byte-identical
       ...(inbox && { citations: true }),
+      ...(voice && { voice: true }),
     }
     const env: ToolEnv = {
       current: () => current,
@@ -666,6 +671,7 @@ export async function runTask(task: Task, ctx: WorkerContext) {
       // A9: replay reaches the rest of this belt, so it can do no more than it
       ...(skillTools ? createSkillTools(env, () => tools, browser) : {}),
       ...(ledgerTools ? createLedgerTools(env) : {}),
+      ...(voice ? createProposeCallTool(env) : {}),
       ...(thread.squad ? createAssignTool(runAssignments) : {}),
       ...(thread.squad
         ? createDelegateTool((targetId, handoverBrief) => {

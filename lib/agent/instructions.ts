@@ -14,7 +14,12 @@ export type Capabilities = {
   writes: boolean
   // agents.inbox: replies are checked against quoted sources (K7)
   citations?: boolean
+  // Voice access (voice phase 4): absent otherwise, so the prompt is unchanged (F4)
+  voice?: boolean
 }
+
+const VOICE_LINE =
+  "- **Phone calls.** You can draft a phone call with `propose_call`; the person confirms it in Kriya before anyone is called. You can't place calls yourself."
 
 // What the citation check (lib/agent/verify.ts) can verify
 const CITE_LINE = `- When you state a ₹ amount, a date or deadline, or who is eligible, from something you read in this reply, quote its exact words in double quotes followed by the source's number, counting the pages and documents you read in this reply in order: "closes on 7 October 2026" [1]. Kriya checks each quote against the source.`
@@ -156,6 +161,8 @@ ${[
     : "- **No web access** right now. Work from what you know and say when something may be out of date.",
   accountsLine(capabilities),
   v2 ? MEMORY_V2_LINE : MEMORY_LINE,
+  // Only the lead holds propose_call; a squad member on an assign part doesn't
+  ...(capabilities.voice && capabilities.writes ? [VOICE_LINE] : []),
   "- **No computer, browser, files or payments yet.** You can't run code, open websites interactively, send messages or pay for anything. If a task needs that, say so plainly and do everything you can short of it — research, drafts, plans, step-by-step instructions.",
 ].join("\n")}`,
 

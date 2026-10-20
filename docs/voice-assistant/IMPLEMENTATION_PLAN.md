@@ -67,7 +67,7 @@ Settings go in `SETTINGS` and are editable in `/owner/config`.
 | `KRIYA_VOICE_URL` | env | worker, web | 2 | Public `wss://` base of `kriya-voice` |
 | `KRIYA_PHONE_HASH_KEY` | secret | web, worker, voice | 1 | HMAC key for number hashes and codes |
 | `EXOTEL_ACCOUNT_SID`, `EXOTEL_API_KEY`, `EXOTEL_API_TOKEN`, `EXOTEL_API_HOST`, `EXOTEL_CALLER_ID` | secret/env | worker, web | 5 | Provider API (host = `api.exotel.com` or `api.in.exotel.com` per account) |
-| `EXOTEL_STREAM_SECRET` | secret | voice | 5 | Basic auth on the media WebSocket |
+| `KRIYA_VOICE_STREAM_SECRET` | secret | voice | 5 | Basic auth on the media WebSocket |
 | `<VENDOR>_API_KEY` for chosen STT/TTS | secret | voice | 4 | Speech vendors |
 | `voice.liveCalls` | setting | all | 5 | Platform switch (default off) |
 | `voice.testNumbers` | setting | worker | 5 | Comma-separated E.164 allow-list until Phase 9 |
@@ -94,7 +94,7 @@ Settings go in `SETTINGS` and are editable in `/owner/config`.
         sync: false
       - key: KRIYA_PHONE_HASH_KEY
         sync: false
-      - key: EXOTEL_STREAM_SECRET
+      - key: KRIYA_VOICE_STREAM_SECRET
         sync: false
       - key: OPENROUTER_API_KEY
         sync: false

@@ -1,0 +1,91 @@
+{
+  "id": "S28-speaks-over-disclosure",
+  "provider_script": [
+    {
+      "status": "ringing",
+      "atMs": 0
+    },
+    {
+      "status": "answered",
+      "atMs": 4000
+    },
+    {
+      "status": "completed",
+      "atMs": 60000
+    }
+  ],
+  "callee": [
+    {
+      "say": "Hello? Hello?",
+      "bargeIn": true
+    },
+    {
+      "say": "Yes, go ahead."
+    },
+    {
+      "say": "Yes, speaking."
+    },
+    {
+      "say": "Yes, that works."
+    }
+  ],
+  "variants": [
+    [
+      {
+        "say": "Hello? Hello?",
+        "bargeIn": true
+      },
+      "Yes, go ahead.",
+      "Yes, speaking.",
+      "Yes, that works."
+    ],
+    [
+      {
+        "say": "Who is this?",
+        "bargeIn": true
+      },
+      "Yes, go ahead.",
+      "Yes, speaking.",
+      "Yes, that works."
+    ],
+    [
+      {
+        "say": "Yes?",
+        "bargeIn": true
+      },
+      "Yes, go ahead.",
+      "Yes, speaking.",
+      "Yes, that works."
+    ],
+    [
+      {
+        "say": "Hello, hello",
+        "bargeIn": true
+      },
+      "Yes, go ahead.",
+      "Yes, speaking.",
+      "Yes, that works."
+    ],
+    [
+      {
+        "say": "Haan, bolo",
+        "bargeIn": true
+      },
+      "Yes, go ahead.",
+      "Yes, speaking.",
+      "Yes, that works."
+    ]
+  ],
+  "gold": {
+    "dialogue": {
+      "disclosures": 2,
+      "result": "agreed",
+      "agreed": [
+        {
+          "date": "2026-10-21",
+          "time": "15:00"
+        }
+      ]
+    }
+  }
+}

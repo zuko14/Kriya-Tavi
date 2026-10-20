@@ -1,0 +1,43 @@
+{
+  "id": "S04-alternative-outside-window",
+  "provider_script": [
+    {
+      "status": "ringing",
+      "atMs": 0
+    },
+    {
+      "status": "answered",
+      "atMs": 4000
+    },
+    {
+      "status": "completed",
+      "atMs": 60000
+    }
+  ],
+  "callee": [
+    {
+      "say": "Hello?"
+    },
+    {
+      "say": "Yes."
+    },
+    {
+      "say": "Three is hard. Can we do 7 pm?"
+    }
+  ],
+  "variants": [
+    ["Hello?", "Yes.", "Three is hard. Can we do 7 pm?"],
+    ["Hello?", "Yes, speaking.", "Only 7 pm works for me."],
+    ["Hi", "Yes.", "How about 19:00?"],
+    ["Hello?", "Yes.", "I'm free after 6, say 6:30 pm?"],
+    ["Hello?", "Correct.", "No, 10 am is better."]
+  ],
+  "gold": {
+    "dialogue": {
+      "result": "alternative_proposed",
+      "agreed": [],
+      "said": ["I'll check with Asha and get back to you."],
+      "end": "done"
+    }
+  }
+}

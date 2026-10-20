@@ -1,0 +1,45 @@
+{
+  "id": "S07-declines",
+  "provider_script": [
+    {
+      "status": "ringing",
+      "atMs": 0
+    },
+    {
+      "status": "answered",
+      "atMs": 4000
+    },
+    {
+      "status": "completed",
+      "atMs": 60000
+    }
+  ],
+  "callee": [
+    {
+      "say": "Hello?"
+    },
+    {
+      "say": "Yes."
+    },
+    {
+      "say": "No, I can't meet tomorrow."
+    },
+    {
+      "say": "No, not possible this week."
+    }
+  ],
+  "variants": [
+    ["Hello?", "Yes.", "No, I can't meet tomorrow.", "No, not possible this week."],
+    ["Hello?", "Yes, speaking.", "No, tomorrow doesn't work.", "Sorry, no."],
+    ["Hi", "Yes.", "I can't, sorry.", "No, I won't be able to."],
+    ["Hello?", "Yes.", "Not tomorrow.", "No, I can't fit it in."],
+    ["Hello?", "Correct.", "No.", "No, sorry."]
+  ],
+  "gold": {
+    "dialogue": {
+      "result": "declined",
+      "agreed": [],
+      "end": "declined"
+    }
+  }
+}

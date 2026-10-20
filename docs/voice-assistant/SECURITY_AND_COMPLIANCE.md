@@ -126,7 +126,7 @@ with opt-outs above a threshold is paused for review.
 | Prompt injection via the callee | No consequential tools in calls (D-14); untrusted input; redaction; post-call authority check (CONVERSATION §8) |
 | Prompt injection via the owner's request text | Extracted spec is shown and confirmed field by field; the model in the call sees the spec, not raw text |
 | Cross-tenant reads | RLS on every table; composite FKs; `kriya-voice` reads only the validated attempt's task, scoped by `user_id` |
-| Secrets | `EXOTEL_API_KEY`, `EXOTEL_API_TOKEN`, `EXOTEL_STREAM_SECRET`, STT/TTS keys, `KRIYA_PHONE_HASH_KEY` in env only, listed in `SECRETS` (`lib/config.ts`), never in DB, logs, transcripts or browser |
+| Secrets | `EXOTEL_API_KEY`, `EXOTEL_API_TOKEN`, `KRIYA_VOICE_STREAM_SECRET`, STT/TTS keys, `KRIYA_PHONE_HASH_KEY` in env only, listed in `SECRETS` (`lib/config.ts`), never in DB, logs, transcripts or browser |
 | Phone numbers in logs | `lib/log.ts` gains a phone-number redaction pattern; logs use attempt ids |
 | Transcript content in logs | Never logged (same rule as messages today) |
 | OTP/card numbers spoken by a callee | Redacted before `conversation_turns` insert |
@@ -136,7 +136,7 @@ with opt-outs above a threshold is paused for review.
 ## 7. Incident investigation
 
 `voice_transitions` (who changed what, with evidence), `call_events` (raw
-provider data, redacted), `call_attempts.verification`, structured logs with
+provider data, redacted), `call_attempts.provider_snapshot`, structured logs with
 attempt ids, and the provider's own call logs (by `CallSid`) together
 reconstruct any call. An **emergency stop** (`voice.liveCalls = off` in
 `/owner/config`) stops new dials within the settings cache window (15 s); a

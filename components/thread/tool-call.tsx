@@ -20,6 +20,7 @@ import {
   MailIcon,
   MailPlusIcon,
   NotebookTextIcon,
+  PhoneIcon,
   PlayIcon,
   SearchIcon,
   SheetIcon,
@@ -180,6 +181,11 @@ const META: Record<string, Meta> = {
     label: "post on instagram",
     summary: (i) => str(i.caption),
   },
+  propose_call: {
+    icon: PhoneIcon,
+    label: "draft a call",
+    summary: (i) => str(i.recipientLabel),
+  },
 }
 
 const ref = (i: Record<string, unknown>) =>
@@ -327,6 +333,18 @@ function Details({ part }: { part: ToolPart }) {
       return <p className="text-[13px]">{str(input.note)}</p>
     case "kit_prepare":
       return output?.done ? <KitCard input={input} output={output} /> : null
+    // A drafted call: nobody is rung until the person confirms it there
+    case "propose_call":
+      return output && /^\/calls\/[0-9a-f-]{36}$/.test(str(output.href)) ? (
+        <a
+          href={str(output.href)}
+          className="text-[13px] font-medium text-rigel hover:underline"
+        >
+          Review and confirm the call to {str(input.recipientLabel)}
+        </a>
+      ) : output ? (
+        <p className="text-[13px]">{str(output.error)}</p>
+      ) : null
     default:
       return (
         <div className="flex flex-col gap-2">

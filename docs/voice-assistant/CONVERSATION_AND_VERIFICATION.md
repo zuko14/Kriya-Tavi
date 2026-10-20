@@ -192,7 +192,7 @@ the worker's recovery loop until `verified_at` is set.
 
 1. **Provider truth.** `getCall(providerCallId)`; reconcile with `call_events`.
    Disagreement (webhook says completed, API says failed) → the API wins; the
-   disagreement goes in `verification`.
+   disagreement goes in `call_attempts.provider_snapshot`.
 2. **Observed outcome** from step 1 and the stream: if not connected, write
    `observed` and `interpreted = null`, `verifier_status = accepted`. Done.
 3. **Extraction.** Post-call structured-output call over the stored turns and
