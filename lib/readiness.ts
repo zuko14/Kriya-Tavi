@@ -98,6 +98,50 @@ export function configChecks(env: Env): Check[] {
           }
     )
   }
+  // G1 (GOOGLE_CONNECTIVITY §3.2): what "Connect Google" needs on this
+  // service, by name. Not set at all is a choice (Google stays off), not a fault
+  const google = ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"]
+  const missingGoogle = google.filter((name) => !set(env, name))
+  if (missingGoogle.length === google.length) {
+    checks.push({
+      id: "google.oauth",
+      status: "warn",
+      detail:
+        "GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET not set: connecting Google is off",
+    })
+  } else {
+    checks.push(
+      missingGoogle.length
+        ? {
+            id: "google.oauth",
+            status: "fail",
+            detail: `missing: ${missingGoogle.join(", ")}`,
+          }
+        : !set(env, "KRIYA_TOKEN_KEY")
+          ? {
+              id: "google.oauth",
+              status: "fail",
+              detail: "Google needs KRIYA_TOKEN_KEY to seal its tokens",
+            }
+          : {
+              id: "google.oauth",
+              status: "pass",
+              detail: "client id, secret and token key set",
+            }
+    )
+    // Google only redirects back to https outside local development
+    if (env.NODE_ENV === "production")
+      checks.push(
+        env.KRIYA_APP_URL?.trim().startsWith("https://")
+          ? { id: "google.appUrl", status: "pass", detail: "KRIYA_APP_URL is https" }
+          : {
+              id: "google.appUrl",
+              status: "fail",
+              detail: "KRIYA_APP_URL must be https for Google's redirect",
+            }
+      )
+  }
+
   checks.push(
     LEGAL_STATUS.draft
       ? {

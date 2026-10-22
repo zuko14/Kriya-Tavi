@@ -14,13 +14,16 @@ import { Glyph, SquadGlyph } from "@/components/glyph"
 import { NewAgentCard, TemplateGrid } from "@/components/home/actions"
 import { Ask } from "@/components/home/ask"
 import { UsageMeter } from "@/components/home/usage-meter"
+import { HandAJob } from "@/components/operator/hand-a-job"
 import { requireUser } from "@/lib/auth"
 import { getSetting } from "@/lib/config"
+import { runnable } from "@/lib/operator/playbooks"
 import { cn } from "@/lib/utils"
 import { voiceAvailable } from "@/lib/voice/tasks"
 import { recentEpisodes } from "@/queries/episodes"
 import { getGoals } from "@/queries/goals"
 import { inboxCount } from "@/queries/inbox"
+import { playbookChoices, playbookNeeds } from "@/queries/mandates"
 import { getNavigation, getSystemStatus } from "@/queries/workspace"
 
 function SectionTitle({ children, href }: { children: React.ReactNode; href?: string }) {
@@ -53,6 +56,23 @@ export default async function Home() {
     goalsOn ? getGoals(user.id) : [],
   ])
   const openGoals = goals.filter((g) => g.status === "active").slice(0, 3)
+  // O7: "Hand Kriya a job", only the playbooks the person can run; off = absent
+  const playbooksOn =
+    (await getSetting("operator.playbooks")) === "on" &&
+    (await getSetting("operator.mandates")) === "on"
+  const [jobs, choices] = playbooksOn
+    ? await Promise.all([
+        playbookNeeds(user.id).then((have) =>
+          runnable(have).map(({ id, title, summary, slots }) => ({
+            id,
+            title,
+            summary,
+            slots,
+          }))
+        ),
+        playbookChoices(user.id),
+      ])
+    : [[], null]
   const voice = await voiceAvailable(user.id)
   const firstName = user.profile.displayName?.split(" ")[0]
   const hasAgents = nav.agents.length > 0
@@ -128,6 +148,17 @@ export default async function Home() {
             <Ask />
 
             {callsLink}
+
+            {choices && jobs.length > 0 && (
+              <section className="flex flex-col gap-2.5">
+                <SectionTitle>Hand Kriya a job</SectionTitle>
+                <HandAJob
+                  playbooks={jobs}
+                  agents={choices.agents}
+                  invoices={choices.invoices}
+                />
+              </section>
+            )}
 
             {(waiting !== null || openGoals.length > 0) && (
               <section className="flex flex-col gap-2.5">

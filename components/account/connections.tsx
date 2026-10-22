@@ -9,6 +9,7 @@ import {
   MailIcon,
   NotebookTextIcon,
   PlayIcon,
+  Share2Icon,
   SheetIcon,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
@@ -39,6 +40,15 @@ const GOOGLE = [
   },
 ] as const
 
+// G2 (operator.driveShare): opt-in, never ticked for you; a Restricted scope
+const DRIVE_SHARE = {
+  id: "drive_share",
+  label: "Drive sharing",
+  icon: Share2Icon,
+  detail:
+    "Share a Drive file with people, after you approve each share. Google emails them.",
+} as const
+
 // A8: opt-in, never ticked for you
 const GOOGLE_MORE = [
   {
@@ -63,7 +73,16 @@ export type ConnectionView = {
   available: { google: boolean; notion: boolean }
   // Only with agents.connectors on (A8)
   more?: { github: Account; meta: Account; available: { github: boolean; meta: boolean } }
+  // G1: derived from the person's tool runs (queries/connections.ts)
+  health?: Partial<Record<string, "ok" | "needs_reconnect">>
+  // G1: google.testingMode, the Google app's refresh tokens last 7 days
+  testingMode?: boolean
+  // G2: offer the "Drive sharing" box (operator.driveShare, with `more`)
+  driveShare?: boolean
 }
+
+const STOPPED = (name: string) =>
+  `${name} stopped working. Reconnect to keep your agents' access.`
 
 function Disconnect({ provider, name }: { provider: string; name: string }) {
   const router = useRouter()
@@ -117,6 +136,7 @@ function Simple({
   available,
   subtitle,
   again,
+  stopped,
 }: {
   provider: string
   name: string
@@ -125,11 +145,18 @@ function Simple({
   available: boolean
   subtitle: string
   again: string
+  stopped?: boolean
 }) {
   return (
     <Card
       title={name}
-      subtitle={available || connected ? subtitle : "Not available on this server yet."}
+      subtitle={
+        connected && stopped
+          ? STOPPED(name)
+          : available || connected
+            ? subtitle
+            : "Not available on this server yet."
+      }
     >
       <div className="flex flex-wrap items-center gap-2">
         <Icon className="size-4 text-muted-foreground" />
@@ -140,7 +167,7 @@ function Simple({
             className="h-11 sm:h-9"
             disabled={!available}
           >
-            {connected ? again : `Connect ${name}`}
+            {connected ? (stopped ? `Reconnect ${name}` : again) : `Connect ${name}`}
           </Button>
         </form>
         {connected && <Disconnect provider={provider} name={name} />}
@@ -150,18 +177,33 @@ function Simple({
 }
 
 // Connecting is a plain GET form: the server route does the OAuth hand-off
-export function Connections({ google, notion, available, more }: ConnectionView) {
-  const services = more ? [...GOOGLE, ...GOOGLE_MORE] : GOOGLE
+export function Connections({
+  google,
+  notion,
+  available,
+  more,
+  health = {},
+  testingMode = false,
+  driveShare = false,
+}: ConnectionView) {
+  const services = [
+    ...GOOGLE,
+    ...(more ? GOOGLE_MORE : []),
+    ...(more && driveShare ? [DRIVE_SHARE] : []),
+  ]
+  const stopped = (provider: string) => health[provider] === "needs_reconnect"
   return (
     <div className="flex flex-col gap-3">
       <Card
         title="Google"
         subtitle={
-          google
-            ? `Connected as ${google.account ?? "your Google account"}`
-            : available.google
-              ? "Pick what your agents may use. You can change it any time."
-              : "Not available on this server yet."
+          google && stopped("google")
+            ? STOPPED("Google")
+            : google
+              ? `Connected as ${google.account ?? "your Google account"}`
+              : available.google
+                ? "Pick what your agents may use. You can change it any time."
+                : "Not available on this server yet."
         }
       >
         <form action="/api/connect/google" method="get" className="flex flex-col gap-3">
@@ -187,7 +229,8 @@ export function Connections({ google, notion, available, more }: ConnectionView)
                   defaultChecked={
                     google
                       ? google.services.includes(id)
-                      : !GOOGLE_MORE.some((extra) => extra.id === id)
+                      : !GOOGLE_MORE.some((extra) => extra.id === id) &&
+                        id !== DRIVE_SHARE.id
                   }
                   className="size-5 shrink-0 accent-(--rigel)"
                 />
@@ -196,21 +239,33 @@ export function Connections({ google, notion, available, more }: ConnectionView)
           </fieldset>
           <div className="flex flex-wrap gap-2">
             <Button type="submit" className="h-11 sm:h-9" disabled={!available.google}>
-              {google ? "Update access" : "Connect Google"}
+              {google
+                ? stopped("google")
+                  ? "Reconnect Google"
+                  : "Update access"
+                : "Connect Google"}
             </Button>
             {google && <Disconnect provider="google" name="Google" />}
           </div>
+          {testingMode && (available.google || google) && (
+            <p className="text-[12.5px] text-muted-foreground">
+              Kriya&apos;s Google access is in testing: Google asks you to reconnect every
+              7 days during the pilot.
+            </p>
+          )}
         </form>
       </Card>
 
       <Card
         title="Notion"
         subtitle={
-          notion
-            ? `Connected to ${notion.account ?? "your workspace"}`
-            : available.notion
-              ? "Your agents can search and read the pages you choose to share. Read-only."
-              : "Not available on this server yet."
+          notion && stopped("notion")
+            ? STOPPED("Notion")
+            : notion
+              ? `Connected to ${notion.account ?? "your workspace"}`
+              : available.notion
+                ? "Your agents can search and read the pages you choose to share. Read-only."
+                : "Not available on this server yet."
         }
       >
         <div className="flex flex-wrap items-center gap-2">
@@ -222,7 +277,11 @@ export function Connections({ google, notion, available, more }: ConnectionView)
               className="h-11 sm:h-9"
               disabled={!available.notion}
             >
-              {notion ? "Choose pages again" : "Connect Notion"}
+              {notion
+                ? stopped("notion")
+                  ? "Reconnect Notion"
+                  : "Choose pages again"
+                : "Connect Notion"}
             </Button>
           </form>
           {notion && <Disconnect provider="notion" name="Notion" />}
@@ -243,6 +302,7 @@ export function Connections({ google, notion, available, more }: ConnectionView)
                 : "Install Kriya's GitHub app on the repositories you choose. Agents read issues and pull requests; comments, issues, labels and pull requests wait for your approval."
             }
             again="Choose repositories again"
+            stopped={stopped("github")}
           />
           <Simple
             provider="meta"
@@ -256,6 +316,7 @@ export function Connections({ google, notion, available, more }: ConnectionView)
                 : "For professional accounts linked to a Facebook Page. Agents see followers and post numbers; each post waits for your approval."
             }
             again="Reconnect"
+            stopped={stopped("meta")}
           />
         </>
       )}

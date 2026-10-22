@@ -1,0 +1,8 @@
+{
+  "turns": [
+    { "toolCalls": [{ "name": "mandate_report", "input": {} }] },
+    {
+      "text": "Kriya checked the job against its records; the unmet lines are listed above."
+    }
+  ]
+}

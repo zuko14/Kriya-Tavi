@@ -123,10 +123,17 @@ function taskRow(
   messageId: string,
   idempotencyKey: string | null,
   // A scheduled run (A3): its channel, schedule and ₹-capped budget
-  run: { scheduleId?: string; costBudgetMicroUsd?: number } = {}
+  run: { scheduleId?: string; costBudgetMicroUsd?: number; workflowId?: string } = {}
 ) {
   const input: TaskInput = run.scheduleId
-    ? { messageId, agentId: first.id, channel: "schedule", scheduleId: run.scheduleId }
+    ? {
+        messageId,
+        agentId: first.id,
+        channel: "schedule",
+        scheduleId: run.scheduleId,
+        // O7: a job's playbook, so its runs can be quoted (K2)
+        ...(run.workflowId && { workflowId: run.workflowId }),
+      }
     : { messageId, agentId: first.id, channel: "web" }
   return {
     userId,
@@ -228,6 +235,7 @@ export async function enqueueScheduled({
   scheduleId,
   dueAt,
   capMicroInr,
+  workflowId,
 }: {
   userId: string
   threadId: string
@@ -236,6 +244,7 @@ export async function enqueueScheduled({
   scheduleId: string
   dueAt: Date
   capMicroInr?: number | null
+  workflowId?: string
 }) {
   const prepared = await prepare(userId, threadId, agentId)
   const { thread, first, plan } = prepared
@@ -278,8 +287,81 @@ export async function enqueueScheduled({
           taskRow(userId, threadId, prepared, message.id, key, {
             scheduleId,
             costBudgetMicroUsd,
+            workflowId,
           })
         )
+        .returning()
+      return task
+    })
+  )
+}
+
+// A crew part's run in the member's own thread, or the crew's join in the
+// lead's thread (O11, CREW_EXECUTION.md): the same prepare() checks as any
+// turn; the key makes a retry the same task. A ₹ cap becomes the task's
+// budget as in enqueueScheduled, never above the plan's.
+export async function enqueuePart({
+  userId,
+  threadId,
+  agentId,
+  prompt,
+  key,
+  runId,
+  partId,
+  capMicroInr,
+}: {
+  userId: string
+  threadId: string
+  agentId: string
+  prompt: string
+  key: string
+  runId: string
+  partId?: string
+  capMicroInr?: number | null
+}) {
+  const prepared = await prepare(userId, threadId, agentId)
+  const { thread, first, plan } = prepared
+  const message: KriyaMessage = {
+    id: `crew-${partId ?? `join-${runId}`}`,
+    role: "user",
+    parts: [{ type: "text", text: prompt }],
+    metadata: {
+      channel: "crew",
+      runId,
+      ...(partId && { partId }),
+      ...(thread.squad && { agentId: first.id }),
+    },
+  }
+  const capped = capMicroInr
+    ? capToProviderMicroUsd(
+        capMicroInr,
+        parseRate(await getSetting("fx.usdInr")),
+        plan.markupBps
+      )
+    : null
+  const costBudgetMicroUsd =
+    capped === null ? undefined : Math.max(1, Math.min(capped, plan.maxTaskCostMicroUsd))
+  const input: TaskInput = {
+    messageId: message.id,
+    agentId: first.id,
+    channel: "crew",
+    runId,
+    ...(partId && { partId }),
+  }
+
+  return insertTask(userId, key, () =>
+    privileged.transaction(async (tx) => {
+      await saveMessage(tx, userId, threadId, message)
+      await tx
+        .update(threads)
+        .set({ preview: prompt.slice(0, 140), activeAt: new Date() })
+        .where(and(eq(threads.id, threadId), eq(threads.userId, userId)))
+      const [task] = await tx
+        .insert(tasks)
+        .values({
+          ...taskRow(userId, threadId, prepared, message.id, key, { costBudgetMicroUsd }),
+          input,
+        })
         .returning()
       return task
     })

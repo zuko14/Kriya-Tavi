@@ -1,0 +1,24 @@
+{
+  "turns": [
+    {
+      "toolCalls": [
+        {
+          "name": "mandate_propose",
+          "input": {
+            "title": "Follow up on two overdue invoices",
+            "objective": "Ravi sets up a weekly check on the clients' replies; Mira keeps notes on what each client said.",
+            "criteria": [
+              {
+                "text": "Both clients said when they'll pay",
+                "evidence": { "kind": "person_confirmed" }
+              }
+            ],
+            "grants": [],
+            "dueInDays": 14
+          }
+        }
+      ]
+    },
+    { "text": "I've proposed the job. Review and approve it in your Inbox." }
+  ]
+}

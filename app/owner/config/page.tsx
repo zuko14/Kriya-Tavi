@@ -34,6 +34,18 @@ const GROUPS: { title: string; description: string; prefix: string[] }[] = [
       "Once today's voice cost (reported + estimated) reaches the daily cap, no new call is placed. Until it's set, only the mock provider may dial.",
     prefix: ["voice."],
   },
+  {
+    title: "Agent features",
+    description:
+      "Track A switches. Each is off until set to on; off keeps agents exactly as before.",
+    prefix: ["agents."],
+  },
+  {
+    title: "Operator (jobs)",
+    description:
+      "Track O switches and limits. Jobs need agents.goals and agents.inbox on. The kill list removes tools from every agent from the next task on.",
+    prefix: ["operator."],
+  },
   { title: "Other", description: "", prefix: ["firecrawl.", "support."] },
 ]
 

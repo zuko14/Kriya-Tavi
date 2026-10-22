@@ -19,6 +19,14 @@ import { formatInr } from "@/lib/money"
 
 export type WhatIDidRecord = WhatIDid["records"][number]
 
+// O4: an action a job's standing grant allowed, without asking one by one
+const UnderJob = ({ title }: { title?: string }) =>
+  title ? (
+    <span className="block w-full font-mono text-[10.5px] text-faint">
+      under your job: {title}
+    </span>
+  ) : null
+
 const UUID = /^[0-9a-f-]{36}$/
 
 // One request per thread, once nothing is streaming. Returns nothing while
@@ -201,6 +209,7 @@ export function WhatIDidCard({
               .map((u) => (
                 <UndoControl key={u.executionId} initial={u} />
               ))}
+            <UnderJob title={record.jobs?.[d.executionId]} />
           </li>
         ))}
         {record.unconfirmed.map((u, i) => (
@@ -211,6 +220,9 @@ export function WhatIDidCard({
             />
             <span className="text-[13px]">
               {u.claim} <span className="text-faint">· not confirmed: {u.reason}</span>
+              <UnderJob
+                title={u.executionId ? record.jobs?.[u.executionId] : undefined}
+              />
             </span>
           </li>
         ))}

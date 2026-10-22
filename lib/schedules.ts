@@ -1,8 +1,8 @@
-import { and, asc, eq, lt, lte, sql } from "drizzle-orm"
+import { and, asc, eq, inArray, lt, lte, sql } from "drizzle-orm"
 import { z } from "zod"
 
 import { privileged, rowsOf, type Q, type Tx } from "@/db"
-import { scheduleRuns, schedules, type WatchConfig } from "@/db/schema"
+import { mandates, scheduleRuns, schedules, type WatchConfig } from "@/db/schema"
 import { enqueueScheduled, TurnError } from "@/lib/agent/queue"
 import { getSetting } from "@/lib/config"
 import { checkWatch, watchPrompt } from "@/lib/watch"
@@ -291,6 +291,8 @@ export type DueRun = {
   capMicroInr: number | null
   kind?: "once" | "recurring" | "watch"
   watch?: WatchConfig | null
+  // O7: the playbook of the job that owns the schedule's goal
+  workflowId?: string
 }
 
 // A goal's spend this month (IST) against its ₹ cap (K2). ponytail: unpriced
@@ -322,6 +324,18 @@ export async function claimDueSchedules(max = 50): Promise<DueRun[]> {
       .for("update", { skipLocked: true })
     const now = Date.now()
     const claimed: DueRun[] = []
+    // A job's playbook, by goal; schedules without a job have none
+    const goalIds = due.flatMap((row) => row.goalId ?? [])
+    const playbooks = goalIds.length
+      ? await tx
+          .select({
+            goalId: mandates.goalId,
+            userId: mandates.userId,
+            playbookId: mandates.playbookId,
+          })
+          .from(mandates)
+          .where(inArray(mandates.goalId, goalIds))
+      : []
     for (const row of due) {
       const dueAt = row.nextRunAt!
       const rule = ruleSchema.safeParse(row.rule)
@@ -374,6 +388,11 @@ export async function claimDueSchedules(max = 50): Promise<DueRun[]> {
           capMicroInr: row.capMicroInr,
           kind: row.kind,
           watch: row.watch,
+          ...playbooks
+            .filter(
+              (m) => m.goalId === row.goalId && m.userId === row.userId && m.playbookId
+            )
+            .map((m) => ({ workflowId: m.playbookId! }))[0],
         })
       }
     }

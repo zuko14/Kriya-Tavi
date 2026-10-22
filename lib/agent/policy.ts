@@ -271,6 +271,24 @@ export const TOOL_CLASSES: Record<string, RiskClass> = {
   // A6 (K9): a kit is text for the person to apply; the check only reads
   kit_prepare: "R1",
   kit_check: "R0",
+  // Track O (operator.mandates): a proposal the person approves; reading one
+  mandate_propose: "R1",
+  mandate_status: "R0",
+  // O5: stores Kriya's computed verdict, never a status
+  mandate_report: "R1",
+  // O11: starts members' tasks inside an approved job (CREW_EXECUTION §4)
+  crew_dispatch: "R1",
+  // G2 (OD-15/16/17): a copy into the person's own Kriya files; sharing a
+  // file with people and sending an email act outside Kriya: exact approval
+  drive_import: "R1",
+  // A5: reads the person's own files; saving an attachment or a rendered
+  // document only adds to them
+  file_read: "R0",
+  file_list: "R0",
+  file_save_attachment: "R1",
+  document_render: "R1",
+  drive_share: "R4",
+  gmail_send_draft: "R4",
 }
 
 export function classifyTool(name: string, input: unknown): RiskClass {
@@ -362,6 +380,19 @@ export const TOOL_WRITES: Record<string, string[]> = {
   kit_prepare: ["kits+"],
   // Computed by code from the page (lib/browser/kits.ts)
   kit_check: ["kits.status:verified|unverified", "kits.checked_at"],
+  // Born proposed (insert policy); approving, grants and ticks are the person's
+  mandate_propose: ["mandates+"],
+  mandate_status: [],
+  // Written by code from records (lib/operator/verdict.ts), not by the model
+  mandate_report: ["mandates.verdict", "mandates.last_evidence_at"],
+  crew_dispatch: ["crew_runs+", "crew_parts+", "threads+", "messages+", "tasks+"],
+  drive_import: ["files+"],
+  file_read: [],
+  file_list: [],
+  file_save_attachment: ["files+"],
+  document_render: ["files+"],
+  drive_share: [],
+  gmail_send_draft: [],
 }
 
 // Changes only the person makes, through their own server actions. Agent
@@ -390,4 +421,12 @@ export const PERSON_ONLY_WRITES = [
   "login_profiles.status:active",
   "login_profiles.background_allowed",
   "login_profiles.label",
+  // Track O: only the person approves, ends or ticks a job, and grants
+  "mandates.status:active",
+  "mandates.status:declined",
+  "mandates.status:revoked",
+  "mandates.status:closed",
+  "mandates.confirmed",
+  "grants",
+  "grant_uses",
 ]

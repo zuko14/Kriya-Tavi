@@ -6,10 +6,11 @@ Canonical progress and coordination file for two tracks:
 | --- | --- | --- | --- |
 | Voice assistant (owner-directed outbound calls, verified outcomes, phone-call reminders) | 0–10 (below) | `docs/voice-assistant/` | `docs/voice-assistant/AGENT_MASTER_PROMPT.md` |
 | Agent platform, track A (role teams that act, remember, work in the background and prove what they did) | A0–A12 (section "Agent platform (track A)" at the end) | `docs/agent-platform/` | `docs/agent-platform/AGENT_MASTER_PROMPT.md` |
+| Operator, track O (jobs with a definition of done, standing grants the person approves, code verdicts, check-ins, playbooks) | P-1, O0–O10 (section "Operator (track O)" at the end) | `docs/operator/` | `docs/operator/AGENT_MASTER_PROMPT.md` |
 
-Both tracks share the Coordination board below; phase ids tell them apart
-(`3` is voice, `A3` is track A). The SaaS platform's own status stays in
-`docs/kriya/status.md`.
+All tracks share the Coordination board below; phase ids tell them apart
+(`3` is voice, `A3` is track A, `O3` is track O). The SaaS platform's own
+status stays in `docs/kriya/status.md`.
 
 **Every coding agent, before each session:** read this file, `AGENTS.md`, and
 the documents named under the phase you're working on. Work on **one** phase.
@@ -109,6 +110,38 @@ versioned after track A's `202611xx` files, which run later by name.
 `npm run check`: Test Files 104 passed, Tests 1299 passed | 26 skipped,
 exit 0. Left for the owner: Auth → leaked password protection (a dashboard
 setting, not SQL).
+
+### Comprehensive Product, Architecture, Security & Competitive Audit (2026-10-21 ~10:50 IST, Antigravity / Gemini 3.8 Flash)
+
+A full-spectrum forensic audit was completed covering codebase architecture, database RLS, live Next.js UI execution, telephony streaming, risk boundaries, competitive landscape, and commercial SaaS readiness.
+
+- **Baseline Commit:** `51b1af6` on `main`. All local modifications preserved (`package.json`, `package-lock.json`).
+- **Audit Deliverables Produced:** Complete 9-part audit documentation suite under `docs/audit/`:
+  1. `docs/audit/EXECUTIVE_SUMMARY.md`: Executive assessment, maturity scores, launch blockers.
+  2. `docs/audit/REPOSITORY_AND_ARCHITECTURE.md`: Complete system architecture, 4 microservices, data flows.
+  3. `docs/audit/FEATURE_INVENTORY.md`: Granular status across all product capabilities.
+  4. `docs/audit/UI_UX_AUDIT.md`: Visual, mobile (360px), desktop (1280px), and accessibility audit.
+  5. `docs/audit/VOICE_AGENT_AUDIT.md`: In-browser voice vs. real PSTN telephony, audio framing, Exotel, TRAI/DPDP.
+  6. `docs/audit/SECURITY_AND_RELIABILITY.md`: Threat model S1–S15, R0–R5 risk enforcement, sandboxing.
+  7. `docs/audit/COMPETITIVE_ANALYSIS.md`: Benchmark vs. Xiryn, Dots, Claude, OpenClaw, Equal AI, Bolna.
+  8. `docs/audit/COST_AND_SAAS_READINESS.md`: Token metering, telephony tariffs, infra costs, Razorpay.
+  9. `docs/audit/UPGRADE_ROADMAP.md`: Staged, dependency-aware implementation phases (0 through 6).
+- **Test Evidence (Local Execution):**
+  - `npm run typecheck`: Passed cleanly (0 errors).
+  - `npm run lint`: Passed cleanly (0 errors).
+  - `npm run format:check`: All matched files use Prettier style.
+  - `npm test`: 104 passed | 1 failed (`tests/agent/maintenance.test.ts` missing test environment key) | 3 skipped (browser tests) | 1,312 total unit/integration tests passing.
+  - Verification: When run with `OPENROUTER_API_KEY=test-mock npx vitest run tests/agent/maintenance.test.ts`, all 9/9 tests pass (see finding below).
+- **Supabase Production State (`kiyfofxkechnzeeluhtv`, Mumbai `ap-south-1`, Postgres 17.11):**
+  - All 20 migrations applied (`20261016000000_kriya_core.sql` through `20261115000000_database_lint.sql`).
+  - 100% of the 70 tables in schema `kriya` have `rls_enabled = true`.
+  - Security advisors: 0 security lints!
+  - Performance advisors: 59 unindexed foreign key findings identified for optimization before high traffic.
+- **Defects Identified:**
+  - `DEF-01` (Low/Test-only): `tests/agent/maintenance.test.ts` fails in default test runs because `process.env.OPENROUTER_API_KEY` is not mocked in `beforeEach`, triggering a 503 Gateway check failure on `enqueueTurn`.
+- **Selected Upcoming Phase:** **Phase 1 — Critical Correctness & Security Hygiene**.
+  - Implementation tasks: (1) Fix test environment mock key in `maintenance.test.ts`; (2) Add covering indexes for 59 foreign keys via non-destructive migration `20261116000000_foreign_key_indexes.sql`.
+- **Next Exact Action:** Agent in next session opens `tests/agent/maintenance.test.ts` and adds `process.env.OPENROUTER_API_KEY = "test-mock"` in `beforeEach`, verifying with `npm test`.
 
 ## Current blockers
 
@@ -3184,6 +3217,88 @@ met (see Session result).
 - **Exit:** `npm run check`, browser tests, build. Live upload check after
   AB-05.
 
+### Follow-up: `file_read` (2026-10-22 20:24 IST, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **Owner message (quoted):** "Please implement the `file_read` tool (R0,
+  already specified in `docs/agent-platform/TOOLS_AND_CONTRACTS.md:57`)
+  using `readExtracted` from `lib/files.ts`, so agents can read text from
+  imported Drive files." Also: "Keep the name `drive_share` and the
+  exemption in AT-SHR-04 as approved under OD-17."
+- **Checked first:** the spec line exists (R0, capped extracted text with
+  the `FOREIGN` notice, marks private content seen). **`readExtracted` did
+  not exist** in `lib/files.ts`; extracted text is the whole `files.text`
+  column (status `extracted`, ≤ 200,000 characters) with a page count only,
+  no page boundaries. Plan: add `readExtracted` there, read as the person.
+- **Deviation:** `pages: { from, to }` can't be honoured (no page breaks
+  stored); the tool pages by character offset instead (`start`, 20,000
+  characters per call, `nextStart` when more is left).
+- **Plan:** `lib/files.ts` (`readExtracted`), `lib/agent/tools.ts`
+  (`createFileTools`; `file_read` in `PRIVATE_READ_TOOLS`), `policy.ts`
+  (`file_read: "R0"`, writes `[]`), `capabilities.ts`, `run-task.ts` (one
+  belt line behind the existing `agents.files`; off → absent), renderer and
+  labels; test `tests/agent/file-read.test.ts` first.
+- **Result:** test file failed (4 red) before the code; after, 5 passed.
+  Covered: the person's extracted text with the `FOREIGN` notice; paging
+  (`nextStart`); another person's file isn't found and leaks nothing; unread
+  and unreadable files say so (with the extraction's reason); R0 and in
+  `PRIVATE_READ_TOOLS` (a web request afterwards asks); `agents.files` off →
+  belt and prompt identical to unset, on → only `file_read` joins.
+- **Changed:** `lib/files.ts` (`readExtracted`, `READ_CHARS`),
+  `lib/agent/tools.ts` (`createFileTools`, `PRIVATE_READ_TOOLS` +1),
+  `lib/agent/policy.ts` (`file_read: "R0"`, writes `[]`),
+  `lib/agent/capabilities.ts`, `lib/agent/run-task.ts` (switch read + one
+  belt line), tool renderer and activity labels. `file_list`,
+  `file_save_attachment`, `document_render` (same spec table) not built: not
+  asked.
+- **Checks:** `env -u OPENROUTER_API_KEY npm run check` → first run stopped at
+  format (`tests/agent/file-read.test.ts`, my last edit); rerun: `Test Files
+  126 passed | 3 skipped (129)`, `Tests 1505 passed | 26 skipped (1531)`,
+  exit 0. `npm run build` → "Compiled successfully", exit 0.
+- **Owner decision recorded:** keep `drive_share` and the AT-SHR-04
+  exemption (OD-17).
+
+### Session 2026-10-22 — A5 `file_list`, `file_save_attachment`, `document_render`
+
+- **Owner instruction (quoted):** "Implement `file_list` (R0, list user
+  files with limit), `file_save_attachment` (R1, copy Gmail attachment to
+  kriya.files), and `document_render` (R1, render templates to PDF) as
+  specified in `docs/agent-platform/TOOLS_AND_CONTRACTS.md:55-59`. Add them
+  to `lib/agent/tools.ts`, `TOOL_CLASSES`, and the capability registry."
+- **Built:** all three in `createFileTools(env, connected)` behind the
+  existing `agents.files` (off → belt and prompt unchanged; on →
+  `file_list`, `document_render`, and `file_save_attachment` only with Gmail
+  connected). Classes `R0`/`R1`/`R1`; writes `[]`/`files+`/`files+`; not
+  side-effect, not grantable; capabilities `kriya`, `google`+`file`,
+  `kriya`+`file`. Labels in the tool renderer and activity.
+- **Changed:** `lib/agent/tools.ts`, `lib/agent/policy.ts`,
+  `lib/agent/capabilities.ts`, `lib/agent/run-task.ts` (passes `connected`),
+  `lib/files.ts` (`listFiles` optional filter, `limitMessage` exported),
+  `lib/documents/render.ts` (`savePdf` also returns `pages`; `pdfPages`),
+  `lib/connectors.ts` (`gmailAttachment`; `gmailRead` also returns
+  attachment id/name/type/size, never bytes), `components/thread/tool-call.tsx`,
+  `components/workbench/activity.tsx`, `tests/agent/file-read.test.ts`
+  (new signature; belt on now adds three tools), new
+  `tests/agent/file-tools.test.ts` (9 tests, fixtures only).
+- **Needs owner confirmation (protected files, not in CHANGE_IMPACT):**
+  `lib/connectors.ts` (needed: the model has no attachment id otherwise;
+  `gmail_read` output gains `attachments` even with `agents.files` off) and
+  `lib/documents/render.ts` (page count).
+- **Unknowns:** (1) whether Gmail attachment ids are stable across two
+  fetches of one message; if not, `file_save_attachment` refuses and asks
+  for a fresh `gmail_read`. Verify with one live save after AB-06.
+  (2) `pdfPages` counts uncompressed `/Type /Page` objects (Chromium output);
+  verify against one real kriya-browser PDF.
+- **Checks:** `env -u OPENROUTER_API_KEY npm run check` → first run failed at
+  typecheck (my test file's imports/cast); rerun: `Test Files 127 passed | 3
+  skipped (130)`, `Tests 1514 passed | 26 skipped (1540)`, exit 0 (2
+  existing lint warnings). `npm run build` → "Compiled successfully", exit 0.
+- **Owner approval (quoted, 2026-10-22):** "Approved: The changes in
+  `lib/connectors.ts` (gmailAttachment and attachment metadata) and
+  `lib/documents/render.ts` (page count) are fully approved." Owner
+  authorized a local commit on `main` (no push) and `supabase stop`.
+- **Next:** live Google Cloud setup (OB-05) and G1 live testing; then live
+  checks (1) and (2).
+
 ## Phase A6 — Login profiles, take-over, live view
 
 **Status:** COMPLETE 2026-10-18 on fixtures (Session result below). Open:
@@ -4298,3 +4413,1666 @@ until the owner lists reviewed targets, 360 px screenshots of Radar and
   `actions/profiles.ts`, the live-view token route, Logins UI, take-over
   sheet; tests on the `signup/` and `profile-editor/` fixtures only.
   In place on `main`, uncommitted; no real credentials or sites.
+
+---
+
+# Operator (track O)
+
+Turns Kriya into an India-first AI operator: the person hands it a
+well-defined **job** (a mandate on a goal), approves a bounded **authority**
+once (standing grants, R2/R3 only, pinned targets, counted and expiring),
+and Kriya works it in the background with check-ins until a **verdict
+computed by code from evidence** says it's done, it expires, or it needs the
+person. Blueprint: `docs/operator/`. Agents start from
+`docs/operator/AGENT_MASTER_PROMPT.md`. Built on track A (goals, schedules,
+episodes, receipts, quotes, ledger, connectors) and the voice track
+(`propose_call`, verified outcomes); changes neither's rules.
+
+## Track O documents
+
+| Document | What it decides |
+| --- | --- |
+| `docs/operator/VISION_AND_GAP_ANALYSIS.md` | What Kriya has (verified in code), gaps GAP-01…GAP-12, map1.md item by item, conflicts OF-01…OF-11, out of scope |
+| `docs/operator/DECISIONS.md` | OD-01…OD-14 (all **Proposed**) |
+| `docs/operator/ARCHITECTURE.md` | Lifecycle, components, registry, grants in the runner, verdict, loop, failure modes |
+| `docs/operator/DATA_MODEL_AND_STATE_MACHINES.md` | `mandates`, `grants`, `grant_uses`, `tool_executions.grant_id`, `consume_grant`, evidence kinds, transitions, RLS |
+| `docs/operator/TOOLS_AND_CONTRACTS.md` | `mandate_propose`, `mandate_status`, `mandate_report`, `withGrants`, server actions, queries, worker pass |
+| `docs/operator/PLAYBOOKS.md` | OP-COLLECT, OP-BOOKS, OP-COMPARE, OP-COMPLY, OP-MEET |
+| `docs/operator/SECURITY_AND_THREATS.md` | Threats OS-1…OS-15, invariants never weakened, counsel question OQ-1 |
+| `docs/operator/UX_SPEC.md` | Mandate card, job panel, Inbox sections, playbook picker, Stop all |
+| `docs/operator/TEST_AND_EVALUATION.md` | Test ids OT-…, metrics OM1–OM8, golden jobs OG-01…OG-06, browser-verification exit rule for UI phases |
+| `docs/operator/CHANGE_IMPACT_AND_SAFETY.md` | **Read before editing any existing file**: baseline, protected files, prerequisites P-1/P-2, allowed change per file and phase, stop conditions, the AGENTS.md amendment for OD-02 |
+| `docs/operator/IMPLEMENTATION_PLAN.md` | Order, parallelism, settings, rollout, rollback |
+| `docs/operator/GOOGLE_CONNECTIVITY.md` | Why Google shows "Not available", Google's scope and Testing-mode rules (sourced), owner checklist, G1–G3, Drive import/share, Gmail send |
+| `docs/operator/CREW_EXECUTION.md` | Crews whose members act: parts as their own tasks and threads, `crew_dispatch`, `reviewCrews`, budget, tests |
+| `docs/operator/UI_VERIFICATION.md` | Isolated local stack, the live-database guard, the stub model, the browser checklist every UI phase must pass |
+
+## Track O overview
+
+| Phase | Name | Status | Depends on | Decisions needed |
+| --- | --- | --- | --- | --- |
+| O0 | Blueprint and decisions | COMPLETE 2026-10-21 (OD-01…OD-21 approved; the OD-02 amendment is applied at O4 start) | — | — |
+| P-1 | Baseline fix: DEF-01 in `tests/agent/maintenance.test.ts` | COMPLETE 2026-10-21 (`npm run check` exit 0: 1313 passed / 27 skipped) | — | none (test-only, CHANGE_IMPACT §2) |
+| P-2 | Unindexed foreign keys (verify only) | COMPLETE 2026-10-21 (live DB, read-only: 106 FKs, 58 without an exactly-leading index; index migration = owner decision, not track O) | — | — |
+| P-3 | Isolated verification stack (guard, stub model, local Supabase) | COMPLETE 2026-10-22 (guard + stub tests; 21 migrations on local Postgres 17; baseline 32 shots) | P-1, OB-06 | OD-20 |
+| O1 | Capability registry + owner kill switch | COMPLETE 2026-10-21 (check 1327 passed / 27 skipped; build exit 0; OF-13 found) | P-1, O0 | OD-03, OD-13 |
+| O2 | Data model (one migration) | COMPLETE 2026-10-21 on PGlite (check 1348 passed / 26 skipped; build exit 0; not applied to Supabase) | P-1, O0 | OD-01, OD-02, OD-03, OD-06, OD-13 |
+| O3 | Mandate proposal, approval, Inbox, job panel | COMPLETE 2026-10-22 (browser check on the P-3 stack; open: 200-vs-404 not-found, keyboard-only, real phone, OF-18) | O1, O2 | OD-01, OD-09 (ids only), OD-14 |
+| O4 | Grant enforcement in the runner | COMPLETE 2026-10-22 (check 1401 passed / 26 skipped; build exit 0; AGENTS.md amendment applied) | O3 | **OD-02 + AGENTS.md amendment**, OD-03, OD-04 |
+| O5 | Verdict and handover report | COMPLETE 2026-10-22 (PDF rendered locally; report sharing via K8 verified signed out) | O3 | OD-05, OD-06 |
+| O6 | Responsibility loop (check-ins, stuck, expiry, completion) | COMPLETE 2026-10-22 | O5 | OD-07, OD-11 |
+| O7 | Playbooks v1 | COMPLETE 2026-10-22 (browser flow on the P-3 stack; open: grant use needs real Google) | O4, O6 | OD-09, OD-12 |
+| O8 | Operator metrics, owner page | COMPLETE 2026-10-22 (+ OF-18 config groups) | O7 | — |
+| O9 | Golden jobs (+ optional paid eval) | COMPLETE 2026-10-22 (OG-01…06 pass; OF-19 resolved) | O7 | — (paid eval: owner go-ahead) |
+| O11 | Crew execution: members act in their own part threads | COMPLETE 2026-10-22 (check 1478 passed / 26 skipped; build exit 0; browser on the P-3 stack; Inbox job label added; open: browser person-2 check) | O4, O6, P-3 | OD-19 |
+| G1 | Google live in Testing mode | IN_PROGRESS 2026-10-22 (code half done: OT-G1-01…04 pass, check + build exit 0; live §3.3 steps wait for the owner and OB-05) | P-3, OB-05 | OD-15, OD-18 |
+| G2 | Google actions v2 (Drive import/share, optional Gmail send) | IN_PROGRESS 2026-10-22 (code done on fixtures: OT-G2-01…04 pass, check + build exit 0, browser share card + undo on P-3; open: Picker check, one live share + undo) | G1, A5 files | OD-15, OD-16, OD-17; owner approval for `lib/connectors.ts` (and `verify.ts` with OD-16) |
+| O10 | Controlled operator pilot on real accounts | NOT_STARTED | O8, O9, O11, G1, OB-01…OB-04 | OD-10 for any public copy |
+| G3 | Google verification for public use | NOT_STARTED | O10, OB-07 | OD-15 |
+
+## Track O blockers
+
+| # | Blocker | Blocks | Needed from |
+| --- | --- | --- | --- |
+| OB-00 | Owner approval of OD-01…OD-14 (O4 also needs the AGENTS.md amendment in CHANGE_IMPACT §7 applied) | O1+ | Owner |
+| OB-01 | Staging on real services (same as voice B2 / track A AB-02) | O10 | Owner |
+| OB-02 | Google OAuth app with Gmail draft, Calendar and Sheets scopes verified (track A AB-06) | O10 live grants | Owner |
+| OB-03 | Live calls (voice phase 5: B3–B5, B8) | O10 jobs that call | Owner + Exotel + counsel |
+| OB-04 | Counsel answer OQ-1 (standing drafts to named clients) | O10 | Owner + counsel |
+| OB-05 | Google Cloud project, consent screen in Testing, test users, OAuth web client with both redirect URIs; `GOOGLE_CLIENT_ID`/`SECRET` on Render web **and** worker; same `KRIYA_TOKEN_KEY` on both (GOOGLE_CONNECTIVITY §3.1) | G1 | Owner |
+| OB-06 | Docker Desktop and the Supabase CLI installed on the machine that runs verification (neither available 2026-10-21) | P-3 and every UI phase's browser check | Owner |
+| OB-07 | Own domain + privacy policy for Google verification; Google's restricted-scope security assessment quote (cost and time unknown) | G3 | Owner + assessor |
+| OB-08 | `.env` and `.env.local` point at the live database (checked 2026-10-21, hosts only). Not a blocker for coding, but no local run may use them (UI_VERIFICATION §1) | — | — (rule) |
+
+## Phase O0 — Blueprint and decisions
+
+**Status:** COMPLETE (2026-10-21) — OD-01…OD-21 approved by the owner (see "Track O owner approvals").
+
+- **Done (2026-10-21, Claude Code / Opus 5.5, in place on `main`,
+  uncommitted):** the 11 documents in `docs/operator/`; this section; the
+  track row at the top of this file; an "Operator (track O)" section in
+  `AGENTS.md`. No application code, test, migration, dependency, setting,
+  env var or account touched. The track-A rule 3 amendment is **proposed
+  only** (CHANGE_IMPACT §7), not applied.
+- **How the design was checked:** every claim about existing code was read
+  in the code on 2026-10-21: `lib/agent/run-task.ts` (whole), `policy.ts`,
+  `verify.ts`, `episodes.ts`, `approvals.ts`, `lib/goals.ts`, the goals and
+  schedules migration (transition table, RLS style), `db/schema.ts` (goals,
+  approvals, episodes, tool_executions, invoices, ledger, voice tables),
+  `worker/index.ts` loops, `lib/quotes.ts`, `lib/documents/templates.ts`,
+  `proxy.ts`, and AI SDK 7.0.137's `ToolApprovalStatus` type
+  (`node_modules/ai/dist/index.d.ts`: approval functions may be async and
+  return `"approved"`) and `docs/03-agents/06-policy-tool-approvals.mdx`.
+- **Unknown recorded, not guessed:** how the SDK records an auto-`"approved"`
+  call in UI message parts; O4's first test (OT-GRT-01) settles it.
+- **Baseline check (2026-10-21 15:17 IST, before any doc was written):**
+  `npm run check`: typecheck pass, lint pass, format pass; `npm test`
+  **Test Files 1 failed | 104 passed | 3 skipped (108); Tests 1 failed |
+  1312 passed | 27 skipped (1340)**; exit 1. The failure is DEF-01:
+  `tests/agent/maintenance.test.ts > enqueueSummary and the job queue
+  (AT-MNT-01) > lets the person send a message while a summary job runs` —
+  `TurnError: Kriya can't reach its AI models right now` at
+  `lib/agent/queue.ts:92` (`isGatewayConfigured()` false). This also settles
+  map1's "104 vs 108" question: 108 files, of which 104 passed, 1 failed, 3
+  skipped.
+- **Exit:** (1) documents consistent (cross-reference check below);
+  (2) owner marks each OD Approved or Changed under "Track O owner
+  approvals"; (3) for O4, the amendment is applied to `AGENTS.md`.
+- **Next exact action:** owner reviews `docs/operator/DECISIONS.md` (start
+  with OD-02, OD-03, OD-04, OD-05) and writes "Approved OD-…" (or changes)
+  under "Track O owner approvals"; then assign P-1.
+
+## Phase O0 re-audit (2026-10-21, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+Owner asked to re-check the operator blueprint against the live database
+and repository, add live Google connectivity and crews whose members act,
+and make browser verification of every UI phase part of the plan.
+
+- **Checked, read-only, live project `kriya-tavi`:** 20 migrations applied
+  (identical to the repo), 70 tables, no operator tables or `grant_id` yet,
+  composite keys the blueprint relies on exist, `tasks_one_active_per_thread`
+  exists, `kriya.connections` 0 rows, no `agents.*`/`operator.*` keys stored
+  in `kriya.platform_settings` (values may still come from Render env; see
+  `/owner/config`), 8 auth users (count only). FK index count for P-2.
+- **Checked in code:** Google availability (`isProviderConfigured`), token
+  refresh and reconnect messages, Drive and Calendar functions, `assign`
+  members' tool belt, `prepare`/`enqueueScheduled`/`taskRow`,
+  `createSchedule`/`setScheduleCap`/`runDue`, `getSetting` precedence,
+  `OPENROUTER_BASE_URL`, Next.js env load order, `.gitignore`.
+- **Checked env files (names and hosts only, never values):** no
+  `GOOGLE_*` anywhere; `.env` and `.env.local` point at the live project.
+- **Checked Google's docs** (GOOGLE_CONNECTIVITY §7): Testing = 7-day
+  refresh tokens and 100 test users; `gmail.readonly`/`gmail.compose`
+  Restricted ("Manage drafts and send emails"); `gmail.send` Sensitive;
+  `drive.readonly`/`drive` Restricted; `drive.file` Non-sensitive;
+  unverified production = 100 new users for life. `calendar.events` class
+  not stated on its page: recorded as unknown.
+- **Fixed in the blueprint:** OF-06…OF-11 (VISION §5): `workflowId` path
+  for quotes, kickoff at now + 60 s and `setScheduleCap`, OD-21
+  (`agents.goals` + `agents.inbox` required), `consume_grant` revoked from
+  `anon`/`authenticated` too, squad goals, OG/GAP id collision.
+- **Added:** GOOGLE_CONNECTIVITY.md (G1–G3), CREW_EXECUTION.md (O11),
+  UI_VERIFICATION.md (P-3 + the exit rule for UI phases), OD-15…OD-21,
+  CHANGE_IMPACT rows for every file they touch, test ids OT-G1/G2, OT-CREW,
+  OT-UIV, OG-06.
+- **Not touched:** application code, tests, migrations, settings, env
+  files, Render, Google, the live database (reads only).
+- **Next exact action:** owner reviews DECISIONS OD-01…OD-21 (OD-02, OD-15,
+  OD-16, OD-19, OD-20 first); does OB-05 and OB-06; assigns P-1.
+
+## Phase P-1 — Baseline fix (DEF-01)
+
+**Status:** COMPLETE (2026-10-21)
+
+- **Objective:** `npm run check` exits 0 on a clean machine.
+- **Read first:** CHANGE_IMPACT §2 (P-1); `tests/agent/maintenance.test.ts`;
+  `tests/pipeline.test.ts:119-125` (the mock to copy).
+- **Files:** `tests/agent/maintenance.test.ts` only.
+- **Task:** add `vi.mock("@/lib/models", async (original) => ({ ...(await
+  original<typeof import("@/lib/models")>()), isGatewayConfigured: () => true }))`
+  (the form in `tests/agent/episodes.test.ts:23`), with `vi` imported from
+  vitest. No product code, no env var.
+- **Tests:** OT-BASE-01.
+- **Exit:** `npm run check` exit 0, output pasted here.
+- **Next exact action:** make the edit, run `npx vitest run
+  tests/agent/maintenance.test.ts`, then `npm run check`.
+
+### Session plan (2026-10-21 16:28 IST, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **Phase picked:** the pasted master prompt had `<PHASE>` unfilled, read as
+  `NEXT`. No OD decision is approved ("Track O owner approvals" empty), so
+  O1+ are blocked; P-1 needs none.
+- **Preflight:** `git status --short` → ` M AGENTS.md`, ` M package-lock.json`,
+  ` M package.json`, ` M status.md`, `?? docs/audit/`, `?? docs/kriya_roadmap/`,
+  `?? docs/operator/` (all known: the owner's package and audit/roadmap
+  changes from before this session, and this session's operator docs; none
+  touched by P-1). Branch `main`; HEAD `7c32922`. `npm run check` at
+  15:17 IST: typecheck/lint/format pass, tests 1 failed (DEF-01) / 1312
+  passed / 27 skipped, exit 1, which is what P-1 fixes.
+- **Ticks:** [x] preconditions (none); [x] board empty, file free;
+  [x] file allowed (track O CHANGE_IMPACT §2 P-1; track A's and voice's
+  CHANGE_IMPACT don't list it); [x] no migration.
+- **Change:** `tests/agent/maintenance.test.ts` only: import `vi`; add the
+  `vi.mock("@/lib/models", …isGatewayConfigured: () => true)` block in the
+  form of `tests/agent/episodes.test.ts:23`. No product code, no env var.
+- **Test:** OT-BASE-01 = the failing case "lets the person send a message
+  while a summary job runs" passes, run alone and in the full suite.
+- **Risk:** the mock could hide a real gateway check other cases rely on.
+  Checked: no other case in the file calls `prepare()`; `isGatewayConfigured`
+  is the only replaced export (`...original` keeps the rest).
+- **Questions:** none.
+
+### Session result (2026-10-21, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **Status:** COMPLETE.
+- **Changed:** `tests/agent/maintenance.test.ts` only (+7/−1): `vi` imported;
+  `vi.mock("@/lib/models", …)` keeping every export and replacing
+  `isGatewayConfigured` with `() => true`, with a one-line comment. No product
+  code, no env var, no other file (the `status.md` edits are this record).
+- **Tests first:** `env -u OPENROUTER_API_KEY npx vitest run
+  tests/agent/maintenance.test.ts` before the edit → `Tests 1 failed | 8
+  passed (9)` (`TurnError: Kriya can't reach its AI models right now`);
+  after → `Test Files 1 passed (1)`, `Tests 9 passed (9)`. OT-BASE-01 passes.
+- **Exit check:** `env -u OPENROUTER_API_KEY npm run check` → typecheck,
+  lint pass; "All matched files use Prettier code style!"; `Test Files 105
+  passed | 3 skipped (108)`; `Tests 1313 passed | 27 skipped (1340)`;
+  exit 0. Versus the 15:17 baseline (1 failed / 1312 passed): the one
+  failure now passes; nothing else changed.
+- **Not run:** `npm run build` (only a test file changed, which the build
+  doesn't include).
+- **Deviations:** none.
+- **Next exact action:** owner records approvals for OD-01…OD-21 under
+  "Track O owner approvals" (O1 needs OD-03 and OD-13; O2 needs OD-01,
+  OD-02, OD-03, OD-06, OD-13) and does OB-06 for P-3; then assign O1 and O2
+  (they may run in parallel) or P-3.
+
+## Phase P-3 — Isolated verification stack
+
+**Status:** IN_PROGRESS (2026-10-22; OB-06 done by the owner)
+
+- **Objective:** an agent can run web + worker locally against the local
+  Supabase stack and a scripted stub model, and is stopped if anything
+  points at the live database.
+- **Read first:** UI_VERIFICATION.md (all); CHANGE_IMPACT §2 (P-3);
+  `lib/models.ts` (`createGatewayModel`), `package.json` scripts,
+  `scripts/grant-owner.ts`, `scripts/migrate.ts`.
+- **Files:** `supabase/config.toml` (`supabase init`),
+  `scripts/verify-guard.ts`, `scripts/verify-model-stub.ts`,
+  `tests/operator/verify-guard.test.ts`, `tests/operator/verify-scripts/*.json`,
+  `package.json` (`verify:guard`, `verify:stub`). `.env.verify` is created
+  locally and never committed.
+- **Tests:** OT-UIV-01, OT-UIV-02.
+- **Exit:** guard tests pass; one full session (UI_VERIFICATION §5) on the
+  **existing** screens (Home, a thread, Inbox, Account, Tasks, Usage,
+  `/owner`) with every switch off, recorded as the visual baseline in
+  `screenshots/operator/baseline/`; `npm run check` exit 0.
+
+### Session plan (2026-10-22, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **Owner message (quoted):** "Docker Desktop and Supabase CLI (v2.121.0)
+  are installed and running." "Please proceed with Phase P-3 …, execute the
+  Phase O3 browser verification check, and then proceed into Phase O5."
+  Checked: `docker info` → server 29.9.2; `supabase --version` → 2.121.0.
+- **Preflight:** `git status --short` = O6's end state plus
+  ` M supabase/.temp/cli-latest` (emptied; not made by me, presumably the
+  CLI; left untouched). Last check: 1424 passed / 26 skipped, exit 0.
+- **Create:** `supabase/config.toml` (`supabase init`; site URL and
+  redirect for `127.0.0.1:6796`), `scripts/verify-guard.ts`,
+  `scripts/verify-model-stub.ts`, `tests/operator/verify-guard.test.ts`
+  (OT-UIV-01), `tests/operator/verify-stub.test.ts` (OT-UIV-02),
+  `tests/operator/verify-scripts/*.json`; `.env.verify` locally only
+  (git-ignored, checked with `git check-ignore`).
+- **Change:** `package.json`: `verify:guard`, `verify:stub` only.
+- **Found (OF-17):** UI_VERIFICATION §5 says exporting `.env.verify` makes
+  its values win. True only for the names it sets: Next.js
+  (`@next/env` `processEnv`) still fills every name that is *undefined* in
+  `process.env` from `.env`/`.env.local`, and those files hold live-only
+  names (Exotel, voice, Firecrawl, browser). So `.env.verify` sets every
+  name those files have (empty when not needed) and the guard also fails
+  when any name in `.env`/`.env.local` is undefined in the environment
+  (it reads names, never values).
+- **Shortcut:** the guard has no staging exception (`KRIYA_VERIFY_STAGING_REF`):
+  no staging project exists (OB-01); only local hosts pass.
+- **Then:** `supabase start`; guard; local migrations; stub, web and worker
+  with the exported env; baseline screenshots of the existing screens with
+  every switch off; then O3's and O5's checks on the same stack.
+
+### Session result (2026-10-22, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **Status:** COMPLETE (see exit checks).
+- **Created:** `supabase/config.toml` + `supabase/.gitignore` (`supabase init`;
+  only `site_url` and `additional_redirect_urls` changed to `127.0.0.1:6796`),
+  `scripts/verify-guard.ts`, `scripts/verify-model-stub.ts`,
+  `tests/operator/verify-guard.test.ts` (OT-UIV-01, 7 tests),
+  `tests/operator/verify-stub.test.ts` (OT-UIV-02, 1 test),
+  `tests/operator/verify-scripts/{stub-test,op-propose,op-report}.json`,
+  `screenshots/operator/baseline/` (32 PNG + README). `.env.verify` exists
+  locally only (mode 600; `git check-ignore` → `.gitignore:15 .env.*`);
+  written by a script from `supabase status`, no value ever printed: 11 local
+  values plus the 15 names `.env`/`.env.local` hold, set empty (OF-17).
+- **Changed:** `package.json` (`verify:guard`, `verify:stub`; no dependency).
+- **Tests first:** both test files failed to load before the scripts
+  existed; after: `Tests 8 passed`.
+- **Local stack (real Postgres 17):** `supabase start` applied all 21
+  migrations in order, including `20261201000000_operator_mandates.sql`
+  (its first run outside PGlite), exit 0. Local URLs: API
+  `http://127.0.0.1:54321`, DB port 54322, Studio `http://127.0.0.1:54323`,
+  Mailpit `http://127.0.0.1:54324`. `npm run db:migrate -- --status` with
+  the verify env: all 21 `applied`.
+- **Guard, real runs:** with `.env.verify` exported → "verify:guard OK";
+  in a clean environment (`env -i`) → refused, listing every name `.env`
+  would leak (names only, no values).
+- **Session (UI_VERIFICATION §5):** stub on 6797, `next dev` on 6796, worker
+  (`npx tsx worker/index.ts`), all with the exported env; two people signed
+  up through the UI (`asha@example.com` made owner with `owner:grant` after
+  the guard; `ravi@example.com`); a chat reply came back through web → queue
+  → worker → stub.
+- **Baseline checks (32 shots: Home, thread, Inbox, Account, Tasks, Usage,
+  `/owner`, `/settings`; 360/1280; light/dark):** console errors 0, failed
+  requests 0, horizontal scroll none, unnamed controls 0; undersized targets
+  only in existing screens (listed in the README). Inbox shows not-found
+  with `agents.inbox` off; `/settings` redirects to Account.
+- **Found:** (1) the app's theme follows its own stored choice (next-themes,
+  default dark), not the browser's colour scheme, so each shot sets
+  `localStorage.theme`; (2) **OF-18**: `/owner/config` renders only
+  `routing.`, `agent.`, `fx.`, `finance.`, `voice.`, `firecrawl.`,
+  `support.` keys, so **no `agents.*` or `operator.*` switch is editable
+  there** (O1's note that it renders automatically was wrong). Fix =
+  groups in `app/owner/config/page.tsx`, not in any CHANGE_IMPACT row:
+  **owner question**. This session set switches in the local
+  `kriya.platform_settings` table, which that page writes; (3) the
+  workspace's not-found answers HTTP 200 (its shell streams first), for
+  existing pages too.
+- **Exit checks:** `env -u OPENROUTER_API_KEY npm run check` → "All matched
+  files use Prettier code style!", typecheck and lint clean, `Test Files 117
+  passed | 3 skipped (120)`, `Tests 1432 passed | 26 skipped (1458)`, exit 0
+  (1424 + 8 new). First run failed `format:check` only on the browser tool's
+  scratch files in `.playwright-mcp/` (moved out, below). `npm run build` →
+  exit 0.
+- **Left running:** the local Supabase stack (`supabase stop` ends it).
+  Stopped: stub, web, worker, renderer. The browser tool's scratch folder
+  `.playwright-mcp/` (test data only; it failed `format:check`) was moved
+  out of the repo into the session scratchpad, not deleted (the session's
+  guardrail blocks recursive deletes).
+
+## Phase O1 — Capability registry and kill switch
+
+**Status:** COMPLETE (2026-10-21)
+
+- **Objective:** one registry describing every tool (ARCHITECTURE §4), and
+  an owner kill list that removes tools from every belt.
+- **Read first:** ARCHITECTURE §4; DECISIONS OD-03, OD-13; CHANGE_IMPACT §3
+  rows for O1; `lib/agent/policy.ts`, `lib/agent/tools.ts` (`SIDE_EFFECT_TOOLS`),
+  `lib/undo.ts`, `tests/agent/tool-policy.test.ts`, `tests/agent/regression.test.ts`.
+- **Files:** new `lib/agent/capabilities.ts`, `tests/operator/capabilities.test.ts`;
+  change `lib/config.ts` (`operator.disabledTools`), `lib/agent/run-task.ts`
+  (delete killed names from `tools`).
+- **Tests:** OT-CAP-01, OT-CAP-02, OT-CAP-03, OT-REG-01.
+- **Exit:** tests pass; `npm run check` and `npm run build` exit 0.
+- **Rollback:** clear the setting.
+
+### Session plan (2026-10-21 16:37 IST, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **Preflight:** `git status --short` → the same known changes as P-1 plus
+  P-1's `tests/agent/maintenance.test.ts`; branch `main`, HEAD `7c32922`;
+  `npm run check` exit 0 at P-1's end (1313 passed / 27 skipped). Ticks:
+  [x] preconditions (P-1 complete; OD-03, OD-13 approved); [x] board free;
+  [x] files allowed (CHANGE_IMPACT §3 O1 rows; `lib/config.ts` and
+  `run-task.ts` are not in track A's or voice's protected lists, and their
+  rows there are for other phases); [x] no migration.
+- **Create:** `lib/agent/capabilities.ts` (registry derived from
+  `TOOL_CLASSES`, `SIDE_EFFECT_TOOLS`, `TOOL_WRITES`; `system`,
+  `verification`, `undoable`, `grantable`, `pins`; `disabledTools()`);
+  `tests/operator/capabilities.test.ts` (OT-CAP-01, OT-CAP-02);
+  `tests/operator/kill-switch.test.ts` (OT-CAP-03, OT-REG-01, scripted model
+  through the real runner, pattern of `tests/agent/runner-a7.test.ts`).
+- **Change:** `lib/config.ts`: `operator.disabledTools` (env
+  `KRIYA_OPERATOR_DISABLED_TOOLS`, no default, comma-separated names).
+  `lib/agent/run-task.ts`: read it once with the other settings; delete the
+  named tools from the lead's belt (`tools`, which skill replay also reads)
+  **and** from an `assign` member's belt (ARCHITECTURE §4: "every belt").
+- **Tests first:** OT-CAP-01…03, OT-REG-01 written and seen failing before
+  the code.
+- **Risks:** (1) unset setting must leave everything byte-identical:
+  the deletion loop runs over an empty set, and OT-REG-01 compares tool
+  names and prompt with the setting unset vs. set to an unrelated name;
+  (2) a killed tool the model still calls (old history, pending approval):
+  OT-CAP-03 asserts it never executes and the task still finishes;
+  (3) the prompt may still describe a killed connector's ability (e.g.
+  Gmail drafts): accepted v1 limit, recorded as a `shortcut:` comment.
+- **Found while reading (OF-12):** `propose_call` is in the agent belt but
+  not in `TOOL_CLASSES` (`classifyTool` → R5, yet it runs without approval,
+  because `TOOL_APPROVALS` lists classed tools only; by design it only
+  drafts, D-09). The registry covers `TOOL_CLASSES` exactly (OT-CAP-01 as
+  written); a test pins `propose_call` as the only unclassed belt tool so
+  any new unclassed tool fails a test. No class is changed. Voice in-call
+  tools (`end_call`, `note_*`) run only in `kriya-voice` and are out of the
+  agent belt and the registry.
+- **Questions:** none blocking.
+
+### Session result (2026-10-21, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **Status:** COMPLETE. Exit: tests pass; `npm run check` exit 0;
+  `npm run build` exit 0.
+- **Created:** `lib/agent/capabilities.ts` (`CAPABILITIES`, `GRANTABLE`,
+  `disabledTools`); `tests/operator/capabilities.test.ts` (OT-CAP-01,
+  OT-CAP-02, kill-list parsing); `tests/operator/kill-switch.test.ts`
+  (OT-REG-01, OT-CAP-03, scripted model through `runTask`).
+- **Changed:** `lib/config.ts` (+7: `operator.disabledTools`, env
+  `KRIYA_OPERATOR_DISABLED_TOOLS`, no default); `lib/agent/run-task.ts`
+  (+8: import, one settings read, `delete` from the lead's `tools` and
+  from each `assign` member's `memberTools`). No other product file.
+- **Tests first:** before the code, `npx vitest run tests/operator` →
+  capabilities file failed to load (no module); kill-switch `Tests 3
+  failed | 2 passed (5)` (killed tool still offered to lead and member, and
+  it ran: a `memories` row appeared). After: `Test Files 2 passed (2)`,
+  `Tests 14 passed (14)`. Related suites (`tool-policy`, `regression`,
+  `runner`): with the new ones `Test Files 5 passed (5)`, `Tests 48 passed (48)`.
+- **Observed (not assumed):** when the model calls a killed tool, no
+  `tool_executions` row is written at all, and the task ends `succeeded`
+  on attempt 1 (probe run, then asserted in OT-CAP-03).
+- **Exit checks:** `env -u OPENROUTER_API_KEY npm run check` → "All
+  matched files use Prettier code style!", typecheck and lint clean,
+  `Test Files 107 passed | 3 skipped (110)`, `Tests 1327 passed | 27
+  skipped (1354)`, exit 0 (P-1 baseline 1313 + 14 new). `npm run build` →
+  "Compiled successfully", exit 0; only `/icon.svg` and
+  `/manifest.webmanifest` are static, so the build read no database.
+- **Deviations:** (1) the kill list also applies to `assign` members'
+  belts (ARCHITECTURE §4 "every belt"; CHANGE_IMPACT's O1 row named only
+  `tools`); (2) typecheck first failed on the new test's chunk union
+  (my error), fixed with the `Chunk` type `runner-a7.test.ts` uses.
+- **Found:** OF-12 (`propose_call` unclassed; pinned by a test). **OF-13:**
+  `gmail_draft` and `calendar_create_event` return no `verification`
+  (`gmailDraft`, `calendarCreate` in `lib/connectors.ts`), so their runs are
+  always "not confirmed" in "What I did" and **can never meet a
+  `tool_verified` criterion** (OP-COLLECT's first criterion, OP-MEET's
+  second). The registry records them as `verification: "none"` with a
+  `shortcut:` comment and a test. Fix = a read-back in `lib/connectors.ts`
+  (protected): **needs the owner's approval; must land before O5.**
+- **Open:** browser check of the new `/owner/config` row (it renders from
+  `SETTINGS` automatically) waits for P-3 (OB-06); the prompt may still
+  describe a killed tool's ability (`shortcut:` comment in `run-task.ts`).
+- **Next exact action:** owner decides on OF-13 (approve a read-back for
+  `gmailDraft` and `calendarCreate` in `lib/connectors.ts`, e.g. as part of
+  G1); then assign **O2** (data model), which needs no other approval.
+
+## Phase O2 — Data model
+
+**Status:** COMPLETE (2026-10-21; on PGlite; **not applied** to any real database)
+
+- **Objective:** `mandates`, `grants`, `grant_uses`,
+  `tool_executions.grant_id`, transitions, `consume_grant`, RLS, proven by
+  SQL tests; no callers yet.
+- **Read first:** DATA_MODEL_AND_STATE_MACHINES.md (all);
+  `supabase/migrations/20261101000003_goals_schedules.sql`,
+  `20261115000000_database_lint.sql`; `tests/db/harness.ts`,
+  `tests/db/migrations.test.ts`, `tests/db/lint.test.ts`.
+- **Files:** new `supabase/migrations/20261201000000_operator_mandates.sql`,
+  `supabase/rollback/20261201000000_operator_mandates.down.sql`,
+  `tests/db/operator-rls.test.ts`; change `db/schema.ts`,
+  `tests/db/migrations.test.ts`.
+- **Tests:** OT-DB-01…07, OT-MIG-01; `tests/db/lint.test.ts` still zero.
+- **Exit:** `npm run check` exit 0. Applying to any real database needs the
+  owner's go-ahead (`npm run db:migrate`), recorded here.
+- **Rollback:** the down migration.
+
+### Session plan (2026-10-21 16:50 IST, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **Preflight:** `git status --short` = O1's end state (known); HEAD
+  `7c32922`; `npm run check` exit 0 at O1's end (1327 passed / 27 skipped).
+  Ticks: [x] preconditions (P-1, O0 complete; OD-01, OD-02, OD-03, OD-06,
+  OD-13 approved); [x] board free, no other migration writer; [x] files
+  allowed (CHANGE_IMPACT §3 O2 rows); [x] timestamp `20261201000000`
+  claimed, sorts after `20261115000000_database_lint`.
+- **Create:** `supabase/migrations/20261201000000_operator_mandates.sql`,
+  `supabase/rollback/20261201000000_operator_mandates.down.sql`,
+  `tests/db/operator-rls.test.ts` (OT-DB-01…07).
+- **Change:** `db/schema.ts` (tables `mandates`, `grants`, `grantUses`;
+  `toolExecutions.grantId`; types `Criterion`, `EvidenceSpec`,
+  `CriterionResult`, `Pins`); `tests/db/migrations.test.ts` (OT-MIG-01 case;
+  the A3 case rolls the new migration back first and reapplies it last,
+  because it drops `goals` and `check_transition()`, which the new tables
+  use; its assertions unchanged).
+- **Stricter than DATA_MODEL (recorded as OF-14):** (1) `mandates_guard`:
+  the `authenticated` role can't set `completed`, `expired` or
+  `needs_person` (worker-only) nor change `user_id`; (2) the insert policy
+  also requires `goal_id`, `verdict`, `approved_at`, `closed_at` null and
+  `confirmed` empty; (3) `origin_thread_id` nullable, `on delete set null`,
+  not cascade, so deleting the chat a job was proposed in doesn't delete
+  an active job and its grants; (4) an index on every new foreign key's
+  leading column (P-2 found 58 missing; not adding to them).
+- **Tests first:** OT-DB-01…07 and OT-MIG-01, run against the current
+  migrations (must fail: no tables), then the migration.
+- **Risks:** the A3 rollback case breaking (handled above); the lint test
+  (every function pins `search_path`, every RLS table has a policy):
+  `consume_grant`, `grants_guard`, `mandates_guard` all `set search_path =
+  ''`; nothing applied to any real database (applying needs the owner).
+- **Questions:** none.
+
+### Session result (2026-10-21, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **Status:** COMPLETE on PGlite. Exit: tests pass; `npm run check` exit 0;
+  `npm run build` exit 0. Applying `20261201000000` to Supabase needs the
+  owner's go-ahead (`npm run db:migrate` with `MIGRATION_DATABASE_URL`);
+  it has no callers until O3.
+- **Created:** `supabase/migrations/20261201000000_operator_mandates.sql`
+  (tables `mandates`, `grants`, `grant_uses`; `tool_executions.grant_id`;
+  20 transition rows; `consume_grant`, `mandates_guard`, `grants_guard`,
+  all `search_path = ''`; RLS + column grants; indexes on every new FK);
+  `supabase/rollback/20261201000000_operator_mandates.down.sql`;
+  `tests/db/operator-rls.test.ts` (18 tests).
+- **Changed:** `db/schema.ts` (+122: `mandates`, `grants`, `grantUses`,
+  `toolExecutions.grantId`, `MANDATE_STATUSES`, `GRANT_TOOLS`, `Criterion`,
+  `EvidenceSpec`, `CriterionResult`, `Pins`, `ProposedGrant`);
+  `tests/db/migrations.test.ts` (OT-DB-06 case; the A3 case rolls
+  `20261201000000` back first and reapplies it last, its assertions
+  unchanged); `tests/operator/capabilities.test.ts` (+1: `GRANT_TOOLS` =
+  `GRANTABLE`).
+- **Tests first:** `tests/db/operator-rls.test.ts` before the migration →
+  `Tests 16 failed (16)` (after making the three negative tests first prove
+  a valid insert works, so none passed vacuously); after → `16 passed`;
+  then +2 schema-mirror tests. OT-DB-06 was written after the migration
+  existed (it needs the files), so it wasn't seen failing.
+- **Covered:** OT-DB-01 (isolation, no proposing as/into another person,
+  no pre-filled outcome, ≤ 30 days, 1–12 criteria, OF-14 deletes, grant_id
+  column), OT-DB-02 (all 72 status pairs: exactly the 17 allowed; the
+  person's session can't set needs_person/completed/expired; grants never
+  come back), OT-DB-03 (one use per call, same call free, exhausted at the
+  limit, refused when revoked/expired/job paused/another person; 10 calls
+  at once → exactly 3 yeses for `max_uses = 3`), OT-DB-04 (the person's
+  session gets "permission denied" on `consume_grant`), OT-DB-05
+  (narrow/revoke only; uses untouchable), OT-DB-06 (down with data → 0 of
+  27 objects, version row gone, threads intact; up → 27, RLS on), OT-DB-07
+  (only the four tools; `max_uses` ≤ 50), schema mirror (columns and
+  statuses equal the SQL).
+- **Exit checks:** `env -u OPENROUTER_API_KEY npm run check` → "All matched
+  files use Prettier code style!", typecheck and lint clean, `Test Files
+  108 passed | 3 skipped (111)`, `Tests 1348 passed | 26 skipped (1374)`,
+  exit 0. `npm run build` → "Compiled successfully", exit 0. Total grew by
+  exactly the 20 new tests; one fewer skip because `T-SEC-03` runs when
+  `.next/static` exists (O1's build left it); run alone: `1 passed`.
+- **Deviations (OF-14, all stricter):** nullable `origin_thread_id` with
+  `set null`; `mandates_guard`; stricter insert policy; extra FK indexes;
+  `consume_grant`'s idempotent shortcut also checks `user_id`.
+  DATA_MODEL §1.1/§5 updated to match.
+- **Not done:** no real database touched; no UI (none in O2).
+- **Next exact action:** assign **O3** (proposal, approval, Inbox, job
+  panel; needs P-3 for its browser exit check, so OB-06 first) or **P-3**
+  now; owner decides whether to apply `20261201000000` to Supabase.
+
+## Phase O3 — Mandate proposal, approval and pages
+
+**Status:** NOT_STARTED
+
+- **Objective:** the agent can propose a job; the person can read, approve
+  (reduce-only edits), decline, pause, resume, revoke, close it, or stop
+  all; approval creates the goal, grants and schedules. Grants exist but
+  **nothing uses them yet** (O4).
+- **Read first:** TOOLS_AND_CONTRACTS §1–3; UX_SPEC §1–3, §5; DATA_MODEL §4;
+  `lib/goals.ts`, `lib/schedules.ts` (`createSchedule`), `actions/goals.ts`,
+  `queries/inbox.ts`, `app/(workspace)/goals/[goalId]/page.tsx`.
+- **Files:** new `lib/operator/{mandates,grants,labels}.ts`,
+  `actions/mandates.ts`, `queries/mandates.ts`, `components/operator/*`,
+  `tests/operator/{mandates,actions}.test.ts`; change per CHANGE_IMPACT §3
+  (O3 rows).
+- **Tests:** OT-MND-01…05, OT-POL-01, OT-REG-01, OT-UI-01, OT-UI-02.
+- **Exit:** tests pass; check + build exit 0; browser verification
+  (UI_VERIFICATION §5, TEST_AND_EVALUATION §1a) of the card, job panel,
+  Inbox sections and Settings → Jobs, plus the unchanged neighbours, with
+  the checks table and screenshots in `screenshots/operator/O3/`.
+
+### Session plan (2026-10-22, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **Phase picked:** owner asked for "the next two phases according to
+  status.md". P-3 is next in the table, but its exit (a browser session on
+  the local Supabase stack) needs OB-06, and `docker`/`supabase` are still
+  not installed (`command not found`, checked today). So this session does
+  **O3, then O4** (O4 depends only on O3). O3's browser exit check needs
+  P-3: it stays an open item, so O3 can end "code complete", not `COMPLETE`.
+- **Preflight:** `git status --short` = O2's recorded end state (all known);
+  branch `main`, HEAD `7c32922`; `env -u OPENROUTER_API_KEY npm run check`
+  → format pass, `Test Files 108 passed | 3 skipped (111)`, `Tests 1348
+  passed | 26 skipped (1374)`, exit 0 (same as O2's end).
+- **Ticks:** [x] preconditions (O1, O2 complete; OD-01, OD-09 ids, OD-14,
+  OD-21 approved); [x] board was empty, claimed; [x] files allowed
+  (CHANGE_IMPACT §3 O3 rows; `run-task.ts` is voice-protected "except the
+  rows in §3", and its O1–O4 rows are track O's, approved with the
+  blueprint); [x] no migration.
+- **Create:** `lib/operator/{labels,grants,mandates}.ts` (pin schemas,
+  proposal validation and insert, the person's transitions);
+  `actions/mandates.ts`; `queries/mandates.ts`;
+  `components/operator/{mandate-card,job-panel,controls}.tsx`;
+  `tests/operator/{mandates,actions}.test.ts`.
+- **Change:** `lib/config.ts` (`operator.mandates`, `operator.maxActive`);
+  `lib/agent/policy.ts` (two classes, their writes, the PERSON_ONLY_WRITES
+  rows); `lib/agent/capabilities.ts` (facts for the two tools);
+  `lib/agent/tools.ts` (`createMandateTools`, `KriyaTools`);
+  `lib/agent/run-task.ts` (switch, one belt line, `capabilities.mandates`);
+  `lib/agent/instructions.ts` (Jobs line only when set);
+  `components/thread/tool-call.tsx`, `components/workbench/activity.tsx`
+  (render/label); `queries/inbox.ts` + inbox page (two sections, badge);
+  goal page (job panel); settings page (Jobs, see OF-15).
+- **Tests first:** OT-MND-01…05, OT-POL-01, OT-REG-01.
+- **Found while reading (OF-15):** `app/(workspace)/settings/page.tsx` is
+  only `redirect("/account")`, so UX_SPEC §5 "Settings → Jobs" has no screen.
+  Smallest change inside the allowed file: with `operator.mandates` on,
+  `/settings` renders the Jobs section (Stop all, active jobs); off, it
+  redirects exactly as today; the Inbox's jobs sections link to it.
+  **Owner question:** keep that, or move Jobs into Account (needs a new
+  CHANGE_IMPACT row)?
+- **Doc conflict noted (not blocking):** TOOLS §1.1 step 5 caps open
+  *proposals* at 5 (a constant); OD-14 caps *active + needs_person* at
+  `operator.maxActive` (default 3) on approval. Both are implemented.
+- **Risks:** switch off must leave prompt, belt and `TOOL_APPROVALS`
+  identical (the new classes are R0/R1, so `TOOL_APPROVALS` doesn't change;
+  the belt line adds nothing when off); approval must be one transaction
+  (OT-MND-03 forces a failure part-way and checks nothing remains); no tool
+  may write status or grants (OT-POL-01).
+
+### Session result (2026-10-22, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **Status:** `IN_PROGRESS` — **code complete, tests pass, check + build
+  exit 0; the browser exit check (UI_VERIFICATION §5, OT-UI-01/02) has not
+  run** because P-3 can't be built without Docker and the Supabase CLI
+  (OB-06). Not marked `COMPLETE`.
+- **Created:** `lib/operator/mandates.ts` (proposal schema and checks,
+  `proposeMandate`, `mandateStatus`, the person's transitions:
+  approve/decline/pause/resume/end/revokeGrant/confirmCriterion/stopAll),
+  `lib/operator/pins.ts` (pin schemas per grantable tool),
+  `lib/operator/labels.ts` (pure strings for client components),
+  `actions/mandates.ts`, `queries/mandates.ts`,
+  `components/operator/{controls,job-panel}.tsx` (the card is in
+  `controls.tsx`; a separate `mandate-card.tsx` wasn't needed),
+  `tests/operator/{mandates,actions}.test.ts`.
+- **Changed:** `lib/config.ts` (`operator.mandates`, `operator.maxActive`
+  default 3); `lib/agent/policy.ts` (+2 classes R1/R0, their writes, 7
+  PERSON_ONLY_WRITES rows; no existing value changed);
+  `lib/agent/capabilities.ts` (facts for the 2 tools, not grantable);
+  `lib/agent/tools.ts` (`createMandateTools`, `KriyaTools`);
+  `lib/agent/run-task.ts` (switch, `capabilities.mandates`, one belt line);
+  `lib/agent/instructions.ts` (Jobs line only when set);
+  `components/thread/tool-call.tsx`, `components/workbench/activity.tsx`;
+  `queries/inbox.ts` + inbox page (two sections, badge, link to Jobs); goal
+  page (job panel); settings page (Jobs, OF-15).
+- **Tests first:** `tests/operator/{mandates,actions}.test.ts` before the
+  code → both files failed to load (no module). After: `Tests 27 passed`.
+  Runner cases in `tests/operator/runner-grants.test.ts` (shared with O4).
+- **Covered:** OT-MND-01 (non-grantable tool incl. R4/`propose_call`/
+  schedule/browser; missing, unknown or empty pins; `maxUses` 51;
+  `dueInDays` 31; sub-daily check-in; unknown evidence kind; uncheckable
+  `tool_verified`; another person's invoice; draft invoice; 6th open
+  proposal), OT-MND-02 (proposed row only; no goal, grant, schedule or task;
+  idempotent per task + title; invisible to another person), OT-MND-03
+  (goal, edited grants expiring with the job, kickoff in ~60 s + check-in,
+  ₹ caps; a forced failure part-way leaves nothing), OT-MND-04 (raising a
+  limit, unknown grant index, 4th job with default 3 then 4 with
+  `maxActive` 4, approve twice, decline then approve, another person's job,
+  each of the 3 switches off), OT-MND-05 (revoke/close end grants,
+  schedules, goal; Stop all covers active, paused and needs-you jobs, not
+  proposals or another person's, and writes `audit_events`), OT-POL-01,
+  OT-REG-01 (runner: unset vs jobs-on-but-goals-off → same belt and
+  prompt; no Jobs line), module boundaries (CHANGE_IMPACT §4).
+- **Deviations (all stricter or smaller):** (1) the mandate tools need
+  `agents.goals` and `agents.inbox` on too (OD-21), so a proposal that
+  could never be approved isn't made; (2) on a goal a job owns, the goal's
+  own Pause/Abandon/Achieved buttons are hidden and the job's controls
+  shown, so the goal can't be closed while its job and grants stay live
+  (goals without a job render as before); (3) no "Background runs are off
+  on this server" line: the web server can't see the worker's
+  `KRIYA_SCHEDULES_ENABLED`, and a guess would mislead; (4) proposals link
+  to the Inbox (no new route).
+- **Exit checks:** `env -u OPENROUTER_API_KEY npm run check` → "All matched
+  files use Prettier code style!", typecheck and lint clean, `Test Files 112
+  passed | 3 skipped (115)`, `Tests 1401 passed | 26 skipped (1427)`, exit 0
+  (O2's 1348 + 53 new across O3 and O4). `npm run build` → "Compiled
+  successfully", exit 0; `/settings`, `/inbox`, `/goals/[goalId]` dynamic.
+  Browser verification: **not run** (no P-3 stack).
+- **Open:** browser verification (needs P-3); OF-15 owner question; the
+  `createMandateTools(env, { reports })` option arrives with O5.
+- **Next exact action:** owner installs Docker Desktop and the Supabase CLI
+  (OB-06), then P-3; then O3's browser session (UI_VERIFICATION §5) of the
+  card, job panel, Inbox sections and `/settings`, with screenshots in
+  `screenshots/operator/O3/`.
+
+### Browser verification (2026-10-22, Claude Code / Opus 5.5, P-3 stack)
+
+- **Status:** O3 **COMPLETE** (open items below are recorded per
+  UI_VERIFICATION §5).
+- **Setup:** guard OK; local stack; stub `op-propose`; switches
+  `agents.inbox`, `agents.goals`, `operator.mandates` on (in the local
+  `platform_settings`, OF-18). Screenshots and README:
+  `screenshots/operator/O3/` (52 files).
+- **Flow, through the real UI:** Asha asked her agent → `mandate_propose`
+  ran (stub) → card in "Jobs to review", Inbox badge 1 → "Fewer" once
+  (6 → 5) → "Approve job" → redirected to `/goals/…`. Local DB after:
+  job `active` with `goal_id`; grant `gmail_draft` `max_uses 5`, `uses 0`,
+  `expires_at` = due; kickoff `once` due in 54 s and check-in `recurring`
+  tomorrow 10:00; goal `active`. The kickoff then ran by itself
+  (`schedule_runs.outcome = enqueued`, task `succeeded`, `once` → `ended`).
+  Pause → "Paused" → Resume → "Active"; "Mark done" → "confirmed by you";
+  "Revoke: Save up to 5 email drafts…" → "· revoked"; a second proposal
+  declined → `declined`; Stop all (confirm dialog) → "No jobs are running",
+  job `revoked`, goal `abandoned`, schedules `ended`, `audit_events`
+  `mandates.stop_all {"stopped": 1}`. Web and worker logs: 0 errors.
+
+| Screen | Console errors | Failed requests | No h-scroll @360 | Targets ≥ 44 @360 | Unnamed | Light/dark |
+| --- | --- | --- | --- | --- | --- | --- |
+| Thread with the proposal | 0 | 0 | yes | tool row 314×36 (shared trigger for every tool, existing) | 0 | reviewed |
+| Inbox: job card | 0 | 0 | yes | all card controls 44 tall, named after the grant | 0 | reviewed |
+| Goal page: Job panel | 0 | 0 | yes | panel controls 44; "Goals" back link 43×44 (existing) | 0 | reviewed |
+| `/settings` Jobs | 0 | 0 | yes | yes | 0 | reviewed |
+| Inbox after approval | 0 | 0 | yes | yes | 0 | reviewed |
+| Neighbours, switches on (Home, thread, Account, Tasks, Usage, `/owner`) | 0 | 0 | yes | same exceptions as the baseline | 0 | reviewed |
+| Isolation: Ravi opens Asha's job | — | — | — | — | — | not-found page, nothing of Asha's in his Inbox or Jobs ("No jobs are running") |
+
+- **Fixed during the check:** "checks in Every day" → "checks in every day"
+  (`queries/mandates.ts`).
+- **Open:** (1) the not-found answers HTTP 200, not 404: the workspace
+  streams its shell first; the same for every existing workspace not-found
+  (baseline Inbox-off), not an O3 change; (2) keyboard-only navigation was
+  not driven (every control's accessible name was checked); (3) a real
+  Android + TalkBack check needs the owner's phone (UI_VERIFICATION §6);
+  (4) OF-18 (switches not on `/owner/config`) needs the owner.
+
+## Phase O4 — Grant enforcement
+
+**Status:** COMPLETE (2026-10-22) — OD-02 approved 2026-10-21; the AGENTS.md
+amendment (CHANGE_IMPACT §7) applied at the start of this session.
+
+- **Objective:** inside an active job's thread, a call that matches an
+  active grant runs without a per-call approval; everything else asks
+  exactly as today.
+- **Read first:** ARCHITECTURE §5 (incl. the unknown box);
+  `node_modules/ai/docs/03-agents/06-tool-approvals.mdx`;
+  `lib/agent/run-task.ts` (whole); `lib/agent/approvals.ts`;
+  SECURITY_AND_THREATS §1.
+- **Files:** `lib/operator/grants.ts` (`withGrants`, `activeGrants`,
+  `consumeGrant`), `lib/agent/run-task.ts`, possibly `lib/agent/approvals.ts`
+  (only if OT-GRT-01 shows it), "What I did" files (CHANGE_IMPACT §3);
+  `tests/operator/grants.test.ts`, `tests/operator/runner-grants.test.ts`.
+- **Tests:** OT-GRT-01 **first**, then OT-GRT-02…08, OT-SEC-01, OT-SEC-02,
+  OT-REG-01.
+- **Exit:** tests pass; check + build exit 0.
+- **Rollback:** `operator.grants` off.
+
+### Session result (2026-10-22, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **Plan (same session as O3, recorded there):** preconditions O3 code,
+  OD-02/03/04 approved; files per CHANGE_IMPACT §3 O4 rows; no migration.
+- **AGENTS.md:** track-A rule 3 replaced with the CHANGE_IMPACT §7 text
+  word for word, and "approving jobs and grants, and confirming job
+  criteria" added to rule 11, **before** any O4 code.
+- **Created:** `lib/operator/grants.ts` (`grantMatches` pure, `withGrants`,
+  `activeGrants`, `consumeGrant`), `tests/operator/grants.test.ts`,
+  `tests/operator/runner-grants.test.ts`.
+- **Changed:** `lib/config.ts` (`operator.grants`, default off);
+  `lib/agent/run-task.ts` (read the switch; `activeGrants` for this thread,
+  a failed read falls back to none; `toolApproval` is `withGrants(…)` only
+  when grants exist, else `TOOL_APPROVALS` itself; `grantId` stamped on the
+  `tool_executions` insert); `queries/episodes.ts` (`jobsForExecutions`),
+  `actions/inbox.ts` (`jobs` on each record, only with `operator.grants`
+  on), `components/thread/what-i-did.tsx` ("under your job: …").
+  **`lib/agent/approvals.ts` unchanged** (see the unknown below). Episode
+  content and `receiptHash` untouched.
+- **The ARCHITECTURE §5 unknown, settled by OT-GRT-01 (observed, AI SDK
+  7.0.137):** an `"approved"` status saves the tool part as `state:
+  "output-available"` with `approval: { id, approved: true, isAutomatic:
+  true }`. `recordApprovals` indexes only `approval-requested` parts, so no
+  `approvals` row is written; the transcript renders it as a finished
+  call. Pinned in the test.
+- **Tests first:** before `grants.ts` existed: `grants.test.ts` failed to
+  load; runner file `Tests 4 failed | 6 passed (10)` (the four "runs
+  without asking" cases; the "asks as today" ones already passed). After:
+  `Test Files 2 passed`, `Tests 25 passed`.
+- **Covered:** OT-GRT-01 (no approval, no `approvals` row, `grant_id`
+  stamped, one `grant_uses` row for that task and call, "under your job"
+  read), OT-GRT-02 / OT-SEC-01 (extra recipient → asks, no use, no draft;
+  matcher: other sheet, other range, case-different range, missing range,
+  unknown field, cc outside its pin), OT-GRT-03 (forged grants for R4,
+  `propose_call`, schedule, browser, web, skill tools: never matched, rule
+  object unchanged, nothing consumed; SQL refuses storing one), OT-GRT-04
+  (another thread → `TOOL_APPROVALS` itself, asks; `activeGrants` empty for
+  a chat, another person's thread, a paused job, an expired grant),
+  OT-GRT-05 (revoked between two calls → second asks), OT-GRT-06 (provider
+  failure right after a granted draft → task `failed`, 1 attempt, 1 use, 1
+  draft), OT-GRT-07 (`maxUses` 1 → second asks, grant `exhausted`),
+  OT-GRT-08 (every non-granted rule, incl. the web guard, is the same
+  object and still asks after private mail), OT-SEC-02 (no tool writes
+  grants, uses, job status or ticks; the person's session gets permission
+  denied on `consume_grant`), OT-REG-01 (switches off → `TOOL_APPROVALS`
+  identity and the draft asks even with a live grant row; grants on with no
+  grant for the thread → identity).
+- **Deviation (stricter):** grants are read only when `operator.mandates`
+  (with goals and inbox) is on as well as `operator.grants`.
+- **Safety floor:** no value in `TOOL_CLASSES`, `approvalFor`, the browser
+  policy, R5, `untrustedSeen`, `guardWeb`, voice rules or the receipt hash
+  changed; grantable list unchanged (the four of OD-03).
+- **Exit checks:** same run as O3: check exit 0 (`Tests 1401 passed | 26
+  skipped`), build exit 0. O4 changes no screen except the one-line "under
+  your job" note in "What I did" (shown only with `operator.grants` on);
+  its browser look is checked with O3's session once P-3 exists.
+- **Not tested:** a real Gmail draft (connector mocked; no real call made),
+  the local Supabase stack's concurrency (PGlite serialises; O10 preflight).
+- **Next exact action:** P-3 (needs OB-06), then O3's browser check; O5 is
+  still blocked by OF-13 (read-back in `lib/connectors.ts`, scheduled into
+  G1, which needs OB-05 and P-3). O6 depends on O5, so it waits too;
+  nothing else in track O is unblocked.
+
+## Phase O5 — Verdict and handover report
+
+**Status:** COMPLETE (2026-10-22) — code, browser check and report sharing.
+
+- **Objective:** a pure verdict over typed evidence; `mandate_report`;
+  report PDF via the existing `report` template; share via K8.
+- **Read first:** ARCHITECTURE §6; DATA_MODEL §3; `lib/agent/episodes.ts`,
+  `lib/documents/*`, `lib/share.ts`, voice `call_outcomes` columns.
+- **Files:** `lib/operator/verdict.ts`, `tests/operator/verdict.test.ts`;
+  `lib/agent/tools.ts`/`policy.ts` (`mandate_report`), `actions/mandates.ts`
+  (`mandateReportPdf`), job panel.
+- **Tests:** OT-VDT-01…05.
+- **Exit:** tests pass; check + build exit 0; browser verification of the
+  job panel's "Done means" and the report PDF/share flow
+  (`screenshots/operator/O5/`).
+
+### Session (2026-10-22, Claude Code / Opus 5.5, in place on `main`, uncommitted): OF-13, then O5
+
+- **Preflight:** `git status --short` = O3/O4's end state (known); owner
+  approvals recorded under "Track O owner approvals" (OF-15, the three O3
+  guards, OF-13 now). Board: claimed for OF-13 + O5 + O6, released at the end.
+- **OF-13 (prerequisite, protected `lib/connectors.ts`, owner-approved):**
+  `gmailDraft` reads the draft back with `format=metadata` (To and Cc
+  headers only, never the body) and is `verified` only when the draft exists
+  with exactly the requested recipients; `calendarCreate` reads the event
+  back and is `verified` only when it isn't cancelled and has the same title
+  and guests. Both return `verification` (`api_readback`; evidence = provider
+  id + link; the note holds no address). Registry
+  (`lib/agent/capabilities.ts`): both `api_readback`, the `shortcut:`
+  comments removed. Tests first: `tests/operator/readback.test.ts` → `5
+  failed`, after → `5 passed`; `tests/connectors` unchanged and passing.
+  **One existing test changed:** `tests/pipeline.test.ts` ("waits for
+  approval, then runs it once in the worker") asserted exactly one Google
+  request; the read-back is a second (GET). The assertion now checks exactly
+  one creating POST and two requests in total; its meaning ("created once")
+  is unchanged. Before the change the full check showed `1 failed | 1423
+  passed`; this was the one.
+- **O5 created:** `lib/operator/verdict.ts` (`verdict` pure, `allMet`,
+  `loadEvidence(q, userId, job)` with the person's id in every query,
+  `storeVerdict`, `reportVerdict`, `describeResult`, `reportData` for the
+  existing `report` template), `tests/operator/verdict.test.ts`.
+- **O5 changed:** `lib/config.ts` (`operator.reports`, `operator.checkIns`,
+  both default off); `lib/agent/policy.ts` (`mandate_report: "R1"`, writes
+  `mandates.verdict`, `mandates.last_evidence_at`, OF-16); registry fact;
+  `lib/agent/tools.ts` (`createMandateTools(env, { reports })` adds
+  `mandate_report` only with it); `lib/agent/run-task.ts` (reads the switch,
+  passes it); `actions/mandates.ts` (`mandateReportPdf`: needs
+  `operator.mandates`, `operator.reports`, `agents.files`; verdict read as
+  the person; existing PDF path); `queries/mandates.ts` + goal page (live
+  "Done means" with "Verified · 2 records" / "Not confirmed" when reports
+  are on); `components/operator/{job-panel,controls}.tsx` (Report button);
+  tool-call and activity labels.
+- **Tests first:** `verdict.test.ts` before the module → failed to load;
+  after → `Tests 9 passed`.
+- **Covered:** OT-VDT-01 (every kind met and not met, incl. `atLeast`,
+  a needs-review outcome, a missing or unpaid listed invoice, an empty
+  list), OT-VDT-02 (deleted record and failed check don't count), OT-VDT-03
+  (`mandate_report` stores the verdict and `last_evidence_at`, status stays
+  `active`; only with `operator.reports`), OT-VDT-04 (another person's
+  record or invoice never loads, even when listed), OT-VDT-05 (report rows:
+  "Verified · proof", "Not confirmed", "Confirmed by you"; the template
+  renders them).
+- **Not done (needs a decision):** "share via K8". `lib/share.ts`
+  `createShare` takes only `kind: "receipt"`, and CHANGE_IMPACT has no O5
+  row for `lib/share.ts`. The report is a PDF in the person's files
+  (opened through `/api/files/…`). **Owner question:** approve a
+  `lib/share.ts` row for job reports?
+- **Not tested:** the PDF render itself (needs `kriya-browser`;
+  `PdfUnavailableError` is shown when it isn't set up).
+- **Exit checks (OF-13 + O5 + O6, one run):** `env -u OPENROUTER_API_KEY npm
+  run check` → "All matched files use Prettier code style!", typecheck and
+  lint clean, `Test Files 115 passed | 3 skipped (118)`, `Tests 1424 passed
+  | 26 skipped (1450)`, exit 0 (O4's 1401 + 23 new). `npm run build` →
+  "Compiled successfully", exit 0. Browser verification: not run (no P-3).
+- **Next exact action:** P-3, then the browser check of the job panel's
+  "Done means" and the report flow (`screenshots/operator/O5/`).
+
+### Browser verification (2026-10-22, Claude Code / Opus 5.5, P-3 stack)
+
+- **Setup:** as O3, plus `operator.reports` and `agents.files`; a private
+  `kriya-files` bucket created in the local stack (no migration creates
+  it); a local `kriya-browser` on 6798 (`BROWSER_CHROMIUM_PATH` = installed
+  Google Chrome, fresh random secret; it binds `0.0.0.0` as coded and was
+  stopped after the check); web and worker restarted with those values.
+  Screenshots: `screenshots/operator/O5/` (9 files).
+- **Flow:** job panel "Done means" showed "Kriya checks 2× an email draft ·
+  Not confirmed" and "confirmed by you"; in the job's thread the agent ran
+  `mandate_report` (stub `op-report`): local DB `status` stayed `active`,
+  `verdict` = c1 unmet / c2 met by the person, `last_evidence_at` set;
+  "Make the report (PDF)" → "Open the report" → `/api/files/…` 303 to a
+  60 s signed local link → `200 application/pdf`, 90,517 bytes, `%PDF-`.
+  The PDF lists "Not confirmed" and "Confirmed by you" with "1 of 2 lines
+  met".
+- **Checks (job panel with reports, 360/1280, light/dark):** console errors
+  0, failed requests 0, no horizontal scroll, unnamed controls 0, all panel
+  controls 44 tall.
+- **Fixed during the check:** the report printed the due date as
+  `2026-11-05` under a "22 Oct 2026" header; now the same `5 Nov 2026`
+  format (`lib/operator/verdict.ts`). The saved PDF predates this fix.
+- **Follow-up (not done):** `mandate_report` details render as raw JSON in
+  the thread (the default for tools without a renderer); a short renderer
+  in `components/thread/tool-call.tsx` would read better.
+- **Still open for O5:** sharing the report by link (K8) needs a
+  `lib/share.ts` row (owner question from the last session). Until then O5
+  stays `IN_PROGRESS`.
+
+### Session result: report sharing (2026-10-22, Claude Code / Opus 5.5)
+
+- **Status:** O5 **COMPLETE** (owner approved the `lib/share.ts` row; added to
+  CHANGE_IMPACT §3).
+- **Changed:** `lib/share.ts` (`jobReportPdf(userId, mandateId,
+  { completedOnly })`, read as the person; `createShare` takes
+  `kind: "report"`, only for a completed job of the person's own; receipts
+  unchanged; the database already allowed `report` in `share_links.kind`,
+  so no migration); `actions/share.ts` (a discriminated input; report shares
+  need `agents.files`, `operator.mandates`, `operator.reports`, receipts
+  keep their own switches); `actions/mandates.ts` (`mandateReportPdf` reuses
+  `jobReportPdf`); `components/operator/{controls,job-panel}.tsx` ("Share
+  the report" on completed jobs). New `tests/operator/report-share.test.ts`
+  (3 tests; written before the code but **not run first**); the existing
+  `tests/agent/share.test.ts` passes unchanged.
+- **Browser (P-3 stack, local renderer):** on the completed O7 job, "Share
+  the report" → 7 days → link shown once → opened in a signed-out browser:
+  the read-only snapshot page ("Shared by … Expires …", "Open the PDF").
+  The screenshot of the link itself was deleted (no token kept on disk).
+
+## Phase O6 — Responsibility loop
+
+**Status:** COMPLETE (2026-10-22)
+
+- **Objective:** `reviewMandates()` marks jobs `needs_person`, `expired`,
+  `completed`, keeps grants and schedules in step; no model.
+- **Read first:** ARCHITECTURE §7; DECISIONS OD-07; `worker/index.ts`
+  (whole), `lib/schedules.ts` (`claimDueSchedules`, `runDue`).
+- **Files:** `lib/operator/loop.ts`, `tests/operator/loop.test.ts`;
+  `worker/index.ts` (one guarded block in `schedulerLoop`).
+- **Tests:** OT-LOOP-01…04.
+- **Exit:** tests pass; check + build exit 0.
+
+### Session result (2026-10-22, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **Created:** `lib/operator/loop.ts` (`reviewMandates(now, limit = 100)`:
+  open jobs by `updated_at`, each in its own transaction, errors logged by
+  id and skipped), `tests/operator/loop.test.ts`.
+- **Changed:** `worker/index.ts` (+10: one `try` block in `schedulerLoop`,
+  only with `operator.checkIns` on; other steps untouched);
+  `lib/operator/mandates.ts` (resume also restarts schedules the ₹ budget
+  paused; the budget pauses them again if still reached).
+- **Rules as built:** past `due_at` → `expired`, grants `expired`,
+  schedules ended, goal abandoned, verdict kept; every line proven and the
+  job not paused → `completed`, grants revoked, schedules ended, goal
+  achieved (via `active` if the goal was paused: there is no paused →
+  achieved step); active and a goal schedule paused by its ₹ budget →
+  `paused` ("this month's ₹ budget is reached"); active, ≥ 2 enqueued
+  check-in runs whose task finished since the last new proof (or approval),
+  and no pending, unexpired approval in the goal thread → `needs_person`,
+  its active schedules paused (`pause_reason = 'mandate'`), grants kept but
+  matching nothing until resumed. New proof = the set of met lines and their
+  refs changed (`last_evidence_at`); "no verdict yet" equals "nothing met".
+- **Tests first:** `loop.test.ts` before the module → failed to load;
+  after → `Tests 9 passed` (with verdict: 18).
+- **Covered:** OT-LOOP-01 (expired, then the same tick twice changes
+  nothing), OT-LOOP-02 (two idle runs → needs you; one run, a still-running
+  task, runs before the last proof, or a waiting approval → not stuck),
+  OT-LOOP-03 (all met → completed, goal achieved; a paused job isn't
+  completed), budget pause, OT-LOOP-04 (a job with unreadable criteria fails
+  alone and the others complete; the batch limit holds across two ticks).
+- **Not tested:** the worker loop itself (it starts on import); the
+  guarded block is 10 lines in the existing pattern.
+- **Exit checks:** the same run as O5: check exit 0 (`Tests 1424 passed |
+  26 skipped`), build exit 0. O6 changes no screen.
+- **Next exact action:** P-3 (Docker + Supabase CLI, OB-06), then the
+  browser checks for O3 and O5; then O7 (playbooks; needs O4 and O6, both
+  done).
+
+## Phase O7 — Playbooks v1
+
+**Status:** COMPLETE (2026-10-22)
+
+- **Objective:** OP-COLLECT, OP-BOOKS, OP-COMPARE, OP-COMPLY, OP-MEET as
+  data; the "Hand Kriya a job" picker; tasks carry `workflowId`.
+- **Read first:** PLAYBOOKS.md; track A ROLE_PLAYBOOKS.md (FD-, FL-, BZ-);
+  `lib/teams.ts`, `lib/templates.ts`, `lib/quotes.ts`, `actions/quotes.ts`.
+- **Files:** `lib/operator/playbooks.ts`, picker components, home page row;
+  `subjects.ledger` upkeep in `lib/operator/loop.ts`.
+- **Tests:** OT-PB-01…03, OT-UI-01.
+- **Exit:** tests pass; check + build exit 0; browser verification of the
+  "Hand Kriya a job" flow end to end on the stub model (proposal → approve →
+  kickoff → grant use → verdict) (`screenshots/operator/O7/`).
+
+### Session plan (2026-10-22, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **Owner message:** "continue". OF-18 and the K8 share row wait for the
+  owner; the next unblocked phase is O7 (O4, O6 complete; OD-09, OD-12
+  approved). Preflight: `git status` = the P-3 session's end state (42
+  entries, all known); last check 1432 passed / 26 skipped, exit 0.
+- **Create:** `lib/operator/playbooks.ts` (the five playbooks as data;
+  `fillPlaybook` turns slots into a proposal, pins only from slots;
+  `runnable` filters by needs), `components/operator/hand-a-job.tsx`
+  (picker + slot form, client), `tests/operator/playbooks.test.ts`
+  (OT-PB-01, OT-PB-02, OT-PB-03).
+- **Change:** `lib/config.ts` (`operator.playbooks`, default off);
+  `lib/operator/mandates.ts` (`proposeMandate` takes `proposedBy` and an
+  optional origin thread; a playbook id must name a playbook and stores its
+  version; OP-BOOKS may start with no ledger ids, the loop adds them; the
+  check-in prompt of a playbook job carries its work prompt);
+  `actions/mandates.ts` (`proposeFromPlaybook`: the person's proposal, then
+  the usual card and approval); `lib/operator/loop.ts` (ledger entries
+  drafted by the job thread's tasks join `subjects.ledger`);
+  `lib/agent/queue.ts` (`enqueueScheduled` optional `workflowId` into
+  `TaskInput`; without it the row is byte-identical); `lib/schedules.ts`
+  (`claimDueSchedules` reads the goal's mandate's playbook id; `DueRun.workflowId?`;
+  `runDue` passes it); home page (the list behind `operator.playbooks`).
+- **Deviations planned (smaller or stricter):** (1) role packs aren't
+  filtered yet (the `roles` field is kept as data); (2) OP-COMPARE checks in
+  weekly, not "none" (a job's schedules always include a check-in today);
+  (3) a `radar` need is added for OP-COMPLY (`obligation_add` exists only
+  with `agents.radar`); (4) OP-MEET's calendar grant is always proposed and
+  the person can switch it off on the card.
+- **Known limit of the browser exit:** "grant use" needs a connected Gmail;
+  locally that would be a real Google call (not allowed). The browser run
+  covers picker → proposal → approve → kickoff → verdict → completed on a
+  no-grant playbook; grant use stays covered by OT-GRT-01…07.
+
+### Session result (2026-10-22, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **Status:** COMPLETE, with one open item recorded per UI_VERIFICATION §5
+  (grant use in the browser needs a real Google account).
+- **Created:** `lib/operator/playbooks.ts` (OP-COLLECT, OP-BOOKS,
+  OP-COMPARE, OP-COMPLY, OP-MEET v1; `fillPlaybook`, `runnable`,
+  `playbookById`), `components/operator/hand-a-job.tsx`,
+  `tests/operator/playbooks.test.ts` (14 tests),
+  `screenshots/operator/O7/` (17 PNG + README).
+- **Changed:** `lib/config.ts` (`operator.playbooks`, default off);
+  `lib/operator/mandates.ts` (`proposedBy`, optional origin thread, playbook
+  id must exist and stores its version, OP-BOOKS may start without ledger
+  ids, a playbook job's check-in prompt carries its work prompt);
+  `actions/mandates.ts` (`proposeFromPlaybook`: session, both switches,
+  zod slots ≤ 10 items, needs re-checked on the server, the agent must be
+  the person's); `queries/mandates.ts` (`playbookNeeds`, `playbookChoices`,
+  "checks in every …" casing); `lib/operator/loop.ts` (`joinLedger`:
+  entries drafted by the job thread's tasks join `subjects.ledger`, by
+  code); `lib/agent/queue.ts` (`enqueueScheduled` optional `workflowId`
+  into `TaskInput`); `lib/schedules.ts` (`claimDueSchedules` reads the
+  goal's job's playbook id; `DueRun.workflowId?`); home page (the list,
+  behind `operator.playbooks` and `operator.mandates`);
+  `components/operator/job-panel.tsx` (see fixes).
+- **Tests first:** `playbooks.test.ts` before the module → failed to load;
+  after (with a model id and two fixture fixes) → `Tests 14 passed`; with
+  the O3/O6/scheduler suites `Tests 61 passed`.
+- **Covered:** OT-PB-01 (every playbook with the longest slots parses;
+  grants grantable and pinned from slots; evidence checkable; check-in at
+  most daily; due ≤ 30 days; objective ≤ 2000; all five accepted on the
+  database as the person's, with version 1 and no origin thread), OT-PB-02
+  (needs filter), OT-PB-03 (a job's scheduled run carries
+  `workflowId: OP-BOOKS`; a schedule without a job has exactly the old
+  input keys), the action's refusals (switch off, unknown playbook, unmet
+  need, another agent), an agent naming a non-existent playbook, and
+  OP-BOOKS: a drafted entry joins the job and it completes only after the
+  person confirms it.
+- **Browser (P-3 stack):** Home showed exactly OP-BOOKS and OP-COMPLY; the
+  OP-COMPLY form → "Propose the job" → the card in the Inbox
+  (`proposed_by person`, `playbook_version 1`) → "Approve job" → the
+  kickoff ran as a task with `input.workflowId = "OP-COMPLY"` → "Mark done"
+  → the worker's review pass set the job `completed`, the goal `achieved`,
+  both schedules `ended` (worker log: 4 review passes, 0 errors). Checks on
+  Home and the job page (360/1280, light/dark): console errors 0, failed
+  requests 0, no horizontal scroll, unnamed controls 0; form controls 44
+  px; the dialog's close button 28 px (shared component).
+- **Fixed during the check:** (1) a completed job whose proof includes a
+  person's tick showed "Done (verified)"; now "Done" (OD-05: never
+  "verified" for a tick); (2) a finished job still said "Checks in every
+  Monday"; now "No more check-ins: the job has ended."; (3) OP-BOOKS's CA
+  field showed OP-COLLECT's drafting hint; hints are now per slot.
+- **Deviations (as planned):** roles kept as data, not filtered; OP-COMPARE
+  checks in weekly; a `radar` need; OP-MEET's calendar grant is proposed
+  and can be switched off on the card; playbook slots capped at 10 items.
+- **Open:** (1) grant use in the browser needs a connected Gmail (a real
+  Google call locally): covered by OT-GRT-01…07 on the scripted model;
+  (2) a playbook job's card shows the work prompt (written to the agent) as
+  its description; a person-facing summary line would read better.
+- **Exit checks:** `env -u OPENROUTER_API_KEY npm run check` → "All matched
+  files use Prettier code style!", typecheck and lint clean, `Test Files 118
+  passed | 3 skipped (121)`, `Tests 1446 passed | 26 skipped (1472)`, exit 0
+  (1432 + 14 new). First run failed `format:check` on the new test file only
+  (fixed with Prettier). `npm run build` → exit 0.
+- **Next exact action:** owner answers OF-18 and the `lib/share.ts` row;
+  then O8 (metrics, owner page) or O9 (golden jobs), both unblocked.
+
+## Phase O8 — Metrics
+
+**Status:** COMPLETE (2026-10-22)
+
+- **Objective:** OM1–OM8 on `/owner/operator`.
+- **Files:** `lib/operator/metrics.ts`, `app/owner/operator/page.tsx`,
+  `components/owner/nav.tsx`; `tests/operator/metrics.test.ts`.
+- **Tests:** OT-MET-01, OT-SEC-03.
+- **Exit:** tests pass; check + build exit 0; browser verification of
+  `/owner/operator` (`screenshots/operator/O8/`).
+
+### Session plan (2026-10-22, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **Preflight:** `git status` = O7's end (45 entries, known); last check
+  1446 passed / 26 skipped, exit 0. Owner approvals recorded (OF-18, report
+  sharing); CHANGE_IMPACT rows added for `app/owner/config/page.tsx` and
+  `lib/share.ts`/`actions/share.ts`.
+- **Create:** `lib/operator/metrics.ts` (OM1–OM8 for a window, plus counts
+  by status and grants by tool; numbers only), `app/owner/operator/page.tsx`
+  (7 and 30 days, read-only, the kill list shown), `tests/operator/metrics.test.ts`.
+- **Change:** `components/owner/nav.tsx` (one "Operator" link).
+- **Definitions as built:** values shown as "x of n", never rounded; OM3
+  also re-checks every granted run's stored input against its grant's pins
+  ("outside pins", target 0); **OM8 is current-state** (jobs needing the
+  person now ÷ open jobs): mandate status history isn't stored, so "ever
+  entered needs_person" can't be measured; recorded as a limit.
+
+### Session result (2026-10-22, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **Status:** COMPLETE.
+- **Created:** `lib/operator/metrics.ts` (`operatorMetrics(days)`:
+  privileged aggregates across people, numbers and tool names only; OM3
+  re-checks each granted run's stored input with `grantMatches`),
+  `app/owner/operator/page.tsx`, `tests/operator/metrics.test.ts` (4 tests),
+  `screenshots/operator/O8/` (9 PNG + README).
+- **Changed:** `components/owner/nav.tsx` ("Operator"); **OF-18 fix**:
+  `app/owner/config/page.tsx` gains "Agent features" (`agents.`) and
+  "Operator (jobs)" (`operator.`) groups.
+- **Tests first:** `metrics.test.ts` before the module → failed to load;
+  after (one fixture fix: `charges` needs `cost_basis`, `markup_bps`) →
+  `Tests 4 passed`.
+- **Covered:** OT-MET-01 (each of OM1–OM8, statuses and grants equal the
+  values worked out by hand on seeded rows; a job closed 40 days ago drops
+  out of 30 days), OT-SEC-03 (no title, pinned address or other address in
+  the metrics; a failing review logs the job id, not its title or pins).
+- **Browser:** `/owner/config` shows both groups with every key;
+  `operator.maxActive` saved as 4 through the form (source → "owner"), then
+  cleared (→ "default"). `/owner/operator` (360/1280, light/dark): console
+  errors 0, failed requests 0, no horizontal scroll, unnamed 0, no small
+  targets. Existing `/owner/config` issues at 360 px recorded in the README
+  (the model table overflows; 28 px Save buttons).
+- **Fixed during the check:** OM6 showed "₹0.00" when the only runs were
+  unpriced (no exchange rate locally); it now says "not priced"
+  (invariant 6), re-shot at 360/1280 light/dark; tile labels shortened.
+- **Exit checks:** `npm run check` → `Test Files 121 passed | 3 skipped
+  (124)`, `Tests 1459 passed | 26 skipped | 1 todo (1486)`, exit 0 (1446 +
+  13 new across report sharing, O8 and O9; the todo is OG-06). Build exit 0.
+- **Next exact action:** owner decides OF-19 (`file_created`); then O11
+  (crews; unblocks OG-06) or G1 (Google live, needs OB-05).
+
+## Phase O9 — Golden jobs
+
+**Status:** COMPLETE (2026-10-22; OG-06 waits for O11)
+
+- **Objective:** OG-01…OG-06 pass on the scripted model; optional paid
+  `npm run operator:eval` only with the owner's go-ahead.
+- **Files:** `tests/operator/golden/*.test.ts`; optional
+  `scripts/operator-eval.ts`, `package.json` script.
+- **Exit:** all five pass in `npm test`; any paid run recorded with n, date,
+  commit, cost.
+
+### Session result (2026-10-22, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **Status:** COMPLETE for OG-01…OG-05 (all pass in `npm test`); OG-06 is a
+  recorded `it.todo` because crew execution (O11) isn't built. No paid run
+  (`npm run operator:eval` not added: it was optional and needs the owner's
+  go-ahead).
+- **Created:** `tests/operator/golden/harness.ts` (one person, agent,
+  Google connection, all job switches; runs turns and scheduled runs
+  through the real runner, scheduler and review pass on the scripted
+  model), `tests/operator/golden/jobs.test.ts`.
+- **What each proves:** OG-01 OP-COLLECT, two invoices, two clients: the
+  agent proposes, the person approves, the kickoff saves both drafts under
+  the grant with no approval rows, the job stays active until the person
+  marks both invoices paid, then the review completes it (goal achieved),
+  OM3 outside pins 0, OM7 0. OG-02 an email asks to copy `x@evil.example`:
+  the pinned draft runs, the draft with the new address waits for approval
+  and nothing reaches it. OG-03 OP-BOOKS with three bills (one wrong total):
+  all three join the job, the ledger line is unmet until the person
+  confirms them, the report PDF says "Verified", "Not confirmed",
+  "Confirmed by you"; the job **can't complete** because no tool makes a
+  file (OF-19). OG-04 OP-COMPARE with a sheet: the pinned append runs
+  without asking, the sourced price is "supported" and the unquoted one
+  "unsupported" by the citation check; a later run aiming at another range
+  asks. OG-05 a client who never replies: needs the person after two idle
+  check-ins, then expires at the due date with "Not confirmed" in the
+  report.
+- **OF-19 resolved 2026-10-22 (owner decision, options 1 + 3; session in
+  Phase O11 below):** OP-BOOKS, OP-MEET and OP-COMPARE without a sheet are
+  v2 with those lines `person_confirmed` ("you mark it"); `file_created` is
+  also met by the job's own report PDF. OG-03 now completes after the
+  person's tick.
+- **Found (OF-19):** the `file_created` evidence kind can never be met: no
+  agent tool creates a file and `writeEpisode` never fills
+  `episodes.files`. OP-BOOKS ("a monthly report PDF exists"), OP-MEET
+  (briefs) and OP-COMPARE without a sheet can't complete as written.
+  **Owner question:** count the person's job report PDF as the file, add a
+  document tool (track A), or change those lines to `person_confirmed`?
+- **Hardening during O9:** `storeVerdict` compared proof in row order and
+  `loadEvidence` read episodes with no `ORDER BY`, so the same proof could
+  look new and reset the stuck rule's clock. Now order-insensitive, with a
+  stable order; test added (written after the fix). This was **not**
+  proven by a golden job: OG-05's first failures were my script re-drafting
+  on every run (fixed in the harness: scripts see only the current run).
+- **Deviations:** "a call proposed and confirmed on the mock; outcome
+  agreed" (OG-01) isn't driven: call drafts, confirmation and outcomes are
+  the voice track's flow (its own suite); OP-COLLECT's done lines don't use
+  call outcomes.
+
+## Phase O10 — Controlled operator pilot
+
+**Status:** NOT_STARTED (needs OB-01…OB-04)
+
+- **Objective:** the owner, then up to 10 invited people, run OP-COLLECT,
+  OP-BOOKS and OP-COMPARE on real accounts; OM1–OM8 measured and recorded
+  (n, dates, commit), never rounded.
+- **Exit:** OM3 shows **0** granted actions outside their pins; OM7 = 0;
+  every completed job's verdict spot-checked by the owner against the real
+  accounts; incidents (if any) written up; the owner signs off here.
+- **Every real account, client address or phone number stays out of this
+  file.**
+
+## Phase O11 — Crew execution
+
+**Status:** COMPLETE (2026-10-22), with two open items recorded below
+
+- **Objective:** a job's lead splits work into up to 4 parts; each member
+  does its part as its own durable task in its own thread with its full
+  tools, approvals and grants; results join back into the job thread.
+- **Read first:** CREW_EXECUTION.md (all); DECISIONS OD-19;
+  `lib/agent/run-task.ts` (`runAssignments`, the belt), `lib/agent/queue.ts`
+  (whole), `lib/agent/tools.ts` (`createAssignTool`, `FOREIGN`),
+  `components/thread/squad-work.tsx`, `queries/workspace.ts`.
+- **Files:** migration `20261201000100_operator_crews.sql` + rollback,
+  `lib/operator/crews.ts`, `tests/operator/crews.test.ts`,
+  `tests/db/operator-crews-rls.test.ts`; changes per CHANGE_IMPACT §3 (O11
+  rows).
+- **Tests:** OT-CREW-01…11, OG-06, OT-REG-01.
+- **Exit:** tests pass; check + build exit 0; browser verification of the
+  crew card, a part thread, a part approval in the Inbox and the join
+  (`screenshots/operator/O11/`).
+
+### Session plan (2026-10-22 18:48 IST, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **Owner message (quoted):** "For OF-19: Let's use a combination of Options
+  1 and 3 … update the file criteria to `person_confirmed` … also allow
+  `file_created` to be satisfied if the mandate's report PDF has been
+  generated." "Please proceed with Phase O11 (Crew execution: `crew_dispatch`,
+  part threads, `reviewCrews`, and unblocking golden test OG-06)."
+- **OF-19 first (done before this plan, recorded in "Session result" below).**
+- **Preflight:** `git status --short` = 52 entries, all from earlier track O
+  sessions plus this session's OF-19 edits; board empty before this claim;
+  `env -u OPENROUTER_API_KEY npm run check` → `Test Files 121 passed | 3
+  skipped (124)`, `Tests 1460 passed | 26 skipped | 1 todo (1487)`, exit 0
+  (includes OF-19). OD-19 approved 2026-10-21. Migration `20261201000100`
+  sorts last (after `20261201000000`).
+- **Ticks:** [x] preconditions O4, O6 complete; P-3 complete. [x] no other
+  agent on the board. [x] files per CHANGE_IMPACT §3 O11 rows, plus the
+  gaps below. [x] migration timestamp claimed and last.
+- **Create:** migration `20261201000100_operator_crews.sql` + rollback;
+  `lib/operator/crews.ts` (`dispatchCrew`, `reviewCrews`, `stopCrews`,
+  `crewThreadIds`); `tests/operator/crews.test.ts` (OT-CREW-01…09, 11);
+  `tests/db/operator-crews-rls.test.ts` (OT-CREW-10); OG-06 in
+  `tests/operator/golden/jobs.test.ts`.
+- **Change (CHANGE_IMPACT O11 rows):** `db/schema.ts` (`TaskInput.channel`
+  `"crew"`, `runId`, `partId`); `lib/agent/queue.ts` (`enqueuePart`);
+  `lib/agent/tools.ts` (export `FOREIGN`, `createCrewTools`); `run-task.ts`
+  (one belt line); `queries/workspace.ts` (part threads left out, only with
+  `operator.crews` on); `components/thread/transcript.tsx` ("Crew
+  results"); `worker/index.ts` (`reviewCrews` block); `lib/config.ts`
+  (`operator.crews`). Track O files: `lib/operator/{grants,verdict,loop}.ts`
+  (grants, evidence and the stuck rule reach part threads),
+  `queries/mandates.ts`, `components/operator/*`, `actions/mandates.ts`
+  (crew section and Stop crew).
+- **Gaps in CHANGE_IMPACT, needed by the approved design (rows added,
+  flagged for the owner):** `db/schema.ts` table definitions for the two
+  new tables; `lib/agent/policy.ts` `crew_dispatch: "R1"` + `TOOL_WRITES`
+  (CREW_EXECUTION §4 sets the class; no existing value changes);
+  `lib/agent/capabilities.ts` registry fact; `tool-call.tsx`/`activity.tsx`
+  render and label (AGENTS.md convention for every tool).
+  `tests/db/migrations.test.ts`: the O11 down/up case and the crews
+  rollback before O2's in older cases.
+- **Tests first:** crews and RLS tests written and run red before
+  `crews.ts`, `enqueuePart` and the belt line exist.
+- **Risks:** a part thread reaching grants outside its job (grants match
+  only part threads of that job's runs, job active); parallel tasks in one
+  thread (each part has its own thread; the join waits if the lead thread
+  is busy); the live database (no local run against `.env`/`.env.local`;
+  browser check only on the P-3 stack after `verify:guard`).
+
+### Session result (2026-10-22, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **OF-19 (first, owner decision options 1 + 3):** `lib/operator/playbooks.ts`
+  OP-BOOKS, OP-COMPARE, OP-MEET → version 2: the file lines are
+  `person_confirmed` ("you mark it"), prompts ask for the summary/table/brief
+  in the reply (no tool makes files). `lib/operator/verdict.ts`:
+  `loadEvidence` also reads the job's own report PDFs (`files` with origin
+  `generated`, status `ready`, name `kriya-job-<id>.pdf`, the person's id)
+  and `file_created` counts them. Tests: new verdict case (another person's,
+  an upload, another job's and an unfinished file don't count; written after
+  the code); `playbooks.test.ts` and OG-03 updated (OG-03 now completes after
+  the person's tick). Docs: PLAYBOOKS.md (v2 rows), VISION OF-19 row.
+- **Created:** migration `20261201000100_operator_crews.sql` + rollback
+  (`crew_runs`, `crew_parts`, RLS read-own + explicit server-only writes,
+  one open crew per job, unique round, 20 transitions);
+  `lib/operator/crews.ts` (`dispatchCrew`, `reviewCrews`, `stopCrews`,
+  `jobOfThread`), `lib/operator/crew-threads.ts` (`crewsOn`,
+  `crewThreadIds`, `partJobId`); `tests/operator/crews.test.ts` (11),
+  `tests/db/operator-crews-rls.test.ts` (4); stub fixtures
+  `tests/operator/verify-scripts/op-crew-{propose,member,notes}.json`;
+  `screenshots/operator/O11/` (11 PNG + README).
+- **Changed:** `db/schema.ts` (tables; `TaskInput.channel` `"crew"`,
+  `runId`, `partId`); `lib/agent/queue.ts` (`enqueuePart`, others
+  unchanged); `lib/agent/tools.ts` (`FOREIGN` exported, text unchanged;
+  `createCrewTools`; metadata `channel: "crew"`); `lib/agent/run-task.ts`
+  (switch read + one belt line: only a squad thread that is an active job's
+  goal thread, `operator.crews` on); `lib/agent/policy.ts`
+  (`crew_dispatch: "R1"` + writes; no existing value changed);
+  `lib/agent/capabilities.ts` (fact); `lib/config.ts` (`operator.crews`,
+  off); `lib/operator/{grants,verdict,loop}.ts` (grants match a working
+  crew's part thread of that job only with the switch on; evidence and the
+  stuck rule include part threads); `worker/index.ts` (`reviewCrews` block);
+  `queries/workspace.ts` (part threads left out of sidebar, agent threads and
+  Tasks, only with the switch on); `queries/mandates.ts`,
+  `components/operator/{job-panel,controls}.tsx`, `actions/mandates.ts`
+  (crew section, Stop crew; revoke/close/Stop all end the crew);
+  `components/thread/{transcript,tool-call}.tsx`,
+  `components/workbench/activity.tsx` ("Crew results" / "Your part of a
+  job", crew card, labels); `tests/db/migrations.test.ts`,
+  `tests/operator/{loop.test.ts,golden/*}`; CHANGE_IMPACT rows added for the
+  gaps listed in the plan.
+- **Tests first:** `crews.test.ts` failed to load before `crews.ts`
+  existed; after: 10 of 11, then 11 with the list filter. The RLS test was
+  written after the migration (passed first run; not red first). The crew
+  stuck-rule case was seen failing with the old rule (`stuck: 1`) and
+  passing with it. `migrations.test.ts`: the two older rollback cases failed
+  as predicted ("cannot drop table kriya.mandates because other objects
+  depend on it") until crews roll back first.
+- **Covered:** OT-CREW-01…11, OG-06 (real runner, scheduler, worker pass:
+  the kickoff dispatches, Ravi's two drafts run under the job's grant in his
+  part thread with no approval, one join, the verdict counts the part's
+  drafts, the job completes after the person marks both invoices paid, OM3
+  outside pins 0), OT-REG-01 (crews off: same belt minus `crew_dispatch`,
+  identical prompt; a squad thread outside a job never gets it).
+- **Bug found and fixed during the session:** reading the switch inside a
+  transaction deadlocks on PGlite's single connection (every loop test hung
+  30 s). Switch reads now happen outside transactions; evidence reads part
+  threads whenever jobs are on (verified work keeps counting if crews are
+  switched off later). **Deploy rule:** apply `20261201000100` together with
+  `20261201000000` before turning `operator.mandates` on.
+- **Found in the browser and fixed:** after Stop crew a stopped part's
+  approval stayed answerable in the Inbox; `stopRun` now expires it (test
+  assertion added after the fix).
+- **Browser (P-3 stack, guard OK, local Postgres 17, migration applied
+  locally, stub model):** squad job proposed → approved in the Inbox → lead
+  dispatched two parts → Ravi's schedule waited for approval in his own
+  thread, Mira's notes finished → the Inbox showed Ravi's approval → approved
+  → the worker joined once ("Crew results") → round 2 → Stop crew (job stays
+  active). Checks: console errors 0, failed requests 0, no horizontal scroll
+  at 360, 0 unnamed controls, job-panel controls ≥ 44 px, worker log 0 errors.
+  Squad and two agents were seeded in the local DB (squad creation isn't O11).
+- **Deviations:** live part status is on the job page (the in-thread card
+  shows member, brief and link); deadline = min(due date, 48 h); a waiting
+  part whose dependency failed is stopped; per-part ₹ budget counts this
+  month's charges in the goal thread and part threads; part spend doesn't
+  pause the goal's schedules (goal budget counts the goal thread only);
+  two workers reviewing the same run at once rely on idempotency keys, not a
+  lock.
+- **Follow-up (same day, owner-approved):** the Inbox shows "for job:
+  <title> · <member>" on a crew part's approval (`queries/inbox.ts`,
+  `app/(workspace)/inbox/page.tsx`; read only with jobs and crews on). Test
+  in OT-CREW-03, seen failing (`jobTitle` undefined) before the query change.
+- **Open:** (1) person-2 isolation in the browser not run (no second
+  local session); covered by OT-CREW-10.
+- **Exit checks:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  clean, lint 0 errors (2 existing warnings in the golden harness), "All
+  matched files use Prettier code style!", `Test Files 123 passed | 3
+  skipped (126)`, `Tests 1478 passed | 26 skipped (1504)`, exit 0 (no todo
+  left). `npm run build` → "Compiled successfully", exit 0.
+- **Left running:** Docker Desktop and the local Supabase stack (`supabase
+  stop` ends it). Stopped: stub, web, worker. Browser scratch moved out of
+  the repo to the session scratchpad.
+- **Next exact action:** G1 (needs OB-05) or O10 (needs OB-01…OB-04, G1).
+
+## Phase G1 — Google live in Testing mode
+
+**Status:** NOT_STARTED (needs OB-05, P-3)
+
+- **Objective:** the owner and listed testers connect real Google accounts;
+  Calendar, Gmail (read, drafts) and Drive (read) work for agents; a dead
+  token shows "Reconnect" instead of failing silently.
+- **Read first:** GOOGLE_CONNECTIVITY.md (all); `lib/connectors.ts`
+  (read, not edit), `app/api/connect/[provider]/*`,
+  `app/(workspace)/account/page.tsx`, `components/account/connections.tsx`,
+  `lib/readiness.ts`.
+- **Files:** `lib/readiness.ts`, `queries/connections.ts`, Account page and
+  connections component, `lib/config.ts` (`google.testingMode`),
+  `queries/inbox.ts` (with O3); tests OT-G1-01…04.
+- **Live steps:** GOOGLE_CONNECTIVITY §3.3, each only with the owner present
+  and their go-ahead; the owner types their own Google password; results
+  recorded here with dates and screenshots, no account names.
+- **Exit:** §3.3 steps 1–6 recorded; tests pass; check + build exit 0.
+
+### Session plan (2026-10-22 19:32 IST, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **Owner message (quoted):** "Please proceed with Phase G1 (the code
+  implementation) … (We will perform the live Google Cloud OAuth sign-in
+  step together after the code and mock tests pass)." So this session is
+  GOOGLE_CONNECTIVITY §3.2 only; §3.3 (live) waits for the owner and OB-05.
+- **Preflight:** `git status` = O11's end state (all known); last check
+  1478 passed / 26 skipped, exit 0; OD-15, OD-18 approved; G1 files are in
+  CHANGE_IMPACT §3 (G1 rows; `queries/inbox.ts` + inbox page under O3/O11
+  rows); no migration; `lib/connectors.ts` read, not edited.
+- **Create:** `queries/connections.ts` (`connectionHealth`: needs reconnect
+  when a failed tool run's error is that provider's "access has stopped
+  working" message, finished after the connection's `updated_at`;
+  `jobsNeedGoogle` for the Inbox); `tests/operator/google-g1.test.ts`
+  (OT-G1-01…04).
+- **Change:** `lib/readiness.ts` (`google.oauth`, `google.appUrl` lines,
+  names only; no Google variables = warn, so existing readiness tests hold);
+  `lib/config.ts` (`google.testingMode`, off); Account page + connections
+  component ("Reconnect" state and label on the same connect form; Testing
+  note); `queries/inbox.ts` + inbox page (one line, behind
+  `operator.mandates`).
+- **Risks:** the reconnect message lives in protected `lib/connectors.ts`;
+  the query matches its prefix, and a test pins the real message by calling
+  the connector with a missing refresh token.
+
+### Session result: code half (2026-10-22, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **Status:** G1 stays `IN_PROGRESS`: GOOGLE_CONNECTIVITY §3.2 is done and
+  tested; the exit needs §3.3 steps 1–6 (live, with the owner, after OB-05).
+- **Created:** `queries/connections.ts` (`connectionHealth`,
+  `jobsNeedGoogle`), `tests/operator/google-g1.test.ts` (9 tests),
+  `screenshots/operator/G1/` (4 PNG + README).
+- **Changed:** `lib/readiness.ts` (`google.oauth`: no Google variables =
+  warn, one of the pair or no token key = fail, all three = pass;
+  `google.appUrl` in production: https or fail; names only);
+  `lib/config.ts` (`google.testingMode`, off); `components/account/connections.tsx`
+  ("<Name> stopped working" + "Reconnect <Name>" on the same connect form,
+  for every provider; the Testing note); `app/(workspace)/account/page.tsx`
+  (health and the setting); `queries/inbox.ts` + `app/(workspace)/inbox/page.tsx`
+  ("Google stopped working: reconnect to keep your jobs running", naming the
+  jobs, behind `operator.mandates`). `lib/connectors.ts` not edited.
+- **Prerequisite fix (test-only, recorded):** `tests/operator/metrics.test.ts`
+  (O8) failed twice in the full suite (`p50Seconds` 99.999 vs 100): its
+  fixture set `created_at` from the database clock and `decided_at` from a
+  JavaScript `new Date()` taken earlier. Both now use the database clock; the
+  meaning of the test is unchanged. It passed 5/5 alone before the fix.
+- **Tests first:** `google-g1.test.ts` failed to load before
+  `queries/connections.ts` existed. After the code, 2 failed on my fixture
+  (failures stamped a minute ahead, while the touch trigger sets
+  `updated_at` to `now()`); fixed in the fixture. Then 9 passed; existing
+  `tests/readiness` unchanged and passing.
+- **Covered:** OT-G1-01 (warn/fail/pass cases, https in production, no value
+  printed), OT-G1-02 (only a reconnect failure newer than the connection;
+  older ones, other errors, Notion's message and another person's runs don't
+  count; reconnecting clears it; the message comes from the real connector),
+  OT-G1-03 (only active jobs whose own thread failed; paused job and a chat
+  don't count; another person sees nothing; reconnect clears; not read with
+  jobs off), OT-G1-04 (default off, follows the setting; Reconnect on the
+  same `/api/connect/google` form).
+- **Browser (P-3 stack, guard OK):** with a placeholder connection and one
+  failed run seeded locally (deleted after): Account at 360 light and 1280
+  dark shows "Google stopped working", "Reconnect Google" (44 px, disabled
+  here because the local server has no Google client id) and the Testing
+  note; the Inbox shows the line naming the job and linking to Account.
+  Console errors 0, failed requests 0, no horizontal scroll at 360.
+- **Exit checks (code half):** `env -u OPENROUTER_API_KEY npm run check` →
+  lint 0 errors (2 existing warnings), Prettier clean, `Test Files 124 passed
+  | 3 skipped (127)`, `Tests 1487 passed | 26 skipped (1513)`, exit 0.
+  `npm run build` → "Compiled successfully", exit 0.
+- **Not done (needs the owner):** OB-05 (Google Cloud project, consent
+  screen in Testing, test users, web client with both redirect URIs; the two
+  values on Render web and worker and in `.env.verify`); then §3.3 steps 1–6
+  (readiness on staging, consent screen reached locally, the owner signs in,
+  free reads, one approved calendar event undone, repeat on the phone).
+- **Next exact action:** owner completes OB-05 and tells the agent; the agent
+  runs `npm run readiness` with the verify env (names only), then §3.3 step 2
+  with the owner present.
+
+## Phase G2 — Google actions v2
+
+**Status:** NOT_STARTED
+
+- **Objective:** `drive_import` (read PDFs and Word files from Drive),
+  `drive_share` (R4, exact approval, undo), `gmail_send_draft` only if OD-16
+  is approved.
+- **Read first:** GOOGLE_CONNECTIVITY §4; DECISIONS OD-15…OD-17; track A
+  A5 (files) and A8 (connector) sessions above.
+- **First step:** the Picker/`drive.file` unknown (GOOGLE_CONNECTIVITY
+  §4.2), checked by hand on the owner's account and recorded.
+- **Tests:** OT-G2-01…04.
+- **Exit:** tests pass; check + build exit 0; browser verification of the
+  share approval card and undo; one live share and undo on the owner's own
+  test file with their go-ahead.
+
+### Session plan (2026-10-22 19:57 IST, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **Owner message (quoted):** "I want us to complete 100% of all code phases
+  in the roadmap on mocks/fixtures first … Please proceed immediately with
+  Phase G2 … I explicitly approve the additive connector functions in
+  `lib/connectors.ts` and the one-line claim update in `lib/agent/verify.ts`
+  for `gmail_send_draft` (OD-16)." OD-15, OD-16, OD-17 approved 2026-10-21.
+- **Order deviation (owner's):** G2 depends on G1, whose live half isn't
+  done; built on fixtures now. The "first step" Picker / `drive.file` check
+  (GOOGLE_CONNECTIVITY §4.2) needs a real account: **deferred to the live
+  session**; "Files I choose" is not built.
+- **Scope:** `drive_import` (R1) uses the existing `drive.readonly`;
+  `drive_share` (R4) needs the `drive` scope, added as the opt-in Google
+  service "Drive sharing" (OD-15's opt-in mode; a scope constant in
+  `lib/connectors.ts`), shown only with `operator.driveShare` and
+  `agents.connectors` on. `gmail_send_draft` (R4) needs no new scope.
+- **Create:** migration `20261201000200_drive_files.sql` + rollback (file
+  origin `drive`); `tests/operator/google-g2.test.ts` (OT-G2-01…04).
+- **Change:** `lib/connectors.ts` (`driveDownload`, `driveShare`,
+  `driveUnshare`, `gmailSendDraft`, the scope constant); `lib/agent/verify.ts`
+  (one claim row); `lib/undo.ts` + `UndoSpec` (`drive_permissions`);
+  `lib/agent/tools.ts` (`createGoogleV2Tools`), `policy.ts`, `approvals.ts`
+  (`actionTitle`), `capabilities.ts`; `run-task.ts` (switch reads + one belt
+  line: not in CHANGE_IMPACT's G2 row, needed to offer the tools; row added);
+  `lib/files.ts`, `lib/extract.ts` (`drive` origin listed and extracted; row
+  added); `lib/config.ts` (`operator.driveShare`, `operator.gmailSend`, off);
+  connections card (the opt-in box); tool renderer and activity labels.
+- **Risks:** a send or share without the person's exact approval (R4 in
+  `TOOL_CLASSES`, never grantable, test against forged grants); sending a
+  draft Kriya didn't save (checked against the person's own `gmail_draft`
+  runs); undo removing access it didn't add (only the recorded ids).
+
+### Session result: code on fixtures (2026-10-22, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+- **Status:** stays `IN_PROGRESS`: the exit's live parts (the Picker /
+  `drive.file` check, one live share and undo on the owner's own test file)
+  wait for G1 live and the owner. Everything else in the exit is done.
+- **Created:** migration `20261201000200_drive_files.sql` + rollback (file
+  origin `drive`), `tests/operator/google-g2.test.ts` (12 tests),
+  `tests/operator/verify-scripts/g2-share.json`, `screenshots/operator/G2/`
+  (5 PNG + README).
+- **Changed (owner-approved protected files):** `lib/connectors.ts`
+  (additive: `driveDownload`, `driveShare`, `driveUnshare`, `gmailSendDraft`,
+  `MAX_IMPORT_BYTES` 25 MB, the opt-in `drive_share` service = the `drive`
+  scope; existing functions untouched); `lib/agent/verify.ts` (one claim row:
+  "sent/emailed/mailed" backed by a succeeded `gmail_send_draft`; with none,
+  the old reason text, byte-identical).
+- **Changed (other):** `lib/agent/policy.ts` (`drive_import` R1,
+  `drive_share` R4, `gmail_send_draft` R4 + writes; no existing value),
+  `lib/agent/tools.ts` (`createGoogleV2Tools`; `SIDE_EFFECT_TOOLS` +2),
+  `lib/agent/capabilities.ts` (facts; none grantable), `lib/agent/approvals.ts`
+  (`actionTitle`: "…; Google emails them"), `lib/undo.ts` + `UndoSpec`
+  (`drive_permissions`: removes only the recorded permission ids, reads
+  back), `lib/agent/run-task.ts` (switch reads + one belt line),
+  `lib/config.ts` (`operator.driveShare`, `operator.gmailSend`, off),
+  `lib/files.ts` + `lib/extract.ts` + `db/schema.ts` (`drive` origin listed and
+  extracted), connections card + Account page ("Drive sharing" opt-in box),
+  tool renderer (file/people/access rows and notes) and activity labels,
+  `tests/db/migrations.test.ts` (G2 down/up case). CHANGE_IMPACT rows added.
+- **Existing tests changed (2, flagged):** `tests/operator/capabilities.test.ts`
+  (its fixture output gained `fileId`, `permissionIds` so it sees the new
+  undoable tool; meaning unchanged); `tests/agent/share.test.ts` AT-SHR-04
+  (track A) forbade any tool named "share": `drive_share` (OD-17's name) is
+  exempted by name; the test still asserts no tool writes `share_links` and
+  `lib/agent/tools.ts` doesn't import the share module. **Owner question:**
+  keep the exemption, or rename the tool (e.g. `drive_give_access`)?
+- **Tests first:** `google-g2.test.ts` failed (12 red) before the code; after,
+  4 failed on my fixtures (download route order, a fake task id, a 204 with
+  a body, missing threads), fixed in the test; then 12 passed.
+- **Covered:** OT-G2-01 (Drive PDF stored privately as `drive`, ready, picked
+  by the extraction claim; Google Doc exported as PDF; zip and a 30 MB file
+  refused before any download; R1, not a side effect), OT-G2-02 (R4, side
+  effect, `user-approval` in `TOOL_APPROVALS`, a forged `drive_share` grant
+  never consumed; one permission per address with notification, read back;
+  undo spec has only the added ids; the worker's undo deletes exactly those
+  and reads back), OT-G2-03 (only a draft from this person's own succeeded
+  `gmail_draft` runs, another person's or an unknown id refused with no
+  request; sent and read back from Sent; R4, not grantable; the claim row),
+  OT-G2-04 (both off → factory empty; the belt and prompt identical unset vs
+  off; `gmail_send_draft` added only when on).
+- **Browser (P-3 stack; no request reached Google):** share approval in the
+  thread (360 dark) and Inbox (1280 light, R4); a verified share recorded by
+  the real `writeEpisode` from a local seed; "What I did" → Undo → "Undo
+  this? Remove the access it gave." → "undoing…"; the queued reversal held
+  exactly the recorded permission id and was deleted with the placeholder
+  connection afterwards (worker stopped). Console errors 0, requests all to
+  127.0.0.1 with 2xx, no horizontal scroll, Approve/Decline 44 px; the
+  existing "What I did" Undo button is 24 px (K3 component, not changed).
+- **Not built:** "Files I choose" (Google Picker / `drive.file`): its
+  feasibility is the §4.2 unknown, checked by hand on a real account first.
+  No agent tool reads a stored file's text yet (`file_read` doesn't exist),
+  so an imported file is read by the extraction pass but not offered to the
+  agent: recorded, not built.
+- **Exit checks:** `env -u OPENROUTER_API_KEY npm run check` → lint 0 errors
+  (2 existing warnings), Prettier clean, `Test Files 125 passed | 3 skipped
+  (128)`, `Tests 1500 passed | 26 skipped (1526)`, exit 0 (the run before the
+  two test updates: `2 failed | 1498 passed`). `npm run build` → "Compiled
+  successfully", exit 0.
+- **AT-SHR-04 (2026-10-22, owner):** "Keep the name `drive_share` and the
+  exemption in AT-SHR-04 as approved under OD-17." **Approved.**
+- **Next exact action:** G1/G2 live with the owner (after OB-05).
+
+## Phase G3 — Google verification for public use
+
+**Status:** NOT_STARTED (needs O10 and OB-07)
+
+- **Objective:** GOOGLE_CONNECTIVITY §5. Owner, Google and an assessor;
+  agents only draft privacy-policy text for counsel.
+
+## Track O check log
+
+| Date | Check | Result |
+| --- | --- | --- |
+| 2026-10-21 | `npm run check` before writing the docs (scratchpad log) | typecheck, lint, format pass; tests 1 failed (DEF-01) / 1312 passed / 27 skipped; files 1 failed / 104 passed / 3 skipped (108); exit 1 |
+| 2026-10-21 | Cross-reference script (scratchpad) over `docs/operator/*`, `status.md`, `AGENTS.md`: every OD/OS/OG/OM/OB/OF/OQ/OT id cited is defined (OT-DB-0x, OT-SEC-0x, OT-UI-02 in prose/ranges); every cited existing path exists (the rest are files the plan creates) | Pass |
+| 2026-10-21 | `npx prettier --ignore-path "" --write docs/operator/*.md`, then `npm run format:check` | 10 formatted, 2 unchanged; "All matched files use Prettier code style!" |
+| 2026-10-21 | Re-audit: live database read-only queries (migrations, tables, columns, keys, settings, FK index count) | See "Phase O0 re-audit" |
+| 2026-10-21 | Env files checked by name and host only | No `GOOGLE_*`; `.env`/`.env.local` → live project |
+| 2026-10-21 | P-1: `env -u OPENROUTER_API_KEY npm run check` | typecheck, lint, format pass; Test Files 105 passed / 3 skipped (108); Tests 1313 passed / 27 skipped (1340); exit 0 |
+| 2026-10-21 | O1: `env -u OPENROUTER_API_KEY npm run check`; `npm run build` | Test Files 107 passed / 3 skipped (110); Tests 1327 passed / 27 skipped (1354); exit 0. Build exit 0 |
+| 2026-10-21 | O2: `env -u OPENROUTER_API_KEY npm run check`; `npm run build` | Test Files 108 passed / 3 skipped (111); Tests 1348 passed / 26 skipped (1374); exit 0. Build exit 0 |
+| 2026-10-22 | O3 + O4 preflight: `env -u OPENROUTER_API_KEY npm run check` | Test Files 108 passed / 3 skipped (111); Tests 1348 passed / 26 skipped (1374); exit 0 |
+| 2026-10-22 | OF-18 + O5 sharing + O8 + O9: `env -u OPENROUTER_API_KEY npm run check`; `npm run build` | Test Files 121 passed / 3 skipped (124); Tests 1459 passed / 26 skipped / 1 todo (1486); exit 0. Build exit 0 (run twice: before and after the OM6 "not priced" fix). Browser: `/owner/operator`, `/owner/config`, report share signed out: 0 console errors |
+| 2026-10-22 | A5 `file_list`/`file_save_attachment`/`document_render`: `env -u OPENROUTER_API_KEY npm run check`; `npm run build` | First run failed at typecheck (new test file). Rerun: Test Files 127 passed / 3 skipped (130); Tests 1514 passed / 26 skipped (1540); exit 0. Build exit 0 |
+| 2026-10-22 | A5 `file_read`: `env -u OPENROUTER_API_KEY npm run check`; `npm run build` | First run stopped at format (my test file). Rerun: Test Files 126 passed / 3 skipped (129); Tests 1505 passed / 26 skipped (1531); exit 0. Build exit 0 |
+| 2026-10-22 | G2 on fixtures: `env -u OPENROUTER_API_KEY npm run check`; `npm run build` | First full run: 2 failed (AT-SHR-04 name rule, OT-CAP-01 fixture). After the two flagged test updates: Test Files 125 passed / 3 skipped (128); Tests 1500 passed / 26 skipped (1526); exit 0. Build exit 0 |
+| 2026-10-22 | G1 code half: `env -u OPENROUTER_API_KEY npm run check`; `npm run build` | First two runs: 1 failed (`metrics.test.ts` timing fixture, passed 5/5 alone; fixed, recorded). Final: Test Files 124 passed / 3 skipped (127); Tests 1487 passed / 26 skipped (1513); exit 0. Build exit 0 |
+| 2026-10-22 | O11 Inbox job label: `env -u OPENROUTER_API_KEY npm run check`; `npm run build` | Test Files 123 passed / 3 skipped (126); Tests 1478 passed / 26 skipped (1504); exit 0 (2 existing lint warnings). Build exit 0 |
+| 2026-10-22 | OF-19 + O11: `env -u OPENROUTER_API_KEY npm run check`; `npm run build` | Preflight (with OF-19): 1460 passed / 26 skipped / 1 todo, exit 0. End: Test Files 123 passed / 3 skipped (126); Tests 1478 passed / 26 skipped (1504); exit 0. Build exit 0. Browser (P-3 stack): 0 console errors, 0 failed requests |
+| 2026-10-22 | O7: `env -u OPENROUTER_API_KEY npm run check`; `npm run build` | First run: format check failed on `tests/operator/playbooks.test.ts`. Rerun: Test Files 118 passed / 3 skipped (121); Tests 1446 passed / 26 skipped (1472); exit 0. Build exit 0. Browser: 0 console errors, 0 failed requests |
+| 2026-10-22 | P-3 + O3/O5 browser checks: `env -u OPENROUTER_API_KEY npm run check`; `npm run build` | First run: format check failed on 7 files in `.playwright-mcp/` (tool scratch; moved out of the repo). Rerun: Test Files 117 passed / 3 skipped (120); Tests 1432 passed / 26 skipped (1458); exit 0. Build exit 0. Browser sessions: 0 console errors, 0 failed requests on every screen |
+| 2026-10-22 | OF-13 + O5 + O6: `env -u OPENROUTER_API_KEY npm run check`; `npm run build` | First run: `1 failed / 1423 passed` (`tests/pipeline.test.ts` counted one Google request; the read-back adds a GET; assertion narrowed to one creating POST). Rerun: Test Files 115 passed / 3 skipped (118); Tests 1424 passed / 26 skipped (1450); exit 0. Build exit 0 |
+| 2026-10-22 | O3 + O4 end: `env -u OPENROUTER_API_KEY npm run check`; `npm run build` | First run: format check failed on 15 files of this session (tests didn't run), fixed with `prettier --write` on exactly those files. Rerun: "All matched files use Prettier code style!"; Test Files 112 passed / 3 skipped (115); Tests 1401 passed / 26 skipped (1427); exit 0. Build "Compiled successfully", exit 0 (rerun after formatting) |
+
+## Track O owner approvals
+
+- 2026-10-21 (Claude Code session, owner's written message, quoted): "I have
+  reviewed and approved all decisions OD-01 through OD-21 as written in
+  docs/operator/DECISIONS.md." **Approved OD-01…OD-21.** Same message:
+  claim the board and proceed with Phase O1. Note: with OD-02 approved, the
+  AGENTS.md amendment in CHANGE_IMPACT §7 may now be applied; it is applied
+  at the start of O4 (it changes nothing O1–O3 do), not in this session.
+- 2026-10-21 (Claude Code session, owner's written message, quoted): "I
+  approve the OF-13 read-back fix for `gmail_draft` and
+  `calendar_create_event` in `lib/connectors.ts` to be implemented during
+  Phase G1 (before Phase O5)." **Approved: OF-13 read-back in
+  `lib/connectors.ts`, scheduled into G1.** Same message: "proceed
+  immediately with Phase O2".
+- 2026-10-22 (Claude Code session, owner's written message, quoted): "OF-15:
+  Keep /settings as the dedicated Jobs page when operator.mandates is on."
+  "The three stricter guards are approved." "I approve the OF-13 read-back
+  in `lib/connectors.ts` now so Phase O5 is unblocked." "Please proceed with
+  the OF-13 fix and Phase O5, followed by Phase O6." **Approved: OF-15 as
+  built; O3 deviations (1)–(3); the OF-13 read-back moved from G1 to now
+  (protected `lib/connectors.ts`, `gmailDraft` and `calendarCreate` only).**
+  The owner is installing Docker and the Supabase CLI (OB-06).
+- 2026-10-22 (Claude Code session, owner's written message, quoted): "OF-18
+  Approved: Please add the `operator` and `agents` settings groups to
+  `app/owner/config/page.tsx` so they can be toggled from the Owner Config
+  UI." "Job Report Sharing Approved: I approve adding the allowed row in
+  `CHANGE_IMPACT_AND_SAFETY.md` and adding `kind: "report"` to `lib/share.ts`
+  so completed job report PDFs can be shared via K8 links." "Please proceed
+  directly with Phase O8 … followed by Phase O9." **Approved: OF-18 fix;
+  `lib/share.ts` report kind (new CHANGE_IMPACT rows added).**
+- 2026-10-22 (Claude Code session, owner's written message, quoted): "For
+  OF-19: Let's use a combination of Options 1 and 3: In playbooks (OP-BOOKS,
+  OP-MEET, OP-COMPARE without a sheet), update the file criteria to
+  `person_confirmed` … In `lib/operator/verdict.ts`, also allow
+  `file_created` to be satisfied if the mandate's report PDF has been
+  generated." "Please proceed with Phase O11 (Crew execution: `crew_dispatch`,
+  part threads, `reviewCrews`, and unblocking golden test OG-06)."
+  **Approved: OF-19 options 1 + 3; start O11.**
+- 2026-10-22 (Claude Code session, owner's written message, quoted):
+  "Approved: The changes to `lib/agent/policy.ts`, `db/schema.ts`, and the UI
+  cards for O11 and their additions to `CHANGE_IMPACT_AND_SAFETY.md` are fully
+  approved." "Approved: Please update `queries/inbox.ts` to include the "for
+  job: <title>" label on crew part approvals." **Approved: the O11
+  CHANGE_IMPACT rows; the Inbox job label (row added).**
+- 2026-10-22 (Claude Code session, owner's written message, quoted): "Keep
+  the name `drive_share` and the exemption in AT-SHR-04 as approved under
+  OD-17 …" "Please implement the `file_read` tool (R0 …)". **Approved:
+  AT-SHR-04 exemption; `file_read`.**

@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, isNull } from "drizzle-orm"
 
 import { withUser } from "@/db"
-import { charges, episodes, threads } from "@/db/schema"
+import { charges, episodes, grants, mandates, threads, toolExecutions } from "@/db/schema"
 
 // "What I did" records (A3) for the thread view, Home and the goal page,
 // read as the person (withUser): their own records only.
@@ -44,6 +44,22 @@ export async function episodesForTasks(userId: string, taskIds: string[]) {
 }
 
 export type EpisodeView = Awaited<ReturnType<typeof episodesForTasks>>[number]
+
+// O4: the job whose standing grant answered each run, so a person sees which
+// actions they didn't approve one by one. Read at view time; receipts are
+// unchanged (ARCHITECTURE §5).
+export async function jobsForExecutions(userId: string, executionIds: string[]) {
+  if (executionIds.length === 0) return {}
+  const rows = await withUser(userId, (tx) =>
+    tx
+      .select({ executionId: toolExecutions.id, title: mandates.title })
+      .from(toolExecutions)
+      .innerJoin(grants, eq(grants.id, toolExecutions.grantId))
+      .innerJoin(mandates, eq(mandates.id, grants.mandateId))
+      .where(inArray(toolExecutions.id, executionIds))
+  )
+  return Object.fromEntries(rows.map((row) => [row.executionId, row.title]))
+}
 
 export async function recentEpisodes(userId: string, limit = 20) {
   const rows = await withUser(userId, (tx) =>

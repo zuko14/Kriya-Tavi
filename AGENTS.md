@@ -134,9 +134,14 @@ Voice rules 2, 3, 6, 7 and 12 apply to this track too.
 2. Every new capability ships behind a switch that defaults off. Off means
    existing agents get the same prompt and tools as before (AT-REG-01).
 3. Risk classes (R0–R5) are decided by code in `lib/agent/policy.ts`, never
-   by a model. R2–R4 need the person's approval of the exact action. R5
-   (passwords, OTPs, CAPTCHAs, payments, identity documents, filing returns)
-   never exists as a tool: the person takes over.
+   by a model. R2–R4 need the person's approval of the exact action,
+   except an R2/R3 call that matches a standing grant the person approved
+   inside an active job (track O, `docs/operator/`): grants exist only for
+   the tools `lib/agent/capabilities.ts` marks grantable, pin their
+   targets, expire with the job, are counted in SQL and apply only in the
+   job's own thread. R4 is never granted. R5 (passwords, OTPs, CAPTCHAs,
+   payments, identity documents, filing returns) never exists as a tool:
+   the person takes over.
 4. Agents never create, store, see or type a site password. Login profiles
    (sealed browser sessions) need decision AD-05 **and** the invariant 4
    amendment before any code stores one.
@@ -158,10 +163,47 @@ Voice rules 2, 3, 6, 7 and 12 apply to this track too.
     use the existing in-app notifier only.
 11. Some actions are the person's alone and never become agent tools:
     confirming ledger entries, approving skills, trusting memory, creating
-    share links, undo, and caps. Agent tools and the person's actions share
+    share links, undo, caps, approving jobs and grants, and confirming job
+    criteria. Agent tools and the person's actions share
     one database identity under `withUser`, so this boundary is enforced in
     code (test AT-POL-07), not by RLS.
 12. The public facts commons (`kriya.public_facts`) holds no personal data
     and is written only by the fact job from domains in `kriya.fact_sources`,
     with a verbatim quote and two agreeing fetches. Never write to it from a
     user's task, and never claim a competitor lacks a feature without RG-9.
+
+## Operator (track O)
+
+Jobs the person hands Kriya: a mandate with a definition of done, standing
+grants the person approves, a verdict computed by code, check-ins and
+playbooks. Planned in `docs/operator/`; progress in the root `status.md`
+(`P-1`…`P-3`, `O0`–`O11`, `G1`–`G3`). Start from `docs/operator/AGENT_MASTER_PROMPT.md`.
+Voice rules 2, 3, 6, 7 and 12 and track-A rules 1–12 apply to this track too.
+
+1. Before editing any existing file, read
+   `docs/operator/CHANGE_IMPACT_AND_SAFETY.md`: only the changes listed
+   there are allowed. All tracks share the coordination board in `status.md`.
+2. Every capability ships behind an `operator.*` switch that defaults off.
+   Off means existing agents get the same prompt, tools and approvals
+   (OT-REG-01).
+3. Grants never change a risk class. Until OD-02 is approved and the
+   amendment in CHANGE_IMPACT §7 replaces track-A rule 3, no code may skip
+   a per-call approval. Even then: R2/R3 grantable tools only, pinned
+   targets, counted in SQL, expiring with the job, only in the job's own
+   thread and its crew part threads; never R4, R5, calls, browser or schedule tools.
+4. Only the person approves, edits (reduce-only) or revokes jobs and grants,
+   and ticks `person_confirmed` criteria. No tool writes them.
+5. A job is `completed` only by `reviewMandates` from evidence rows; model
+   text is never evidence.
+6. **Never run anything locally against the live database.** `.env`,
+   `.env.local` and `npm run dev:worker` point at the live Supabase
+   project. Local runs export `.env.verify` (local Supabase stack) and pass
+   `npm run verify:guard` first (`docs/operator/UI_VERIFICATION.md`).
+7. Every phase that changes a screen ends with a browser check on that
+   isolated stack (360 and 1280 px, light and dark, console clean, ≥ 44 px
+   targets, neighbours unchanged), recorded with screenshots in `status.md`.
+8. Google goes live only through the owner's checklist in
+   `docs/operator/GOOGLE_CONNECTIVITY.md`; the person types their own Google
+   password; client ids and secrets live only in Render and `.env.verify`.
+9. Crew members act only as their own tasks in their own part threads
+   (`docs/operator/CREW_EXECUTION.md`); `assign` stays research-only.

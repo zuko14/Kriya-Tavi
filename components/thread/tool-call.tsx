@@ -3,6 +3,7 @@
 import * as React from "react"
 import {
   BrainIcon,
+  BriefcaseIcon,
   CameraIcon,
   CalendarClockIcon,
   CalendarIcon,
@@ -23,6 +24,8 @@ import {
   PhoneIcon,
   PlayIcon,
   SearchIcon,
+  SendIcon,
+  Share2Icon,
   SheetIcon,
   SplitIcon,
   TargetIcon,
@@ -181,10 +184,40 @@ const META: Record<string, Meta> = {
     label: "post on instagram",
     summary: (i) => str(i.caption),
   },
+  file_read: { icon: FileTextIcon, label: "read a file" },
+  file_list: { icon: FileTextIcon, label: "list files", summary: (i) => str(i.query) },
+  file_save_attachment: { icon: FileTextIcon, label: "save an attachment" },
+  document_render: {
+    icon: FileTextIcon,
+    label: "make a pdf",
+    summary: (i) => str(i.name),
+  },
+  // G2
+  drive_import: { icon: FileTextIcon, label: "copy from drive" },
+  drive_share: {
+    icon: Share2Icon,
+    label: "share a drive file",
+    summary: (i) => list(i.emails),
+  },
+  gmail_send_draft: { icon: SendIcon, label: "send a draft" },
   propose_call: {
     icon: PhoneIcon,
     label: "draft a call",
     summary: (i) => str(i.recipientLabel),
+  },
+  // Track O: a job proposal the person approves in the Inbox
+  mandate_propose: {
+    icon: BriefcaseIcon,
+    label: "propose a job",
+    summary: (i) => str(i.title),
+  },
+  mandate_status: { icon: ListChecksIcon, label: "job status" },
+  mandate_report: { icon: ListChecksIcon, label: "check the job against records" },
+  // O11: members who act, each in their own thread
+  crew_dispatch: {
+    icon: BriefcaseIcon,
+    label: "hand parts to the crew",
+    summary: (i) => (Array.isArray(i.parts) ? `${i.parts.length} parts` : ""),
   },
 }
 
@@ -223,6 +256,12 @@ const A8_ROWS: Record<string, (i: Record<string, unknown>) => [string, string][]
     ["Image", str(i.imageUrl)],
     ["Caption", str(i.caption)],
   ],
+  drive_share: (i) => [
+    ["File", str(i.fileId)],
+    ["People", list(i.emails)],
+    ["Access", i.role === "commenter" ? "Can comment" : "Can view"],
+  ],
+  gmail_send_draft: (i) => [["Draft", str(i.draftId)]],
 }
 const A8_TEXT: Record<string, (i: Record<string, unknown>) => string> = {
   github_comment: (i) => str(i.body),
@@ -244,6 +283,10 @@ const A8_NOTES: Record<string, string> = {
   sheets_append: "Added to your Google Sheet as plain text.",
   sheets_update: "Replaces those cells in your Google Sheet with this plain text.",
   instagram_publish: "Posted publicly on your Instagram as you.",
+  drive_share:
+    "Google emails each of them a link. You can undo it for 10 minutes; after that, remove access in Drive.",
+  gmail_send_draft:
+    "Sends the draft exactly as saved in your Gmail, as you. A sent email can't be taken back.",
 }
 
 export function toolName(part: ToolPart) {
@@ -342,6 +385,40 @@ function Details({ part }: { part: ToolPart }) {
         >
           Review and confirm the call to {str(input.recipientLabel)}
         </a>
+      ) : output ? (
+        <p className="text-[13px]">{str(output.error)}</p>
+      ) : null
+    // A proposal: nothing is granted until the person approves it there
+    case "mandate_propose":
+      return output?.mandateId ? (
+        <a href="/inbox" className="text-[13px] font-medium text-rigel hover:underline">
+          Review and approve the job &ldquo;{str(input.title)}&rdquo; in your Inbox
+        </a>
+      ) : output ? (
+        <p className="text-[13px]">{str(output.error)}</p>
+      ) : null
+    // Each part's member, brief and thread; live status is on the job's page
+    case "crew_dispatch":
+      return Array.isArray(output?.parts) ? (
+        <ul className="flex flex-col gap-2">
+          {(output.parts as Record<string, unknown>[]).map((p) => {
+            const brief = (Array.isArray(input.parts) ? input.parts : []).find(
+              (i: Record<string, unknown>) => i?.key === p.key
+            )
+            const href = `/a/${encodeURIComponent(str(p.agentId))}/${encodeURIComponent(str(p.threadId))}`
+            return (
+              <li key={str(p.key)} className="flex flex-col gap-0.5">
+                <a
+                  href={href}
+                  className="text-[13px] font-medium text-rigel hover:underline"
+                >
+                  {str(p.name)} · {str(p.key)}
+                </a>
+                <p className="text-[12.5px] text-muted-foreground">{str(brief?.brief)}</p>
+              </li>
+            )
+          })}
+        </ul>
       ) : output ? (
         <p className="text-[13px]">{str(output.error)}</p>
       ) : null

@@ -1,0 +1,16 @@
+{
+  "turns": [
+    {
+      "toolCalls": [
+        {
+          "name": "schedule_create",
+          "input": {
+            "prompt": "Check whether the clients have replied about their invoices",
+            "rule": { "freq": "weekly", "at": "10:00", "days": [1] }
+          }
+        }
+      ]
+    },
+    { "text": "A weekly check on Mondays at 10:00 is set up, now that you approved it." }
+  ]
+}

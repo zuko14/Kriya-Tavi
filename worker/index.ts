@@ -14,6 +14,8 @@ import { log } from "@/lib/log"
 import { claimFile, extractFile, modelReader } from "@/lib/extract"
 import { runFactJob } from "@/lib/facts"
 import { guardCanary } from "@/lib/improve"
+import { reviewCrews } from "@/lib/operator/crews"
+import { reviewMandates } from "@/lib/operator/loop"
 import { markMissed } from "@/lib/radar/obligations"
 import { claimJob, recoverJobs, runJob, withinCap } from "@/lib/memory/maintenance"
 import { claimDueSchedules, recoverClaimedRuns, runDue } from "@/lib/schedules"
@@ -274,6 +276,24 @@ async function schedulerLoop() {
       }
     } catch (error) {
       log.error("scheduler loop error", { error })
+    }
+    // O6: jobs that are done, out of time or stuck, from their rows (no model)
+    try {
+      if ((await getSetting("operator.checkIns")) === "on") {
+        const review = await reviewMandates()
+        if (review.reviewed > 0 || review.failed > 0) log.info("jobs reviewed", review)
+      }
+    } catch (error) {
+      log.error("job review failed", { error })
+    }
+    // O11: crew parts settle, start and join from their rows (no model)
+    try {
+      if ((await getSetting("operator.crews")) === "on") {
+        const crews = await reviewCrews()
+        if (crews.reviewed > 0 || crews.failed > 0) log.info("crews reviewed", crews)
+      }
+    } catch (error) {
+      log.error("crew review failed", { error })
     }
     await sleep(SCHEDULER_POLL_MS)
   }

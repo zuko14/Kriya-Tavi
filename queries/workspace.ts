@@ -1,9 +1,10 @@
-import { and, asc, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm"
+import { and, asc, desc, eq, gte, inArray, isNull, notExists, sql } from "drizzle-orm"
 
 import { withUser, type Tx } from "@/db"
 import {
   agents,
   charges,
+  crewParts,
   memories,
   squadMembers,
   squads,
@@ -14,6 +15,7 @@ import {
 } from "@/db/schema"
 import { loadMessages } from "@/lib/agent/messages"
 import { isOwner } from "@/lib/auth"
+import { crewsOn } from "@/lib/operator/crew-threads"
 import { checkTaskAllowed, usageSummary } from "@/lib/entitlements"
 import { isGatewayConfigured, TIER_LABELS } from "@/lib/models"
 import { isWebConfigured } from "@/lib/web"
@@ -22,6 +24,23 @@ import { isWebConfigured } from "@/lib/web"
 // (withUser), so Row Level Security limits it to their own rows.
 
 /* ───────────────────────────── sidebar ──────────────────────────── */
+
+// O11: crew part threads are reached from their job, not listed. With
+// operator.crews off, no filter: the same query as before. `crews` is read
+// before the transaction (lib/operator/crew-threads.ts).
+const notCrewPart = (
+  tx: Tx,
+  crews: boolean,
+  threadId: typeof threads.id | typeof tasks.threadId
+) =>
+  crews
+    ? notExists(
+        tx
+          .select({ one: sql`1` })
+          .from(crewParts)
+          .where(eq(crewParts.threadId, threadId))
+      )
+    : undefined
 
 async function squadsWithAgents(tx: Tx) {
   const rows = await tx.query.squads.findMany({
@@ -45,6 +64,7 @@ export type SquadWithAgents = Awaited<ReturnType<typeof getSquads>>[number]
 // Everything the shell needs: who exists, where their latest thread is,
 // and which of them are working right now
 export async function getNavigation(userId: string) {
+  const crews = await crewsOn()
   return withUser(userId, async (tx) => {
     const agentRows = await tx.select().from(agents).orderBy(asc(agents.createdAt))
     const squadRows = await squadsWithAgents(tx)
@@ -58,6 +78,7 @@ export async function getNavigation(userId: string) {
         activeAt: threads.activeAt,
       })
       .from(threads)
+      .where(notCrewPart(tx, crews, threads.id))
       .orderBy(desc(threads.activeAt))
       .limit(200)
     const active = await tx
@@ -143,6 +164,7 @@ export async function getThreadsFor(
   const where = owner.agentId
     ? eq(threads.agentId, owner.agentId)
     : eq(threads.squadId, owner.squadId ?? "")
+  const crews = await crewsOn()
   return withUser(userId, (tx) =>
     tx
       .select({
@@ -152,7 +174,7 @@ export async function getThreadsFor(
         activeAt: threads.activeAt,
       })
       .from(threads)
-      .where(where)
+      .where(and(where, notCrewPart(tx, crews, threads.id)))
       .orderBy(desc(threads.activeAt))
       .limit(50)
   )
@@ -241,6 +263,7 @@ export type Activity = Awaited<ReturnType<typeof getActivity>>
 
 // Every task across agents and squads, newest first, for the Tasks screen
 export async function getTasks(userId: string, limit = 60) {
+  const crews = await crewsOn()
   return withUser(userId, (tx) =>
     tx
       .select({
@@ -266,6 +289,7 @@ export async function getTasks(userId: string, limit = 60) {
       .leftJoin(threads, eq(tasks.threadId, threads.id))
       .leftJoin(squads, eq(threads.squadId, squads.id))
       .leftJoin(charges, eq(charges.taskId, tasks.id))
+      .where(notCrewPart(tx, crews, tasks.threadId))
       .orderBy(desc(tasks.createdAt))
       .limit(limit)
   )

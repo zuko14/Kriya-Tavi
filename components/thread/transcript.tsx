@@ -8,6 +8,7 @@ import {
   CalendarClockIcon,
   ChevronRightIcon,
   CornerDownRightIcon,
+  UsersIcon,
 } from "lucide-react"
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom"
 
@@ -168,6 +169,8 @@ function UserMessage({
     .join("\n")
   // Written by a schedule's run (A3), not typed by the person
   const scheduled = message.metadata?.channel === "schedule"
+  // O11: a crew member's brief, or the crew's results for the lead
+  const crew = message.metadata?.channel === "crew"
 
   return (
     <div className="flex justify-end">
@@ -175,6 +178,12 @@ function UserMessage({
         {scheduled && (
           <span className="flex items-center gap-1.5 font-mono text-[10.5px] text-muted-foreground">
             <CalendarClockIcon className="size-3.5" /> Scheduled run
+          </span>
+        )}
+        {crew && (
+          <span className="flex items-center gap-1.5 font-mono text-[10.5px] text-muted-foreground">
+            <UsersIcon className="size-3.5" />{" "}
+            {message.metadata?.partId ? "Your part of a job" : "Crew results"}
           </span>
         )}
         {addressee && (
@@ -186,7 +195,9 @@ function UserMessage({
         <div
           className={cn(
             "rounded-[20px] rounded-br-md px-4 py-2.5 text-[14.5px] leading-relaxed whitespace-pre-wrap",
-            scheduled ? "bg-muted text-foreground" : "bg-primary text-primary-foreground"
+            scheduled || crew
+              ? "bg-muted text-foreground"
+              : "bg-primary text-primary-foreground"
           )}
         >
           {text}

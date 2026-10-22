@@ -1,0 +1,39 @@
+{
+  "turns": [
+    {
+      "toolCalls": [
+        {
+          "name": "mandate_propose",
+          "input": {
+            "title": "Get 2 overdue invoices paid",
+            "objective": "Remind Asha and Ravi by email about their overdue invoices and chase until both say when they'll pay.",
+            "criteria": [
+              {
+                "text": "A reminder draft for each client",
+                "evidence": {
+                  "kind": "tool_verified",
+                  "tool": "gmail_draft",
+                  "atLeast": 2
+                }
+              },
+              {
+                "text": "Both clients said when they'll pay",
+                "evidence": { "kind": "person_confirmed" }
+              }
+            ],
+            "grants": [
+              {
+                "tool": "gmail_draft",
+                "pins": { "to": ["asha@example.com", "ravi@example.com"] },
+                "maxUses": 6,
+                "why": "Reminder drafts you send yourself"
+              }
+            ],
+            "dueInDays": 14
+          }
+        }
+      ]
+    },
+    { "text": "I've proposed the job. Review and approve it in your Inbox." }
+  ]
+}

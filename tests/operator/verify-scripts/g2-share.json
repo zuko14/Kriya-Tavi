@@ -1,0 +1,17 @@
+{
+  "turns": [
+    {
+      "toolCalls": [
+        {
+          "name": "drive_share",
+          "input": {
+            "fileId": "1AbCdEfGhIjKlMnOpQrStUvW",
+            "emails": ["ravi@example.com"],
+            "role": "reader"
+          }
+        }
+      ]
+    },
+    { "text": "Waiting for your approval to share it." }
+  ]
+}

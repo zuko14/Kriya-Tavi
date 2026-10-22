@@ -1,5 +1,5 @@
 import { drizzle } from "drizzle-orm/pglite"
-import { beforeEach, describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { setDatabaseForTests, type DB } from "@/db"
 import * as schema from "@/db/schema"
@@ -17,6 +17,12 @@ import { asUser, createTestDb, createUser, type TestDb } from "../db/harness"
 
 // Thread summary jobs (AT-MNT-01, AT-MNT-02) on a real Postgres with a
 // scripted summariser: never a task, never a charge, capped per day
+
+// enqueueTurn refuses without a model gateway; no key on a clean machine
+vi.mock("@/lib/models", async (original) => ({
+  ...(await original<typeof import("@/lib/models")>()),
+  isGatewayConfigured: () => true,
+}))
 
 let pg: TestDb
 let user: string

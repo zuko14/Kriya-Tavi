@@ -63,6 +63,11 @@ export function actionTitle(tool: string, input: Input, tense: "ask" | "done") {
       return `${ask ? "Update" : "Updated"} ${quoted(input?.range)} in a Google Sheet`
     case "instagram_publish":
       return `${ask ? "Post" : "Posted"} on Instagram: ${quoted(input?.caption)}`
+    // G2
+    case "drive_share":
+      return `${ask ? "Share" : "Shared"} a Drive file with ${(Array.isArray(input?.emails) ? input.emails : []).join(", ")} (${input?.role === "commenter" ? "can comment" : "can view"}); Google emails them`
+    case "gmail_send_draft":
+      return `${ask ? "Send" : "Sent"} a saved Gmail draft`
     default:
       return tool.replaceAll("_", " ")
   }

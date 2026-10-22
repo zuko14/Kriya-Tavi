@@ -10,12 +10,14 @@ import {
 } from "lucide-react"
 
 import { CapForm, GoalControls, ScheduleControls } from "@/components/inbox/controls"
+import { JobPanel } from "@/components/operator/job-panel"
 import { requireUser } from "@/lib/auth"
 import { getSetting } from "@/lib/config"
 import { formatInr, parseRate } from "@/lib/money"
 import { quoteFor } from "@/lib/quotes"
 import { cn } from "@/lib/utils"
 import { getGoal } from "@/queries/goals"
+import { jobForGoal } from "@/queries/mandates"
 
 export const metadata: Metadata = { title: "Goal" }
 
@@ -68,6 +70,16 @@ export default async function Page({ params }: { params: Promise<{ goalId: strin
       )
     : []
   const seqOf = new Map(view.episodes.map((e) => [e.id, e.seq]))
+  // O3: the job that owns this goal, if any; goals without one are unchanged
+  const job =
+    (await getSetting("operator.mandates")) === "on"
+      ? await jobForGoal(
+          user.id,
+          goal.id,
+          (await getSetting("operator.reports")) === "on" &&
+            (await getSetting("agents.files")) === "on"
+        )
+      : null
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
@@ -90,8 +102,10 @@ export default async function Page({ params }: { params: Promise<{ goalId: strin
               Done when: {goal.successCriteria}
             </p>
           )}
-          <GoalControls goalId={goal.id} status={goal.status} />
+          {!job && <GoalControls goalId={goal.id} status={goal.status} />}
         </header>
+
+        {job && <JobPanel view={job} />}
 
         <Block title="Checklist">
           {goal.plan.length === 0 ? (

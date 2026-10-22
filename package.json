@@ -39,6 +39,8 @@
     "models:sync": "tsx scripts/sync-models.ts",
     "models:eval": "tsx scripts/eval-models.ts",
     "voice:eval": "tsx --env-file-if-exists=.env scripts/voice-eval.ts",
+    "verify:guard": "tsx scripts/verify-guard.ts",
+    "verify:stub": "tsx scripts/verify-model-stub.ts",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm test"
   },
   "dependencies": {
@@ -87,7 +89,7 @@
     "@types/react-dom": "^19",
     "@types/ws": "8.18.2",
     "eslint": "^10",
-    "eslint-config-next": "16.4.0",
+    "eslint-config-next": "^16.4.2",
     "prettier": "^3.9.10",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^4.3.3",

@@ -176,9 +176,12 @@ describe("migrations", () => {
         )
       ).rows.length
     expect(await added()).toBe(12)
-    // Rollbacks run newest first: policy versions (A12), radar (A13),
-    // ledger (A7), files (A5), skills (A9) and login profiles (A6) use
-    // check_transition(); obligations reference goals
+    // Rollbacks run newest first: crews (O11) reference jobs; operator jobs
+    // (O2) reference goals and use check_transition(), as do policy versions
+    // (A12), radar (A13), ledger (A7), files (A5), skills (A9) and login
+    // profiles (A6); obligations reference goals
+    await pg.exec(read("rollback", "20261201000100_operator_crews.down.sql"))
+    await pg.exec(read("rollback", "20261201000000_operator_mandates.down.sql"))
     await pg.exec(read("rollback", "20261114000000_policy_versions.down.sql"))
     await pg.exec(read("rollback", "20261113000000_radar_watch.down.sql"))
     await pg.exec(read("rollback", "20261111000000_ledger.down.sql"))
@@ -199,6 +202,8 @@ describe("migrations", () => {
     await pg.exec(read("migrations", "20261111000000_ledger.sql"))
     await pg.exec(read("migrations", "20261113000000_radar_watch.sql"))
     await pg.exec(read("migrations", "20261114000000_policy_versions.sql"))
+    await pg.exec(read("migrations", "20261201000000_operator_mandates.sql"))
+    await pg.exec(read("migrations", "20261201000100_operator_crews.sql"))
   })
 
   it("rolls the A8 providers and undo columns back and applies them again", async () => {
@@ -410,6 +415,168 @@ describe("migrations", () => {
     expect(rows).toEqual([])
     await pg.exec(read("migrations", "20261106000000_login_profiles.sql"))
     expect(await added()).toBe(9)
+  })
+
+  it("OT-DB-06 rolls operator jobs and grants back with data in them and applies them again", async () => {
+    const read = (dir: string, file: string) =>
+      fs.readFileSync(path.join(process.cwd(), "supabase", dir, file), "utf8")
+    const pg = await createTestDb()
+    await pg.exec(
+      "create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key); insert into supabase_migrations.schema_migrations values ('20261201000000')"
+    )
+    const added = async () =>
+      (
+        await pg.query(
+          `select relname from pg_class where relname in ('mandates', 'grants', 'grant_uses')
+           union all select column_name from information_schema.columns
+             where table_schema = 'kriya' and table_name = 'tool_executions' and column_name = 'grant_id'
+           union all select proname from pg_proc
+             where proname in ('consume_grant', 'grants_guard', 'mandates_guard')
+           union all select entity from kriya.allowed_transitions where entity in ('mandate', 'grant')`
+        )
+      ).rows.length
+    // 3 tables, 1 column, 3 functions, 20 transitions
+    expect(await added()).toBe(27)
+
+    const user = "00000000-0000-0000-0000-0000000000ab"
+    await pg.query("insert into auth.users (id) values ($1)", [user])
+    await pg.query(
+      "insert into kriya.agents (id, user_id, name, role, glyph) values ('a1', $1, 'L', 'r', 'g')",
+      [user]
+    )
+    await pg.query(
+      "insert into kriya.threads (id, user_id, agent_id) values ('t1', $1, 'a1')",
+      [user]
+    )
+    await pg.query(
+      `insert into kriya.mandates (id, user_id, origin_thread_id, title, objective, criteria,
+         due_at, proposed_by, status)
+       values ('m1', $1, 't1', 'Collect', 'Get paid',
+         '[{"id":"c1","text":"x","evidence":{"kind":"file_created"}}]',
+         now() + interval '5 days', 'agent', 'active')`,
+      [user]
+    )
+    const { rows } = await pg.query<{ id: string }>(
+      `insert into kriya.grants (user_id, mandate_id, tool, pins, max_uses, expires_at)
+       values ($1, 'm1', 'gmail_draft', '{"to":["a@example.com"]}', 2, now() + interval '5 days')
+       returning id`,
+      [user]
+    )
+    await pg.query("select kriya.consume_grant($1, $2, gen_random_uuid(), 'call-1')", [
+      user,
+      rows[0].id,
+    ])
+
+    // Crews (O11) reference jobs: newest first
+    await pg.exec(read("rollback", "20261201000100_operator_crews.down.sql"))
+    await pg.exec(read("rollback", "20261201000000_operator_mandates.down.sql"))
+    expect(await added()).toBe(0)
+    const { rows: version } = await pg.query(
+      "select 1 from supabase_migrations.schema_migrations where version = '20261201000000'"
+    )
+    expect(version).toEqual([])
+    // The rest of the person's data is untouched
+    const { rows: threads } = await pg.query("select id from kriya.threads")
+    expect(threads).toEqual([{ id: "t1" }])
+
+    await pg.exec(read("migrations", "20261201000000_operator_mandates.sql"))
+    await pg.exec(read("migrations", "20261201000100_operator_crews.sql"))
+    expect(await added()).toBe(27)
+    const { rows: rls } = await pg.query(
+      `select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
+       where n.nspname = 'kriya' and c.relkind = 'r' and not c.relrowsecurity`
+    )
+    expect(rls).toEqual([])
+  })
+
+  it("G2 rolls the drive file origin back and applies it again", async () => {
+    const read = (dir: string, file: string) =>
+      fs.readFileSync(path.join(process.cwd(), "supabase", dir, file), "utf8")
+    const pg = await createTestDb()
+    await pg.exec(
+      "create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key); insert into supabase_migrations.schema_migrations values ('20261201000200')"
+    )
+    const user = "00000000-0000-0000-0000-0000000000ad"
+    await pg.query("insert into auth.users (id) values ($1)", [user])
+    const add = (origin: string) =>
+      pg.query(
+        `insert into kriya.files (user_id, name, mime, size_bytes, origin)
+         values ($1, 'a.pdf', 'application/pdf', 10, $2)`,
+        [user, origin]
+      )
+    await add("drive")
+    await add("upload")
+    await pg.exec(read("rollback", "20261201000200_drive_files.down.sql"))
+    // Drive copies go; everything else stays; the old origins only
+    const { rows } = await pg.query("select origin from kriya.files")
+    expect(rows).toEqual([{ origin: "upload" }])
+    await expect(add("drive")).rejects.toThrow(/files_origin_check/)
+    const { rows: version } = await pg.query(
+      "select 1 from supabase_migrations.schema_migrations where version = '20261201000200'"
+    )
+    expect(version).toEqual([])
+    await pg.exec(read("migrations", "20261201000200_drive_files.sql"))
+    await add("drive")
+  })
+
+  it("O11 rolls crews back with data in them and applies them again", async () => {
+    const read = (dir: string, file: string) =>
+      fs.readFileSync(path.join(process.cwd(), "supabase", dir, file), "utf8")
+    const pg = await createTestDb()
+    await pg.exec(
+      "create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key); insert into supabase_migrations.schema_migrations values ('20261201000100')"
+    )
+    const added = async () =>
+      (
+        await pg.query(
+          `select relname from pg_class where relname in ('crew_runs', 'crew_parts', 'crew_runs_one_open')
+           union all select entity from kriya.allowed_transitions where entity in ('crew_run', 'crew_part')`
+        )
+      ).rows.length
+    // 2 tables, 1 index, 20 transitions
+    expect(await added()).toBe(23)
+
+    const user = "00000000-0000-0000-0000-0000000000ac"
+    await pg.query("insert into auth.users (id) values ($1)", [user])
+    await pg.query(
+      "insert into kriya.agents (id, user_id, name, role, glyph) values ('a1', $1, 'L', 'r', 'g')",
+      [user]
+    )
+    await pg.query(
+      "insert into kriya.threads (id, user_id, agent_id) values ('lead', $1, 'a1'), ('part', $1, 'a1')",
+      [user]
+    )
+    await pg.query(
+      `insert into kriya.mandates (id, user_id, title, objective, criteria, due_at, proposed_by, status)
+       values ('m1', $1, 'Collect', 'Get paid', '[{"id":"c1","text":"x","evidence":{"kind":"person_confirmed"}}]',
+         now() + interval '5 days', 'agent', 'active')`,
+      [user]
+    )
+    await pg.query(
+      `insert into kriya.crew_runs (id, user_id, lead_thread_id, lead_agent_id, squad_id, mandate_id, deadline_at)
+       values ('r1', $1, 'lead', 'a1', 's1', 'm1', now() + interval '1 day')`,
+      [user]
+    )
+    await pg.query(
+      `insert into kriya.crew_parts (id, user_id, run_id, key, agent_id, thread_id, brief)
+       values ('p1', $1, 'r1', 'drafts', 'a1', 'part', 'Draft')`,
+      [user]
+    )
+
+    await pg.exec(read("rollback", "20261201000100_operator_crews.down.sql"))
+    expect(await added()).toBe(0)
+    const { rows: version } = await pg.query(
+      "select 1 from supabase_migrations.schema_migrations where version = '20261201000100'"
+    )
+    expect(version).toEqual([])
+    // The part thread and the job stay with the person
+    const { rows: kept } = await pg.query(
+      "select (select count(*)::int from kriya.threads) as threads, (select count(*)::int from kriya.mandates) as jobs"
+    )
+    expect(kept).toEqual([{ threads: 2, jobs: 1 }])
+
+    await pg.exec(read("migrations", "20261201000100_operator_crews.sql"))
+    expect(await added()).toBe(23)
   })
 
   it("T-MIG-01 rolls the voice core back and applies it again, before the core rollback", async () => {

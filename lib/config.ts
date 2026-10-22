@@ -268,6 +268,88 @@ export const SETTINGS = {
     pattern: /^(on|off)$/,
     hint: "on or off",
   },
+  // Operator track (docs/operator). The owner's kill list: tools named here
+  // leave every agent's belt from the next task on. Unset: none
+  "operator.disabledTools": {
+    env: "KRIYA_OPERATOR_DISABLED_TOOLS",
+    pattern: /^[a-z_]{1,40}(,[a-z_]{1,40}){0,99}$/,
+    hint: "Comma-separated tool names, e.g. instagram_publish,github_comment",
+  },
+  // O3: jobs (mandate_propose, mandate_status, the job card and pages).
+  // Needs agents.goals and agents.inbox on too (OD-21)
+  "operator.mandates": {
+    env: "KRIYA_OPERATOR_MANDATES",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // O4: a call that matches a job's standing grant runs without asking
+  // (OD-02). Off: every call asks, as before
+  "operator.grants": {
+    env: "KRIYA_OPERATOR_GRANTS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // O5: mandate_report, verdicts on the job page, the handover PDF
+  "operator.reports": {
+    env: "KRIYA_OPERATOR_REPORTS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // O6: the worker's review pass: stuck, expired and completed jobs
+  "operator.checkIns": {
+    env: "KRIYA_OPERATOR_CHECK_INS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // O7: the "Hand Kriya a job" playbooks on Home (OD-09)
+  "operator.playbooks": {
+    env: "KRIYA_OPERATOR_PLAYBOOKS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // O11: crew_dispatch for a job's squad lead and the worker's crew pass
+  // (OD-19). Off: no new crews; parts already queued finish as ordinary tasks
+  "operator.crews": {
+    env: "KRIYA_OPERATOR_CREWS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // G2: drive_import and drive_share (OD-15, OD-17). Sharing also needs the
+  // person to tick "Drive sharing" when connecting Google
+  "operator.driveShare": {
+    env: "KRIYA_OPERATOR_DRIVE_SHARE",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // G2: gmail_send_draft sends a draft Kriya saved, after exact approval (OD-16)
+  "operator.gmailSend": {
+    env: "KRIYA_OPERATOR_GMAIL_SEND",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // G1: the Google app is in Testing, where Google expires refresh tokens
+  // after 7 days; the Account card says so (OD-15). Display only
+  "google.testingMode": {
+    env: "KRIYA_GOOGLE_TESTING_MODE",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Active and needs-you jobs per person, checked on approval (OD-14)
+  "operator.maxActive": {
+    env: "KRIYA_OPERATOR_MAX_ACTIVE",
+    fallback: "3",
+    pattern: /^([1-9]|1[0-9]|20)$/,
+    hint: "1 to 20",
+  },
 } satisfies Record<string, SettingDef>
 
 export type SettingKey = keyof typeof SETTINGS

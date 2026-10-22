@@ -47,18 +47,23 @@ import {
 import { recordApprovals, redactInput } from "@/lib/agent/approvals"
 import { writeEpisode } from "@/lib/agent/episodes"
 import { chargeTask, recordUsage } from "@/lib/agent/metering"
+import { disabledTools } from "@/lib/agent/capabilities"
 import { approvalFor, classifyTool, TOOL_CLASSES } from "@/lib/agent/policy"
 import { verificationOf } from "@/lib/agent/verify"
 import {
   createAssignTool,
   createBrowserTools,
   createConnectorTools,
+  createCrewTools,
+  createFileTools,
+  createGoogleV2Tools,
   createKitTools,
   createDelegateTool,
   createGoalTools,
   createMemoryTools,
   createMemoryToolsV2,
   createLedgerTools,
+  createMandateTools,
   createProposeCallTool,
   createRadarTools,
   createSkillTools,
@@ -76,6 +81,8 @@ import { getSetting } from "@/lib/config"
 import { BASELINE_POLICY, bundleFor, stampTask, type Policy } from "@/lib/improve"
 import { EXTRA_GOOGLE_SERVICES, googleServices } from "@/lib/connectors"
 import { log } from "@/lib/log"
+import { jobOfThread } from "@/lib/operator/crews"
+import { activeGrants, consumeGrant, withGrants } from "@/lib/operator/grants"
 import { enqueueSummary } from "@/lib/memory/maintenance"
 import { alwaysOnNotes, recallNotes } from "@/lib/memory/retrieve"
 import { renderSummary } from "@/lib/memory/summaries"
@@ -398,6 +405,23 @@ export async function runTask(task: Task, ctx: WorkerContext) {
   // A6: saved sign-ins (agents.loginProfiles) and kits (K9, agents.kits)
   const loginProfiles = (await getSetting("agents.loginProfiles")) === "on"
   const kitTools = (await getSetting("agents.kits")) === "on"
+  // O1: tools the owner switched off for everyone (empty: none)
+  const disabled = disabledTools(await getSetting("operator.disabledTools"))
+  // O3: jobs, which live on goals and are proven by "What I did" (OD-21)
+  const mandates = (await getSetting("operator.mandates")) === "on" && goalTools && inbox
+  // O5: Kriya's verdict on a job, from records
+  const reports = mandates && (await getSetting("operator.reports")) === "on"
+  // O4: standing grants answer a matching call's approval (OD-02)
+  const grantsOn = mandates && (await getSetting("operator.grants")) === "on"
+  // O11: a job's squad lead may hand parts to members who act (OD-19)
+  const crews = mandates && (await getSetting("operator.crews")) === "on"
+  // A5: file_read, the text extracted from the person's files
+  const fileTools = (await getSetting("agents.files")) === "on"
+  // G2: Drive import and sharing, sending a saved draft (OD-15/16/17)
+  const google2 = {
+    driveShare: (await getSetting("operator.driveShare")) === "on",
+    gmailSend: (await getSetting("operator.gmailSend")) === "on",
+  }
   const browser = provider
     ? new TaskBrowser(provider, task, { profiles: loginProfiles })
     : null
@@ -439,6 +463,8 @@ export async function runTask(task: Task, ctx: WorkerContext) {
   let reply: KriyaMessage | null = null
   let sideEffects = false
   const publisher = new Publisher(task, attempt)
+  // Tool calls a grant answered, for their tool_executions row
+  const granted = new Map<string, string>()
 
   try {
     const context = await loadContext(task, memoryV2, connectorsV2, policy)
@@ -458,6 +484,7 @@ export async function runTask(task: Task, ctx: WorkerContext) {
       // Absent, not false, with the switch off: the prompt stays byte-identical
       ...(inbox && { citations: true }),
       ...(voice && { voice: true }),
+      ...(mandates && { mandates: true }),
     }
     const env: ToolEnv = {
       current: () => current,
@@ -466,6 +493,13 @@ export async function runTask(task: Task, ctx: WorkerContext) {
       taskId: task.id,
     }
     const memoryTools = memoryV2 ? createMemoryToolsV2 : createMemoryTools
+    const crewJob =
+      crews && thread.squad
+        ? await jobOfThread(task.userId, task.threadId).catch((error) => {
+            log.error("crew job read failed", { taskId: task.id, error })
+            return null
+          })
+        : null
     const squadContext = (agent: Agent) =>
       thread.squad
         ? {
@@ -539,6 +573,7 @@ export async function runTask(task: Task, ctx: WorkerContext) {
             toolName: toolCall.toolName,
             sideEffect,
             input: redactInput(toolCall.input),
+            grantId: granted.get(toolCall.toolCallId) ?? null,
           })
           .onConflictDoNothing()
           .catch((error) => log.error("tool record failed", { taskId: task.id, error }))
@@ -607,6 +642,7 @@ export async function runTask(task: Task, ctx: WorkerContext) {
           ...memoryTools(memberEnv),
           ...(capabilities.web ? createWebTools() : {}),
         }
+        for (const name of disabled) delete memberTools[name]
         try {
           const sub = streamText({
             ...hooks,
@@ -666,12 +702,18 @@ export async function runTask(task: Task, ctx: WorkerContext) {
       ...(browser ? createBrowserTools(browser) : {}),
       ...(kitTools ? createKitTools(env, browser) : {}),
       ...createConnectorTools(env, connected, { writes: true }),
+      ...(fileTools ? createFileTools(env, connected) : {}),
+      ...(google2.driveShare || google2.gmailSend
+        ? createGoogleV2Tools(env, connected, google2)
+        : {}),
       ...(goalTools ? createGoalTools(env, { watchers }) : {}),
       ...(radar || facts ? createRadarTools(env, { radar, facts }) : {}),
       // A9: replay reaches the rest of this belt, so it can do no more than it
       ...(skillTools ? createSkillTools(env, () => tools, browser) : {}),
       ...(ledgerTools ? createLedgerTools(env) : {}),
       ...(voice ? createProposeCallTool(env) : {}),
+      ...(mandates ? createMandateTools(env, { reports }) : {}),
+      ...(crewJob ? createCrewTools(env) : {}),
       ...(thread.squad ? createAssignTool(runAssignments) : {}),
       ...(thread.squad
         ? createDelegateTool((targetId, handoverBrief) => {
@@ -689,6 +731,26 @@ export async function runTask(task: Task, ctx: WorkerContext) {
           })
         : {}),
     }
+    // Skill replay reads this same belt, so a killed tool is gone there too.
+    // shortcut: the prompt may still describe a killed tool's ability; pass
+    // the list into Capabilities if owners start killing connector tools.
+    for (const name of disabled) delete tools[name]
+
+    // Only the active job's own thread has grants; none (or a failed read)
+    // passes today's map itself, so everything asks as before
+    const jobGrants = grantsOn
+      ? await activeGrants(task.userId, task.threadId).catch((error) => {
+          log.error("grants read failed", { taskId: task.id, error })
+          return []
+        })
+      : []
+    const toolApproval = jobGrants.length
+      ? withGrants(TOOL_APPROVALS, jobGrants, async (grantId, toolCallId) => {
+          const ok = await consumeGrant(task.userId, grantId, task.id, toolCallId)
+          if (ok) granted.set(toolCallId, grantId)
+          return ok
+        })
+      : TOOL_APPROVALS
 
     const result = streamText({
       model: createGatewayModel(modelId),
@@ -703,7 +765,7 @@ export async function runTask(task: Task, ctx: WorkerContext) {
         }
       ),
       tools,
-      toolApproval: TOOL_APPROVALS,
+      toolApproval,
       stopWhen: isStepCount(task.stepBudget),
       abortSignal: controller.signal,
       maxRetries: 2,

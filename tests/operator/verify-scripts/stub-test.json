@@ -1,0 +1,10 @@
+{
+  "turns": [
+    {
+      "toolCalls": [
+        { "name": "memory_write", "input": { "note": "Prefers short answers" } }
+      ]
+    },
+    { "text": "Saved that." }
+  ]
+}

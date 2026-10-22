@@ -1,12 +1,26 @@
-import { and, desc, eq, gt, gte, or, sql } from "drizzle-orm"
+import { and, desc, eq, gt, gte, inArray, or, sql } from "drizzle-orm"
 
 import { withUser } from "@/db"
-import { agents, approvals, messages, skills, tasks, threads } from "@/db/schema"
+import {
+  agents,
+  approvals,
+  crewParts,
+  crewRuns,
+  mandates,
+  messages,
+  skills,
+  tasks,
+  threads,
+} from "@/db/schema"
 import { textOf } from "@/lib/agent/messages"
+import { getSetting } from "@/lib/config"
+import { crewsOn } from "@/lib/operator/crew-threads"
 import type { KriyaMessage } from "@/lib/agent/tools"
 import { notesToReview } from "@/lib/memory/person"
 import { describeStep, MAX_SKILL_FAILURES } from "@/lib/skills"
 import { threadHref } from "@/queries/episodes"
+import { jobsNeedGoogle } from "@/queries/connections"
+import { inboxJobs } from "@/queries/mandates"
 
 // The Inbox (A3, UX_SPEC §3): what's waiting for the person. Approvals come
 // from the index the worker writes; questions are background runs whose
@@ -23,6 +37,10 @@ const lastSentence = (text: string) =>
     .at(-1) ?? ""
 
 export async function getInbox(userId: string) {
+  // O3: jobs to review and jobs that need the person; off = not queried
+  const jobsOn = (await getSetting("operator.mandates")) === "on"
+  // O11: a crew part's approval names its job; off = not queried
+  const crews = jobsOn && (await crewsOn())
   return withUser(userId, async (tx) => {
     const waiting = await tx
       .select({
@@ -98,10 +116,25 @@ export async function getInbox(userId: string) {
       .orderBy(desc(skills.createdAt))
       .limit(20)
 
+    const partThreads = crews ? waiting.map((a) => a.threadId) : []
+    const jobOfPart = new Map(
+      partThreads.length
+        ? (
+            await tx
+              .select({ threadId: crewParts.threadId, title: mandates.title })
+              .from(crewParts)
+              .innerJoin(crewRuns, eq(crewRuns.id, crewParts.runId))
+              .innerJoin(mandates, eq(mandates.id, crewRuns.mandateId))
+              .where(inArray(crewParts.threadId, partThreads))
+          ).map((row) => [row.threadId, row.title])
+        : []
+    )
+
     return {
       approvals: waiting.map(({ thread, ...approval }) => ({
         ...approval,
         href: threadHref(thread),
+        jobTitle: jobOfPart.get(approval.threadId) ?? null,
       })),
       questions,
       memories: await notesToReview(tx),
@@ -116,6 +149,9 @@ export async function getInbox(userId: string) {
         slots: s.slots,
         steps: s.steps.map(describeStep),
       })),
+      ...(jobsOn && { jobs: await inboxJobs(tx) }),
+      // G1: active jobs whose thread hit a dead Google connection
+      googleStopped: jobsOn ? await jobsNeedGoogle(userId, tx) : [],
     }
   })
 }
@@ -128,6 +164,7 @@ export async function inboxCount(userId: string) {
     inbox.approvals.length +
     inbox.questions.length +
     inbox.memories.length +
-    inbox.skills.length
+    inbox.skills.length +
+    (inbox.jobs ? inbox.jobs.review.length + inbox.jobs.needs.length : 0)
   )
 }

@@ -10,6 +10,7 @@ import {
   UsersIcon,
   WalletIcon,
   BookCheckIcon,
+  BriefcaseIcon,
   FlaskConicalIcon,
 } from "lucide-react"
 
@@ -21,6 +22,8 @@ const NAV = [
   { href: "/owner/users", label: "Members", icon: UsersIcon },
   { href: "/owner/operations", label: "Operations", icon: ActivityIcon },
   { href: "/owner/config", label: "Config", icon: SlidersHorizontalIcon },
+  // Track O: jobs and grants (O8)
+  { href: "/owner/operator", label: "Operator", icon: BriefcaseIcon },
   // A13: the public facts commons (K6)
   { href: "/owner/facts", label: "Facts", icon: BookCheckIcon },
   // A12: policy versions, canary and rollback

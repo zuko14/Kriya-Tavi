@@ -74,6 +74,13 @@ const TOOL_LABELS: Record<string, string> = {
   youtube_stats: "Checked YouTube stats",
   instagram_insights: "Checked Instagram stats",
   instagram_publish: "Posted on Instagram",
+  file_read: "Read a file",
+  file_list: "Looked through your files",
+  file_save_attachment: "Saved an email attachment",
+  document_render: "Made a PDF",
+  drive_import: "Copied a file from Drive",
+  drive_share: "Shared a Drive file",
+  gmail_send_draft: "Sent a Gmail draft",
   skill_propose: "Saved a skill for your review",
   skill_list: "Looked up saved skills",
   skill_run: "Ran a saved skill",
@@ -86,6 +93,10 @@ const TOOL_LABELS: Record<string, string> = {
   obligation_list: "Looked at your Radar",
   kit_prepare: "Prepared a ready-to-apply kit",
   kit_check: "Checked an applied kit",
+  mandate_propose: "Proposed a job for you to approve",
+  mandate_status: "Checked a job's progress",
+  mandate_report: "Checked a job against what was verifiably done",
+  crew_dispatch: "Handed parts of the job to the crew",
 }
 
 // What each tool sets out to do, for rows still running or that failed
@@ -130,6 +141,13 @@ const TOOL_ACTIONS: Record<string, string> = {
   youtube_stats: "check YouTube stats",
   instagram_insights: "check Instagram stats",
   instagram_publish: "post on Instagram",
+  file_read: "read a file",
+  file_list: "look through your files",
+  file_save_attachment: "save an email attachment",
+  document_render: "make a PDF",
+  drive_import: "copy a file from Drive",
+  drive_share: "share a Drive file",
+  gmail_send_draft: "send a Gmail draft",
   skill_propose: "save a skill",
   skill_list: "look up saved skills",
   skill_run: "run a saved skill",
@@ -141,6 +159,10 @@ const TOOL_ACTIONS: Record<string, string> = {
   obligation_list: "look at your Radar",
   kit_prepare: "prepare a ready-to-apply kit",
   kit_check: "check an applied kit",
+  mandate_propose: "propose a job",
+  mandate_status: "check a job's progress",
+  mandate_report: "check a job against the records",
+  crew_dispatch: "hand parts of the job to the crew",
 }
 
 // A label that matches what happened: "Added…", "Add…" while running, "Couldn't add…"

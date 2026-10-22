@@ -33,8 +33,14 @@ const sentences = (text: string) =>
 /* ───────────────────────────── claims ───────────────────────────── */
 
 const I_DID = String.raw`\bI(?:'ve| have)? (?:just |already )?`
-const CLAIMS: { pattern: RegExp; tools: string[] | null }[] = [
-  // Nothing in Kriya sends or posts, so these are never backed
+const CLAIMS: { pattern: RegExp; tools: string[] | null; onlyIfRan?: boolean }[] = [
+  // G2 (OD-16): "sent" or "emailed" is backed by a sent draft; with none sent, the row below answers as before
+  {
+    pattern: new RegExp(`${I_DID}(?:sent|emailed|mailed)\\b`, "i"),
+    tools: ["gmail_send_draft"],
+    onlyIfRan: true,
+  },
+  // Nothing else in Kriya sends or posts, so these are never backed
   {
     pattern: new RegExp(
       `${I_DID}(?:sent|emailed|mailed|messaged|posted|published|submitted|applied)\\b`,
@@ -89,7 +95,11 @@ export function unconfirmedClaims(
   )
   const claims: EpisodeClaim[] = []
   for (const sentence of sentences(reply.replace(/[‘’]/g, "'"))) {
-    const match = CLAIMS.find((c) => c.pattern.test(sentence))
+    const match = CLAIMS.find(
+      (c) =>
+        c.pattern.test(sentence) &&
+        (!c.onlyIfRan || c.tools!.some((tool) => ran.has(tool)))
+    )
     if (!match) continue
     if (!match.tools) {
       claims.push({

@@ -119,7 +119,7 @@ export async function claimFile(worker: string, canReadWithModel: boolean) {
       .where(
         and(
           eq(files.status, "ready"),
-          inArray(files.origin, ["upload", "email_attachment"]),
+          inArray(files.origin, ["upload", "email_attachment", "drive"]),
           inArray(
             files.mime,
             canReadWithModel ? [...CODE_MIMES, ...MODEL_MIMES] : CODE_MIMES

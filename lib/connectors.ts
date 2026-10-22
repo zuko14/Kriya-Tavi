@@ -56,6 +56,12 @@ export const GOOGLE_EXTRA_SERVICES = {
     label: "YouTube",
     scopes: ["https://www.googleapis.com/auth/youtube.readonly"],
   },
+  // G2 (OD-15, OD-17): sharing a Drive file needs the full Drive scope, a
+  // Restricted one; asked only when the person ticks it
+  drive_share: {
+    label: "Drive sharing",
+    scopes: ["https://www.googleapis.com/auth/drive"],
+  },
 } as const
 
 const ALL_GOOGLE = { ...GOOGLE_SERVICES, ...GOOGLE_EXTRA_SERVICES }
@@ -717,8 +723,41 @@ export async function calendarCreate(
       attendees: input.attendees?.map((email) => ({ email })),
     },
   })
-  return event(created)
+  // OF-13: read it back; confirmed only with this title and exactly these guests
+  const check = await providerFetch(
+    userId,
+    "google",
+    `${GOOGLE}/calendar/v3/calendars/primary/events/${encodeURIComponent(created.id)}`
+  )
+  const back = check.ok
+    ? ((await check.json()) as GoogleEvent & { status?: string })
+    : null
+  const ok =
+    back?.id === created.id &&
+    back.status !== "cancelled" &&
+    back.summary === input.title &&
+    sameAddresses(back.attendees?.map((a) => a.email) ?? [], input.attendees ?? [])
+  return {
+    ...event(created),
+    verification: readBack(
+      ok,
+      [
+        { kind: "provider_id", value: created.id },
+        ...(created.htmlLink ? [{ kind: "url" as const, value: created.htmlLink }] : []),
+      ],
+      "Read back from Google Calendar: the event is there with this title and these guests."
+    ),
+  }
 }
+
+// The same email addresses, ignoring case, order and display names
+function sameAddresses(found: string[], wanted: string[]) {
+  const norm = (list: string[]) =>
+    [...new Set(list.map((a) => a.trim().toLowerCase()))].sort().join(",")
+  return norm(found) === norm(wanted)
+}
+const addresses = (header: string | undefined) =>
+  header?.match(/[^\s<>,"]+@[^\s<>,"]+/g) ?? []
 
 // Undo (K3): deletes an event Kriya created (Google sends attendees a
 // cancellation when it had invited them), then reads it back. True when it
@@ -748,7 +787,8 @@ export async function calendarDelete(userId: string, eventId: string, notify: bo
 
 type GmailPart = {
   mimeType?: string
-  body?: { data?: string }
+  filename?: string
+  body?: { data?: string; attachmentId?: string; size?: number }
   parts?: GmailPart[]
   headers?: { name: string; value: string }[]
 }
@@ -833,7 +873,61 @@ export async function gmailRead(userId: string, id: string) {
     subject: header(m.payload, "Subject"),
     date: header(m.payload, "Date"),
     body: (text ?? (html ? stripHtml(html) : "")).slice(0, MAX_TEXT),
+    // For file_save_attachment (A5); names and sizes only, never the bytes
+    attachments: (m.payload ? attachmentsOf(m.payload) : []).map((p) => ({
+      attachmentId: p.body!.attachmentId!,
+      name: p.filename!,
+      mime: p.mimeType ?? null,
+      sizeBytes: p.body?.size ?? null,
+    })),
   }
+}
+
+const attachmentsOf = (part: GmailPart): GmailPart[] => [
+  ...(part.filename && part.body?.attachmentId ? [part] : []),
+  ...(part.parts ?? []).flatMap(attachmentsOf),
+]
+
+// One attachment's bytes for file_save_attachment (A5). Its name and type
+// come from the message itself, and it's refused before downloading when
+// the type isn't one Kriya files accept or it's too large.
+export async function gmailAttachment(
+  userId: string,
+  messageId: string,
+  attachmentId: string
+) {
+  const messageUrl = `${GOOGLE}/gmail/v1/users/me/messages/${encodeURIComponent(messageId)}`
+  const m = await api<{ payload?: GmailPart }>(
+    userId,
+    "google",
+    `${messageUrl}?format=full`
+  )
+  const part = (m.payload ? attachmentsOf(m.payload) : []).find(
+    (p) => p.body?.attachmentId === attachmentId
+  )
+  if (!part)
+    throw new ConnectorError(
+      "That email has no attachment with that id. Read it again with gmail_read and use an id from its attachments."
+    )
+  const name = part.filename!
+  const mime = part.mimeType ?? ""
+  if (!IMPORTABLE.has(mime))
+    throw new ConnectorError(
+      `${name} is a ${mime || "unknown"} file, which can't be saved. PDFs, Word files, images and text can.`
+    )
+  const tooBig = () =>
+    new ConnectorError(
+      `${name} is larger than ${MAX_IMPORT_BYTES / 1024 / 1024} MB, the most Kriya saves.`
+    )
+  if ((part.body?.size ?? 0) > MAX_IMPORT_BYTES) throw tooBig()
+  const { data } = await api<{ data?: string }>(
+    userId,
+    "google",
+    `${messageUrl}/attachments/${encodeURIComponent(attachmentId)}`
+  )
+  const bytes = Buffer.from(data ?? "", "base64url")
+  if (bytes.length > MAX_IMPORT_BYTES) throw tooBig()
+  return { name, mime, bytes }
 }
 
 // Headers can't carry line breaks (header injection); non-ASCII subjects are
@@ -876,7 +970,39 @@ export async function gmailDraft(
       },
     }
   )
-  return { draftId: draft.id, link: "https://mail.google.com/mail/u/0/#drafts" }
+  const link = "https://mail.google.com/mail/u/0/#drafts"
+  // OF-13: read back its headers only (never the body); confirmed when the
+  // draft exists with exactly these recipients
+  const check = await providerFetch(
+    userId,
+    "google",
+    `${GOOGLE}/gmail/v1/users/me/drafts/${encodeURIComponent(draft.id)}?format=metadata&metadataHeaders=To&metadataHeaders=Cc`
+  )
+  const back = check.ok
+    ? ((await check.json()) as {
+        id?: string
+        message?: { payload?: { headers?: { name: string; value: string }[] } }
+      })
+    : null
+  const headers = back?.message?.payload?.headers ?? []
+  const value = (name: string) =>
+    headers.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value
+  const ok =
+    back?.id === draft.id &&
+    sameAddresses(addresses(value("To")), input.to) &&
+    sameAddresses(addresses(value("Cc")), input.cc ?? [])
+  return {
+    draftId: draft.id,
+    link,
+    verification: readBack(
+      ok,
+      [
+        { kind: "provider_id", value: draft.id },
+        { kind: "url", value: link },
+      ],
+      "Read back from Gmail: the draft is saved with these recipients."
+    ),
+  }
 }
 
 // Undo (K3): deletes a draft Kriya saved, then reads it back. True when gone.
@@ -943,6 +1069,192 @@ export async function driveRead(userId: string, id: string) {
     { raw: true }
   )
   return { ...file, text }
+}
+
+/* Drive: import and share (G2, GOOGLE_CONNECTIVITY §4.1) */
+
+const DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+// The types Kriya files accept (lib/files.ts); Google's own files come as PDF
+const IMPORTABLE = new Set([
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "text/csv",
+  "text/plain",
+  DOCX,
+])
+const AS_PDF = new Set([
+  "application/vnd.google-apps.document",
+  "application/vnd.google-apps.presentation",
+  "application/vnd.google-apps.spreadsheet",
+])
+export const MAX_IMPORT_BYTES = 25 * 1024 * 1024
+
+// A Drive file's bytes for drive_import; refused before downloading when
+// its type isn't accepted or it's too large. The plan's own limits apply
+// when it's saved.
+export async function driveDownload(userId: string, id: string) {
+  const fileUrl = `${GOOGLE}/drive/v3/files/${encodeURIComponent(id)}`
+  const file = await api<DriveFile & { size?: string }>(
+    userId,
+    "google",
+    `${fileUrl}?fields=id,name,mimeType,size`
+  )
+  const asPdf = AS_PDF.has(file.mimeType)
+  if (!asPdf && !IMPORTABLE.has(file.mimeType)) {
+    throw new ConnectorError(
+      `${file.name} is a ${file.mimeType} file, which can't be imported. PDFs, Word files, images, text, and Google Docs, Sheets and Slides (as PDF) can.`
+    )
+  }
+  const tooBig = () =>
+    new ConnectorError(
+      `${file.name} is larger than ${MAX_IMPORT_BYTES / 1024 / 1024} MB, the most Kriya imports.`
+    )
+  if (Number(file.size ?? 0) > MAX_IMPORT_BYTES) throw tooBig()
+  const response = await providerFetch(
+    userId,
+    "google",
+    asPdf
+      ? `${fileUrl}/export?mimeType=${encodeURIComponent("application/pdf")}`
+      : `${fileUrl}?alt=media`
+  )
+  if (!response.ok) {
+    throw new ConnectorError(`Downloading ${file.name} failed (${response.status}).`)
+  }
+  const bytes = Buffer.from(await response.arrayBuffer())
+  if (bytes.length > MAX_IMPORT_BYTES) throw tooBig()
+  return {
+    id: file.id,
+    name: asPdf && !/\.pdf$/i.test(file.name) ? `${file.name}.pdf` : file.name,
+    mime: asPdf ? "application/pdf" : file.mimeType,
+    bytes,
+  }
+}
+
+type Permission = { id: string; emailAddress?: string; role?: string }
+
+const permissionsOf = async (userId: string, fileUrl: string) =>
+  (
+    await api<{ permissions?: Permission[] }>(
+      userId,
+      "google",
+      `${fileUrl}/permissions?fields=permissions(id,emailAddress,role)`
+    )
+  ).permissions ?? []
+
+// Gives each address access to a file (Google emails them), then reads the
+// permissions back. If one fails part-way, what was added is still returned,
+// so undo can take it away again.
+export async function driveShare(
+  userId: string,
+  input: { fileId: string; emails: string[]; role: "reader" | "commenter" }
+) {
+  const fileUrl = `${GOOGLE}/drive/v3/files/${encodeURIComponent(input.fileId)}`
+  const permissionIds: string[] = []
+  let failure: string | null = null
+  for (const emailAddress of input.emails) {
+    try {
+      const added = await api<{ id: string }>(
+        userId,
+        "google",
+        `${fileUrl}/permissions?sendNotificationEmail=true&fields=id`,
+        { method: "POST", body: { type: "user", role: input.role, emailAddress } }
+      )
+      permissionIds.push(added.id)
+    } catch (error) {
+      if (permissionIds.length === 0) throw error
+      failure = error instanceof Error ? error.message : "Sharing failed part-way."
+      break
+    }
+  }
+  const found = await permissionsOf(userId, fileUrl)
+  const file = await api<{ name?: string; webViewLink?: string }>(
+    userId,
+    "google",
+    `${fileUrl}?fields=name,webViewLink`
+  )
+  const ok =
+    !failure &&
+    input.emails.every((email) =>
+      found.some(
+        (p) =>
+          permissionIds.includes(p.id) &&
+          p.role === input.role &&
+          p.emailAddress?.toLowerCase() === email.toLowerCase()
+      )
+    )
+  return {
+    fileId: input.fileId,
+    name: file.name ?? null,
+    link: file.webViewLink ?? null,
+    role: input.role,
+    emails: input.emails,
+    permissionIds,
+    verification: readBack(
+      ok,
+      [
+        { kind: "provider_id", value: input.fileId },
+        ...(file.webViewLink ? [{ kind: "url" as const, value: file.webViewLink }] : []),
+      ],
+      failure
+        ? `Only ${permissionIds.length} of ${input.emails.length} were added: ${failure}`
+        : "Read back from Drive: these people now have access."
+    ),
+  }
+}
+
+// Undo (K3): removes exactly the permissions drive_share added, then reads
+// them back. True when none of them is left.
+export async function driveUnshare(
+  userId: string,
+  fileId: string,
+  permissionIds: string[]
+) {
+  const fileUrl = `${GOOGLE}/drive/v3/files/${encodeURIComponent(fileId)}`
+  for (const id of permissionIds) {
+    const removed = await providerFetch(
+      userId,
+      "google",
+      `${fileUrl}/permissions/${encodeURIComponent(id)}`,
+      { method: "DELETE" }
+    )
+    if (!removed.ok && removed.status !== 404) {
+      throw new ConnectorError(`Removing access failed (${removed.status}).`)
+    }
+  }
+  const left = await permissionsOf(userId, fileUrl)
+  return !left.some((p) => permissionIds.includes(p.id))
+}
+
+/* Gmail: send a reviewed draft (G2, OD-16) */
+
+// Sends a draft as it is, then checks the message is in Sent. A sent
+// email can't be taken back, so there is no undo.
+export async function gmailSendDraft(userId: string, draftId: string) {
+  const sent = await api<{ id: string; threadId?: string }>(
+    userId,
+    "google",
+    `${GOOGLE}/gmail/v1/users/me/drafts/send`,
+    { method: "POST", body: { id: draftId } }
+  )
+  const check = await providerFetch(
+    userId,
+    "google",
+    `${GOOGLE}/gmail/v1/users/me/messages/${encodeURIComponent(sent.id)}?format=minimal`
+  )
+  const back = check.ok
+    ? ((await check.json()) as { id?: string; labelIds?: string[] })
+    : null
+  const ok = back?.id === sent.id && Boolean(back.labelIds?.includes("SENT"))
+  return {
+    messageId: sent.id,
+    verification: readBack(
+      ok,
+      [{ kind: "provider_id", value: sent.id }],
+      "Read back from Gmail: the message is in Sent."
+    ),
+  }
 }
 
 /* Notion */

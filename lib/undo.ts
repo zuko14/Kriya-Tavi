@@ -6,6 +6,7 @@ import { toolExecutions, type UndoSpec, type Verification } from "@/db/schema"
 import {
   calendarDelete,
   ConnectorError,
+  driveUnshare,
   gmailDeleteDraft,
   readBack,
 } from "@/lib/connectors"
@@ -22,7 +23,7 @@ import { log } from "@/lib/log"
 // it. The request marks the run and queues the compensation as its own
 // tool run in one transaction; the worker runs it and reads the result back.
 // Not undoable: sheets_append (rows may have shifted), Instagram and
-// YouTube posts (RG-10), browser commits.
+// YouTube posts (RG-10), browser commits, a sent email (G2).
 
 export const UNDO_WINDOW_MS = 10 * 60_000
 
@@ -68,6 +69,15 @@ export function undoOf(tool: string, output: unknown): UndoSpec | null {
       return verified(o) && str(o.repo) && typeof o.number === "number"
         ? { kind: "github_issue", repo: o.repo, number: o.number }
         : null
+    // G2: only the permissions it added, even if it stopped part-way
+    case "drive_share":
+      return str(o.fileId) && Array.isArray(o.permissionIds) && o.permissionIds.length > 0
+        ? {
+            kind: "drive_permissions",
+            fileId: o.fileId,
+            permissionIds: o.permissionIds.filter(str),
+          }
+        : null
     default:
       return null
   }
@@ -94,6 +104,8 @@ export function undoLabel(undo: UndoSpec) {
       return `Remove ${undo.labels.length === 1 ? "the label" : "the labels"} it added.`
     case "github_issue":
       return "Close the issue as not planned (GitHub doesn't let most people delete one)."
+    case "drive_permissions":
+      return "Remove the access it gave."
   }
 }
 
@@ -159,6 +171,8 @@ async function compensate(userId: string, undo: UndoSpec) {
       return githubRemoveLabels(userId, undo.repo, undo.number, undo.labels)
     case "github_issue":
       return githubCloseIssue(userId, undo.repo, undo.number)
+    case "drive_permissions":
+      return driveUnshare(userId, undo.fileId, undo.permissionIds)
   }
 }
 
@@ -170,6 +184,8 @@ const target = (undo: UndoSpec) => {
       return undo.draftId
     case "github_comment":
       return String(undo.commentId)
+    case "drive_permissions":
+      return undo.fileId
     default:
       return `${undo.repo}#${undo.number}`
   }

@@ -7,14 +7,16 @@ import {
   charges,
   episodes,
   files,
+  mandates,
   profiles,
   shareLinks,
   shareViews,
   type FileRow,
 } from "@/db/schema"
-import { renderReceipt } from "@/lib/documents/templates"
+import { renderReceipt, renderTemplate } from "@/lib/documents/templates"
 import { savePdf } from "@/lib/documents/render"
 import { DOWNLOAD_SECONDS, fileStore, objectPath } from "@/lib/files"
+import { loadEvidence, reportData, verdict } from "@/lib/operator/verdict"
 
 // Kriya Share (K8, AD-34): the person shares a snapshot (a PDF made at that
 // moment) for 1–30 days. The link's token is 32 random bytes shown once;
@@ -69,15 +71,50 @@ export async function receiptPdf(userId: string, episodeId: string) {
   return { file, title, episodeId: episode.id }
 }
 
-// Only receipts so far; reports and goal snapshots come with their
-// templates, ledger exports with A7
+// A job's handover report (track O, O5) as the person's PDF, with the
+// verdict as of now, read as the person. Null for another person's job, a
+// proposal, a declined one, or (completedOnly, for sharing) one not done.
+export async function jobReportPdf(
+  userId: string,
+  mandateId: string,
+  { completedOnly = false } = {}
+) {
+  const made = await withUser(userId, async (tx) => {
+    const [job] = await tx.select().from(mandates).where(eq(mandates.id, mandateId))
+    if (!job || job.status === "proposed" || job.status === "declined") return null
+    if (completedOnly && job.status !== "completed") return null
+    const results = verdict(
+      job.criteria,
+      job.subjects,
+      await loadEvidence(tx, userId, job)
+    )
+    return { job, data: reportData(job, results) }
+  })
+  if (!made) return null
+  const { title, html } = renderTemplate("report", made.data)
+  const file = await savePdf(userId, { html, name: `kriya-job-${made.job.id}` })
+  return { file, title, mandateId: made.job.id }
+}
+
+// Receipts and completed jobs' reports; goal snapshots and ledger exports
+// come with their templates
 export async function createShare(
   userId: string,
-  input: { kind: "receipt"; ref: string; days: number }
+  input: { kind: "receipt" | "report"; ref: string; days: number }
 ) {
-  const made = await receiptPdf(userId, input.ref)
-  if (!made) return { error: "That record wasn't found." }
+  const made =
+    input.kind === "report"
+      ? await jobReportPdf(userId, input.ref, { completedOnly: true })
+      : await receiptPdf(userId, input.ref)
+  if (!made)
+    return {
+      error:
+        input.kind === "report"
+          ? "Only a finished job's report can be shared."
+          : "That record wasn't found.",
+    }
   const { file: snapshot, title } = made
+  const ref = "episodeId" in made ? made.episodeId : made.mandateId
   const token = randomBytes(32).toString("base64url")
   try {
     const [row] = await withUser(userId, (tx) =>
@@ -87,7 +124,7 @@ export async function createShare(
           userId,
           tokenHash: tokenHash(token),
           kind: input.kind,
-          ref: made.episodeId,
+          ref,
           title,
           snapshotFileId: snapshot.id,
           expiresAt: new Date(Date.now() + input.days * 86_400_000),

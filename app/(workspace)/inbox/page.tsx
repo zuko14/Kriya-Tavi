@@ -6,8 +6,12 @@ import { ChevronRightIcon } from "lucide-react"
 
 import { Glyph } from "@/components/glyph"
 import { ApprovalButtons, MemoryButtons, SkillButtons } from "@/components/inbox/controls"
+import { MandateCard } from "@/components/operator/controls"
 import { requireUser } from "@/lib/auth"
 import { getSetting } from "@/lib/config"
+import { evidenceLabel } from "@/lib/operator/labels"
+import { formatInr } from "@/lib/money"
+import { quoteFor } from "@/lib/quotes"
 import { cn } from "@/lib/utils"
 import { getInbox, type Inbox } from "@/queries/inbox"
 
@@ -64,6 +68,11 @@ function Approval({ item }: { item: Inbox["approvals"][number] }) {
           {riskLabel(item.toolName, item.riskClass)}
         </span>
       </div>
+      {item.jobTitle && (
+        <p className="text-[12.5px] text-muted-foreground">
+          for job: {item.jobTitle} · {item.agentName ?? "Your agent"}
+        </p>
+      )}
       <h3 className="text-[14.5px] leading-snug font-medium">{item.title}</h3>
       {preview.cadence && (
         <div className="flex flex-col gap-1 text-[12.5px] text-muted-foreground">
@@ -162,6 +171,37 @@ function Section({
   )
 }
 
+const DAY = new Intl.DateTimeFormat("en-IN", {
+  timeZone: "Asia/Kolkata",
+  dateStyle: "medium",
+})
+
+// O3: a proposal as the card shows it, with its quote (K2) or none
+async function proposalView(
+  userId: string,
+  job: NonNullable<Inbox["jobs"]>["review"][number]
+) {
+  const quote = job.playbookId
+    ? await quoteFor(userId, { workflowId: job.playbookId })
+    : null
+  return {
+    id: job.id,
+    title: job.title,
+    objective: job.objective,
+    playbookId: job.playbookId,
+    due: DAY.format(job.dueAt),
+    checkIn: job.checkIn,
+    budget: job.budgetMicroInr ? formatInr(job.budgetMicroInr) : null,
+    quote: quote ? `₹ ~${formatInr(quote.p50MicroInr)} a run` : "No estimate yet",
+    criteria: job.criteria.map((c) => ({
+      id: c.id,
+      text: c.text,
+      how: evidenceLabel(c.evidence),
+    })),
+    grants: job.grants,
+  }
+}
+
 export default async function Page({
   searchParams,
 }: {
@@ -173,11 +213,17 @@ export default async function Page({
   const filter: Filter = FILTERS.some((f) => f.id === show) ? (show as Filter) : "all"
   const inbox = await getInbox(user.id)
   const shown = (what: Filter) => filter === "all" || filter === what
+  const jobs = inbox.jobs
+  const proposals = jobs
+    ? await Promise.all(jobs.review.map((job) => proposalView(user.id, job)))
+    : []
   const total =
     inbox.approvals.length +
     inbox.questions.length +
     inbox.memories.length +
-    inbox.skills.length
+    inbox.skills.length +
+    proposals.length +
+    (jobs?.needs.length ?? 0)
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
@@ -191,6 +237,29 @@ export default async function Page({
             notes to check. Nothing happens until you say so.
           </p>
         </header>
+
+        {inbox.googleStopped.length > 0 && (
+          <Link
+            href="/account#connections"
+            className="flex min-h-11 flex-col justify-center gap-0.5 rounded-xl border border-betelgeuse/40 bg-betelgeuse/10 px-3.5 py-2.5 text-[13px]"
+          >
+            <span className="font-medium text-betelgeuse">
+              Google stopped working: reconnect to keep your jobs running
+            </span>
+            <span className="text-muted-foreground">
+              {inbox.googleStopped.join(" · ")}
+            </span>
+          </Link>
+        )}
+
+        {jobs && (
+          <Link
+            href="/settings"
+            className="flex min-h-11 w-fit items-center gap-1 text-[13px] font-medium text-rigel sm:min-h-0"
+          >
+            Your jobs, and Stop all <ChevronRightIcon className="size-3.5" />
+          </Link>
+        )}
 
         <nav
           aria-label="Filter"
@@ -219,6 +288,36 @@ export default async function Page({
           </p>
         ) : (
           <>
+            {shown("approve") && (
+              <Section title="Jobs to review" count={proposals.length}>
+                {proposals.map((job) => (
+                  <MandateCard key={job.id} job={job} />
+                ))}
+              </Section>
+            )}
+            {shown("answer") && jobs && (
+              <Section title="Jobs that need you" count={jobs.needs.length}>
+                {jobs.needs.map((job) => (
+                  <Card key={job.id}>
+                    <span className="label-mono text-betelgeuse">Needs you</span>
+                    <h3 className="text-[14.5px] leading-snug font-medium">
+                      {job.title}
+                    </h3>
+                    {job.reason && (
+                      <p className="text-[13px] text-muted-foreground">{job.reason}</p>
+                    )}
+                    {job.goalId && (
+                      <Link
+                        href={`/goals/${job.goalId}`}
+                        className="flex min-h-11 w-fit items-center gap-1 text-[13px] font-medium text-rigel sm:min-h-0"
+                      >
+                        Open the job <ChevronRightIcon className="size-3.5" />
+                      </Link>
+                    )}
+                  </Card>
+                ))}
+              </Section>
+            )}
             {shown("approve") && (
               <Section title="Approve" count={inbox.approvals.length}>
                 {inbox.approvals.map((item) => (

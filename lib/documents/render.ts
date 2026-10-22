@@ -18,6 +18,11 @@ export async function renderPdf(html: string) {
   return provider.renderPdf(html, { format: "A4" })
 }
 
+// shortcut: counts uncompressed page objects, which Chromium writes; read the
+// page tree if another renderer packs them into object streams
+export const pdfPages = (bytes: Buffer) =>
+  bytes.toString("latin1").match(/\/Type\s*\/Page(?![a-zA-Z])/g)?.length ?? 0
+
 // Renders and stores; the render is metered (unpriced) in resource_usage
 export async function savePdf(
   userId: string,
@@ -42,5 +47,5 @@ export async function savePdf(
       costMicroUsd: null,
     })
     .onConflictDoNothing()
-  return file
+  return { ...file, pages: pdfPages(bytes) }
 }

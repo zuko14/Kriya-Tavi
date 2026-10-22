@@ -10,7 +10,7 @@ import { verifyChain } from "@/lib/agent/episodes"
 import { requireUser } from "@/lib/auth"
 import { getSetting } from "@/lib/config"
 import { undoStates, type UndoState } from "@/lib/undo"
-import { episodesForTasks } from "@/queries/episodes"
+import { episodesForTasks, jobsForExecutions } from "@/queries/episodes"
 import { inboxCount } from "@/queries/inbox"
 
 // The Inbox badge and "What I did" (A3, agents.inbox), and the receipt's
@@ -46,10 +46,21 @@ export async function whatIDid(ids: string[]) {
           records.flatMap((r) => (r.deletedAt ? [] : r.done.map((d) => d.executionId)))
         )
       : []
+  // O4: "under your job" for runs a standing grant answered
+  const jobs =
+    (await getSetting("operator.grants")) === "on"
+      ? await jobsForExecutions(
+          user.id,
+          records.flatMap((r) =>
+            [...r.done, ...r.unconfirmed].flatMap((d) => d.executionId ?? [])
+          )
+        )
+      : {}
   return {
     receipts,
     records: records.map((record) => ({
       ...record,
+      jobs,
       undo: undo.filter((u) => record.done.some((d) => d.executionId === u.executionId)),
       shareable,
       ...(!receipts && { hash: null, chargeMicroInr: null, chargeStatus: null }),

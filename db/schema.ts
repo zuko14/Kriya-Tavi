@@ -400,7 +400,8 @@ export const files = kriya.table("files", {
   sizeBytes: bigint({ mode: "number" }).notNull(),
   sha256: text(),
   origin: text({
-    enum: ["upload", "generated", "screenshot", "email_attachment"],
+    // "drive": imported by drive_import (G2)
+    enum: ["upload", "generated", "screenshot", "email_attachment", "drive"],
   }).notNull(),
   status: text({ enum: FILE_STATUSES }).notNull().default("pending"),
   text: text(),
@@ -901,9 +902,12 @@ export type TaskStatus = (typeof TASK_STATUSES)[number]
 export type TaskInput = {
   messageId: string
   agentId: string
-  // "schedule": started by a schedule's run, not by the person (A3)
-  channel: "web" | "schedule"
+  // "schedule": started by a schedule's run, not by the person (A3);
+  // "crew": a crew part or its join (O11)
+  channel: "web" | "schedule" | "crew"
   scheduleId?: string
+  runId?: string
+  partId?: string
   // Role-pack workflow or skill the task runs, for quotes (K2)
   workflowId?: string
   skillId?: string
@@ -992,6 +996,8 @@ export const toolExecutions = kriya.table("tool_executions", {
   undo: jsonb().$type<UndoSpec>(),
   undoUntil: at(),
   undoneAt: at(),
+  // The job's grant that answered its approval (track O); not in receipts
+  grantId: uuid(),
 })
 
 // What a reversible tool's compensation needs: provider ids, never tokens
@@ -1001,6 +1007,8 @@ export type UndoSpec =
   | { kind: "github_comment"; repo: string; commentId: number }
   | { kind: "github_labels"; repo: string; number: number; labels: string[] }
   | { kind: "github_issue"; repo: string; number: number }
+  // G2: the Drive permissions drive_share added, and only those
+  | { kind: "drive_permissions"; fileId: string; permissionIds: string[] }
 
 // What an R2–R4 tool checked after acting (TOOLS_AND_CONTRACTS §1)
 export type Verification = {
@@ -1569,6 +1577,175 @@ export const voiceTransitions = kriya.table("voice_transitions", {
   evidence: jsonb().notNull().$type<Record<string, unknown>>().default({}),
   createdAt: createdAt(),
 })
+
+/* ───────────────────────────── operator ─────────────────────────── */
+
+// Jobs and standing grants (track O, migration 20261201000000). Statuses
+// move only as kriya.allowed_transitions allows; the person's session can't
+// mark a job needs_person, completed or expired (mandates_guard), and can
+// only narrow or revoke a grant (grants_guard).
+
+export const MANDATE_STATUSES = [
+  "proposed",
+  "declined",
+  "active",
+  "needs_person",
+  "paused",
+  "completed",
+  "expired",
+  "revoked",
+  "closed",
+] as const
+export type MandateStatus = (typeof MANDATE_STATUSES)[number]
+
+// The tools a job may grant (OD-03); the SQL check is the second lock
+export const GRANT_TOOLS = [
+  "gmail_draft",
+  "calendar_create_event",
+  "sheets_append",
+  "sheets_update",
+] as const
+export type GrantTool = (typeof GRANT_TOOLS)[number]
+
+// What proves one line of "done" (docs/operator/DATA_MODEL_AND_STATE_MACHINES.md §3)
+export type EvidenceSpec =
+  | { kind: "tool_verified"; tool: string; atLeast?: number }
+  | { kind: "call_outcome"; results: (typeof VOICE_TASK_RESULTS)[number][] }
+  | { kind: "invoice_paid" }
+  | { kind: "ledger_confirmed" }
+  | { kind: "file_created" }
+  | { kind: "person_confirmed" }
+
+export type Criterion = { id: string; text: string; evidence: EvidenceSpec }
+
+export type CriterionResult = {
+  id: string
+  met: boolean
+  refs: { kind: "episode" | "voice_task" | "invoice" | "ledger" | "file"; id: string }[]
+  by: "evidence" | "person" | null
+}
+
+// A grant's pinned targets, per tool (DATA_MODEL §2.2)
+export type Pins =
+  | { to: string[]; cc?: string[] }
+  | { attendees: string[] }
+  | { spreadsheetId: string; range: string }
+
+export type ProposedGrant = { tool: GrantTool; pins: Pins; maxUses: number; why: string }
+
+export const mandates = kriya.table("mandates", {
+  id: id(),
+  userId: uuid().notNull(),
+  originThreadId: text(),
+  agentId: text(),
+  squadId: text(),
+  goalId: text().unique(),
+  playbookId: text(),
+  playbookVersion: integer(),
+  title: text().notNull(),
+  objective: text().notNull(),
+  criteria: jsonb().notNull().$type<Criterion[]>(),
+  proposedGrants: jsonb().notNull().$type<ProposedGrant[]>().default([]),
+  subjects: jsonb()
+    .notNull()
+    .$type<{ invoices?: string[]; ledger?: string[] }>()
+    .default({}),
+  confirmed: text().array().notNull().default([]),
+  status: text({ enum: MANDATE_STATUSES }).notNull().default("proposed"),
+  statusReason: text(),
+  dueAt: at().notNull(),
+  budgetMicroInr: micro(),
+  checkIn: jsonb(),
+  lastEvidenceAt: at(),
+  verdict: jsonb().$type<CriterionResult[]>(),
+  proposedBy: text({ enum: ["agent", "person"] }).notNull(),
+  taskId: uuid(),
+  createdAt: createdAt(),
+  updatedAt: createdAt(),
+  approvedAt: at(),
+  closedAt: at(),
+})
+
+export const grants = kriya.table("grants", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: uuid().notNull(),
+  mandateId: text().notNull(),
+  tool: text({ enum: GRANT_TOOLS }).notNull(),
+  pins: jsonb().notNull().$type<Pins>(),
+  maxUses: integer().notNull(),
+  uses: integer().notNull().default(0),
+  status: text({ enum: ["active", "revoked", "exhausted", "expired"] })
+    .notNull()
+    .default("active"),
+  expiresAt: at().notNull(),
+  createdAt: createdAt(),
+  revokedAt: at(),
+})
+
+// Written only by kriya.consume_grant
+export const grantUses = kriya.table(
+  "grant_uses",
+  {
+    grantId: uuid().notNull(),
+    userId: uuid().notNull(),
+    taskId: uuid().notNull(),
+    toolCallId: text().notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.grantId, t.toolCallId] })]
+)
+
+export type Mandate = typeof mandates.$inferSelect
+export type Grant = typeof grants.$inferSelect
+
+// O11 (CREW_EXECUTION.md): a job's crew and each member's part, written by
+// the worker only (lib/operator/crews.ts)
+export const CREW_RUN_STATUSES = ["running", "joining", "joined", "canceled"] as const
+export const CREW_PART_STATUSES = [
+  "waiting",
+  "queued",
+  "working",
+  "needs_approval",
+  "done",
+  "failed",
+  "canceled",
+] as const
+export type CrewPartStatus = (typeof CREW_PART_STATUSES)[number]
+
+export const crewRuns = kriya.table("crew_runs", {
+  id: id(),
+  userId: uuid().notNull(),
+  leadThreadId: text().notNull(),
+  leadAgentId: text().notNull(),
+  squadId: text().notNull(),
+  mandateId: text().notNull(),
+  round: integer().notNull().default(1),
+  status: text({ enum: CREW_RUN_STATUSES }).notNull().default("running"),
+  deadlineAt: at().notNull(),
+  joinTaskId: uuid(),
+  createdAt: createdAt(),
+  updatedAt: createdAt(),
+})
+
+export const crewParts = kriya.table("crew_parts", {
+  id: id(),
+  userId: uuid().notNull(),
+  runId: text().notNull(),
+  key: text().notNull(),
+  agentId: text().notNull(),
+  threadId: text().notNull(),
+  brief: text().notNull(),
+  dependsOn: text().array().notNull().default([]),
+  status: text({ enum: CREW_PART_STATUSES }).notNull().default("waiting"),
+  taskId: uuid(),
+  result: text(),
+  createdAt: createdAt(),
+  updatedAt: createdAt(),
+  finishedAt: at(),
+})
+
+export type CrewRun = typeof crewRuns.$inferSelect
+export type CrewPart = typeof crewParts.$inferSelect
 
 /* ──────────────────────────── relations ─────────────────────────── */
 

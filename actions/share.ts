@@ -47,16 +47,28 @@ export async function receiptPdf(episodeId: string) {
   }
 }
 
-const shareInput = z.object({
-  kind: z.literal("receipt"),
-  ref: z.uuid(),
-  days: z.number().int().min(share.SHARE_DAYS.min).max(share.SHARE_DAYS.max),
-})
+const days = z.number().int().min(share.SHARE_DAYS.min).max(share.SHARE_DAYS.max)
+const shareInput = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("receipt"), ref: z.uuid(), days }),
+  // A completed job's handover report (track O, O5)
+  z.object({ kind: z.literal("report"), ref: z.string().min(1).max(32), days }),
+])
+
+// Job reports need files and the operator's reports, not receipts
+async function reporter() {
+  const user = await requireUser()
+  const on =
+    (await getSetting("agents.files")) === "on" &&
+    (await getSetting("operator.mandates")) === "on" &&
+    (await getSetting("operator.reports")) === "on"
+  return on ? user : null
+}
 
 // The link is in this answer only: Kriya keeps just its hash
 export async function createShare(kind: string, ref: string, days: number) {
-  const user = await person()
   const input = shareInput.safeParse({ kind, ref, days })
+  const user =
+    input.success && input.data.kind === "report" ? await reporter() : await person()
   if (!user || !input.success) return OFF
   if (!(await allow(`share:${user.id}`, 20, 3600))) {
     return { error: "Too many links this hour. Try again later." }

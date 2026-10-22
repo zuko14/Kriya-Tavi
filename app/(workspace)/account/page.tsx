@@ -12,6 +12,7 @@ import {
   ProfileForm,
 } from "@/components/account/forms"
 import { Connections } from "@/components/account/connections"
+import { connectionHealth } from "@/queries/connections"
 import { Files } from "@/components/account/files"
 import { Logins } from "@/components/account/logins"
 import { Shares } from "@/components/account/shares"
@@ -98,6 +99,10 @@ export default async function AccountPage({
   const connectorsV2 = (await getSetting("agents.connectors")) === "on"
   const githubRow = accounts.find((a) => a.provider === "github")
   const metaRow = accounts.find((a) => a.provider === "meta")
+  // G1: a dead token shows Reconnect; the Testing note while Google is in Testing
+  const health = accounts.length ? await connectionHealth(user.id) : {}
+  const testingMode = (await getSetting("google.testingMode")) === "on"
+  const driveShare = (await getSetting("operator.driveShare")) === "on"
   const usage = await usageSummary(user.id)
   const subscription = await currentSubscription(user.id)
   const provider = billingProvider()
@@ -237,6 +242,9 @@ export default async function AccountPage({
                 },
               },
             })}
+            health={health}
+            testingMode={testingMode}
+            driveShare={driveShare}
           />
         </Section>
 

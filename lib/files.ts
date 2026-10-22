@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto"
 
 import { createClient } from "@supabase/supabase-js"
-import { and, desc, eq, inArray } from "drizzle-orm"
+import { and, desc, eq, ilike, inArray } from "drizzle-orm"
 
 import { privileged, withUser } from "@/db"
 import { files, FILE_MIMES, type FileMime, type FileRow } from "@/db/schema"
@@ -170,7 +170,7 @@ const LIMIT_ERRORS: [RegExp, string][] = [
 ]
 
 // Drizzle wraps the database error in `cause`
-const limitMessage = (error: unknown) => {
+export const limitMessage = (error: unknown) => {
   const text = `${String(error)} ${String((error as { cause?: unknown })?.cause ?? "")}`
   return LIMIT_ERRORS.find(([pattern]) => pattern.test(text))?.[1] ?? null
 }
@@ -250,7 +250,7 @@ export async function saveGenerated(
     name: string
     mime: FileMime
     bytes: Buffer
-    origin: "generated" | "screenshot" | "email_attachment"
+    origin: "generated" | "screenshot" | "email_attachment" | "drive"
     taskId?: string | null
     retentionUntil?: Date | null
   }
@@ -285,8 +285,15 @@ export async function saveGenerated(
   return ready
 }
 
-// Account → Files: what each file is and where it stands; never its text
-export async function listFiles(userId: string) {
+const LISTED = ["upload", "generated", "email_attachment", "drive"] as const
+
+// Account → Files and file_list: what each file is and where it stands;
+// never its text
+export async function listFiles(
+  userId: string,
+  filter: { query?: string; origin?: (typeof LISTED)[number]; limit?: number } = {}
+) {
+  const name = filter.query && `%${filter.query.replace(/[\\%_]/g, "\\$&")}%`
   return withUser(userId, (tx) =>
     tx
       .select({
@@ -299,13 +306,59 @@ export async function listFiles(userId: string) {
         createdAt: files.createdAt,
       })
       .from(files)
-      .where(inArray(files.origin, ["upload", "generated", "email_attachment"]))
+      .where(
+        and(
+          inArray(files.origin, filter.origin ? [filter.origin] : [...LISTED]),
+          name ? ilike(files.name, name) : undefined
+        )
+      )
       .orderBy(desc(files.createdAt))
-      .limit(200)
+      .limit(filter.limit ?? 200)
   )
 }
 
 export type FileListItem = Awaited<ReturnType<typeof listFiles>>[number]
+
+// file_read (TOOLS_AND_CONTRACTS §2.3): a window of a file's extracted text,
+// read as the person, so another person's file simply isn't there. Only a
+// page count is stored, not page breaks, so it pages by character offset.
+export const READ_CHARS = 20_000
+
+export async function readExtracted(userId: string, fileId: string, start = 0) {
+  const [row] = await withUser(userId, (tx) =>
+    tx
+      .select({
+        id: files.id,
+        name: files.name,
+        mime: files.mime,
+        status: files.status,
+        text: files.text,
+        extraction: files.extraction,
+      })
+      .from(files)
+      .where(eq(files.id, fileId))
+  )
+  if (!row) return { error: "No file of the person's has that id." }
+  if (row.status !== "extracted")
+    return {
+      error:
+        row.status === "failed" || row.status === "rejected"
+          ? `Kriya couldn't read this file. ${row.extraction?.reason ?? ""}`.trim()
+          : "Kriya hasn't read this file yet. Try again in a minute.",
+    }
+  const text = row.text ?? ""
+  const end = start + READ_CHARS
+  return {
+    fileId: row.id,
+    name: row.name,
+    mime: row.mime,
+    pages: row.extraction?.pages ?? null,
+    start,
+    total: text.length,
+    text: text.slice(start, end),
+    ...(end < text.length && { nextStart: end }),
+  }
+}
 
 const READABLE = ["ready", "extracted", "failed"] as const
 

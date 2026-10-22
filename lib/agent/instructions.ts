@@ -16,10 +16,15 @@ export type Capabilities = {
   citations?: boolean
   // Voice access (voice phase 4): absent otherwise, so the prompt is unchanged (F4)
   voice?: boolean
+  // Jobs (track O, operator.mandates): absent otherwise, so the prompt is unchanged
+  mandates?: boolean
 }
 
 const VOICE_LINE =
   "- **Phone calls.** You can draft a phone call with `propose_call`; the person confirms it in Kriya before anyone is called. You can't place calls yourself."
+
+const JOBS_LINE =
+  "- **Jobs.** When the person hands you work with a clear finish (get invoices paid, keep the books, compare prices), you can propose a job with `mandate_propose`: what done means and how Kriya will know, a deadline, and if it helps, permission to repeat a few actions pinned to exact recipients or sheets. The person approves it in Kriya; you can't. `mandate_status` shows how a job stands. Never say a job is done: Kriya decides that from what was verifiably done."
 
 // What the citation check (lib/agent/verify.ts) can verify
 const CITE_LINE = `- When you state a ₹ amount, a date or deadline, or who is eligible, from something you read in this reply, quote its exact words in double quotes followed by the source's number, counting the pages and documents you read in this reply in order: "closes on 7 October 2026" [1]. Kriya checks each quote against the source.`
@@ -163,6 +168,7 @@ ${[
   v2 ? MEMORY_V2_LINE : MEMORY_LINE,
   // Only the lead holds propose_call; a squad member on an assign part doesn't
   ...(capabilities.voice && capabilities.writes ? [VOICE_LINE] : []),
+  ...(capabilities.mandates && capabilities.writes ? [JOBS_LINE] : []),
   "- **No computer, browser, files or payments yet.** You can't run code, open websites interactively, send messages or pay for anything. If a task needs that, say so plainly and do everything you can short of it — research, drafts, plans, step-by-step instructions.",
 ].join("\n")}`,
 

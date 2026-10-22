@@ -438,8 +438,13 @@ describe("task pipeline", () => {
       expect(task?.status).toBe("queued")
       await runTask(await claim(), worker)
 
-      expect(google).toHaveBeenCalledTimes(1)
-      const [url, init] = google.mock.calls[0] as unknown as [string, RequestInit]
+      // Created once; the second request only reads it back (OF-13)
+      const creates = (google.mock.calls as unknown as [string, RequestInit][]).filter(
+        ([, init]) => init?.method === "POST"
+      )
+      expect(creates).toHaveLength(1)
+      expect(google.mock.calls).toHaveLength(2)
+      const [url, init] = creates[0]
       expect(url).toContain("/calendar/v3/calendars/primary/events?sendUpdates=none")
       expect(init.method).toBe("POST")
       expect((init.headers as Record<string, string>).Authorization).toBe(

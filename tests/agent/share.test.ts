@@ -209,7 +209,13 @@ describe("AT-SHR-04 no agent tool can create a share", () => {
         tool
       ).toEqual([])
     }
-    expect(Object.keys(TOOL_CLASSES).filter((name) => /share/.test(name))).toEqual([])
+    // drive_share (G2, OD-17, owner-approved 2026-10-22) shares a Drive file
+    // after the person's exact approval; it writes no share_links (above)
+    expect(
+      Object.keys(TOOL_CLASSES).filter(
+        (name) => /share/.test(name) && name !== "drive_share"
+      )
+    ).toEqual([])
   })
 
   it("lib/agent/tools.ts doesn't import the share module", () => {
