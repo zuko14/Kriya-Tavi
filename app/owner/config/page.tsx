@@ -38,7 +38,8 @@ const GROUPS: { title: string; description: string; prefix: string[] }[] = [
     title: "Agent features",
     description:
       "Track A switches. Each is off until set to on; off keeps agents exactly as before.",
-    prefix: ["agents."],
+    // skills.disabled and skills.pins: the skill library's kill switch and rollback
+    prefix: ["agents.", "skills."],
   },
   {
     title: "Operator (jobs)",

@@ -9,6 +9,7 @@ import { Controller, useForm, useWatch } from "react-hook-form"
 
 import { createAgent, deleteAgent, updateAgent } from "@/actions/agents"
 import { Confirm } from "@/components/confirm"
+import { SkillPicker } from "@/components/dialogs/skill-picker"
 import { Glyph } from "@/components/glyph"
 import { TierPicker } from "@/components/model-picker"
 import { Button } from "@/components/ui/button"
@@ -54,6 +55,9 @@ function AgentForm({ agent, template }: { agent?: NavAgent; template?: AgentTemp
       instructions: agent?.instructions ?? template?.instructions ?? "",
       model: isTier(agent?.model) ? agent.model : "",
       glyph: initialGlyph,
+      // Unset (role defaults) until the person changes a skill; never sent
+      // while the Skills section is hidden
+      skills: status.skills ? (agent?.skills ?? undefined) : undefined,
     },
   })
   const { isSubmitting } = form.formState
@@ -65,7 +69,21 @@ function AgentForm({ agent, template }: { agent?: NavAgent; template?: AgentTemp
     form.setValue("instructions", next.instructions, options)
   }
 
-  const onSubmit = form.handleSubmit(async (values) => {
+  const onSubmit = form.handleSubmit(async (input) => {
+    // Skills are saved only once the person changes one; until then the
+    // agent keeps following its role's recommendations. A skill Kriya has
+    // since retired drops out instead of blocking the save.
+    const offered = status.skills
+    const changed = offered && input.skills && form.getFieldState("skills").isDirty
+    const values = changed
+      ? {
+          ...input,
+          skills: {
+            ...input.skills!,
+            on: input.skills!.on.filter((id) => offered.some((o) => o.id === id)),
+          },
+        }
+      : { ...input, skills: undefined }
     try {
       if (agent) {
         const updated = await updateAgent(agent.id, values)
@@ -87,6 +105,7 @@ function AgentForm({ agent, template }: { agent?: NavAgent; template?: AgentTemp
   })
 
   const instructions = useWatch({ control: form.control, name: "instructions" }) ?? ""
+  const role = useWatch({ control: form.control, name: "role" }) ?? ""
 
   return (
     <form onSubmit={onSubmit} className="flex min-h-0 flex-col">
@@ -226,6 +245,23 @@ function AgentForm({ agent, template }: { agent?: NavAgent; template?: AgentTemp
               </Field>
             )}
           />
+
+          {status.skills && (
+            <Controller
+              name="skills"
+              control={form.control}
+              render={({ field }) => (
+                <Field>
+                  <SkillPicker
+                    options={status.skills!}
+                    role={role}
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                </Field>
+              )}
+            />
+          )}
         </FieldGroup>
       </div>
 

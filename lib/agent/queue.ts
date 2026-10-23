@@ -1,7 +1,7 @@
 import type { UIMessageChunk } from "ai"
-import { and, asc, desc, eq, gt, inArray, or } from "drizzle-orm"
+import { and, asc, desc, eq, gt, inArray, or, sql } from "drizzle-orm"
 
-import { privileged, withUser, type Q } from "@/db"
+import { privileged, rowsOf, withUser, type Q } from "@/db"
 import {
   approvals,
   squadMembers,
@@ -59,6 +59,19 @@ export function isUniqueViolation(error: unknown, constraint: string) {
   return false
 }
 
+// A worker that heartbeat in the last 45 s (the owner page's "healthy").
+// Without one a task would only sit queued until its deadline. A database
+// no worker has ever registered in (tests, a first deploy) isn't refused.
+async function workerAlive() {
+  const result = await privileged.execute(
+    sql`select count(*)::int as seen,
+      count(*) filter (where stopped_at is null and heartbeat_at > now() - interval '45 seconds')::int as live
+    from kriya.workers`
+  )
+  const row = rowsOf<{ seen: number; live: number }>(result)[0]
+  return !row || row.seen === 0 || row.live > 0
+}
+
 // What every new task needs: the thread (through RLS: someone else's thread
 // finds nothing), the agent who starts, and the plan's limits and routing
 async function prepare(userId: string, threadId: string, agentId?: string) {
@@ -91,6 +104,13 @@ async function prepare(userId: string, threadId: string, agentId?: string) {
   if (!isGatewayConfigured()) {
     throw new TurnError(
       "Kriya can't reach its AI models right now. Try again soon.",
+      503,
+      "unavailable"
+    )
+  }
+  if (!(await workerAlive())) {
+    throw new TurnError(
+      "Kriya's task runner is offline, so this can't start right now. Try again in a few minutes.",
       503,
       "unavailable"
     )

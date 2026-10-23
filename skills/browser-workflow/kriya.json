@@ -1,0 +1,64 @@
+{
+  "id": "browser-workflow",
+  "name": "Browser workflow",
+  "description": "Uses Kriya's read-only browser step by step: read the page, click by ref, check after each step, and hand sign-ins, codes and payments to the person.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["browser"],
+  "roles": [
+    "assistant",
+    "research",
+    "scholarship",
+    "admissions",
+    "watcher",
+    "operations",
+    "ops"
+  ],
+  "activation": {
+    "urls": true,
+    "keywords": [
+      "website",
+      "web site",
+      "site",
+      "portal",
+      "web page",
+      "webpage",
+      "browser",
+      "open the page",
+      "click",
+      "navigate",
+      "online form",
+      "check the page"
+    ]
+  },
+  "tools": {
+    "all": ["browser_open", "browser_snapshot", "browser_handoff"],
+    "any": [],
+    "uses": ["browser_click", "browser_close", "web_fetch"]
+  },
+  "dependsOn": ["security-untrusted-content"],
+  "prerequisites": [
+    "Kriya's agent browser, switched on by Kriya and included in your plan"
+  ],
+  "verification": "Each fact names the page title and URL it came from; commits are refused by lib/agent/policy.ts and handed to the person.",
+  "limits": {
+    "maxChars": 3000
+  },
+  "evals": [
+    {
+      "ask": "Open https://scholarships.gov.in and tell me what's open now",
+      "expect": "activate"
+    },
+    {
+      "ask": "Check the admissions portal for the hostel fee",
+      "expect": "activate"
+    },
+    {
+      "ask": "Give me a recipe for dal makhani",
+      "expect": "skip"
+    }
+  ]
+}

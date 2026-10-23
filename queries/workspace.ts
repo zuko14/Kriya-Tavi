@@ -19,6 +19,7 @@ import { crewsOn } from "@/lib/operator/crew-threads"
 import { checkTaskAllowed, usageSummary } from "@/lib/entitlements"
 import { isGatewayConfigured, TIER_LABELS } from "@/lib/models"
 import { isWebConfigured } from "@/lib/web"
+import { skillOptions } from "@/queries/skills"
 
 // Reads for server components. Every query runs as the signed-in person
 // (withUser), so Row Level Security limits it to their own rows.
@@ -104,6 +105,7 @@ export async function getNavigation(userId: string) {
         glyph: agent.glyph,
         model: agent.model,
         instructions: agent.instructions,
+        skills: agent.skills,
         latestThreadId: latest.get(agent.id) ?? null,
         busy: busy.has(agent.id),
       })),
@@ -326,6 +328,8 @@ export async function getSystemStatus(user: {
       maxTasksPerDay: usage.plan.maxTasksPerDay,
     },
     tiers: TIER_LABELS,
+    // The Creator's Skills section; null with agents.skillLibrary off
+    skills: await skillOptions(user.id, usage.plan),
     usage: {
       usedMicroInr: usage.usedMicroInr,
       allowanceMicroInr: usage.allowanceMicroInr,

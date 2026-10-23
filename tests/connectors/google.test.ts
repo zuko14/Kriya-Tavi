@@ -71,7 +71,9 @@ describe("sheets", () => {
         body: { updates: { updatedRange: "Sheet1!A5:B5", updatedRows: 1 } },
       },
       {
-        url: new RegExp(`^${esc(SHEETS)}${esc(encodeURIComponent("Sheet1!A5:B5"))}$`),
+        url: new RegExp(
+          `^${esc(SHEETS)}${esc(encodeURIComponent("Sheet1!A5:B5"))}\\?valueRenderOption=UNFORMATTED_VALUE$`
+        ),
         body: { range: "Sheet1!A5:B5", values: rows },
       },
     ])

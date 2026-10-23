@@ -398,9 +398,13 @@
   .gel::before {
     content: "";
     position: absolute;
-    inset: 1px 6% 48%;
+    /* The top half, inside the 1px edge, with the control's own top corners:
+       concentric with any pill, circle or card at any width (a width-based
+       inset drifted inside long pills) */
+    inset: 1px 1px 50%;
     z-index: -1;
-    border-radius: 999px 999px 60% 60% / 999px 999px 100% 100%;
+    border-top-left-radius: inherit;
+    border-top-right-radius: inherit;
     background: linear-gradient(180deg, var(--gloss), transparent);
     pointer-events: none;
   }

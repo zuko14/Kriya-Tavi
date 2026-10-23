@@ -61,6 +61,8 @@ export function actionTitle(tool: string, input: Input, tense: "ask" | "done") {
       return `${ask ? "Add" : "Added"} rows to a Google Sheet`
     case "sheets_update":
       return `${ask ? "Update" : "Updated"} ${quoted(input?.range)} in a Google Sheet`
+    case "sheets_create":
+      return `${ask ? "Create" : "Created"} the Google Sheet ${quoted(input?.title)}`
     case "instagram_publish":
       return `${ask ? "Post" : "Posted"} on Instagram: ${quoted(input?.caption)}`
     // G2

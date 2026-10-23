@@ -1,0 +1,59 @@
+{
+  "id": "cost-aware-execution",
+  "name": "Cost-aware execution",
+  "description": "Prefers the cheapest tool that answers, reuses results already in hand and stops cleanly at the task's step, time and spending limits.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["core"],
+  "roles": ["*"],
+  "activation": {
+    "keywords": [
+      "budget",
+      "cost",
+      "cheap",
+      "cheaper",
+      "quick",
+      "quickly",
+      "briefly",
+      "in short",
+      "bulk",
+      "batch",
+      "hundreds",
+      "thousands",
+      "every day",
+      "daily",
+      "every week",
+      "weekly",
+      "monitor",
+      "track",
+      "all of them",
+      "each of"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Spending and step limits are enforced by the runner (task budget, step budget, deadline); the reply reports what was left undone.",
+  "limits": {
+    "maxChars": 2200
+  },
+  "evals": [
+    {
+      "ask": "Track the prices of these 40 phones every week",
+      "expect": "activate"
+    },
+    {
+      "ask": "Quickly tell me what GST rate applies to restaurant bills",
+      "expect": "activate"
+    },
+    {
+      "ask": "Translate this sentence into Telugu",
+      "expect": "skip"
+    }
+  ]
+}

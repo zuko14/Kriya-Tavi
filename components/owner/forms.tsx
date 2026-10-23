@@ -277,7 +277,7 @@ export function AddModelForm() {
       <div className="flex gap-2">
         <Input
           name="id"
-          placeholder="deepseek/deepseek-v4-flash"
+          placeholder="deepseek/deepseek-v4.1-flash-1017"
           className="h-9 font-mono text-[12.5px]"
         />
         <Submit>Add model</Submit>

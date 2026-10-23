@@ -6,7 +6,7 @@ import { ReconcileButton, RetryTaskButton } from "@/components/owner/forms"
 import { Empty, Section, Table, Td, Tile, Tiles } from "@/components/owner/ui"
 import { requireOwner } from "@/lib/auth"
 import { formatInr } from "@/lib/money"
-import { backgroundCounts, operations, voiceOperations } from "@/lib/owner"
+import { backgroundCounts, operations, skillActivity, voiceOperations } from "@/lib/owner"
 
 export const metadata: Metadata = { title: "Operations" }
 
@@ -15,10 +15,11 @@ const ago = (value: Date | null) =>
 
 export default async function OwnerOperations() {
   await requireOwner()
-  const [ops, background, voice] = await Promise.all([
+  const [ops, background, voice, skills] = await Promise.all([
     operations(),
     backgroundCounts(),
     voiceOperations(),
+    skillActivity(),
   ])
   const live = ops.workers.filter((worker) => worker.live)
 
@@ -231,6 +232,37 @@ export default async function OwnerOperations() {
                   <RetryTaskButton taskId={task.id} />
                 )}
               </Td>
+            </tr>
+          ))}
+        </Table>
+      </Section>
+
+      <Section
+        title="Skills, last 7 days"
+        description="Skill-library skills per version: how often tasks loaded or skipped them, the latest skip reason, and how those tasks ended. Switch one off for everyone with skills.disabled, or roll it back with skills.pins, in Config."
+      >
+        <Table head={["skill", "loaded", "skipped", "ended", "avg size"]}>
+          {skills.length === 0 && <Empty colSpan={5}>No skill activity.</Empty>}
+          {skills.map((row) => (
+            <tr key={`${row.skillId}@${row.version}`}>
+              <Td className="font-mono text-[11px]">
+                {row.skillId}
+                <div className="text-muted-foreground">v{row.version}</div>
+              </Td>
+              <Td className="font-mono tabular-nums">{row.active}</Td>
+              <Td className="max-w-80">
+                <span className="font-mono tabular-nums">{row.skipped}</span>
+                {row.lastSkip && (
+                  <div className="line-clamp-2 text-[12px] text-muted-foreground">
+                    {row.lastSkip}
+                  </div>
+                )}
+              </Td>
+              <Td className="font-mono text-[11px] tabular-nums">
+                {row.succeeded} ok ·{" "}
+                <span className="text-destructive">{row.failed}</span> failed
+              </Td>
+              <Td className="font-mono tabular-nums">{row.chars} chars</Td>
             </tr>
           ))}
         </Table>

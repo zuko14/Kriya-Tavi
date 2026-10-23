@@ -97,6 +97,8 @@ export default async function AccountPage({
   const notionRow = accounts.find((a) => a.provider === "notion")
   // A8: GitHub and Instagram cards, Sheets and YouTube options
   const connectorsV2 = (await getSetting("agents.connectors")) === "on"
+  // Sheets alone, without the other A8 connectors
+  const sheetsOn = (await getSetting("google.sheets")) === "on"
   const githubRow = accounts.find((a) => a.provider === "github")
   const metaRow = accounts.find((a) => a.provider === "meta")
   // G1: a dead token shows Reconnect; the Testing note while Google is in Testing
@@ -245,6 +247,7 @@ export default async function AccountPage({
             health={health}
             testingMode={testingMode}
             driveShare={driveShare}
+            sheets={sheetsOn}
           />
         </Section>
 

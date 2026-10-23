@@ -1,0 +1,61 @@
+{
+  "id": "calendar-operations",
+  "name": "Calendar operations",
+  "description": "Checks the calendar for clashes first, prepares complete event details for one approval, and confirms the event from the result.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["productivity"],
+  "roles": [
+    "assistant",
+    "executive",
+    "secretary",
+    "sales",
+    "hiring",
+    "founder",
+    "meeting"
+  ],
+  "activation": {
+    "keywords": [
+      "calendar",
+      "meeting",
+      "meetings",
+      "appointment",
+      "appointments",
+      "event",
+      "events",
+      "availability",
+      "free time",
+      "free slot",
+      "invite",
+      "reschedule",
+      "book a slot"
+    ]
+  },
+  "tools": {
+    "all": ["calendar_events"],
+    "any": [],
+    "uses": ["calendar_create_event"]
+  },
+  "prerequisites": ["Google Calendar connected in Account → Connected accounts"],
+  "verification": "Events are added only after the person approves the exact call (R3); the tool's result is the evidence.",
+  "limits": {
+    "maxChars": 2400
+  },
+  "evals": [
+    {
+      "ask": "Find a free hour for a meeting with Ravi this week",
+      "expect": "activate"
+    },
+    {
+      "ask": "Add my dentist appointment on Friday at 5pm to my calendar",
+      "expect": "activate"
+    },
+    {
+      "ask": "Explain compound interest",
+      "expect": "skip"
+    }
+  ]
+}

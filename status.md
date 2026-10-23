@@ -6076,3 +6076,138 @@ amendment (CHANGE_IMPACT §7) applied at the start of this session.
   the name `drive_share` and the exemption in AT-SHR-04 as approved under
   OD-17 …" "Please implement the `file_read` tool (R0 …)". **Approved:
   AT-SHR-04 exemption; `file_read`.**
+
+## Skill library (Skills Engine)
+
+Curated instruction packs per task, behind `agents.skillLibrary` (off).
+Design, catalogue, provenance, rollout and limits:
+`docs/agent-platform/SKILLS_ENGINE.md`. Owner request 2026-10-23 (the
+session's brief authorised the changes; the rows are in
+`docs/agent-platform/CHANGE_IMPACT_AND_SAFETY.md`, "Skill library (owner
+2026-10-23)").
+
+### Session result (2026-10-23, Claude Code / Opus 5.5, in place on `main`, uncommitted)
+
+Baseline before any change: `npm run check` exit 0, Test Files 127 passed |
+3 skipped, Tests 1514 passed | 26 skipped.
+
+**New:** `skills/` (12 skills, `index.ts`), `lib/skill-library.ts`,
+`lib/skill-engine.ts`, `queries/skills.ts`,
+`components/dialogs/skill-picker.tsx`, `components/thread/used-skills.tsx`,
+`supabase/migrations/20261202000000_skill_library.sql` (+ rollback),
+`docs/agent-platform/SKILLS_ENGINE.md`, tests
+`tests/agent/{skill-library,runner-skill-library,agent-skills-actions,skill-options,skill-picker}.test.ts`,
+`tests/db/skill-library-rls.test.ts`, screenshots
+`screenshots/agent-platform/skills/`.
+
+**Changed:** `lib/agent/run-task.ts`, `lib/agent/tools.ts` (metadata type),
+`db/schema.ts`, `actions/agents.ts`, `queries/workspace.ts`,
+`components/dialogs/agent-dialog.tsx`, `components/thread/transcript.tsx`,
+`lib/config.ts`, `lib/owner.ts`, `app/owner/operations/page.tsx`,
+`app/owner/config/page.tsx`, `tests/agent/regression.test.ts` (`skills:
+null` in the `Agent` fixture only), `AGENTS.md` (one Conventions bullet),
+`docs/agent-platform/CHANGE_IMPACT_AND_SAFETY.md`.
+
+**Independent review** (separate agent, whole diff): one medium finding,
+fixed with a failing-then-passing test: crew joins and watcher diffs are
+"user" messages carrying untrusted text and could pick skills; now cut to
+the person's words. Low findings fixed: server ignores `skills` with the
+switch off; skills saved only when changed (untouched agents keep following
+their role); `server_only_*` deny policies; owner counts per task attempt;
+picker count and budget wording; symlinked skill directory refused.
+
+**Browser check** (local Supabase stack, `verify:guard` OK, stub model,
+owner-approved inline launch): Creator on an existing agent at 360 px
+light and 1280 px dark; row taps toggle (44 px labels); no horizontal
+scroll; save → `kriya.agents.skills` exactly as edited; reload restores it;
+an untouched save keeps `null`; a real task through the worker wrote 7
+activation rows (2 required, 3 manual, research skipped "doesn't have
+web_search or web_fetch", planning skipped "over this task's skill budget"),
+all `outcome = succeeded`; "Used 5 skills" with reasons; `/owner/operations`
+table and `/owner/config` keys present; console errors 0. Migration
+`20261202000000` applied, rolled back and re-applied on the **local**
+stack only. Not applied to staging or production.
+
+**Not run:** `npm run build` (it loads `.env`, which points at the live
+project; operator rule 6). The dev server compiled every changed screen.
+Real Android + TalkBack: needs the owner's phone.
+
+**Open / next exact action:** apply `20261202000000_skill_library.sql` to
+staging, turn `agents.skillLibrary` on there, repeat the Creator check and
+a few real-model tasks (owner's go-ahead for cost), then production per
+SKILLS_ENGINE.md §9. Leftovers for the owner: `.playwright-mcp/` (browser
+session dumps, untracked; a guardrail blocked deleting it) and two
+unlabelled credential lines in `.env.verify` (lines 31–32) that stop
+`source .env.verify` from working.
+
+## Production report 2026-10-23: a turn stuck at "booting turn…", glass chips misaligned
+
+**Stuck turn (diagnosed from code; no access to Render or the live database,
+operator rule 6).** "Summarize the gmails i got today" stayed `queued` for 11
+hours. `kriya.recover_tasks()` runs every 15 s in `kriya-worker` and fails any
+queued task past its deadline, so a task still `queued` hours later means no
+worker reached that database in that time: `kriya-worker` is stopped,
+crashing at start (`checkEnvironment` stops it without `DATABASE_URL` or
+`OPENROUTER_API_KEY`), or its `DATABASE_URL` points at another database. The
+env-var change for Google redeploys the worker, which fits the timing.
+Production runs `6d16b44` (`origin/main`).
+
+Fix in code: `lib/agent/queue.ts` `prepare()` refuses a new turn with
+503 `unavailable` ("Kriya's task runner is offline…") when workers have
+registered but none heartbeat in the last 45 s (heartbeat every 10 s), so a
+person gets an answer instead of an endless "booting turn…".
+`tests/agent/worker-offline.test.ts` (3 cases, failing before the change).
+
+**Owner checklist (Render):** `kriya-worker` → Logs and Events (is it running;
+the last deploy's error); its env must have `DATABASE_URL` (the same database
+as `kriya-web`), `OPENROUTER_API_KEY`, and for Gmail the same
+`KRIYA_TOKEN_KEY` and `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` as the web
+service (OB-05). `/owner/operations` → Workers shows a healthy heartbeat once
+it's back. The stuck task is then failed by `recover_tasks` ("waited longer
+than its deadline"); send the request again.
+
+**Chips.** `app/globals.css`: the gloss (`::before` of `.btn-glass`,
+`.btn-liquid`, `.gel`) used a width-based 6% side inset with its own pill
+radius, so on long chips and rectangular buttons it drew an off-centre inner
+shape. Now it is the top half inside the 1px edge with the control's own top
+corners. Before/after from the real rules in both themes:
+`screenshots/agent-platform/chips/`.
+
+### Google Sheets and model id (2026-10-23, Claude Code / Opus 5.5)
+
+Owner request: Sheets for record keeping (an accountant agent tracking
+company expenses, monthly totals, a well laid out sheet) and the model
+`deepseek/deepseek-v4.1-flash-1017` (checked in OpenRouter's public
+catalogue 2026-10-23: tool calling supported, 1,048,576 context, listed
+$0.15/M input and $0.60/M output; re-sync prices before relying on them).
+
+Sheets read/append/update already existed (A8) behind `agents.connectors`,
+which also switches on GitHub, YouTube and Instagram. Added:
+
+- `google.sheets` (`KRIYA_GOOGLE_SHEETS`, off): the Sheets box on Account
+  and the Sheets tools alone. Off = unchanged (runner test).
+- `sheets_create` (R3, approval, read-back): a new spreadsheet with a bold,
+  shaded, frozen header, widths and number formats by column type (amount
+  as currency, date yyyy-mm-dd), right-aligned numbers, alternating rows.
+  Formats refused after creation → the link is still returned, verification
+  `failed` with a note.
+- `sheets_total` (R0, private read): sums an amount column in integer
+  hundredths by code, by month or a column, between dates, with a filter;
+  lists rows it couldn't read (dd/mm dates are never guessed).
+- Row cells may be JSON numbers (still RAW, never formulas), so amounts sum
+  in Sheets; write read-back uses `UNFORMATTED_VALUE`.
+- Model id updated only in examples and hints; the live model is
+  `OPENROUTER_DEFAULT_MODEL` / `/owner/config`.
+
+Tests: `tests/connectors/sheets.test.ts` (new, 9), `google.test.ts`,
+`agent/connector-tools.test.ts`, `agent/runner-a8.test.ts` (+2) pass;
+typecheck and lint clean. `npm run format:check` fails only on pre-existing
+untracked `.playwright-mcp/*.yml` snapshots (not touched). No live Google or
+model call was made. Not done: browser check of the Account page on the
+isolated stack (operator rule 7).
+
+**Owner steps:** Render (`kriya-web` and `kriya-worker`):
+`OPENROUTER_DEFAULT_MODEL=deepseek/deepseek-v4.1-flash-1017`,
+`KRIYA_GOOGLE_SHEETS=on`; then `npm run models:sync` against production
+for the price row; Google Cloud: Sheets API enabled and `…/auth/spreadsheets`
+on the consent screen; then Account → tick Sheets → Update access.

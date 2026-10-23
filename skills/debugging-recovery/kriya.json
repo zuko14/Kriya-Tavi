@@ -1,0 +1,74 @@
+{
+  "id": "debugging-recovery",
+  "name": "Debugging and recovery",
+  "description": "Finds the cause of a failure from the real error, retries only what is safe to repeat, and confirms the recovery.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [
+    {
+      "project": "Superpowers",
+      "version": "6.4.2",
+      "commit": "8ca22dba9a",
+      "path": "skills/systematic-debugging",
+      "license": "MIT",
+      "url": "https://github.com/obra/superpowers"
+    }
+  ],
+  "categories": ["core"],
+  "roles": [
+    "engineer",
+    "developer",
+    "software",
+    "github",
+    "release",
+    "operations",
+    "ops",
+    "support"
+  ],
+  "activation": {
+    "keywords": [
+      "error",
+      "errors",
+      "failed",
+      "failing",
+      "failure",
+      "broken",
+      "bug",
+      "debug",
+      "not working",
+      "doesn't work",
+      "crash",
+      "fix",
+      "stuck",
+      "timeout",
+      "timed out",
+      "retry",
+      "try again"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "A recovery is reported only after a fresh read-back; unrecovered failures are reported with the exact error.",
+  "limits": {
+    "maxChars": 2500
+  },
+  "evals": [
+    {
+      "ask": "The sheet update failed with an error, can you fix it?",
+      "expect": "activate"
+    },
+    {
+      "ask": "My login page is broken after the deploy, help me debug",
+      "expect": "activate"
+    },
+    {
+      "ask": "Suggest names for my new cafe",
+      "expect": "skip"
+    }
+  ]
+}

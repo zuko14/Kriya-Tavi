@@ -1,0 +1,69 @@
+{
+  "id": "gst-invoices",
+  "name": "Invoices, ledger and GST",
+  "description": "Extracts bill and invoice figures exactly, lets Kriya's ledger compute GST and totals, and leaves confirming and issuing to the person.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["finance", "india"],
+  "roles": [
+    "accounts",
+    "finance",
+    "bookkeeping",
+    "gst",
+    "bills",
+    "business",
+    "founder",
+    "freelance",
+    "shop"
+  ],
+  "activation": {
+    "keywords": [
+      "invoice",
+      "invoices",
+      "gst",
+      "gstin",
+      "ledger",
+      "bill",
+      "bills",
+      "expense",
+      "expenses",
+      "receipt",
+      "receipts",
+      "income",
+      "books",
+      "itc",
+      "input tax",
+      "hsn",
+      "sac",
+      "tax invoice"
+    ]
+  },
+  "tools": {
+    "all": ["ledger_list", "ledger_draft_entry", "invoice_draft"],
+    "any": [],
+    "uses": []
+  },
+  "dependsOn": ["verification-before-completion"],
+  "prerequisites": ["Ledger, switched on by Kriya and included in your plan"],
+  "verification": "Figures come from lib/ledger.ts and SQL checks; entries are confirmed and invoices issued only by the person in Accounts.",
+  "limits": {
+    "maxChars": 2800
+  },
+  "evals": [
+    {
+      "ask": "Draft a GST invoice for 10 hours of design work for Acme in Pune",
+      "expect": "activate"
+    },
+    {
+      "ask": "Add this electricity bill to my expenses",
+      "expect": "activate"
+    },
+    {
+      "ask": "Plan a weekend trip to Coorg",
+      "expect": "skip"
+    }
+  ]
+}

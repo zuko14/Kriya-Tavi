@@ -1,0 +1,64 @@
+{
+  "id": "github-workflow",
+  "name": "GitHub workflow",
+  "description": "Reads issues and pull requests before acting and prepares exact, approved comments, labels, issues and small PRs that act publicly as the person.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["engineering"],
+  "roles": [
+    "engineer",
+    "developer",
+    "software",
+    "github",
+    "release",
+    "maintainer",
+    "open source"
+  ],
+  "activation": {
+    "keywords": [
+      "github",
+      "repo",
+      "repository",
+      "pull request",
+      "pull requests",
+      "pr",
+      "prs",
+      "issue",
+      "issues",
+      "release notes",
+      "changelog",
+      "label",
+      "triage",
+      "commit"
+    ]
+  },
+  "tools": {
+    "all": ["github_search", "github_read_issue", "github_read_pr"],
+    "any": [],
+    "uses": ["github_comment", "github_create_issue", "github_label", "github_open_pr"]
+  },
+  "prerequisites": [
+    "GitHub connected in Account → Connected accounts (switched on by Kriya)"
+  ],
+  "verification": "Writes are R4 and wait for the person's approval of the exact call; the returned link is the evidence.",
+  "limits": {
+    "maxChars": 2600
+  },
+  "evals": [
+    {
+      "ask": "Triage the open bug issues in repo kriya/app",
+      "expect": "activate"
+    },
+    {
+      "ask": "Summarise PR 42 and draft a review comment",
+      "expect": "activate"
+    },
+    {
+      "ask": "What's a good diet for weight loss?",
+      "expect": "skip"
+    }
+  ]
+}

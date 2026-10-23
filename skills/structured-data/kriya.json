@@ -1,0 +1,68 @@
+{
+  "id": "structured-data",
+  "name": "Structured data and spreadsheets",
+  "description": "Inspects a sheet's layout first, validates and de-duplicates, keeps changes reversible and reads back after every write.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["data"],
+  "roles": [
+    "data",
+    "analyst",
+    "accounts",
+    "finance",
+    "operations",
+    "ops",
+    "hiring",
+    "sales",
+    "bookkeeping"
+  ],
+  "activation": {
+    "keywords": [
+      "sheet",
+      "sheets",
+      "spreadsheet",
+      "excel",
+      "csv",
+      "table",
+      "rows",
+      "row",
+      "column",
+      "columns",
+      "duplicate",
+      "duplicates",
+      "dedupe",
+      "clean up the data",
+      "merge",
+      "import"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": ["sheets_read", "file_read"],
+    "uses": ["sheets_append", "sheets_update"]
+  },
+  "prerequisites": [
+    "Google Sheets connected in Account → Connected accounts, or files uploaded to Kriya"
+  ],
+  "verification": "Every write is read back with sheets_read and compared; writes are R3 and wait for the person's approval.",
+  "limits": {
+    "maxChars": 2800
+  },
+  "evals": [
+    {
+      "ask": "Remove duplicate phone numbers from my leads sheet",
+      "expect": "activate"
+    },
+    {
+      "ask": "Add these three expenses as rows in my budget spreadsheet",
+      "expect": "activate"
+    },
+    {
+      "ask": "Tell me a joke",
+      "expect": "skip"
+    }
+  ]
+}

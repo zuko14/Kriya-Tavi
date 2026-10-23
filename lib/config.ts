@@ -26,7 +26,7 @@ export const SETTINGS = {
   "routing.budget": {
     env: "OPENROUTER_DEFAULT_MODEL",
     pattern: MODEL_ID,
-    hint: "An OpenRouter model id, e.g. deepseek/deepseek-v4-flash",
+    hint: "An OpenRouter model id, e.g. deepseek/deepseek-v4.1-flash-1017",
   },
   "routing.balanced": { env: "OPENROUTER_BALANCED_MODEL", pattern: MODEL_ID },
   "routing.escalation": { env: "OPENROUTER_ESCALATION_MODEL", pattern: MODEL_ID },
@@ -161,6 +161,14 @@ export const SETTINGS = {
     pattern: /^(on|off)$/,
     hint: "on or off",
   },
+  // Google Sheets alone (its Account option and tools), without the rest of
+  // agents.connectors. Needs the Sheets API on the Google client.
+  "google.sheets": {
+    env: "KRIYA_GOOGLE_SHEETS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
   // The Undo window for reversible tools (K3): 10 minutes, run by the worker
   "agents.undo": {
     env: "KRIYA_AGENTS_UNDO",
@@ -174,6 +182,27 @@ export const SETTINGS = {
     fallback: "off",
     pattern: /^(on|off)$/,
     hint: "on or off",
+  },
+  // Skill library (SKILLS_ENGINE.md): curated instruction packs per task and
+  // the Creator's Skills section. Off: prompts and the Creator are unchanged
+  "agents.skillLibrary": {
+    env: "KRIYA_AGENTS_SKILL_LIBRARY",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Library skills switched off for everyone (empty: none)
+  "skills.disabled": {
+    env: "KRIYA_SKILLS_DISABLED",
+    pattern: /^[a-z][a-z0-9-]{2,40}(,[a-z][a-z0-9-]{2,40}){0,49}$/,
+    hint: "Comma-separated skill ids, e.g. browser-workflow,github-workflow",
+  },
+  // Roll a library skill back to an archived version for everyone
+  "skills.pins": {
+    env: "KRIYA_SKILLS_PINS",
+    pattern:
+      /^[a-z][a-z0-9-]{2,40}@\d{1,3}\.\d{1,3}\.\d{1,3}(,[a-z][a-z0-9-]{2,40}@\d{1,3}\.\d{1,3}\.\d{1,3}){0,49}$/,
+    hint: "Comma-separated id@version, e.g. browser-workflow@1.0.0",
   },
   // Receipt cards and "Verify my records" (K1)
   "agents.receipts": {

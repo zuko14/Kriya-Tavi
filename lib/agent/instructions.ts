@@ -43,7 +43,7 @@ function accountsLine({ connected, writes }: Capabilities) {
     connected.github &&
       `GitHub (\`github_search\`, \`github_read_issue\`, \`github_read_pr\`${writes ? "; `github_comment`, `github_create_issue`, `github_label` and `github_open_pr` act publicly as the person" : ""})`,
     google.includes("sheets") &&
-      `Google Sheets (\`sheets_read\`${writes ? ", `sheets_append`, `sheets_update`" : ""})`,
+      `Google Sheets (\`sheets_read\`, \`sheets_total\` adds up amounts exactly${writes ? "; `sheets_create` makes a formatted sheet, `sheets_append`, `sheets_update`" : ""})`,
     google.includes("youtube") && "YouTube (`youtube_stats`)",
     connected.meta &&
       `Instagram (\`instagram_insights\`${writes ? ", `instagram_publish` posts publicly as the person" : ""})`,

@@ -3,7 +3,7 @@
 // every model the routing settings point at.
 //
 //   DATABASE_URL=... npm run models:sync
-//   DATABASE_URL=... npm run models:sync -- deepseek/deepseek-v4-flash google/gemini-3.1-flash-lite
+//   DATABASE_URL=... npm run models:sync -- deepseek/deepseek-v4.1-flash-1017 google/gemini-3.1-flash-lite
 
 import { getSetting } from "@/lib/config"
 import { syncCatalogue } from "@/lib/models"

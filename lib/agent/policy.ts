@@ -252,6 +252,9 @@ export const TOOL_CLASSES: Record<string, RiskClass> = {
   sheets_read: "R0",
   sheets_append: "R3",
   sheets_update: "R3",
+  // A new file in their own Drive; a total is a read
+  sheets_create: "R3",
+  sheets_total: "R0",
   youtube_stats: "R0",
   instagram_insights: "R0",
   instagram_publish: "R4",
@@ -362,6 +365,8 @@ export const TOOL_WRITES: Record<string, string[]> = {
   sheets_read: [],
   sheets_append: [],
   sheets_update: [],
+  sheets_create: [],
+  sheets_total: [],
   youtube_stats: [],
   instagram_insights: [],
   instagram_publish: [],

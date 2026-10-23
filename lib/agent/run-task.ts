@@ -94,6 +94,14 @@ import {
   resolveTier,
 } from "@/lib/models"
 import { isSecretsConfigured } from "@/lib/secrets"
+import { readSkill, recordActivations, settleActivations } from "@/lib/skill-engine"
+import {
+  parsePins,
+  parseSkillList,
+  resolveSkills,
+  skillsBlock,
+  type Resolution,
+} from "@/lib/skill-library"
 import { undoColumns } from "@/lib/undo"
 import { voiceAvailable } from "@/lib/voice/tasks"
 import { isWebConfigured } from "@/lib/web"
@@ -275,7 +283,8 @@ async function loadContext(
   task: Task,
   memoryV2: boolean,
   connectorsV2 = false,
-  policy = BASELINE_POLICY
+  policy = BASELINE_POLICY,
+  sheetsOn = false
 ) {
   return withUser(task.userId, async (tx) => {
     const thread = await tx.query.threads.findFirst({
@@ -337,7 +346,12 @@ async function loadContext(
     const connected: Connected = {
       google: googleServices(
         accounts.find((a) => a.provider === "google")?.scopes ?? []
-      ).filter((service) => connectorsV2 || !EXTRA_GOOGLE_SERVICES.includes(service)),
+      ).filter(
+        (service) =>
+          connectorsV2 ||
+          (sheetsOn && service === "sheets") ||
+          !EXTRA_GOOGLE_SERVICES.includes(service)
+      ),
       notion: accounts.some((a) => a.provider === "notion"),
       // A8: absent, not false, with the switch off (prompt byte-identical)
       ...(connectorsV2 && {
@@ -386,8 +400,19 @@ export async function runTask(task: Task, ctx: WorkerContext) {
   const goalTools = (await getSetting("agents.goals")) === "on"
   // A8: GitHub, Sheets, YouTube and Instagram tools; the Undo window (K3)
   const connectorsV2 = (await getSetting("agents.connectors")) === "on"
+  // Sheets alone, without the other A8 connectors
+  const sheetsOn = (await getSetting("google.sheets")) === "on"
   const undo = (await getSetting("agents.undo")) === "on"
   const skillTools = (await getSetting("agents.skills")) === "on"
+  // Skill library (SKILLS_ENGINE.md): instruction packs for this task; off
+  // leaves the prompt exactly as before
+  const skillLibrary =
+    (await getSetting("agents.skillLibrary")) === "on"
+      ? {
+          disabled: parseSkillList(await getSetting("skills.disabled")),
+          pins: parsePins(await getSetting("skills.pins")),
+        }
+      : null
   // A7: ledger tools need the switch and a plan with the ledger
   const ledgerTools =
     (await getSetting("agents.ledger")) === "on" && Boolean(plan?.ledgerEnabled)
@@ -465,9 +490,12 @@ export async function runTask(task: Task, ctx: WorkerContext) {
   const publisher = new Publisher(task, attempt)
   // Tool calls a grant answered, for their tool_executions row
   const granted = new Map<string, string>()
+  // What the skill library loaded for each agent that held the turn
+  const skillsUsed = new Map<string, Resolution>()
+  const skillRecords: Promise<void>[] = []
 
   try {
-    const context = await loadContext(task, memoryV2, connectorsV2, policy)
+    const context = await loadContext(task, memoryV2, connectorsV2, policy, sheetsOn)
     if (!context) throw new Error("The thread for this task no longer exists.")
     const { thread, members, notes, memory, history, covered, connected } = context
     const first = members.find((member) => member.id === task.input.agentId) ?? members[0]
@@ -528,7 +556,7 @@ export async function runTask(task: Task, ctx: WorkerContext) {
       return v2.text
     }
     const instructionsFor = (agent: Agent) =>
-      promptFor(agent, capabilities, squadContext(agent))
+      promptFor(agent, capabilities, squadContext(agent)) + skillsFor(agent)
 
     let calls = 0
     let spentMicroUsd = 0
@@ -736,6 +764,44 @@ export async function runTask(task: Task, ctx: WorkerContext) {
     // the list into Capabilities if owners start killing connector tools.
     for (const name of disabled) delete tools[name]
 
+    // Resolved once per agent that holds the turn, from the person's latest
+    // message and this final belt: text only, never a tool. A failure means
+    // no skills, never a failed task.
+    // Only the person's words: a crew's join and briefs carry members'
+    // reports, and a watcher run appends the page's diff after the person's
+    // prompt (lib/watch.ts watchPrompt), so neither can pick a skill
+    const asked = history.findLast((m) => m.role === "user")
+    const ask =
+      !asked || asked.metadata?.channel === "crew"
+        ? ""
+        : textOf(asked).split("The watched page changed:")[0]
+    const skillsFor = (agent: Agent) => {
+      if (!skillLibrary) return ""
+      let resolved = skillsUsed.get(agent.id)
+      if (!resolved) {
+        try {
+          resolved = resolveSkills({
+            prefs: agent.skills,
+            role: agent.role,
+            ask,
+            tools: Object.keys(tools),
+            load: readSkill,
+            ...skillLibrary,
+          })
+        } catch (error) {
+          log.error("skill resolution failed", { taskId: task.id, error })
+          resolved = { active: [], skipped: [] }
+        }
+        skillsUsed.set(agent.id, resolved)
+        skillRecords.push(
+          recordActivations(task, attempt, agent.id, resolved).catch((error) =>
+            log.error("skill record failed", { taskId: task.id, error })
+          )
+        )
+      }
+      return skillsBlock(resolved.active)
+    }
+
     // Only the active job's own thread has grants; none (or a failed read)
     // passes today's map itself, so everything asks as before
     const jobGrants = grantsOn
@@ -811,6 +877,7 @@ export async function runTask(task: Task, ctx: WorkerContext) {
             usage: { ...usageMetadata },
             durationMs: Date.now() - startedAt,
             ...(memoryV2 && { memoryIds: [...usedMemories] }),
+            ...(skillsUsed.size > 0 && { skills: skillsMetadata(skillsUsed) }),
           }
         }
         return undefined
@@ -988,6 +1055,12 @@ export async function runTask(task: Task, ctx: WorkerContext) {
   await chargeTask(task).catch((error) =>
     log.error("charge failed", { taskId: task.id, error })
   )
+  if (skillsUsed.size > 0) {
+    await Promise.all(skillRecords)
+    await settleActivations(task, attempt, outcome.status).catch((error) =>
+      log.error("skill outcome failed", { taskId: task.id, error })
+    )
+  }
   await privileged
     .update(taskAttempts)
     .set({
@@ -1017,6 +1090,18 @@ export async function runTask(task: Task, ctx: WorkerContext) {
     attempt,
     ms: Date.now() - startedAt,
   })
+}
+
+// For the reply's "Used N skills": each skill once, with why it loaded
+function skillsMetadata(used: Map<string, Resolution>) {
+  const seen = new Map<
+    string,
+    { id: string; name: string; version: string; reason: string }
+  >()
+  for (const { active } of used.values())
+    for (const { id, name, version, reason } of active)
+      if (!seen.has(id)) seen.set(id, { id, name, version, reason })
+  return [...seen.values()]
 }
 
 function summarize(output: unknown) {

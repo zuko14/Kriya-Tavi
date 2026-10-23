@@ -34,6 +34,7 @@ const agent = (id: string, name: string, extra: Partial<Agent> = {}): Agent => (
   model: null,
   glyph: "g",
   memoryPaused: false,
+  skills: null,
   createdAt: new Date(0),
   updatedAt: new Date(0),
   ...extra,

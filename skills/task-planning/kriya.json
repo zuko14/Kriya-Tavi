@@ -1,0 +1,64 @@
+{
+  "id": "task-planning",
+  "name": "Task planning",
+  "description": "Turns a multi-step request into an outcome, ordered steps, the tools each needs and how each result is checked.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [
+    {
+      "project": "Superpowers",
+      "version": "6.4.2",
+      "commit": "8ca22dba9a",
+      "path": "skills/writing-plans",
+      "license": "MIT",
+      "url": "https://github.com/obra/superpowers"
+    }
+  ],
+  "categories": ["core"],
+  "roles": ["*"],
+  "activation": {
+    "keywords": [
+      "plan",
+      "planning",
+      "steps",
+      "step by step",
+      "roadmap",
+      "project",
+      "launch",
+      "itinerary",
+      "trip",
+      "organise",
+      "organize",
+      "checklist",
+      "timeline",
+      "strategy",
+      "prepare for",
+      "break down"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Each step names how its result is checked; the reply lists what was done and what is left.",
+  "limits": {
+    "maxChars": 2500
+  },
+  "evals": [
+    {
+      "ask": "Plan my sister's wedding shopping over the next 3 weeks",
+      "expect": "activate"
+    },
+    {
+      "ask": "Break down the launch of my bakery's Instagram page",
+      "expect": "activate"
+    },
+    {
+      "ask": "What is the capital of Karnataka?",
+      "expect": "skip"
+    }
+  ]
+}

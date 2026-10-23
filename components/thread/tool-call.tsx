@@ -145,6 +145,8 @@ const META: Record<string, Meta> = {
   sheets_read: { icon: SheetIcon, label: "read sheet", summary: (i) => str(i.range) },
   sheets_append: { icon: SheetIcon, label: "add rows", summary: (i) => str(i.range) },
   sheets_update: { icon: SheetIcon, label: "update cells", summary: (i) => str(i.range) },
+  sheets_create: { icon: SheetIcon, label: "new sheet", summary: (i) => str(i.title) },
+  sheets_total: { icon: SheetIcon, label: "add up", summary: (i) => str(i.amount) },
   youtube_stats: { icon: PlayIcon, label: "youtube stats" },
   instagram_insights: { icon: CameraIcon, label: "instagram stats" },
   // A9 skills
@@ -252,6 +254,10 @@ const A8_ROWS: Record<string, (i: Record<string, unknown>) => [string, string][]
     ["Spreadsheet", str(i.spreadsheetId)],
     ["Overwrites", str(i.range)],
   ],
+  sheets_create: (i) => [
+    ["Title", str(i.title)],
+    ["Tabs", Array.isArray(i.tabs) ? i.tabs.map((t) => str(t?.name)).join(", ") : ""],
+  ],
   instagram_publish: (i) => [
     ["Image", str(i.imageUrl)],
     ["Caption", str(i.caption)],
@@ -272,6 +278,15 @@ const A8_TEXT: Record<string, (i: Record<string, unknown>) => string> = {
       : "",
   sheets_append: (i) => cellRows(i.rows).join("\n"),
   sheets_update: (i) => cellRows(i.rows).join("\n"),
+  sheets_create: (i) =>
+    Array.isArray(i.tabs)
+      ? i.tabs
+          .map(
+            (t) =>
+              `── ${str(t?.name)}\n${Array.isArray(t?.columns) ? t.columns.map((c: { name?: unknown; type?: unknown }) => `${str(c?.name)} (${str(c?.type)})`).join("\t") : ""}`
+          )
+          .join("\n\n")
+      : "",
 }
 const A8_NOTES: Record<string, string> = {
   github_comment: "Posted on GitHub as you. Anyone who can see the repository sees it.",
@@ -280,8 +295,10 @@ const A8_NOTES: Record<string, string> = {
   github_label: "Added on GitHub as you; people watching the issue may be notified.",
   github_open_pr:
     "A new branch and a pull request on GitHub, as you. Nothing is merged: you or the maintainers decide.",
-  sheets_append: "Added to your Google Sheet as plain text.",
-  sheets_update: "Replaces those cells in your Google Sheet with this plain text.",
+  sheets_append: "Added to your Google Sheet as plain values, never formulas.",
+  sheets_update: "Replaces those cells in your Google Sheet with these plain values.",
+  sheets_create:
+    "A new spreadsheet in your Google Drive. Only you can see it until you share it.",
   instagram_publish: "Posted publicly on your Instagram as you.",
   drive_share:
     "Google emails each of them a link. You can undo it for 10 minutes; after that, remove access in Drive.",

@@ -55,7 +55,8 @@ const GOOGLE_MORE = [
     id: "sheets",
     label: "Sheets",
     icon: SheetIcon,
-    detail: "Read sheets; add or change rows after you approve each change",
+    detail:
+      "Read and total sheets; create sheets and add or change rows after you approve each change",
   },
   {
     id: "youtube",
@@ -79,6 +80,8 @@ export type ConnectionView = {
   testingMode?: boolean
   // G2: offer the "Drive sharing" box (operator.driveShare, with `more`)
   driveShare?: boolean
+  // google.sheets: the Sheets box without the rest of `more`
+  sheets?: boolean
 }
 
 const STOPPED = (name: string) =>
@@ -185,10 +188,11 @@ export function Connections({
   health = {},
   testingMode = false,
   driveShare = false,
+  sheets = false,
 }: ConnectionView) {
   const services = [
     ...GOOGLE,
-    ...(more ? GOOGLE_MORE : []),
+    ...GOOGLE_MORE.filter(({ id }) => more || (sheets && id === "sheets")),
     ...(more && driveShare ? [DRIVE_SHARE] : []),
   ]
   const stopped = (provider: string) => health[provider] === "needs_reconnect"

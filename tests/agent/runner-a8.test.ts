@@ -8,6 +8,7 @@ import { rowsOf, type DB } from "@/db"
 import * as schema from "@/db/schema"
 import { enqueueApproval, enqueueTurn } from "@/lib/agent/queue"
 import { runTask } from "@/lib/agent/run-task"
+import { GOOGLE_EXTRA_SERVICES, saveConnection } from "@/lib/connectors"
 import type { KriyaMessage } from "@/lib/agent/tools"
 
 import { connectedUser, REPO, serve } from "../connectors/fixtures"
@@ -125,7 +126,11 @@ const resetSettings = () => {
 beforeEach(async () => {
   offered.length = 0
   prompts.length = 0
-  for (const key of ["KRIYA_AGENTS_CONNECTORS", "KRIYA_AGENTS_UNDO"])
+  for (const key of [
+    "KRIYA_AGENTS_CONNECTORS",
+    "KRIYA_AGENTS_UNDO",
+    "KRIYA_GOOGLE_SHEETS",
+  ])
     delete process.env[key]
   resetSettings()
   process.env.OPENROUTER_DEFAULT_MODEL = "test/budget-model"
@@ -148,6 +153,41 @@ describe("agents.connectors off", () => {
     await turn("hello")
     expect(offered[0].some((name) => name.startsWith("github_"))).toBe(false)
     expect(prompts[0]).not.toContain("GitHub")
+  })
+})
+
+describe("google.sheets", () => {
+  const grantSheets = () =>
+    saveConnection(user, "google", {
+      accessToken: "test-token-google",
+      refreshToken: null,
+      expiresAt: null,
+      scopes: [...GOOGLE_EXTRA_SERVICES.sheets.scopes],
+      account: "test-account",
+    })
+
+  it("off: a granted Sheets scope offers nothing (AT-REG-01)", async () => {
+    await grantSheets()
+    await turn("hello")
+    expect(offered[0].some((name) => name.startsWith("sheets_"))).toBe(false)
+    expect(prompts[0]).not.toContain("Google Sheets")
+  })
+
+  it("on: offers the Sheets tools without the other connectors", async () => {
+    process.env.KRIYA_GOOGLE_SHEETS = "on"
+    resetSettings()
+    await grantSheets()
+    await turn("hello")
+    expect(offered[0]).toEqual(
+      expect.arrayContaining([
+        "sheets_read",
+        "sheets_total",
+        "sheets_create",
+        "sheets_append",
+      ])
+    )
+    expect(offered[0].some((name) => name.startsWith("github_"))).toBe(false)
+    expect(prompts[0]).toContain("Google Sheets")
   })
 })
 

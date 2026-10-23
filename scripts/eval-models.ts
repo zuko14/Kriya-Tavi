@@ -1,7 +1,7 @@
 // Live checks of the things an agent needs from a model, through the same
 // gateway the worker uses. Each check makes one short, cheap request.
 //
-//   OPENROUTER_API_KEY=... npm run models:eval -- deepseek/deepseek-v4-flash
+//   OPENROUTER_API_KEY=... npm run models:eval -- deepseek/deepseek-v4.1-flash-1017
 //   (add DATABASE_URL to record the result in kriya.models)
 //
 // Checks: 1. calls a tool with valid arguments; 2. returns schema-valid

@@ -19,6 +19,7 @@ import { createInsertSchema } from "drizzle-zod"
 import { nanoid } from "nanoid"
 import { z } from "zod"
 
+import { skillPrefsSchema, type SkillPrefs } from "@/lib/skill-library"
 import { TIERS, type Tier } from "@/lib/tiers"
 
 // Types for the tables in supabase/migrations. The SQL there is the source
@@ -176,6 +177,8 @@ export const agents = kriya.table("agents", {
     .$defaultFn(() => nanoid(10)),
   // Memory v2: the person paused this agent's memory (nothing is saved)
   memoryPaused: boolean().notNull().default(false),
+  // Skill library assignments (lib/skill-library.ts); null = role defaults
+  skills: jsonb().$type<SkillPrefs>(),
   createdAt: createdAt(),
   updatedAt: createdAt(),
 })
@@ -754,6 +757,29 @@ export const policyTaskVersions = kriya.table("policy_task_versions", {
   bundleHash: text().notNull(),
   createdAt: createdAt(),
 })
+
+// Which skill-library skills each task attempt loaded or skipped, and why;
+// written by the worker, read by the person and the owner
+export const skillActivations = kriya.table(
+  "skill_activations",
+  {
+    taskId: uuid().notNull(),
+    attempt: integer().notNull(),
+    userId: uuid().notNull(),
+    agentId: text().notNull(),
+    skillId: text().notNull(),
+    version: text().notNull(),
+    status: text({ enum: ["active", "skipped"] }).notNull(),
+    mode: text({ enum: ["required", "manual", "auto"] }),
+    reason: text().notNull(),
+    // Instruction characters added to the prompt
+    chars: integer().notNull().default(0),
+    // The task attempt's end state, set when it settles
+    outcome: text({ enum: ["succeeded", "failed", "canceled"] }),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.taskId, t.attempt, t.agentId, t.skillId] })]
+)
 
 export const policyVersions = kriya.table("policy_versions", {
   id: text().primaryKey(),
@@ -1794,6 +1820,8 @@ export const agentInputSchema = createInsertSchema(agents, {
   instructions: (s) => s.trim().max(6000, "Keep it under 6000 characters."),
   model: () => z.union([tierSchema, z.literal("")]),
   glyph: () => z.string().trim().min(1).max(32).optional(),
+  // Shape only; lib/skill-library.ts checkSkillPrefs checks ids on the server
+  skills: () => skillPrefsSchema.nullable().optional(),
 }).omit({
   id: true,
   userId: true,

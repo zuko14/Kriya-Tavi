@@ -67,6 +67,9 @@ npm run db:migrate    # apply supabase/migrations (MIGRATION_DATABASE_URL)
   them in `/owner/config`.
 - Tools: add to `lib/agent/tools.ts`, render in `components/thread/tool-call.tsx`,
   label in `components/workbench/activity.tsx`.
+- Library skills (guidance, never tools): `skills/<id>/SKILL.md` +
+  `kriya.json`, listed in `skills/index.ts`; see
+  `docs/agent-platform/SKILLS_ENGINE.md`. Not the A9 replay skills.
 - Client components must not import server modules (`db`, `lib/config`,
   `lib/models`); use `lib/tiers.ts` and friends.
 - Styling: tokens in `app/globals.css` (`rigel` = Kriya indigo, `betelgeuse` =

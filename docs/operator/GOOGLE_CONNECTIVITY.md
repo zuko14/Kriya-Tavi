@@ -51,13 +51,14 @@ Each step's result is written into `status.md` (no ids or secrets, just
 
 1. Create (or pick) a Google Cloud project for Kriya Tavi. Enable the
    Gmail API, Google Calendar API and Google Drive API (and Sheets API if
-   `agents.connectors` will be on).
+   `agents.connectors` or `google.sheets` will be on).
 2. OAuth consent screen: User type **External**; publishing status
    **Testing**; app name "Kriya Tavi"; support email; developer contact.
 3. Scopes: add exactly what `lib/connectors.ts` requests: `openid`,
    `email`, `…/auth/calendar.events`, `…/auth/gmail.readonly`,
    `…/auth/gmail.compose`, `…/auth/drive.readonly` (plus
-   `…/auth/spreadsheets` and `…/auth/youtube.readonly` only if A8 is on).
+   `…/auth/spreadsheets` if A8 or `google.sheets` is on, `…/auth/youtube.readonly`
+   only if A8 is on).
    Record the class the console shows for each (closes the
    `calendar.events` unknown).
 4. Test users: the owner's Google account and each pilot tester (≤ 100).

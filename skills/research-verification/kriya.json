@@ -1,0 +1,90 @@
+{
+  "id": "research-verification",
+  "name": "Research and source verification",
+  "description": "Looks things up in current sources, records each source and date, separates verified facts from assumptions and reconciles disagreements.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [
+    {
+      "project": "Everything Claude Code (ECC)",
+      "version": "2.2.3",
+      "commit": "07971588f8",
+      "path": "skills/search-first, skills/documentation-lookup",
+      "license": "MIT",
+      "url": "https://github.com/affaan-m/ECC"
+    }
+  ],
+  "categories": ["core", "research"],
+  "roles": [
+    "research",
+    "analyst",
+    "study",
+    "student",
+    "scholarship",
+    "admissions",
+    "content",
+    "creator",
+    "trends",
+    "career",
+    "hiring",
+    "proposal",
+    "assistant",
+    "watcher"
+  ],
+  "activation": {
+    "keywords": [
+      "research",
+      "compare",
+      "comparison",
+      "latest",
+      "current",
+      "source",
+      "sources",
+      "verify",
+      "fact check",
+      "price",
+      "prices",
+      "fees",
+      "news",
+      "look up",
+      "find out",
+      "eligibility",
+      "eligible",
+      "deadline",
+      "last date",
+      "scholarship",
+      "review",
+      "reviews",
+      "best",
+      "which is better",
+      "statistics",
+      "data on"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": ["web_search", "web_fetch"],
+    "uses": []
+  },
+  "prerequisites": ["Web access, set up by Kriya"],
+  "verification": "Every figure, date or rule in the reply names its source; unverified points are labelled as such.",
+  "limits": {
+    "maxChars": 2800
+  },
+  "evals": [
+    {
+      "ask": "Compare the fees of IIT Madras online BSc and IIIT Bangalore",
+      "expect": "activate"
+    },
+    {
+      "ask": "What's the latest deadline for the INSPIRE scholarship?",
+      "expect": "activate"
+    },
+    {
+      "ask": "Write me a birthday poem for my dad",
+      "expect": "skip"
+    }
+  ]
+}

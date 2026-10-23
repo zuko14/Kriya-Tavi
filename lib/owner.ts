@@ -507,6 +507,35 @@ export async function backgroundCounts() {
   }>(result)[0]
 }
 
+// The skill library over the last 7 days, per skill version: how many task
+// attempts loaded or skipped it (a squad's agents count once), the latest
+// skip reason, and how those attempts ended. A reply waiting for approval
+// ends as succeeded.
+export async function skillActivity() {
+  const result = await privileged.execute(sql`
+    select skill_id as "skillId", version,
+      count(distinct (task_id, attempt)) filter (where status = 'active')::int as active,
+      count(distinct (task_id, attempt)) filter (where status = 'skipped')::int as skipped,
+      count(distinct (task_id, attempt)) filter (where status = 'active' and outcome = 'succeeded')::int as succeeded,
+      count(distinct (task_id, attempt)) filter (where status = 'active' and outcome = 'failed')::int as failed,
+      coalesce(avg(chars) filter (where status = 'active'), 0)::int as chars,
+      (array_agg(reason order by created_at desc) filter (where status = 'skipped'))[1] as "lastSkip"
+    from kriya.skill_activations
+    where created_at > now() - interval '7 days'
+    group by skill_id, version
+    order by active desc, skill_id`)
+  return rowsOf<{
+    skillId: string
+    version: string
+    active: number
+    skipped: number
+    succeeded: number
+    failed: number
+    chars: number
+    lastSkip: string | null
+  }>(result)
+}
+
 export async function auditLog(filter?: string) {
   return privileged
     .select({

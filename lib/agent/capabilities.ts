@@ -93,6 +93,8 @@ const FACTS: Record<string, Facts> = {
     ...readBack,
     pins: { spreadsheetId: "equals", range: "equals" },
   },
+  sheets_create: { ...google, ...readBack },
+  sheets_total: google,
   youtube_stats: google,
   instagram_insights: { system: "meta" },
   instagram_publish: { system: "meta", ...readBack },

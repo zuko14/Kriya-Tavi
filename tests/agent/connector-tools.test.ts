@@ -34,6 +34,8 @@ describe("A8 tool belt", () => {
       "sheets_read",
       "sheets_append",
       "sheets_update",
+      "sheets_create",
+      "sheets_total",
     ])
     expect(names({ google: ["youtube"], notion: false })).toEqual(["youtube_stats"])
     expect(names({ google: [], notion: false, meta: true })).toEqual([
@@ -62,11 +64,12 @@ describe("A8 tool belt", () => {
       "instagram_publish",
     ]
     for (const tool of r4) expect(classifyTool(tool, {}), tool).toBe("R4")
-    for (const tool of ["sheets_append", "sheets_update"])
+    for (const tool of ["sheets_append", "sheets_update", "sheets_create"])
       expect(classifyTool(tool, {}), tool).toBe("R3")
     for (const tool of [
       "github_search",
       "sheets_read",
+      "sheets_total",
       "youtube_stats",
       "instagram_insights",
     ])

@@ -1,0 +1,44 @@
+{
+  "id": "verification-before-completion",
+  "name": "Verification before completion",
+  "description": "Checks the evidence before claiming anything is done, and reports unverified, partial or failed work as exactly that.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [
+    {
+      "project": "Superpowers",
+      "version": "6.4.2",
+      "commit": "8ca22dba9a",
+      "path": "skills/verification-before-completion",
+      "license": "MIT",
+      "url": "https://github.com/obra/superpowers"
+    }
+  ],
+  "required": true,
+  "categories": ["core", "safeguard"],
+  "roles": ["*"],
+  "activation": {
+    "always": true
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Completion claims are backed by tool read-backs in tool_executions; Kriya's claim check and job verdicts stay authoritative.",
+  "limits": {
+    "maxChars": 2200
+  },
+  "evals": [
+    {
+      "ask": "Add the dentist appointment to my calendar",
+      "expect": "activate"
+    },
+    {
+      "ask": "hi",
+      "expect": "activate"
+    }
+  ]
+}

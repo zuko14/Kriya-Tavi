@@ -1,0 +1,50 @@
+{
+  "id": "voice-follow-up",
+  "name": "Voice follow-up",
+  "description": "Drafts a phone call the person confirms in Kriya, and reports outcomes only from Kriya's verified call record.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["voice", "india"],
+  "roles": ["assistant", "executive", "secretary", "reception", "sales", "calls"],
+  "activation": {
+    "keywords": [
+      "call",
+      "phone",
+      "ring",
+      "dial",
+      "follow up",
+      "follow-up",
+      "speak to",
+      "talk to"
+    ]
+  },
+  "tools": {
+    "all": ["propose_call"],
+    "any": [],
+    "uses": []
+  },
+  "prerequisites": [
+    "Phone calls enabled for your account by Kriya; live calls stay behind Kriya's voice switches and allow-lists"
+  ],
+  "verification": "Call status changes only through kriya.voice_transition(); outcomes come from the verified call record, never the model.",
+  "limits": {
+    "maxChars": 2200
+  },
+  "evals": [
+    {
+      "ask": "Call the plumber tomorrow and ask when he can come",
+      "expect": "activate"
+    },
+    {
+      "ask": "Follow up with the landlord by phone about my deposit",
+      "expect": "activate"
+    },
+    {
+      "ask": "Summarise this article about inflation",
+      "expect": "skip"
+    }
+  ]
+}

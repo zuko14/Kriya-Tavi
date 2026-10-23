@@ -17,6 +17,7 @@ import { Markdown } from "@/components/thread/markdown"
 import { SquadWork } from "@/components/thread/squad-work"
 import { ToolCall, toolName, type ToolPart } from "@/components/thread/tool-call"
 import { UsedMemories } from "@/components/thread/used-memories"
+import { UsedSkills } from "@/components/thread/used-skills"
 import {
   useWhatIDid,
   WhatIDidCard,
@@ -278,6 +279,7 @@ function AgentMessage({
             <span>{(meta.durationMs / 1000).toFixed(1)}s</span>
           )}
           {meta.memoryIds?.length ? <UsedMemories ids={meta.memoryIds} /> : null}
+          {meta.skills?.length ? <UsedSkills skills={meta.skills} /> : null}
         </div>
       )}
       {!streaming && record && <WhatIDidCard record={record} receipts={receipts} />}

@@ -15,25 +15,34 @@ import {
   type AgentInput,
 } from "@/db/schema"
 import { requireUser } from "@/lib/auth"
+import { getSetting } from "@/lib/config"
 import { checkAgentAllowed } from "@/lib/entitlements"
+import { checkSkillPrefs } from "@/lib/skill-library"
 
 const id = z.string().min(1).max(32)
 
-function normalize(values: AgentInput) {
+async function normalize(values: AgentInput) {
   const data = agentInputSchema.parse(values)
+  // Skills only with the library on, whatever the browser sends
+  const skillsOn = (await getSetting("agents.skillLibrary")) === "on"
   return {
     name: data.name,
     role: data.role,
     instructions: data.instructions?.trim() || null,
     model: data.model?.trim() || null,
     ...(data.glyph && { glyph: data.glyph }),
+    // Only when the Creator's Skills section sent them; ids checked here
+    ...(skillsOn &&
+      data.skills !== undefined && {
+        skills: data.skills && checkSkillPrefs(data.skills),
+      }),
   }
 }
 
 // A new agent comes with an empty thread to talk to it in
 export async function createAgent(values: AgentInput) {
   const user = await requireUser()
-  const data = normalize(values)
+  const data = await normalize(values)
   const allowed = await checkAgentAllowed(user.id)
   if (!allowed.ok) throw new Error(allowed.message)
   const result = await withUser(user.id, async (tx) => {
@@ -53,7 +62,7 @@ export async function createAgent(values: AgentInput) {
 
 export async function updateAgent(agentId: string, values: AgentInput) {
   const user = await requireUser()
-  const data = normalize(values)
+  const data = await normalize(values)
   const [agent] = await withUser(user.id, (tx) =>
     tx
       .update(agents)

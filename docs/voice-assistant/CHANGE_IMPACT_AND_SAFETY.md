@@ -104,6 +104,7 @@ Each row: the only change allowed, the risk, and the test that must pass.
 | `tests/db/migrations.test.ts` | 10 | T-MIG-01 rolls back newest-first and counts 27 voice tables | — | passes |
 | `.prettierignore` | 0 | `.serena` (done) | — | `npm run format:check` |
 | `AGENTS.md` | 0 | Voice section (done) | — | — |
+| `lib/agent/queue.ts` | Production fix (owner 2026-10-23) | `prepare()` refuses a new turn (503 `unavailable`, "Kriya's task runner is offline…") when workers have registered but none heartbeat in the last 45 s; an empty `kriya.workers` (tests, a first deploy) isn't refused. Nothing else in the file changes | A live worker refused (heartbeat every 10 s, threshold 45 s) | `tests/agent/worker-offline.test.ts`; the full suite unchanged |
 
 Everything else in the voice plan is a **new** file under `lib/voice/`,
 `voice/`, `app/(workspace)/calls/`, `app/api/voice/`, `components/voice/`,

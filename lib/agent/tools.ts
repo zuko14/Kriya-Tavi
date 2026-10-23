@@ -76,10 +76,15 @@ import {
 } from "@/lib/connectors/github"
 import { instagramInsights, instagramPublish } from "@/lib/connectors/instagram"
 import {
+  COLUMN_TYPES,
+  CURRENCIES,
   sheetsAppend,
+  sheetsCreate,
   sheetsRead,
+  sheetsTotal,
   sheetsUpdate,
   SPREADSHEET_ID,
+  TAB_NAME,
 } from "@/lib/connectors/sheets"
 import { youtubeStats } from "@/lib/connectors/youtube"
 import { browserDecision } from "@/lib/agent/policy"
@@ -155,6 +160,7 @@ export const SIDE_EFFECT_TOOLS = new Set<string>([
   "github_open_pr",
   "sheets_append",
   "sheets_update",
+  "sheets_create",
   "instagram_publish",
   // G2 (operator.driveShare, operator.gmailSend)
   "drive_share",
@@ -807,10 +813,14 @@ function a8Tools(user: string) {
   const spreadsheetId = z.string().regex(SPREADSHEET_ID)
   const range = z.string().min(1).max(200).describe("A1 range, e.g. Sheet1!A1:D20")
   const rows = z
-    .array(z.array(z.string().max(1000)).max(26))
+    .array(z.array(z.union([z.string().max(1000), z.number().finite()])).max(26))
     .min(1)
     .max(100)
-    .describe("Rows of cells, saved as plain text")
+    .describe(
+      'Rows of cells. Text is saved as plain text, never a formula; give amounts and counts as JSON numbers (1200.5, not "₹1,200.50") so they add up, and dates as yyyy-mm-dd'
+    )
+  const tabName = z.string().regex(TAB_NAME).describe("Tab name, e.g. Expenses")
+  const header = z.string().min(1).max(60)
   return {
     github_search: tool({
       description:
@@ -900,6 +910,54 @@ function a8Tools(user: string) {
       inputSchema: z.object({ spreadsheetId, range, rows }),
       execute: (input) => sheetsUpdate(user, input),
     }),
+    sheets_create: tool({
+      description:
+        "Create a new Google Sheet in the person's Drive, laid out for record keeping: a bold frozen header row, column widths and number formats by type (amount as currency, date as yyyy-mm-dd), alternating row colours. Plan the tabs and columns first (e.g. an expense tracker: Date date, Description text, Category text, Vendor text, Amount amount, Payment method text, Notes text). The person approves it first. Then add rows with sheets_append (range: the tab name).",
+      inputSchema: z.object({
+        title: z.string().min(1).max(100),
+        tabs: z
+          .array(
+            z.object({
+              name: tabName,
+              columns: z
+                .array(z.object({ name: header, type: z.enum(COLUMN_TYPES) }))
+                .min(1)
+                .max(26),
+            })
+          )
+          .min(1)
+          .max(10)
+          .refine(
+            (tabs) => new Set(tabs.map((t) => t.name.toLowerCase())).size === tabs.length,
+            "Tab names must differ"
+          ),
+        currency: z
+          .enum(CURRENCIES)
+          .optional()
+          .describe("The symbol shown on amount columns; only the one the person uses"),
+      }),
+      execute: (input) => sheetsCreate(user, input),
+    }),
+    sheets_total: tool({
+      description:
+        "Add up an amount column of a sheet in code (exact, never estimate totals yourself): the total, optionally by month or by another column (e.g. Category), between dates, or only rows where a column equals a value. Reports rows it couldn't read. Use it for any spending or income question.",
+      inputSchema: z.object({
+        spreadsheetId,
+        sheet: tabName,
+        amount: header.describe("Header of the amount column"),
+        date: header.optional().describe("Header of the date column"),
+        by: header
+          .optional()
+          .describe('"month", or the header of a column to group by, e.g. Category'),
+        from: z.iso.date().optional().describe("First day included, yyyy-mm-dd"),
+        to: z.iso.date().optional().describe("Last day included, yyyy-mm-dd"),
+        where: z.object({ column: header, equals: z.string().max(200) }).optional(),
+      }),
+      execute: async (input) => ({
+        notice: FOREIGN,
+        ...(await sheetsTotal(user, input)),
+      }),
+    }),
     youtube_stats: tool({
       description: "The person's YouTube channel numbers and their recent videos' views.",
       inputSchema: z.object({ limit: limit(25, 10) }),
@@ -945,6 +1003,7 @@ export const PRIVATE_READ_TOOLS = new Set<string>([
   "github_read_issue",
   "github_read_pr",
   "sheets_read",
+  "sheets_total",
   "youtube_stats",
   "instagram_insights",
   // A replay may read any of the above (A9)
@@ -1047,6 +1106,8 @@ const NEEDS: Record<ConnectorToolName, (c: Connected) => boolean> = {
   sheets_read: (c) => c.google.includes("sheets"),
   sheets_append: (c) => c.google.includes("sheets"),
   sheets_update: (c) => c.google.includes("sheets"),
+  sheets_create: (c) => c.google.includes("sheets"),
+  sheets_total: (c) => c.google.includes("sheets"),
   youtube_stats: (c) => c.google.includes("youtube"),
   instagram_insights: (c) => !!c.meta,
   instagram_publish: (c) => !!c.meta,
@@ -1880,6 +1941,8 @@ export type KriyaMetadata = {
   memoryIds?: string[]
   // Policy bundle the task ran on (A12, agents.improvement)
   policy?: { version: string; hash: string }
+  // Skill-library skills the reply loaded, and why (agents.skillLibrary)
+  skills?: { id: string; name: string; version: string; reason: string }[]
   // A user message written by a schedule's run, not by the person (A3), or
   // by a crew: a part's brief or the join (O11)
   channel?: "schedule" | "crew"
