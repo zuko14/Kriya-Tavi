@@ -42,6 +42,10 @@ import { agentInputSchema } from "@/db/schema"
 import { isTier } from "@/lib/tiers"
 import type { NavAgent } from "@/queries/workspace"
 
+// A thrown action's text is hidden in production; network or server trouble
+const UNEXPECTED =
+  "Something went wrong on our side. Check your connection and try again."
+
 function AgentForm({ agent, template }: { agent?: NavAgent; template?: AgentTemplate }) {
   const router = useRouter()
   const { status, closeDialog } = useWorkspace()
@@ -84,23 +88,28 @@ function AgentForm({ agent, template }: { agent?: NavAgent; template?: AgentTemp
           },
         }
       : { ...input, skills: undefined }
-    try {
-      if (agent) {
-        const updated = await updateAgent(agent.id, values)
-        toast.add({ type: "success", title: `${updated.name} updated` })
-        closeDialog()
-      } else {
-        const { agent: created, threadId } = await createAgent(values)
-        toast.add({ type: "success", title: `${created.name} is online` })
-        closeDialog()
-        router.push(`/a/${created.id}/${threadId}`)
-      }
-    } catch (error) {
+    const failed = (description: string) => {
       toast.add({
         type: "error",
         title: agent ? "Couldn't save the agent" : "Couldn't create the agent",
-        description: error instanceof Error ? error.message : undefined,
+        description,
       })
+    }
+    try {
+      if (agent) {
+        const updated = await updateAgent(agent.id, values)
+        if ("error" in updated) return failed(updated.error)
+        toast.add({ type: "success", title: `${updated.name} updated` })
+        closeDialog()
+      } else {
+        const created = await createAgent(values)
+        if ("error" in created) return failed(created.error)
+        toast.add({ type: "success", title: `${created.agent.name} is online` })
+        closeDialog()
+        router.push(`/a/${created.agent.id}/${created.threadId}`)
+      }
+    } catch {
+      failed(UNEXPECTED)
     }
   })
 
@@ -282,17 +291,21 @@ function AgentForm({ agent, template }: { agent?: NavAgent; template?: AgentTemp
             description="Its threads and its memory are deleted. This can't be undone."
             action="Delete agent"
             onConfirm={async () => {
-              try {
-                await deleteAgent(agent.id)
-                toast.add({ type: "success", title: `${agent.name} deleted` })
-                closeDialog()
-                router.push("/home")
-              } catch (error) {
+              const failed = (description: string) => {
                 toast.add({
                   type: "error",
                   title: "Couldn't delete the agent",
-                  description: error instanceof Error ? error.message : undefined,
+                  description,
                 })
+              }
+              try {
+                const result = await deleteAgent(agent.id)
+                if (result && "error" in result) return failed(result.error)
+                toast.add({ type: "success", title: `${agent.name} deleted` })
+                closeDialog()
+                router.push("/home")
+              } catch {
+                failed(UNEXPECTED)
               }
             }}
           />

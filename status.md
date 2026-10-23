@@ -6211,3 +6211,28 @@ isolated stack (operator rule 7).
 `KRIYA_GOOGLE_SHEETS=on`; then `npm run models:sync` against production
 for the price row; Google Cloud: Sheets API enabled and `…/auth/spreadsheets`
 on the consent screen; then Account → tick Sheets → Update access.
+
+### "Couldn't create the agent: Minified React error #441" (2026-10-23, Claude Code / Opus 5.5)
+
+Production hides the message of any error a server action throws (React
+#441). `createAgent` threw its expected errors (the plan's agent limit,
+"The … plan includes N agents", form validation, unknown skills), so the
+person saw #441 instead. Most likely cause on the owner's account: the plan's
+agent limit (not confirmed: no live database read).
+
+Fix: `actions/agents.ts` `createAgent`, `updateAgent`, `deleteAgent` return
+`{ error }` for those (Next docs: model expected errors as return values);
+anything else still throws, so database text never reaches the browser.
+`components/dialogs/agent-dialog.tsx` shows the returned message, and a plain
+"Something went wrong on our side…" for unexpected failures.
+`tests/agent/agent-skills-actions.test.ts`: updated to the return shape, +3
+(limit, invalid form, unexpected still throws).
+
+Commands: `npm run typecheck` clean; eslint and prettier on changed files
+clean; `npx vitest run` → 135 files passed, 3 skipped; 1583 tests passed,
+26 skipped. Not changed: `actions/squads.ts`, `threads.ts`, `memory.ts`
+still throw "not found" errors that the screens don't normally reach.
+
+Worker offline (same day): no code fault; the deployed commit starts cleanly
+locally against an unreachable database. Owner checks `kriya-worker` logs and
+env on Render (see the reply in this session).
