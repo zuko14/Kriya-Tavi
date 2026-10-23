@@ -679,7 +679,7 @@ export function ToolCall({
     <Collapsible className="group/tool">
       <CollapsibleTrigger
         className={cn(
-          "flex min-h-9 w-full min-w-0 items-center gap-2 rounded-md border border-transparent px-2 py-1 text-left font-mono text-[12px] transition-colors hover:border-border hover:bg-accent/40",
+          "flex min-h-11 w-full min-w-0 items-center gap-2 rounded-md border border-transparent px-2 py-1 text-left font-mono text-[12px] transition-colors hover:border-border hover:bg-accent/40",
           "data-panel-open:border-border data-panel-open:bg-accent/30"
         )}
       >

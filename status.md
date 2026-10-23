@@ -6236,3 +6236,96 @@ still throw "not found" errors that the screens don't normally reach.
 Worker offline (same day): no code fault; the deployed commit starts cleanly
 locally against an unreachable database. Owner checks `kriya-worker` logs and
 env on Render (see the reply in this session).
+
+## Track U — UI/UX upgrade
+
+Plan: `docs/ui-upgrade/` (`AUDIT.md` findings F1–F11, `DESIGN_SYSTEM.md`
+target, `IMPLEMENTATION_PLAN.md` phases U0–U9 with allowed changes). Owner
+approved the plan 2026-10-23 ("proceed with it"). Visual and copy changes
+only; safety, consent, cost and "What I did" text is moved, never removed.
+
+| Phase | Status |
+| --- | --- |
+| U0 Baseline and decisions | NOT STARTED: screenshots + owner decisions UD-01…UD-05 |
+| U1 Tokens | NOT STARTED |
+| U2 Primitives | NOT STARTED |
+| U3 Copy and internal leaks | BROWSER CHECK PASSED, awaiting owner review (sessions 1–2 below) |
+| U4–U9 | NOT STARTED |
+
+### U3 session 1 (2026-10-23, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+Changed files:
+
+- `components/thread/crew-message.tsx` (new): parses the crew texts written by
+  `lib/operator/crews.ts` (`joinText`, `briefFor`) into a "Team report" card
+  (member, status, Markdown result, "Open <name>'s thread" link) and a brief
+  card ("From <lead> · <job>"). The exact text sent to the agent stays under
+  "What the agent was sent". Text of any other shape renders as before.
+- `components/thread/transcript.tsx`: `UserMessage` uses those cards for
+  `channel: "crew"`. Under each reply the tier shows as its name ("Everyday")
+  and token counts are no longer shown there (still in the Activity panel).
+- `app/(workspace)/goals/[goalId]/page.tsx`: a schedule's prompt shows two
+  lines; tap to expand.
+- `tests/agent/transcript.test.ts`: 3 tests (team report, brief, fallback).
+
+Commands and real output:
+
+- `npx vitest run tests/agent/transcript.test.ts` → 5 passed (5).
+- `npx tsc --noEmit -p .` → no output (clean).
+- `npx eslint <changed files>` → no output (clean).
+
+- `npm run check` → exit 0; Test Files 135 passed | 3 skipped (138), Tests
+  1586 passed | 26 skipped (1612), 210.86 s.
+
+### U3 session 2 (2026-10-23, same agent): browser check and fixes
+
+Stack: local Supabase (`supabase start`), `npm run verify:guard` OK before
+every run, dev server on :6796 with `.env.verify` exported, test user Asha.
+
+Found and fixed:
+
+- The dev server already running on :6796 (not started by this session) was
+  in a reload loop: 131 page loads in 6 s on `/login`, "[Fast Refresh]
+  rebuilding" with no source file changing. Restarted it with the verify env;
+  after: 2 loads. The Playwright plugin writes `.playwright-mcp/console-*.log`
+  inside the project, which also feeds the dev watcher; use
+  `scripts/verify-u3-browser.mjs` (playwright-core, no log files) instead.
+- `scripts/verify-u3-browser.mjs` (untracked, written earlier by another
+  session): took screenshots before hydration (3 of 12 blank, the rest showed
+  the server's desktop layout at 360 px and a spinning Activity panel), and
+  its README always ended "All checks passed" even with failures. Now waits
+  for `load` + spinner gone, scrolls to the Team report, names each target
+  under 44 px, and states failures honestly.
+- "Scheduled run" bubbles also showed the agent's prompt: now three lines,
+  tap for all (`transcript.tsx`).
+- Touch targets under 44 px at 360 px (pre-existing): scroll-to-latest 32 px
+  (`transcript.tsx`), tool rows 36 px (`tool-call.tsx`, styling only),
+  thread header title 38 px (`thread-view.tsx`, styling only), "Goals" link
+  43 px wide (goal page).
+- Goal page copy: "5 runs have no price yet and isn't counted" → "aren't".
+
+Result: `screenshots/ui-upgrade/U3/` 13 images (crew thread, part thread,
+goal page incl. expanded schedule; 360/1280 × light/dark), README: "All 13
+automated checks passed" (0 console errors, 0 failed requests, no horizontal
+scroll, no target under 44 px). Every image reviewed by eye.
+
+Commands: `npx tsc --noEmit -p .` clean; `npx eslint components/thread
+app/(workspace)/goals/[goalId]/page.tsx scripts/verify-u3-browser.mjs` clean;
+`npx vitest run tests/agent` → 55 files passed, 573 passed | 2 skipped.
+
+Not done / blockers:
+- Coupling: the parser mirrors the strings in `lib/operator/crews.ts`. If
+  those change, the cards fall back to plain text (tested); a shared exported
+  format would remove the coupling but touches a server file not listed for
+  this track.
+- `[verify:…]` tags in fixture thread titles: left alone; verification
+  scripts may find threads by title.
+- Glossary copy pass (mandate/grant/crew wording) waits for UD-05.
+
+- Owner review of the U3 screenshots, then mark U3 COMPLETE (the copy-glossary
+  part moves to after UD-05).
+- `next dev` printed a notice that Next.js 16.4.0 has a known security
+  advisory and recommends upgrading; not acted on (outside track U).
+
+Next exact action: owner reviews `screenshots/ui-upgrade/U3/`; then U0
+(baseline screenshots of every signed-in route + decisions UD-01…UD-05).

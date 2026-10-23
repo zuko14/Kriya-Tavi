@@ -267,7 +267,7 @@ function ThreadHeader({
       <button
         type="button"
         onClick={configure}
-        className="flex min-w-0 items-center gap-2.5 rounded-md py-1 pr-2 text-left hover:bg-accent/50"
+        className="flex min-h-11 min-w-0 items-center gap-2.5 rounded-md py-1 pr-2 text-left hover:bg-accent/50"
       >
         {kind === "agent" ? (
           <Glyph seed={owner.glyphs[0]} className="size-7" />

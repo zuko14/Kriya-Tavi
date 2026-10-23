@@ -8,9 +8,10 @@
 
 import postgres from "postgres"
 
-const email = process.argv[2]?.trim().toLowerCase()
+const arg = process.argv[2] === "--" ? process.argv[3] : process.argv[2]
+const email = arg?.trim().toLowerCase()
 const revoke = process.argv.includes("--revoke")
-const url = process.env.DATABASE_URL
+const url = process.env.DATABASE_URL || process.env.MIGRATION_DATABASE_URL
 
 if (!email || !email.includes("@") || !url) {
   console.error("Usage: DATABASE_URL=... npm run owner:grant -- <email> [--revoke]")

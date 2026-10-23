@@ -13,6 +13,12 @@ import {
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom"
 
 import { Glyph } from "@/components/glyph"
+import {
+  CrewBriefCard,
+  CrewReportCard,
+  parseCrewBrief,
+  parseCrewResults,
+} from "@/components/thread/crew-message"
 import { Markdown } from "@/components/thread/markdown"
 import { SquadWork } from "@/components/thread/squad-work"
 import { ToolCall, toolName, type ToolPart } from "@/components/thread/tool-call"
@@ -66,10 +72,6 @@ function segments(message: KriyaMessage, members: AgentLite[]) {
   const visible = (segment: (typeof result)[number]) =>
     segment.parts.some((part) => part.type !== "step-start")
   return result.filter((segment, i) => i === result.length - 1 || visible(segment))
-}
-
-function formatTokens(n: number) {
-  return n >= 1000 ? `${(n / 1000).toFixed(n >= 10_000 ? 0 : 1)}k` : String(n)
 }
 
 function Reasoning({ text, streaming }: { text: string; streaming: boolean }) {
@@ -172,6 +174,9 @@ function UserMessage({
   const scheduled = message.metadata?.channel === "schedule"
   // O11: a crew member's brief, or the crew's results for the lead
   const crew = message.metadata?.channel === "crew"
+  // U3: shown as a card, not as the model-facing text
+  const report = crew && !message.metadata?.partId ? parseCrewResults(text) : null
+  const brief = crew && message.metadata?.partId ? parseCrewBrief(text) : null
 
   return (
     <div className="flex justify-end">
@@ -193,16 +198,22 @@ function UserMessage({
             {addressee.name}
           </span>
         )}
-        <div
-          className={cn(
-            "rounded-[20px] rounded-br-md px-4 py-2.5 text-[14.5px] leading-relaxed whitespace-pre-wrap",
-            scheduled || crew
-              ? "bg-muted text-foreground"
-              : "bg-primary text-primary-foreground"
-          )}
-        >
-          {text}
-        </div>
+        {report ? (
+          <CrewReportCard report={report} text={text} />
+        ) : brief ? (
+          <CrewBriefCard brief={brief} text={text} />
+        ) : scheduled || crew ? (
+          // U3: written for the agent; three lines, tap for all
+          <details className="group/sent rounded-[20px] rounded-br-md bg-muted px-4 py-2.5 text-[14.5px] leading-relaxed text-foreground">
+            <summary className="line-clamp-3 cursor-pointer list-none whitespace-pre-wrap group-open/sent:line-clamp-none [&::-webkit-details-marker]:hidden">
+              {text}
+            </summary>
+          </details>
+        ) : (
+          <div className="rounded-[20px] rounded-br-md bg-primary px-4 py-2.5 text-[14.5px] leading-relaxed whitespace-pre-wrap text-primary-foreground">
+            {text}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -264,16 +275,9 @@ function AgentMessage({
       ))}
       {!streaming && (meta?.usage || meta?.tier) && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pl-[30px] font-mono text-[10.5px] text-faint">
+          {/* U3: token counts live in the Activity panel, not under every reply */}
           {meta.tier && (
-            <span>
-              {TIER_LABELS[isTier(meta.tier) ? meta.tier : "budget"].name.toLowerCase()}{" "}
-              model
-            </span>
-          )}
-          {meta.usage && (
-            <span>
-              {formatTokens(meta.usage.input)} in · {formatTokens(meta.usage.output)} out
-            </span>
+            <span>{TIER_LABELS[isTier(meta.tier) ? meta.tier : "budget"].name}</span>
           )}
           {typeof meta.durationMs === "number" && (
             <span>{(meta.durationMs / 1000).toFixed(1)}s</span>
@@ -294,7 +298,7 @@ function ScrollToBottom() {
     <button
       type="button"
       onClick={() => scrollToBottom()}
-      className="absolute bottom-4 left-1/2 grid size-8 -translate-x-1/2 place-items-center rounded-full border bg-popover text-muted-foreground shadow-md hover:text-foreground"
+      className="absolute bottom-4 left-1/2 grid size-11 -translate-x-1/2 place-items-center rounded-full border bg-popover text-muted-foreground shadow-md hover:text-foreground"
       aria-label="Scroll to latest"
     >
       <ArrowDownIcon className="size-4" />

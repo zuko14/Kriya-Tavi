@@ -87,7 +87,7 @@ export default async function Page({ params }: { params: Promise<{ goalId: strin
         <header className="flex flex-col gap-2">
           <Link
             href="/goals"
-            className="label-mono flex min-h-11 w-fit items-center text-faint sm:min-h-0"
+            className="label-mono flex min-h-11 w-fit min-w-11 items-center text-faint sm:min-h-0"
           >
             Goals
           </Link>
@@ -154,7 +154,12 @@ export default async function Page({ params }: { params: Promise<{ goalId: strin
                     className="glass flex flex-col gap-2.5 rounded-[20px] px-4 py-4"
                   >
                     <span className="text-[14px] font-medium">{s.cadence}</span>
-                    <p className="text-[13px] text-muted-foreground">{s.prompt}</p>
+                    {/* U3: the prompt is written for the agent; two lines, tap for all */}
+                    <details className="group/prompt text-[13px] text-muted-foreground">
+                      <summary className="line-clamp-2 cursor-pointer list-none group-open/prompt:line-clamp-none [&::-webkit-details-marker]:hidden">
+                        {s.prompt}
+                      </summary>
+                    </details>
                     <span className="font-mono text-[11px] text-faint">
                       {s.status === "active" && s.nextRunAt
                         ? `next ${IST.format(s.nextRunAt)}`
@@ -200,8 +205,9 @@ export default async function Page({ params }: { params: Promise<{ goalId: strin
             </span>
             {view.unpricedRuns > 0 && (
               <span className="text-[12px] text-muted-foreground">
-                {view.unpricedRuns} {view.unpricedRuns === 1 ? "run has" : "runs have"} no
-                price yet and isn&apos;t counted.
+                {view.unpricedRuns === 1
+                  ? "1 run has no price yet and isn't counted."
+                  : `${view.unpricedRuns} runs have no price yet and aren't counted.`}
               </span>
             )}
             {quotes && (
