@@ -24,17 +24,21 @@ export type Capability = {
   undoable: boolean
   // A job may grant it (OD-03): R2/R3 only, and only these
   grantable: boolean
+  // A read that is safe to repeat after a transient failure (N4, ND-05)
+  idempotent: boolean
   pins?: Record<string, Pin>
 }
 
 type Facts = Pick<Capability, "system"> &
-  Partial<Pick<Capability, "verification" | "undoable" | "pins">>
+  Partial<Pick<Capability, "verification" | "undoable" | "pins" | "idempotent">>
 
 const kriya: Facts = { system: "kriya" }
 const web: Facts = { system: "web" }
 const browser: Facts = { system: "browser" }
 const google: Facts = { system: "google" }
 const readBack = { verification: "api_readback" } as const
+// N4: reads that may be repeated; set per tool, never by default
+const repeatable = { idempotent: true } as const
 
 const FACTS: Record<string, Facts> = {
   memory_write: kriya,
@@ -49,7 +53,7 @@ const FACTS: Record<string, Facts> = {
   browser_scroll: browser,
   browser_handoff: browser,
   browser_close: browser,
-  calendar_events: google,
+  calendar_events: { ...google, ...repeatable },
   // Both read back what they made (OF-13, lib/connectors.ts)
   calendar_create_event: {
     ...google,
@@ -57,32 +61,32 @@ const FACTS: Record<string, Facts> = {
     undoable: true,
     pins: { attendees: "subset" },
   },
-  gmail_search: google,
-  gmail_read: google,
+  gmail_search: { ...google, ...repeatable },
+  gmail_read: { ...google, ...repeatable },
   gmail_draft: {
     ...google,
     ...readBack,
     undoable: true,
     pins: { to: "subset", cc: "subset" },
   },
-  drive_search: google,
-  drive_read: google,
-  notion_search: { system: "notion" },
-  notion_read: { system: "notion" },
+  drive_search: { ...google, ...repeatable },
+  drive_read: { ...google, ...repeatable },
+  notion_search: { system: "notion", ...repeatable },
+  notion_read: { system: "notion", ...repeatable },
   delegate: kriya,
   assign: kriya,
   goal_create: kriya,
   goal_update: kriya,
   schedule_create: { ...kriya, ...readBack },
   schedule_update: kriya,
-  github_search: { system: "github" },
-  github_read_issue: { system: "github" },
-  github_read_pr: { system: "github" },
+  github_search: { system: "github", ...repeatable },
+  github_read_issue: { system: "github", ...repeatable },
+  github_read_pr: { system: "github", ...repeatable },
   github_comment: { system: "github", ...readBack, undoable: true },
   github_create_issue: { system: "github", ...readBack, undoable: true },
   github_label: { system: "github", ...readBack, undoable: true },
   github_open_pr: { system: "github", ...readBack },
-  sheets_read: google,
+  sheets_read: { ...google, ...repeatable },
   sheets_append: {
     ...google,
     ...readBack,
@@ -95,8 +99,8 @@ const FACTS: Record<string, Facts> = {
   },
   sheets_create: { ...google, ...readBack },
   sheets_total: google,
-  youtube_stats: google,
-  instagram_insights: { system: "meta" },
+  youtube_stats: { ...google, ...repeatable },
+  instagram_insights: { system: "meta", ...repeatable },
   instagram_publish: { system: "meta", ...readBack },
   skill_propose: kriya,
   skill_list: kriya,
@@ -140,6 +144,7 @@ export const CAPABILITIES: Record<string, Capability> = Object.fromEntries(
         verification: facts.verification ?? "none",
         undoable: facts.undoable ?? false,
         grantable: Boolean(facts.pins),
+        idempotent: facts.idempotent ?? false,
         ...(facts.pins && { pins: facts.pins }),
       },
     ]
@@ -151,6 +156,17 @@ export const GRANTABLE = new Set(
     .filter((capability) => capability.grantable)
     .map((capability) => capability.tool)
 )
+
+// Eligible for N4's retries: R0, no side effect, marked repeatable
+export const isIdempotentRead = (name: string) => {
+  const capability = CAPABILITIES[name]
+  return (
+    !!capability &&
+    capability.risk === "R0" &&
+    !capability.sideEffect &&
+    capability.idempotent
+  )
+}
 
 // The owner's kill list (operator.disabledTools): names, comma-separated
 export const disabledTools = (setting: string | undefined) =>

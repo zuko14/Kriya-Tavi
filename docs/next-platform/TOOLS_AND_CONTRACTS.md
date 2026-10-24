@@ -143,7 +143,7 @@ read-back already proves "gone"). They keep today's behaviour.
 export class TransientError extends Error {
   constructor(public status: number | "timeout" | "network", public retryAfterMs?: number)
 }
-export function isTransient(error: unknown): error is TransientError | Response
+export function isTransient(error: unknown): boolean // TransientError, a Response, a timeout, "fetch failed", or a ConnectorError whose message holds (429|502|503|504)
 export async function retryTransient<T>(run: () => Promise<T>, opts?: { attempts?: 3; delays?: [500, 1500] }): Promise<T>
 export function wrapReads(tools: ToolSet, systemOf: (name: string) => string, eligible: (name: string) => boolean): void
 ```
@@ -151,7 +151,7 @@ export function wrapReads(tools: ToolSet, systemOf: (name: string) => string, el
 ```ts title="lib/reliability/breaker.ts"
 export const BREAKER = { failures: 5, windowMs: 60_000, openMs: 60_000 }
 export function assertClosed(system: string, now?: number): void // throws AppUnavailableError
-export function record(system: string, error: unknown, now?: number): void
+export function record(system: string, now?: number): void // the caller passes transient failures only (wrapReads checks isTransient; no import cycle)
 export function reset(): void // tests only
 ```
 

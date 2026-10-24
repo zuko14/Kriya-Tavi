@@ -371,6 +371,21 @@ export const SETTINGS = {
     pattern: /^(on|off)$/,
     hint: "on or off",
   },
+  // Next platform (track N)
+  // N4: retries and a circuit breaker for reads that are safe to repeat (ND-05)
+  "next.reliability": {
+    env: "KRIYA_NEXT_RELIABILITY",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // N8: Unicode keyword matching and the v2 skills (ND-14); needs agents.skillLibrary
+  "next.skillsV2": {
+    env: "KRIYA_NEXT_SKILLS_V2",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
   // G1: the Google app is in Testing, where Google expires refresh tokens
   // after 7 days; the Account card says so (OD-15). Display only
   "google.testingMode": {

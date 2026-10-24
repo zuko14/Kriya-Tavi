@@ -83,8 +83,8 @@ track's §2, plus:
 `lib/reliability/`, `lib/mcp/`, `lib/memory/embed.ts`, `actions/apps.ts`,
 `actions/owner-apps.ts`, `queries/apps.ts`, `components/account/apps.tsx`,
 `components/thread/delivery-status.tsx`, `app/owner/apps/`,
-`app/owner/delivery/`, `app/api/connect/mcp/`, `skills/delivery-proof/`,
-`skills/indian-documents-reading/`, `tests/next/`, `tests/db/next-*`,
+`app/owner/delivery/`, `app/api/connect/mcp/`, `skills-v2/delivery-proof/`,
+`skills-v2/indian-documents-reading/`, `lib/skills-v2.ts` (NF-10), `tests/next/`, `tests/db/next-*`,
 `tests/fixtures/mcp/`, `tests/eval/memory-ml.eval.test.ts`,
 `scripts/next-eval.ts`, the three track-N migrations and rollbacks,
 `screenshots/next-platform/`.

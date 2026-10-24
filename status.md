@@ -6402,11 +6402,11 @@ guard (ND-21), is proven to remove nothing today.
 | N1 | Data model (one migration) | NOT_STARTED | NP-1 | ND-02, ND-04, ND-07, ND-13, ND-22 |
 | N2 | Delivery status, owner delivery page | NOT_STARTED | N1 | ND-03, ND-17, ND-23 |
 | N3 | Late re-check | NOT_STARTED | N2 | ND-04 |
-| N4 | Reliability: read retries, breaker | NOT_STARTED | NP-1 | ND-05 |
+| N4 | Reliability: read retries, breaker | IMPLEMENTED 2026-10-24; not COMPLETE: NT-REL-04 needs the N5 MCP client | NP-1 | ND-05 (approved) |
 | N5 | MCP runtime on the fixture server | NOT_STARTED | N1 | ND-06, ND-07, ND-08, ND-10, ND-11, ND-13, ND-21, ND-22, ND-25 (owner-gated: ND-06, ND-08, ND-10, ND-21, ND-22) |
 | N6 | MCP connect, Account Apps, agent enablement | NOT_STARTED | N5 | ND-09 (owner-gated), ND-13, ND-25 |
 | N7 | Owner registry, drift review, read-back mapping | NOT_STARTED | N5 | ND-07, ND-12 |
-| N8 | Skills v2 | NOT_STARTED | NP-1 | ND-14 |
+| N8 | Skills v2 | COMPLETE (2026-10-24) | NP-1 | ND-14 (approved) |
 | N9 | Memory recall v2 (gate, then rerank) | NOT_STARTED | NP-1 | ND-15 (owner-gated) |
 | N10 | Cost measurement and prompt caching | NOT_STARTED | N4, N5 | ND-16 |
 | N11 | Golden scenarios and eval harness | NOT_STARTED | N2, N3, N5, N8 | ND-19 |
@@ -6527,6 +6527,132 @@ skipped (140); Tests 1598 passed | 27 skipped (1625); exit 0**. Not run: a
 real Google, Razorpay, storage or Render call; `npm run build` (needs
 `.env.verify`).
 
+## Phase N4 — Reliability: read retries, circuit breaker
+
+**Status:** IMPLEMENTED (2026-10-24), not `COMPLETE`: exit check NT-REL-04 (a slow MCP server) needs the N5 client. (was: IN_PROGRESS 2026-10-24 12:28 IST). Decision ND-05 approved by the owner
+(2026-10-24).
+
+**Session plan (2026-10-24 12:28 IST, Claude Code / Sonnet 5.5, in place on
+`claude/remote-control-5de9d7`):**
+
+- Create: `lib/reliability/retry.ts` (`TransientError`, `isTransient`,
+  `retryTransient`, `wrapReads`), `lib/reliability/breaker.ts`
+  (`BREAKER`, `AppUnavailableError`, `assertClosed`, `record`, `reset`),
+  `tests/next/reliability.test.ts` (NT-REL-01, 02, 03, 05, 06; NT-REL-04
+  belongs to N5's MCP client).
+- Change: `lib/agent/capabilities.ts` (optional `idempotent` in `Facts`,
+  on the 13 reads of TOOLS_AND_CONTRACTS §4 only; `CAPABILITIES` gets the
+  field, risk, side effect, writes and grantable unchanged);
+  `lib/config.ts` (`next.reliability`, default off, in the `// Next
+  platform (track N)` block); `lib/agent/run-task.ts` (read the switch with
+  the other settings; `if (reliable) wrapReads(...)` after the kill list).
+- Not touched: `lib/connectors.ts` (protected until N6), `verify.ts`,
+  `policy.ts`. Connector errors carry no typed status, so `isTransient`
+  reads the status out of `ConnectorError`'s own message ("… failed
+  (503)") and recognises `TimeoutError` and `fetch failed`; a
+  `Retry-After` can only be honoured for `TransientError` (the MCP client,
+  N5). Recorded as a limit, not a gap.
+- Risks: a wrapper changes a tool's `execute` only; name, description and
+  schema stay (NT-REL-05); a non-idempotent read is never wrapped because
+  the flag is set per tool by row (NT-REL-01); breaker state is per
+  process, which is the decision.
+- Deviation to note: the `next.*` switch name comes from ND-02, which the
+  owner has not approved by id; N4's own row lists only ND-05. Naming
+  follows ND-02 so a later approval changes nothing.
+
+**Session result (2026-10-24 12:36 IST, Claude Code / Sonnet 5.5):**
+
+- Created: `lib/reliability/breaker.ts`, `lib/reliability/retry.ts`,
+  `tests/next/reliability.test.ts` (13 tests: NT-REL-01, 02, 03, 05 at
+  unit level), `tests/next/reliability-runner.test.ts` (NT-REL-05, 06 in the
+  runner: with the switch off `wrapReads` is never called; on or off, the
+  model sees the same prompt and tool definitions).
+- Changed: `lib/agent/capabilities.ts` (`idempotent` on 13 reads;
+  `isIdempotentRead`; `CAPABILITIES` risk, side effect, writes, grantable
+  untouched; `tests/operator/capabilities.test.ts` unchanged and passing),
+  `lib/config.ts` (`next.reliability`, default off),
+  `lib/agent/run-task.ts` (read the switch; `if (reliable) wrapReads(...)`
+  after the kill list), `docs/next-platform/TOOLS_AND_CONTRACTS.md` §4
+  (record/isTransient signatures).
+- Deviations: `record(system, now?)` does not take the error and the wrapper
+  filters with `isTransient` (importing `isTransient` into the breaker would
+  make `retry.ts` and `breaker.ts` import each other). Connector errors carry
+  their status only in the message, so it is read from `(503)`-style text;
+  `Retry-After` is honoured only for `TransientError` (N5's MCP client).
+- Commands: `env -u OPENROUTER_API_KEY npm run check` → typecheck, lint (2
+  existing warnings), format and tests passed; **Test Files 139 passed | 3
+  skipped (142); Tests 1612 passed | 27 skipped (1639); exit 0** (before
+  N4: 137 / 1598).
+- Not done: NT-REL-04 (waits for N5). No real provider call; the retry delays
+  use fake timers. `npm run build` not run (needs `.env.verify`).
+- **Next exact action:** after N5 exists, run NT-REL-04 and mark N4
+  `COMPLETE`; then turn `next.reliability` on in staging only.
+
+## Phase N8 — Skills v2
+
+**Status:** COMPLETE (2026-10-24).
+(2026-10-24).
+
+**Session plan (2026-10-24 12:36 IST, Claude Code / Sonnet 5.5, in place on
+`claude/remote-control-5de9d7`):**
+
+- Create: `skills/delivery-proof/{SKILL.md,kriya.json}`,
+  `skills/indian-documents-reading/{SKILL.md,kriya.json}`,
+  `tests/next/skills-v2.test.ts` (NT-SKL-01…05, AS-SKL-ML as a table test).
+- Change: `lib/skill-library.ts` (`activation.keywordsIntl`, `CATALOG_V2`,
+  `resolveSkills` `unicode?`), `skills/index.ts` (`SKILL_MANIFESTS_V2`),
+  `lib/agent/policy.ts` (`export` on `wordsPattern` only),
+  `lib/agent/run-task.ts` (pass `catalog: CATALOG_V2, unicode: true` only
+  with `next.skillsV2` and the library on), `queries/skills.ts` and
+  `actions/agents.ts` (v2 catalogue only with the switch), `lib/config.ts`
+  (`next.skillsV2`, default off).
+- Not touched: existing `kriya.json` and `SKILL.md` files (so `CATALOG` and
+  every existing prompt stay byte-identical), `verify.ts`, `TOOL_CLASSES`.
+  Skills add no tools; the v2 skills name only tools that exist.
+- Risks: a Unicode matcher must not change any Latin match (NT-SKL-03:
+  resolution snapshot over every existing eval); `skill-library.ts` is used
+  by the Creator in the browser, so it may import only pure modules.
+
+**Session result (2026-10-24 12:49 IST, Claude Code / Sonnet 5.5):**
+
+- Created: `skills-v2/delivery-proof/{SKILL.md,kriya.json}`,
+  `skills-v2/indian-documents-reading/{SKILL.md,kriya.json}`,
+  `lib/skills-v2.ts` (`loadSkillV2`, `SKILLS_V2_ROOT`),
+  `tests/next/skills-v2.test.ts` (55 tests: NT-SKL-01…05, the 40 requests of
+  AS-SKL-ML, and the runner with the switch off and on).
+- Changed: `lib/skill-library.ts` (`activation.keywordsIntl`, `CATALOG_V2`,
+  `resolveSkills` `unicode?`, a Unicode-aware whole-word matcher with NFC on
+  both sides), `skills/index.ts` (`SKILL_MANIFESTS_V2`),
+  `skills/gst-invoices/kriya.json` and `skills/calendar-operations/kriya.json`
+  (`keywordsIntl` only), `lib/agent/run-task.ts` (catalogue, matcher and
+  loader passed only with `next.skillsV2` and the library on),
+  `queries/skills.ts` and `actions/agents.ts` (v2 catalogue only with the
+  switch), `lib/config.ts` (`next.skillsV2`, default off).
+- Deviations (recorded as NF-10 in VISION_AND_GAP_ANALYSIS §4 and in the
+  docs): the v2 skills live in `skills-v2/`, not `skills/`, because
+  `tests/agent/skill-library.test.ts` pairs `skills/` directories with
+  `CATALOG` and must stay unchanged; `lib/agent/policy.ts` was not touched
+  (the matcher builds its own lookaround pattern because it must keep
+  today's English endings, which `wordsPattern` can't).
+- Exit checks: NT-SKL-01…05 pass; AS-SKL-ML: 40 requests, 0 false
+  activations; the existing skill suites (`skill-library`, `skill-options`,
+  `skill-picker`, `agent-skills-actions`, `runner-skill-library`, `skills`)
+  pass unchanged; with the switch off the prompt equals the unset prompt.
+- Commands: `env -u OPENROUTER_API_KEY npm run check` → typecheck, lint (2
+  existing warnings), format and tests passed; **Test Files 140 passed | 3
+  skipped (143); Tests 1667 passed | 27 skipped (1694); exit 0** (before N4
+  and N8: 137 / 1598).
+- Limits: with the switch on, the 5-skill and 12,000-character budget per
+  task still applies, so on a busy task an auto-matched v2 skill can be
+  skipped as "over this task's skill budget" (shown in the skill records).
+  The Hindi and Telugu keyword lists are short and hand-written; the
+  owner or a native reader should review them before the switch goes on.
+- Not done: no browser check (no screen changed; the Creator's list gains
+  two rows only with the switch on); `npm run build` not run.
+- **Next exact action:** a native Hindi and Telugu reader reviews
+  `keywordsIntl` and the two new skill texts; then turn `next.skillsV2` on in
+  staging only.
+
 ## Track N check log
 
 | Date | Check | Result |
@@ -6540,3 +6666,8 @@ real Google, Razorpay, storage or Render call; `npm run build` (needs
 - 2026-10-24 (owner, in chat): **Approved: implement NP-1** (baseline
   re-check). NP-1 lists no decisions. No `ND-…` decision is approved yet;
   N1 and later phases still wait on NB-01.
+- 2026-10-24 (owner, in chat): **Approved: ND-05** (transient retries for
+  idempotent reads, per-provider circuit breaker) and **ND-14** (skills v2:
+  Unicode keyword matching, new curated skills). Neither is owner-gated.
+  Owner also asked for phases **N4** and **N8** to be implemented one after
+  the other in one session.

@@ -17,7 +17,7 @@ import {
 import { requireUser } from "@/lib/auth"
 import { getSetting } from "@/lib/config"
 import { checkAgentAllowed } from "@/lib/entitlements"
-import { checkSkillPrefs } from "@/lib/skill-library"
+import { CATALOG, CATALOG_V2, checkSkillPrefs } from "@/lib/skill-library"
 
 const id = z.string().min(1).max(32)
 
@@ -38,9 +38,9 @@ async function expected<T>(work: () => Promise<T>): Promise<T | Failed> {
   }
 }
 
-function skillPrefs(input: unknown) {
+function skillPrefs(input: unknown, catalog: typeof CATALOG) {
   try {
-    return checkSkillPrefs(input)
+    return checkSkillPrefs(input, catalog)
   } catch (error) {
     if (error instanceof ZodError) throw error
     // Its messages name the skill at fault ("… isn't a Kriya skill.")
@@ -52,6 +52,8 @@ async function normalize(values: AgentInput) {
   const data = agentInputSchema.parse(values)
   // Skills only with the library on, whatever the browser sends
   const skillsOn = (await getSetting("agents.skillLibrary")) === "on"
+  // N8: the v2 skills may be chosen only with next.skillsV2 on
+  const catalog = (await getSetting("next.skillsV2")) === "on" ? CATALOG_V2 : CATALOG
   return {
     name: data.name,
     role: data.role,
@@ -61,7 +63,7 @@ async function normalize(values: AgentInput) {
     // Only when the Creator's Skills section sent them; ids checked here
     ...(skillsOn &&
       data.skills !== undefined && {
-        skills: data.skills && skillPrefs(data.skills),
+        skills: data.skills && skillPrefs(data.skills, catalog),
       }),
   }
 }

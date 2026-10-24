@@ -1,0 +1,46 @@
+{
+  "id": "indian-documents-reading",
+  "name": "Reading Indian documents",
+  "description": "Reads an uploaded bill, invoice or form exactly as written, in English, Hindi or Telugu, and keeps sensitive numbers out of memory.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["india", "documents"],
+  "roles": [
+    "accounts",
+    "finance",
+    "bookkeeping",
+    "gst",
+    "bills",
+    "business",
+    "founder",
+    "freelance",
+    "shop",
+    "assistant"
+  ],
+  "activation": {
+    "keywords": ["uploaded", "scanned", "pdf", "attachment", "my file"],
+    "keywordsIntl": [
+      "अपलोड",
+      "पीडीएफ",
+      "दस्तावेज़",
+      "फ़ाइल",
+      "స్కాన్",
+      "ఫైల్",
+      "పత్రం",
+      "అప్‌లోడ్"
+    ]
+  },
+  "tools": { "all": ["file_read"], "any": [], "uses": [] },
+  "dependsOn": [],
+  "prerequisites": ["Files, switched on by Kriya"],
+  "verification": "Figures come from the file's extracted text, which file_read returns; nothing is computed or saved by this skill.",
+  "limits": { "maxChars": 3000 },
+  "evals": [
+    { "ask": "Read the PDF I uploaded and tell me the total", "expect": "activate" },
+    { "ask": "मैंने बिल अपलोड किया है, कुल कितना है?", "expect": "activate" },
+    { "ask": "What is the capital of Karnataka?", "expect": "skip" }
+  ]
+}

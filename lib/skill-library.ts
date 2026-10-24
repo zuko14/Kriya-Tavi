@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { SKILL_MANIFESTS } from "@/skills"
+import { SKILL_MANIFESTS, SKILL_MANIFESTS_V2 } from "@/skills"
 
 // The skill library (docs/agent-platform/SKILLS_ENGINE.md): curated
 // instruction packs that teach an agent how to approach a kind of work.
@@ -48,6 +48,9 @@ export const manifestSchema = z.strictObject({
     // Loaded on every task (only for required safeguards)
     always: z.boolean().default(false),
     keywords: words(60).default([]),
+    // Hindi, Telugu and romanised words (any script); read only by the
+    // Unicode matcher (next.skillsV2), never by today's
+    keywordsIntl: words(60).default([]),
     // A link in the person's message counts as a match
     urls: z.boolean().default(false),
   }),
@@ -96,6 +99,9 @@ export function buildCatalog(manifests: unknown[]): SkillManifest[] {
 }
 
 export const CATALOG = buildCatalog(SKILL_MANIFESTS)
+// next.skillsV2 (N8, ND-14): today's skills plus the v2 ones, used only with
+// the switch on; CATALOG itself never changes
+export const CATALOG_V2 = buildCatalog([...SKILL_MANIFESTS, ...SKILL_MANIFESTS_V2])
 
 /* ─────────────────────────── assignments ────────────────────────── */
 
@@ -155,18 +161,33 @@ export const SKILL_LIMITS = { skills: 5, chars: 12_000 }
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 
+// A whole word in any script (\b is ASCII-only in JavaScript): no letter,
+// mark or digit on either side, so "बिल" is not found inside "बिलकुल". The
+// optional English endings keep today's Latin matches.
+const unicodeWord = (keyword: string) =>
+  new RegExp(
+    `(?<![\\p{L}\\p{M}\\p{N}])${escape(keyword.normalize("NFC"))}(?:s|es|ed|ing)?(?![\\p{L}\\p{M}\\p{N}])`,
+    "iu"
+  )
+
 // The first keyword in the person's message, as whole words ("invoices"
-// matches "invoice"; "price" doesn't match "pr")
-function matchOf(skill: SkillManifest, ask: string) {
+// matches "invoice"; "price" doesn't match "pr"). With `unicode` (N8) the
+// boundary is Unicode-aware and the manifest's keywordsIntl count too.
+function matchOf(skill: SkillManifest, ask: string, unicode = false) {
   const text = ask.toLowerCase()
   if (skill.activation.urls && /https?:\/\/|www\./.test(text)) {
     return "your message has a link"
   }
-  const word = skill.activation.keywords.find((k) =>
-    new RegExp(`(^|[^a-z0-9])${escape(k.toLowerCase())}(s|es|ed|ing)?($|[^a-z0-9])`).test(
-      text
-    )
-  )
+  const word = unicode
+    ? [...skill.activation.keywords, ...skill.activation.keywordsIntl].find((k) =>
+        // NFC on both sides: Hindi letters with a dot (फ़) come in two forms
+        unicodeWord(k).test(ask.normalize("NFC"))
+      )
+    : skill.activation.keywords.find((k) =>
+        new RegExp(
+          `(^|[^a-z0-9])${escape(k.toLowerCase())}(s|es|ed|ing)?($|[^a-z0-9])`
+        ).test(text)
+      )
   return word ? `your message mentions "${word}"` : null
 }
 
@@ -185,6 +206,8 @@ export function resolveSkills(input: {
   pins?: Map<string, string>
   catalog?: SkillManifest[]
   limits?: typeof SKILL_LIMITS
+  // N8: the Unicode matcher (next.skillsV2); off is today's matcher exactly
+  unicode?: boolean
 }): Resolution {
   const catalog = input.catalog ?? CATALOG
   const limits = input.limits ?? SKILL_LIMITS
@@ -228,7 +251,7 @@ export function resolveSkills(input: {
       skip(s, `Not used: ${why}.`)
       continue
     }
-    const match = matchOf(s, input.ask)
+    const match = matchOf(s, input.ask, input.unicode)
     const pick = (mode: Activation["mode"], reason: string) =>
       wanted.push({ id: s.id, name: s.name, version: versionOf(s), mode, reason })
     if (s.required && (s.activation.always || match))

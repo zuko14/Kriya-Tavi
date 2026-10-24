@@ -1,0 +1,46 @@
+{
+  "id": "delivery-proof",
+  "name": "Delivery proof",
+  "description": "Reports what was done, what was proven and what wasn't, in plain words, from the tool results.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["core", "india"],
+  "roles": ["*"],
+  "activation": {
+    "keywords": [
+      "is it done",
+      "did it work",
+      "did you send",
+      "did you save",
+      "confirm",
+      "confirmed",
+      "proof",
+      "verify"
+    ],
+    "keywordsIntl": [
+      "हो गया",
+      "पक्का",
+      "सबूत",
+      "भेज दिया",
+      "అయిపోయిందా",
+      "పంపించావా",
+      "రుజువు",
+      "ayyindi",
+      "ho gaya",
+      "pakka"
+    ]
+  },
+  "tools": { "all": [], "any": [], "uses": [] },
+  "dependsOn": ["verification-before-completion"],
+  "prerequisites": [],
+  "verification": "The reply's claims are checked by Kriya's claim check and shown under What I did; this skill only shapes the wording.",
+  "limits": { "maxChars": 2400 },
+  "evals": [
+    { "ask": "Did you send it? Is it done?", "expect": "activate" },
+    { "ask": "हो गया क्या? पक्का बताओ", "expect": "activate" },
+    { "ask": "Write a poem about monsoon rain", "expect": "skip" }
+  ]
+}

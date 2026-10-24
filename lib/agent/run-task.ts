@@ -47,7 +47,7 @@ import {
 import { recordApprovals, redactInput } from "@/lib/agent/approvals"
 import { writeEpisode } from "@/lib/agent/episodes"
 import { chargeTask, recordUsage } from "@/lib/agent/metering"
-import { disabledTools } from "@/lib/agent/capabilities"
+import { CAPABILITIES, disabledTools, isIdempotentRead } from "@/lib/agent/capabilities"
 import { approvalFor, classifyTool, TOOL_CLASSES } from "@/lib/agent/policy"
 import { verificationOf } from "@/lib/agent/verify"
 import {
@@ -93,15 +93,18 @@ import {
   modelForTier,
   resolveTier,
 } from "@/lib/models"
+import { wrapReads } from "@/lib/reliability/retry"
 import { isSecretsConfigured } from "@/lib/secrets"
 import { readSkill, recordActivations, settleActivations } from "@/lib/skill-engine"
 import {
+  CATALOG_V2,
   parsePins,
   parseSkillList,
   resolveSkills,
   skillsBlock,
   type Resolution,
 } from "@/lib/skill-library"
+import { loadSkillV2 } from "@/lib/skills-v2"
 import { undoColumns } from "@/lib/undo"
 import { voiceAvailable } from "@/lib/voice/tasks"
 import { isWebConfigured } from "@/lib/web"
@@ -411,6 +414,12 @@ export async function runTask(task: Task, ctx: WorkerContext) {
       ? {
           disabled: parseSkillList(await getSetting("skills.disabled")),
           pins: parsePins(await getSetting("skills.pins")),
+          // N8: Unicode matching and the v2 skills, only with the switch on
+          ...((await getSetting("next.skillsV2")) === "on" && {
+            catalog: CATALOG_V2,
+            unicode: true,
+            load: loadSkillV2,
+          }),
         }
       : null
   // A7: ledger tools need the switch and a plan with the ledger
@@ -448,6 +457,8 @@ export async function runTask(task: Task, ctx: WorkerContext) {
     gmailSend: (await getSetting("operator.gmailSend")) === "on",
     calendarDelete: (await getSetting("operator.calendarDelete")) === "on",
   }
+  // N4: retries and a circuit breaker for reads that are safe to repeat (ND-05)
+  const reliable = (await getSetting("next.reliability")) === "on"
   const browser = provider
     ? new TaskBrowser(provider, task, { profiles: loginProfiles })
     : null
@@ -764,6 +775,8 @@ export async function runTask(task: Task, ctx: WorkerContext) {
     // shortcut: the prompt may still describe a killed tool's ability; pass
     // the list into Capabilities if owners start killing connector tools.
     for (const name of disabled) delete tools[name]
+    if (reliable)
+      wrapReads(tools, (name) => CAPABILITIES[name]?.system ?? "kriya", isIdempotentRead)
 
     // Resolved once per agent that holds the turn, from the person's latest
     // message and this final belt: text only, never a tool. A failure means

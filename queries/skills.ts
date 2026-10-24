@@ -5,7 +5,7 @@ import { getSetting } from "@/lib/config"
 import { EXTRA_GOOGLE_SERVICES, googleServices } from "@/lib/connectors"
 import { isSecretsConfigured } from "@/lib/secrets"
 import { skillRisk } from "@/lib/skill-engine"
-import { CATALOG, parseSkillList } from "@/lib/skill-library"
+import { CATALOG, CATALOG_V2, parseSkillList } from "@/lib/skill-library"
 import { voiceAvailable } from "@/lib/voice/tasks"
 import { isWebConfigured } from "@/lib/web"
 
@@ -66,27 +66,31 @@ export async function skillOptions(userId: string, plan: Plan) {
   if ((await getSetting("agents.skillLibrary")) !== "on") return null
   const disabled = parseSkillList(await getSetting("skills.disabled"))
   const tools = await availableTools(userId, plan)
-  return CATALOG.filter((s) => s.status === "active").map((s) => {
-    const missing = s.tools.all.filter((t) => !tools.has(t))
-    if (s.tools.any.length && !s.tools.any.some((t) => tools.has(t)))
-      missing.push(s.tools.any.join(" or "))
-    return {
-      id: s.id,
-      name: s.name,
-      description: s.description,
-      version: s.version,
-      required: s.required,
-      roles: s.roles,
-      source: s.source.length
-        ? s.source.map((x) => `${x.project} ${x.version} (${x.license})`).join(", ")
-        : "Kriya",
-      tools: [...s.tools.all, ...s.tools.any, ...s.tools.uses],
-      ...skillRisk(s),
-      prerequisites: missing.length ? s.prerequisites : [],
-      missing,
-      offByKriya: disabled.has(s.id),
-    }
-  })
+  // N8: the v2 skills only with next.skillsV2 on, as the runner does
+  const catalog = (await getSetting("next.skillsV2")) === "on" ? CATALOG_V2 : CATALOG
+  return catalog
+    .filter((s) => s.status === "active")
+    .map((s) => {
+      const missing = s.tools.all.filter((t) => !tools.has(t))
+      if (s.tools.any.length && !s.tools.any.some((t) => tools.has(t)))
+        missing.push(s.tools.any.join(" or "))
+      return {
+        id: s.id,
+        name: s.name,
+        description: s.description,
+        version: s.version,
+        required: s.required,
+        roles: s.roles,
+        source: s.source.length
+          ? s.source.map((x) => `${x.project} ${x.version} (${x.license})`).join(", ")
+          : "Kriya",
+        tools: [...s.tools.all, ...s.tools.any, ...s.tools.uses],
+        ...skillRisk(s),
+        prerequisites: missing.length ? s.prerequisites : [],
+        missing,
+        offByKriya: disabled.has(s.id),
+      }
+    })
 }
 
 export type SkillOption = NonNullable<Awaited<ReturnType<typeof skillOptions>>>[number]
