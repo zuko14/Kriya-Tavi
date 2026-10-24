@@ -1,0 +1,101 @@
+# Vision and gap analysis (track N)
+
+## 1. Intent
+
+Kriya Tavi is an **India-first AI agent platform that takes real-world
+actions and proves them**, not a generic chatbot (OD-10 wording). Track N
+("next platform") makes that true for more of the person's work without
+weakening any guarantee the earlier tracks built:
+
+1. **Verified delivery for every task**, not only for jobs: each finished
+   task gets a delivery status that code computes from verified tool runs
+   and later re-checks, never from the model's words.
+2. **Safe reach into more apps** through MCP servers the owner has
+   reviewed, with Kriya's own risk classes, approvals, receipts and egress
+   guard around every call.
+3. **Reliability**: transient failures of reads are retried, failing
+   providers are cut off quickly, unverified actions are re-checked once.
+4. **Skills and memory that work in Indian languages**, and recall that
+   meets the M1 target track A missed (0.80 against 0.90).
+5. **Lower cost per delivered task**, measured, with no invented prices.
+6. **Production readiness** gates before anything is switched on for
+   people.
+
+Everything ships behind `next.*` switches that default **off**. Off means
+existing agents get byte-identical prompts, tool sets and approvals
+(NT-REG-01, extending AT-REG-01 and OT-REG-01).
+
+## 2. What exists (verified in code on 2026-10-24, `038c2e3`)
+
+| Capability                     | Where (real paths and names)                                                                                                                                                                       | Track N builds on it by                                                                                                           |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Task runner                    | `lib/agent/run-task.ts` `runTask`, `TOOL_APPROVALS`, `guardWeb`; hooks `onToolExecutionStart`/`End` write `kriya.tool_executions`                                                                  | One belt line per phase; the approvals map is extended, never replaced                                                            |
+| Risk classes                   | `lib/agent/policy.ts` `TOOL_CLASSES`, `classifyTool` (unknown → R5), `approvalFor`, `TOOL_WRITES`, `PERSON_ONLY_WRITES`                                                                            | `classifyMcpTool` added next to them (ND-08); no value changes                                                                    |
+| Capability registry, kill list | `lib/agent/capabilities.ts` `CAPABILITIES`, `GRANTABLE`, `disabledTools`; setting `operator.disabledTools`                                                                                         | MCP tool names fit the kill-list pattern, so the same switch kills them (ND-13)                                                   |
+| Verification                   | `lib/agent/verify.ts` `verificationOf`, `unconfirmedClaims`, `checkCitations`; `Verification` type in `db/schema.ts`                                                                               | Delivery status reads these results; `verify.ts` unchanged (protected)                                                            |
+| "What I did", receipts         | `lib/agent/episodes.ts` `deriveEpisode`, `writeEpisode`, `receiptHash`, `verifyChain`; `actions/inbox.ts` `whatIDid`; `queries/episodes.ts` `episodesForTasks`; `components/thread/what-i-did.tsx` | Delivery status and late checks shown on the same card; hash body unchanged                                                       |
+| Undo                           | `lib/undo.ts` `undoColumns`, `runUndos`, `UNDO_WINDOW_MS`                                                                                                                                          | Unchanged; MCP tools have no undo in v1                                                                                           |
+| Connectors                     | `lib/connectors.ts` (protected): `accessToken`, `providerFetch`, `readBack`, `calendarEvent`, …; `kriya.connections` with `connections_provider_check` = google, notion, github, meta              | MCP tokens in a new sealed `kriya.mcp_connections`, opened only by additive `lib/connectors.ts` functions (ND-09, owner approval) |
+| Egress guard                   | `browser/egress.ts` `isBlockedAddress`, `isBlockedHost` (protected, kriya-browser)                                                                                                                 | Imported read-only by `lib/mcp/fetch.ts` (ND-10); never copied or changed                                                         |
+| Untrusted and private content  | `lib/agent/tools.ts` `FOREIGN`, `PRIVATE_READ_TOOLS`, `privateContentSeen`, `untrustedSeen`                                                                                                        | Also recognise the `mcp_` prefix (ND-11)                                                                                          |
+| Skill library                  | `skills/*`, `lib/skill-library.ts` `manifestSchema`, `resolveSkills`, `matchOf`; `lib/skill-engine.ts`; `kriya.skill_activations`                                                                  | Unicode-aware matching and more curated skills behind `next.skillsV2` (ND-14)                                                     |
+| Memory                         | `lib/memory/retrieve.ts` `recallNotes`, `RECALL_WEIGHTS`; `lib/memory/maintenance.ts` `withinCap`; `resource_usage.kind` already allows `embedding_tokens`                                         | Optional embedding rerank of FTS candidates (ND-15)                                                                               |
+| Jobs                           | `lib/operator/*` (mandates, grants, verdict, loop, crews, playbooks)                                                                                                                               | Unchanged; MCP tools are never grantable (OD-03 list unchanged)                                                                   |
+| Money                          | `lib/money.ts` `priceTask`, `formatInr`, `capToProviderMicroUsd`; `lib/quotes.ts` `quoteFor`                                                                                                       | "₹ per delivered task" read from `kriya.charges`; nothing new priced                                                              |
+| Settings                       | `lib/config.ts` `SETTINGS`, `getSetting` (owner value > env > default, 15 s cache); `/owner/config` `GROUPS`                                                                                       | `next.*` keys and one `GROUPS` entry                                                                                              |
+| Worker loops                   | `worker/index.ts`: `schedulerLoop`, `maintenanceLoop`, `undoLoop`, `extractLoop`, `crossCheckLoop`                                                                                                 | Delivery re-check and MCP drift steps inside `schedulerLoop`, each in its own `try`                                               |
+| AI SDK MCP client              | `@ai-sdk/mcp` 2.0.73 installed transitively; docs in `node_modules/ai/docs/03-ai-sdk-core/16-mcp-tools.mdx`                                                                                        | The only MCP client used (ND-06); no new dependency beyond making it direct (NRG-6)                                               |
+
+## 3. Gaps
+
+| Id     | Gap                                                                                                                                     | Closed by              |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| NGAP-1 | Outside jobs, a task has no single "was it delivered?" answer; the person reads "What I did" lines and "Not confirmed" lines themselves | N2 (ND-03)             |
+| NGAP-2 | An action whose read-back was inconclusive (provider lag) stays "Ran, but wasn't checked" forever                                       | N3 (ND-04)             |
+| NGAP-3 | A transient 429/5xx on a read fails the step; a provider that is down is called again and again in one task                             | N4 (ND-05)             |
+| NGAP-4 | Only four providers; every new app means protected-file work in `lib/connectors.ts`                                                     | N5–N7 (ND-06…13)       |
+| NGAP-5 | Skill keywords only match Latin-script words; Hindi/Telugu requests don't pick optional skills (SKILLS_ENGINE §10)                      | N8 (ND-14)             |
+| NGAP-6 | Memory recall M1 = 0.80, below the 0.90 target (track A, A1)                                                                            | N9 (ND-15)             |
+| NGAP-7 | No measurement of prompt-cache hit rate on the live routes; tool definitions grow with every connector                                  | N10 (ND-16)            |
+| NGAP-8 | No delivery-level SLOs or readiness gates                                                                                               | N2, N12 (ND-17, ND-24) |
+| NGAP-9 | No end-to-end scenario suite across Indian personas covering connectors, jobs, calls and MCP together                                   | N11 (SCENARIOS.md)     |
+
+## 4. Findings in the existing code (NF)
+
+Found while designing; each is resolved in the design, none fixed in code
+by this blueprint.
+
+| Id    | Finding (verified)                                                                                                                                                                                                                                                                                                                                                                                                                                     | Resolution                                                                                                                                                                                              |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| NF-01 | `TOOL_APPROVALS` (`run-task.ts`) lists only `TOOL_CLASSES` keys. The AI SDK's default for a tool missing from the map is `'not-applicable'`: "execute the tool normally without approval metadata. This is the default." (`node_modules/ai/docs/03-agents/06-tool-approvals.mdx`). So a tool on the belt without a class **runs unasked**, although `classifyTool` would call it R5. Today only `propose_call` is unclassified (OF-12; it only drafts) | ND-21: a belt guard drops any tool that is neither classified, nor in this task's MCP registry, nor on an explicit exemption list (`propose_call`); NT-POL-01 proves it removes nothing today           |
+| NF-02 | `deriveEpisode` decides whether a run counts with `classifyTool(run.toolName, …)`. An MCP tool (not in `TOOL_CLASSES`) would be R5 and, having no `verification`, silently left out of "What I did", even as "not confirmed"                                                                                                                                                                                                                           | ND-22: `tool_executions.risk` (nullable) stores the class decided at call time for MCP runs; `deriveEpisode` uses it when present. Hash body for every existing tool unchanged                          |
+| NF-03 | The skill matcher (`lib/skill-library.ts` `matchOf`) uses `[^a-z0-9]` as a word boundary. A Devanagari keyword would match inside a longer Devanagari word (e.g. "बिल" inside "बिलकुल"), because every Devanagari letter counts as a boundary                                                                                                                                                                                                          | ND-14: switch to the Unicode lookarounds `policy.ts` already uses (`wordsPattern`, `\p{L}\p{M}\p{N}`), behind `next.skillsV2`                                                                           |
+| NF-04 | `privateContentSeen` and `untrustedSeen` use fixed name sets. Any dynamically named tool reading private data would not trigger `guardWeb` or memory quarantine, opening an exfiltration path (read private data → `web_fetch` without approval)                                                                                                                                                                                                       | ND-11: both functions also match the `mcp_` prefix; NT-MCP-07/08 prove it                                                                                                                               |
+| NF-05 | The `verify.ts` claim row for "sent/posted/submitted/published" says "Kriya can't send email or post". Once an MCP tool posts (e.g. a comment in a tracker), the claim check would wrongly flag a true claim                                                                                                                                                                                                                                           | Safe direction (over-flags). v1 leaves `verify.ts` (protected) unchanged and documents the limitation; ND-12 proposes one owner-approved claim row later, backed only by a verified MCP side-effect run |
+| NF-06 | `@ai-sdk/mcp` is present only as a transitive dependency of `@ai-sdk/react`; importing it directly from product code without declaring it would break if `@ai-sdk/react` drops it                                                                                                                                                                                                                                                                      | N5 adds it to `package.json` `dependencies` at the installed version (CHANGE_IMPACT row; NRG-6)                                                                                                         |
+| NF-07 | The skill manifest's `toolName` pattern (`^[a-z][a-z_]{1,40}$`) and the kill-list pattern (`^[a-z_]{1,40}`) can't hold arbitrary MCP names                                                                                                                                                                                                                                                                                                             | ND-13: Kriya names MCP tools `mcp_<server>_<tool>`, `[a-z_]`, ≤ 40 characters, chosen by the owner at pin time; skills never name MCP tools                                                             |
+| NF-08 | Five readers of `kriya.connections` assume the four providers: `connectionHealth` (`queries/connections.ts`) keys its result by provider, `listConnections` feeds the Account page, `loadContext` (`run-task.ts`), `playbookNeeds` (`queries/mandates.ts`), `queries/skills.ts`; the Drizzle column is `text({ enum: CONNECTION_PROVIDERS })`                                                                                                          | ND-09: MCP tokens go in a separate `kriya.mcp_connections`; `kriya.connections` and its readers are untouched                                                                                           |
+| NF-09 | `agents.allowList` (a per-person rollout list in track A IMPLEMENTATION_PLAN §5, reused by track O §4) does not exist in `lib/config.ts` `SETTINGS`; settings are global                                                                                                                                                                                                                                                                               | Track N's rollout doesn't depend on it (IMPLEMENTATION_PLAN §5, ND-24); recorded for the owner, since tracks A and O describe a step that can't be taken as written                                     |
+
+## 5. Out of scope (and why)
+
+| Item                                                          | Why                                                                                                                        |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| A per-user cloud computer / desktop agent                     | AD-24, OD-08: Render must never run user code; OD-08's measurable trigger has not fired                                    |
+| Local (stdio) MCP servers, or MCP servers a person types in   | Arbitrary code or arbitrary hosts; MCP spec "Local MCP Server Compromise"; ND-06 trigger to reopen                         |
+| Payments, bookings with payment, UPI mandates, filing returns | R5 (AD-04, OD-12). UPI agent payments are demo/protocol-stage (COMPETITOR_RESEARCH §1.5); ND-19 records the reopen trigger |
+| Account Aggregator data                                       | FIUs must be regulated entities (Secondary); owner and counsel question, not engineering                                   |
+| Push, SMS, WhatsApp or email reminders                        | Voice rule 10, OD-11                                                                                                       |
+| Kriya as an MCP **server** for other assistants               | Deferred with a trigger (ND-18); a new inbound attack surface                                                              |
+| Model fine-tuning or self-tuning prompts                      | Voice rule 11, AD-25: improvement is governed                                                                              |
+
+## 6. Glossary
+
+| Term            | Meaning                                                                                                        |
+| --------------- | -------------------------------------------------------------------------------------------------------------- |
+| Delivery status | `delivered` · `partly` · `not_confirmed` · `nothing_to_deliver`, computed per task by `lib/delivery/status.ts` |
+| Re-check        | One later read-back of an unverified side-effect run, stored in `kriya.delivery_checks`                        |
+| MCP server      | A remote Model Context Protocol server in the owner's registry (`kriya.mcp_servers`)                           |
+| Pinned tool     | One tool of a server, reviewed by the owner, with its full definition hashed (`kriya.mcp_tools`)               |
+| Drift           | The server now describes a pinned tool differently from its hash; the tool leaves every belt                   |
+| App (UI word)   | What people see for an MCP server; "MCP" stays an internal word                                                |

@@ -7,6 +7,7 @@ Canonical progress and coordination file for two tracks:
 | Voice assistant (owner-directed outbound calls, verified outcomes, phone-call reminders) | 0–10 (below) | `docs/voice-assistant/` | `docs/voice-assistant/AGENT_MASTER_PROMPT.md` |
 | Agent platform, track A (role teams that act, remember, work in the background and prove what they did) | A0–A12 (section "Agent platform (track A)" at the end) | `docs/agent-platform/` | `docs/agent-platform/AGENT_MASTER_PROMPT.md` |
 | Operator, track O (jobs with a definition of done, standing grants the person approves, code verdicts, check-ins, playbooks) | P-1, O0–O10 (section "Operator (track O)" at the end) | `docs/operator/` | `docs/operator/AGENT_MASTER_PROMPT.md` |
+| Next platform, track N (verified delivery for every task, late re-checks, reliable reads, owner-reviewed MCP apps, skills and memory in Indian languages, cost per delivered task) | NP-1, N0–N13 (section "Next platform (track N)" at the end) | `docs/next-platform/` | `docs/next-platform/AGENT_MASTER_PROMPT.md` |
 
 All tracks share the Coordination board below; phase ids tell them apart
 (`3` is voice, `A3` is track A, `O3` is track O). The SaaS platform's own
@@ -6356,3 +6357,136 @@ Not done: browser check of the approval card on the isolated stack (O rule
 Next exact action: owner sets `operator.calendarDelete` to `on` in
 `/owner/config` (or `KRIYA_OPERATOR_CALENDAR_DELETE=on` on Render) after
 deploy.
+
+# Next platform (track N)
+
+Makes Kriya, an India-first agent platform that takes real-world actions,
+prove delivery for **every** task (not only jobs), re-check unverified
+actions once, retry transient reads, reach more apps through **owner-
+reviewed remote MCP servers** with Kriya's own risk classes, approvals,
+receipts and egress guard, match skills in Indian languages, improve
+memory recall behind an eval gate, and measure ₹ per delivered task.
+Blueprint: `docs/next-platform/`. Agents start from
+`docs/next-platform/AGENT_MASTER_PROMPT.md`. Built on tracks A and O and
+the voice track; changes none of their rules. Every capability is behind a
+`next.*` switch that defaults off (NT-REG-01); the one exception, the belt
+guard (ND-21), is proven to remove nothing today.
+
+## Track N documents
+
+| Document | What it decides |
+| --- | --- |
+| `docs/next-platform/VISION_AND_GAP_ANALYSIS.md` | What exists (verified in code), gaps NGAP-1…9, findings NF-01…NF-09, out of scope, glossary |
+| `docs/next-platform/COMPETITOR_RESEARCH.md` | ChatGPT, Claude, Grok, Gemini, Indian products and MCP security, dated 2026-10-24 with sources and confidence; research gaps NRG-1…7 |
+| `docs/next-platform/DECISIONS.md` | ND-01…ND-25 (all **Proposed**; owner-gated ones marked) |
+| `docs/next-platform/ARCHITECTURE.md` | Components, the runner lines per phase, delivery status, reliability wrappers, failure modes |
+| `docs/next-platform/MCP_CONNECTIVITY.md` | Registry, pinning, drift, connect flow, per-task loading, guarded fetch, read-back mapping, owner review checklist |
+| `docs/next-platform/DATA_MODEL_AND_STATE_MACHINES.md` | `mcp_servers`, `mcp_tools`, `mcp_enablements`, `delivery_checks`, `tool_executions.risk`, `mcp_connections`, memory embeddings; transitions; RLS; SQL tests |
+| `docs/next-platform/TOOLS_AND_CONTRACTS.md` | `classifyMcpTool`, the belt guard, the MCP factory, delivery and reliability contracts, actions, queries, worker steps |
+| `docs/next-platform/SECURITY_AND_THREATS.md` | Threats NS-1…NS-24, invariants never weakened, counsel NQ-1…3, readiness gates NR-1…NR-9 |
+| `docs/next-platform/COST_AND_METERING.md` | What costs what, controls, measurements, before/after method, unknowns |
+| `docs/next-platform/TEST_STRATEGY.md` | Baseline, fixture MCP server, test ids NT-… |
+| `docs/next-platform/EVALUATION_PLAN.md` | Metrics NM1–NM10, golden scenarios NG-01…24, suites, paid runs, pilot |
+| `docs/next-platform/SCENARIOS.md` | Real-world scenarios NSC-01…30 with routes and proof |
+| `docs/next-platform/UX_SPEC.md` | Delivery line, app approval card, Account → Apps, owner pages, copy rules |
+| `docs/next-platform/CHANGE_IMPACT_AND_SAFETY.md` | **Read before editing any existing file**: baseline, protected files, allowed change per file and phase with its regression test, boundaries, cross-track check, stop conditions |
+| `docs/next-platform/IMPLEMENTATION_PLAN.md` | Phases, parallel lanes, files held, exit checks, configuration, rollout, rollback |
+| `docs/next-platform/REAUDIT.md` | Final re-audit: every decision against AGENTS.md, the code and the other tracks; conflicts found and how each was resolved |
+
+## Track N overview
+
+| Phase | Name | Status | Depends on | Decisions needed |
+| --- | --- | --- | --- | --- |
+| N0 | Blueprint and decisions | IN_PROGRESS (documents done 2026-10-24; awaiting owner approval) | — | — |
+| NP-1 | Baseline re-check on the current `main` | NOT_STARTED (baseline recorded on `038c2e3`: 1590 passed / 27 skipped, exit 0) | N0 | — |
+| N1 | Data model (one migration) | NOT_STARTED | NP-1 | ND-02, ND-04, ND-07, ND-13, ND-22 |
+| N2 | Delivery status, owner delivery page | NOT_STARTED | N1 | ND-03, ND-17, ND-23 |
+| N3 | Late re-check | NOT_STARTED | N2 | ND-04 |
+| N4 | Reliability: read retries, breaker | NOT_STARTED | NP-1 | ND-05 |
+| N5 | MCP runtime on the fixture server | NOT_STARTED | N1 | ND-06, ND-07, ND-08, ND-10, ND-11, ND-13, ND-21, ND-22, ND-25 (owner-gated: ND-06, ND-08, ND-10, ND-21, ND-22) |
+| N6 | MCP connect, Account Apps, agent enablement | NOT_STARTED | N5 | ND-09 (owner-gated), ND-13, ND-25 |
+| N7 | Owner registry, drift review, read-back mapping | NOT_STARTED | N5 | ND-07, ND-12 |
+| N8 | Skills v2 | NOT_STARTED | NP-1 | ND-14 |
+| N9 | Memory recall v2 (gate, then rerank) | NOT_STARTED | NP-1 | ND-15 (owner-gated) |
+| N10 | Cost measurement and prompt caching | NOT_STARTED | N4, N5 | ND-16 |
+| N11 | Golden scenarios and eval harness | NOT_STARTED | N2, N3, N5, N8 | ND-19 |
+| N12 | Readiness gates and controlled pilot | NOT_STARTED | N6, N7, N10, N11 | ND-20, ND-24 |
+| N13 | Kriya as an MCP server | DEFERRED (ND-18 trigger) | — | a new decision |
+
+Parallel lanes (IMPLEMENTATION_PLAN §2): after NP-1, **N1, N4, N8 and the
+N9 gate** can run at the same time; after N1, **N2→N3** and **N5** in
+parallel; after N5, **N6** and **N7** in parallel.
+
+## Track N coordination rules
+
+The Coordination board at the top of this file is shared by every track.
+
+1. One row per active agent: claim the phase **and** every file you'll
+   hold before the first edit; release when you stop; edit only your own
+   row and your phase's section.
+2. Hot spots, held by one agent at a time across all tracks:
+   `lib/agent/run-task.ts`, `lib/agent/tools.ts`, `lib/agent/policy.ts`,
+   `lib/agent/instructions.ts`, `lib/config.ts`, `db/schema.ts`,
+   `worker/index.ts`, `package.json`, `status.md`. Hold for the shortest
+   edit, run the narrow tests, release.
+3. One migration writer at a time across all tracks; track N timestamps
+   `202701DDhhmmss`, claimed on the board, sorting last when claimed.
+4. `lib/connectors.ts` (protected) only in N6, after the owner approves
+   ND-09 by id in "Track N owner approvals".
+5. Never fix another phase's or track's failing test; record it on the
+   board and tell the owner.
+6. Re-read this file before every write; never rewrite another track's
+   section.
+
+## Track N blockers
+
+| # | Blocker | Blocks | Needed from |
+| --- | --- | --- | --- |
+| NB-01 | Owner approval of ND-01…ND-25 (owner-gated ones by id) | N1+ | Owner |
+| NB-02 | Owner approval of the `package.json` row (`@ai-sdk/mcp` direct dependency, NRG-6) | N5 | Owner |
+| NB-03 | Owner approval for the additive `lib/connectors.ts` change (ND-09) | N6 | Owner |
+| NB-04 | Registry candidates reviewed (MCP_CONNECTIVITY §9, NRG-1) | N12 pilot (not N5–N7, which use the fixture server) | Owner |
+| NB-05 | Embedding processor approval and key; paid AS-MEM-ML runs (ND-15, NRG-3) | N9 beyond the gate | Owner |
+| NB-06 | NRG-2 (prompt-cache pass-through) needs one paid staging request | N10 cache markers | Owner |
+| NB-07 | Counsel NQ-1 and NQ-3; external review of the MCP path (NR-7, NR-8) | N12 | Owner + counsel + reviewer |
+| NB-08 | Staging on real services (voice B2 / track A AB-02 / track O OB-01) | N12 | Owner |
+
+## Phase N0 — Blueprint and decisions
+
+**Status:** IN_PROGRESS — documents written 2026-10-24; exit needs owner approval (NB-01).
+
+- **Done (2026-10-24, Claude Code / Opus 5.5, worktree
+  `claude/dreamy-noether-dd685d` at `038c2e3`, uncommitted):** the 16
+  documents in `docs/next-platform/`; this section; the track row at the
+  top of this file; a "Next platform (track N)" section in `AGENTS.md`. No
+  application code, test, migration, dependency, setting, env var or
+  account touched.
+- **How the design was checked:** every claim about existing code was read
+  in the code on 2026-10-24 (paths and functions listed in
+  VISION_AND_GAP_ANALYSIS §2 and REAUDIT.md); the AI SDK MCP client from
+  `node_modules` (`@ai-sdk/mcp` 2.0.73, Apache-2.0, transitive); competitor
+  facts from their own pages where they loaded (COMPETITOR_RESEARCH.md,
+  confidence labels; two pages returned HTTP 403 and are marked Secondary).
+- **Baseline check (2026-10-24, before any doc was written):**
+  `env -u OPENROUTER_API_KEY npm run check` → typecheck pass; lint 0
+  errors, 2 warnings; format pass; Test Files 135 passed | 3 skipped (138);
+  Tests 1590 passed | 27 skipped (1617); exit 0.
+- **Exit:** (1) documents consistent (REAUDIT.md); (2) `npm run
+  format:check` passes; (3) owner marks each ND Approved or Changed under
+  "Track N owner approvals" (owner-gated ones by id).
+- **Next exact action:** owner reviews `docs/next-platform/DECISIONS.md`
+  (start with the owner-gated ND-06, ND-08, ND-09, ND-10, ND-15, ND-21,
+  ND-22) and writes "Approved ND-…" (or changes) below; then assign NP-1,
+  and in parallel N4 and N8.
+
+## Track N check log
+
+| Date | Check | Result |
+| --- | --- | --- |
+| 2026-10-24 | `env -u OPENROUTER_API_KEY npm run check` before writing the docs | Test Files 135 passed / 3 skipped (138); Tests 1590 passed / 27 skipped (1617); exit 0 |
+| 2026-10-24 | Re-audit (scratchpad scripts): cited paths, ids defined in their home documents, 84 file:symbol pairs grepped | Every missing path is a planned new file; 0 undefined ids; 0 missing symbols; 22 conflicts found and resolved in the docs (REAUDIT.md §3), incl. NF-08 (MCP tokens moved to their own table) and NF-09 (`agents.allowList` doesn't exist) |
+| 2026-10-24 | `npx prettier --ignore-path "" --write docs/next-platform/*.md`; `npx prettier --ignore-path "" --check docs/next-platform/*.md`; `npm run format:check` | 17 files formatted; "All matched files use Prettier code style!" (both checks) |
+
+## Track N owner approvals
+
+(none yet)

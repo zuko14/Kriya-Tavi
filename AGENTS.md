@@ -210,3 +210,42 @@ Voice rules 2, 3, 6, 7 and 12 and track-A rules 1–12 apply to this track too.
    password; client ids and secrets live only in Render and `.env.verify`.
 9. Crew members act only as their own tasks in their own part threads
    (`docs/operator/CREW_EXECUTION.md`); `assign` stays research-only.
+
+## Next platform (track N)
+
+Verified delivery for every task, late re-checks, reliable reads, apps
+through owner-reviewed MCP servers, skills and memory that work in Indian
+languages, and cost per delivered task. Planned in `docs/next-platform/`;
+progress in the root `status.md` (`NP-1`, `N0`–`N13`). Start from
+`docs/next-platform/AGENT_MASTER_PROMPT.md`. Voice rules 2, 3, 6, 7 and 12,
+track-A rules 1–12 and operator rules 1–9 apply to this track too.
+
+1. Before editing any existing file, read
+   `docs/next-platform/CHANGE_IMPACT_AND_SAFETY.md`: only the changes
+   listed there are allowed. All tracks share the coordination board in
+   `status.md`.
+2. Every capability ships behind a `next.*` switch that defaults off. Off
+   means existing agents get the same prompt, tools and the same
+   `TOOL_APPROVALS` object (NT-REG-01).
+3. "Delivered" is computed by code (`lib/delivery/status.ts`) from verified
+   tool runs and append-only re-checks; model text is never evidence, and
+   episodes and receipt hashes are never rewritten.
+4. MCP servers come only from the owner's registry (remote HTTPS, reviewed,
+   tools pinned by a hash of their full definition). No stdio, no server a
+   person types or content suggests. A drifted tool leaves every belt until
+   the owner re-approves it.
+5. MCP risk classes are decided by `classifyMcpTool` in
+   `lib/agent/policy.ts`: the owner's floor, raised (never lowered) by the
+   server's annotations; payments, identity, credentials and filing are
+   R5 and never reach a belt. Every R2–R4 MCP call needs the person's
+   approval of the exact call; MCP tools are never grantable.
+6. MCP tool calls run only in `kriya-worker`, through the guarded fetch
+   (`isBlockedAddress`/`isBlockedHost` imported from `browser/egress.ts`,
+   never copied or relaxed). MCP output is untrusted and private
+   (`FOREIGN`, `guardWeb`, memory quarantine).
+7. MCP tokens are sealed in `kriya.mcp_connections` and opened only in
+   `lib/connectors.ts` (invariant 4); `kriya.connections` is unchanged.
+8. No tool runs without a class: the belt guard drops anything outside
+   `TOOL_CLASSES`, the task's MCP classes and `UNCLASSIFIED_OK`.
+9. Retries only for R0, non-side-effect, idempotent reads; side effects
+   are never retried.
