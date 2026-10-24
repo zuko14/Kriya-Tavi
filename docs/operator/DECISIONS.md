@@ -29,6 +29,7 @@ binds.
 | OD-19 | Crew parts run as their own tasks in their own threads       | O11                 |
 | OD-20 | UI verification only on an isolated stack, with a stub model | P-3, every UI phase |
 | OD-21 | Operator requires `agents.goals` and `agents.inbox`          | O3                  |
+| OD-22 | Deleting a calendar event the person names (R3)              | G2                  |
 
 ## OD-01 Mandates sit on goals; no new execution engine
 
@@ -292,3 +293,17 @@ shows `operator.*` as ineffective while either is off. On 2026-10-21 the
 live database had **no** `agents.*` keys stored (their value may still come
 from Render environment variables, which agents can't see; check
 `/owner/config`, which shows each setting's source).
+
+## OD-22 Deleting a calendar event the person names
+
+**Decision (owner, 2026-10-24).** A new tool `calendar_delete_event`
+deletes one event from the person's primary Google Calendar, behind
+`operator.calendarDelete` (off by default). **R3**, exact approval every
+time, **never grantable** (no pins). The model passes the event's id,
+title and start exactly as `calendar_events` returned them; the tool reads
+the event first and deletes nothing unless both match what the approval
+card showed. Guests aren't emailed (`sendUpdates=none`). Verified by
+reading the event back as gone. No undo (Kriya can't recreate it
+faithfully). No new Google scope (`calendar.events` covers deleting). The
+verifier gains one claim row: "I deleted/removed/cancelled … event" is
+backed only by a successful `calendar_delete_event` run.

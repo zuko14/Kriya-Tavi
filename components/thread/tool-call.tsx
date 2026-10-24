@@ -8,6 +8,7 @@ import {
   CalendarClockIcon,
   CalendarIcon,
   CalendarPlusIcon,
+  CalendarXIcon,
   CheckIcon,
   ChevronRightIcon,
   ClipboardListIcon,
@@ -202,6 +203,11 @@ const META: Record<string, Meta> = {
     summary: (i) => list(i.emails),
   },
   gmail_send_draft: { icon: SendIcon, label: "send a draft" },
+  calendar_delete_event: {
+    icon: CalendarXIcon,
+    label: "delete event",
+    summary: (i) => str(i.title),
+  },
   propose_call: {
     icon: PhoneIcon,
     label: "draft a call",
@@ -268,6 +274,10 @@ const A8_ROWS: Record<string, (i: Record<string, unknown>) => [string, string][]
     ["Access", i.role === "commenter" ? "Can comment" : "Can view"],
   ],
   gmail_send_draft: (i) => [["Draft", str(i.draftId)]],
+  calendar_delete_event: (i) => [
+    ["Event", str(i.title)],
+    ["Starts", str(i.start)],
+  ],
 }
 const A8_TEXT: Record<string, (i: Record<string, unknown>) => string> = {
   github_comment: (i) => str(i.body),
@@ -304,6 +314,8 @@ const A8_NOTES: Record<string, string> = {
     "Google emails each of them a link. You can undo it for 10 minutes; after that, remove access in Drive.",
   gmail_send_draft:
     "Sends the draft exactly as saved in your Gmail, as you. A sent email can't be taken back.",
+  calendar_delete_event:
+    "Deletes this event from your Google Calendar. Guests aren't emailed, and it can't be undone.",
 }
 
 export function toolName(part: ToolPart) {

@@ -121,6 +121,8 @@ const FACTS: Record<string, Facts> = {
   drive_import: { ...google, verification: "file" },
   drive_share: { ...google, ...readBack, undoable: true },
   gmail_send_draft: { ...google, ...readBack },
+  // Reads back that the event is gone; no pins, so never grantable
+  calendar_delete_event: { ...google, ...readBack },
 }
 
 export const CAPABILITIES: Record<string, Capability> = Object.fromEntries(

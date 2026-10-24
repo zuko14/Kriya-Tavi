@@ -446,6 +446,7 @@ export async function runTask(task: Task, ctx: WorkerContext) {
   const google2 = {
     driveShare: (await getSetting("operator.driveShare")) === "on",
     gmailSend: (await getSetting("operator.gmailSend")) === "on",
+    calendarDelete: (await getSetting("operator.calendarDelete")) === "on",
   }
   const browser = provider
     ? new TaskBrowser(provider, task, { profiles: loginProfiles })
@@ -731,7 +732,7 @@ export async function runTask(task: Task, ctx: WorkerContext) {
       ...(kitTools ? createKitTools(env, browser) : {}),
       ...createConnectorTools(env, connected, { writes: true }),
       ...(fileTools ? createFileTools(env, connected) : {}),
-      ...(google2.driveShare || google2.gmailSend
+      ...(google2.driveShare || google2.gmailSend || google2.calendarDelete
         ? createGoogleV2Tools(env, connected, google2)
         : {}),
       ...(goalTools ? createGoalTools(env, { watchers }) : {}),

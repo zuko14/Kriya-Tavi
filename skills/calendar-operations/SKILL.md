@@ -14,4 +14,4 @@ metadata:
 4. **One approval, one call.** `calendar_create_event` waits for the person to approve the exact event. Make the call once; if they decline, ask what to change rather than trying again.
 5. **Confirm from the result.** After approval, read what the tool returned (or list the events again) and report the event as it is now on the calendar. If it isn't there, say so.
 
-You can't accept invitations, change other people's calendars, or edit or delete existing events.
+You can't accept invitations, change other people's calendars, or edit existing events. Delete an event only when the person asks and only if you have `calendar_delete_event`: look it up with `calendar_events` first and pass its id, title and start exactly; the person approves the exact event.

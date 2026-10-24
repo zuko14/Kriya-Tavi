@@ -451,3 +451,108 @@ describe("switches off (OT-G2-04, OT-REG-01)", () => {
     expect(seen.prompts.at(-1)).toBe(seen.prompts.at(-2))
   })
 })
+
+describe("calendar_delete_event (operator.calendarDelete)", () => {
+  const EVENTS = "https://www.googleapis.com/calendar/v3/calendars/primary/events"
+  const calendar = { google: ["calendar"] as never[], notion: false }
+  const on = { driveShare: false, gmailSend: false, calendarDelete: true }
+  const meeting = {
+    id: "ev_1",
+    summary: "Meeting with Taiyo Labs",
+    start: { dateTime: "2026-10-24T10:00:00+05:30" },
+    end: { dateTime: "2026-10-24T11:00:00+05:30" },
+  }
+  const input = {
+    eventId: "ev_1",
+    title: "Meeting with Taiyo Labs",
+    start: "2026-10-24T10:00:00+05:30",
+  }
+
+  it("deletes the approved event without emailing guests, and reads it back gone", async () => {
+    const { userId } = await connectedUser(["google"])
+    let deleted = false
+    const calls = route((method, url) => {
+      if (method === "GET" && url === `${EVENTS}/ev_1`)
+        return deleted ? { status: 410, json: {} } : { json: meeting }
+      if (method === "DELETE" && url === `${EVENTS}/ev_1?sendUpdates=none`) {
+        deleted = true
+        return { status: 204 }
+      }
+      return null
+    })
+    const out = await run(
+      createGoogleV2Tools(env(userId), calendar, on),
+      "calendar_delete_event",
+      input
+    )
+    expect(out).toMatchObject({
+      id: "ev_1",
+      deleted: true,
+      verification: { status: "verified", method: "api_readback" },
+    })
+    expect(calls.map((c) => c.method)).toEqual(["GET", "DELETE", "GET"])
+    expect(calls[1].auth).toBe(`Bearer ${TOKEN("google")}`)
+  })
+
+  it("deletes nothing when the event isn't the one the person approved", async () => {
+    const { userId } = await connectedUser(["google"])
+    const calls = route((method, url) =>
+      method === "GET" && url === `${EVENTS}/ev_1` ? { json: meeting } : null
+    )
+    const tools = createGoogleV2Tools(env(userId), calendar, on)
+    await expect(
+      run(tools, "calendar_delete_event", { ...input, title: "Dentist" })
+    ).rejects.toThrow(/nothing was deleted/)
+    await expect(
+      run(tools, "calendar_delete_event", {
+        ...input,
+        start: "2026-10-25T10:00:00+05:30",
+      })
+    ).rejects.toThrow(/nothing was deleted/)
+    expect(calls.every((c) => c.method === "GET")).toBe(true)
+  })
+
+  it("fails the read-back when the event is still there", async () => {
+    const { userId } = await connectedUser(["google"])
+    route((method, url) =>
+      method === "GET" && url === `${EVENTS}/ev_1`
+        ? { json: meeting }
+        : method === "DELETE"
+          ? { status: 204 }
+          : null
+    )
+    const out = await run(
+      createGoogleV2Tools(env(userId), calendar, on),
+      "calendar_delete_event",
+      input
+    )
+    expect(out).toMatchObject({ deleted: false, verification: { status: "failed" } })
+  })
+
+  it("is R3, asks every time, is never grantable, and needs the switch and Calendar", () => {
+    expect(classifyTool("calendar_delete_event", {})).toBe("R3")
+    expect(SIDE_EFFECT_TOOLS.has("calendar_delete_event")).toBe(true)
+    expect(GRANTABLE.has("calendar_delete_event")).toBe(false)
+    expect(CAPABILITIES.calendar_delete_event.verification).toBe("api_readback")
+    expect((TOOL_APPROVALS as Record<string, unknown>).calendar_delete_event).toBe(
+      "user-approval"
+    )
+    expect(
+      createGoogleV2Tools(env("u"), calendar, { ...on, calendarDelete: false })
+    ).toEqual({})
+    expect(createGoogleV2Tools(env("u"), connected, on)).toEqual({
+      ...createGoogleV2Tools(env("u"), connected, { ...on, calendarDelete: false }),
+    })
+  })
+
+  it('backs "I deleted the event" only with a successful delete', () => {
+    const claim = "I deleted the meeting from your calendar."
+    expect(unconfirmedClaims(claim, [])).toHaveLength(1)
+    expect(
+      unconfirmedClaims(claim, [{ tool: "calendar_delete_event", status: "succeeded" }])
+    ).toEqual([])
+    expect(
+      unconfirmedClaims(claim, [{ tool: "calendar_delete_event", status: "failed" }])
+    ).toHaveLength(1)
+  })
+})

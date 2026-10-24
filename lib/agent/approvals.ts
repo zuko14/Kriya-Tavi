@@ -70,6 +70,8 @@ export function actionTitle(tool: string, input: Input, tense: "ask" | "done") {
       return `${ask ? "Share" : "Shared"} a Drive file with ${(Array.isArray(input?.emails) ? input.emails : []).join(", ")} (${input?.role === "commenter" ? "can comment" : "can view"}); Google emails them`
     case "gmail_send_draft":
       return `${ask ? "Send" : "Sent"} a saved Gmail draft`
+    case "calendar_delete_event":
+      return `${ask ? "Delete" : "Deleted"} ${quoted(input?.title)} from your calendar`
     default:
       return tool.replaceAll("_", " ")
   }

@@ -47,6 +47,8 @@ import {
 import { limitMessage, listFiles, readExtracted, saveGenerated } from "@/lib/files"
 import {
   calendarCreate,
+  calendarDelete,
+  calendarEvent,
   calendarEvents,
   ConnectorError,
   driveDownload,
@@ -60,6 +62,7 @@ import {
   gmailSearch,
   notionRead,
   notionSearch,
+  readBack,
   type GoogleService,
 } from "@/lib/connectors"
 import {
@@ -162,9 +165,10 @@ export const SIDE_EFFECT_TOOLS = new Set<string>([
   "sheets_update",
   "sheets_create",
   "instagram_publish",
-  // G2 (operator.driveShare, operator.gmailSend)
+  // G2 (operator.driveShare, operator.gmailSend, operator.calendarDelete)
   "drive_share",
   "gmail_send_draft",
+  "calendar_delete_event",
 ])
 
 /* ───────────────────────────── memory ───────────────────────────── */
@@ -1709,18 +1713,20 @@ export function createFileTools(env: ToolEnv, connected: Connected) {
 /* ───────────────────────── Google actions v2 ─────────────────────── */
 
 // G2 (GOOGLE_CONNECTIVITY §4.1): import a Drive file into Kriya files,
-// share one with people, send a draft Kriya saved. Each behind its switch
-// and the Google service it needs; sharing and sending are R4 (exact
-// approval every time, never granted) and never run on the web server.
+// share one with people, send a draft Kriya saved, delete a calendar
+// event. Each behind its switch and the Google service it needs; sharing
+// and sending are R4, deleting R3 (exact approval every time, never
+// granted) and none runs on the web server.
 export function createGoogleV2Tools(
   env: ToolEnv,
   connected: Connected,
-  options: { driveShare: boolean; gmailSend: boolean }
+  options: { driveShare: boolean; gmailSend: boolean; calendarDelete?: boolean }
 ) {
   const user = env.userId
   const drive = options.driveShare && connected.google.includes("drive")
   const share = options.driveShare && connected.google.includes("drive_share")
   const send = options.gmailSend && connected.google.includes("gmail")
+  const unbook = !!options.calendarDelete && connected.google.includes("calendar")
   return {
     ...(drive && {
       drive_import: tool({
@@ -1801,6 +1807,40 @@ export function createGoogleV2Tools(
               "Only a draft Kriya saved for the person can be sent. Save it with gmail_draft first."
             )
           return gmailSendDraft(user, draftId)
+        },
+      }),
+    }),
+    ...(unbook && {
+      calendar_delete_event: tool({
+        description:
+          "Delete one event from the person's Google Calendar, only when they ask. Give its id, title and start exactly as calendar_events returned them. The person approves the exact event; guests aren't emailed, and a deleted event can't be brought back.",
+        inputSchema: z.object({
+          // Google's ids, including one occurrence of a repeating event
+          eventId: z.string().regex(/^[A-Za-z0-9_-]{1,1024}$/),
+          title: z.string().min(1).max(200),
+          start: z.string().min(1).max(40),
+        }),
+        execute: async ({ eventId, title, start }) => {
+          // Deletes only the event the person saw on the approval card
+          const found = await calendarEvent(user, eventId)
+          if (found.title !== title || found.start !== start)
+            throw new ConnectorError(
+              `That event is "${found.title}" at ${found.start}, not what the person approved, so nothing was deleted. Look it up again with calendar_events.`
+            )
+          const gone = await calendarDelete(user, eventId, false)
+          return {
+            id: eventId,
+            title,
+            start,
+            deleted: gone,
+            verification: readBack(
+              gone,
+              [{ kind: "provider_id", value: eventId }],
+              gone
+                ? "Read back from Google Calendar: the event is gone."
+                : "Read back from Google Calendar: the event is still there."
+            ),
+          }
         },
       }),
     }),

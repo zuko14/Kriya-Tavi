@@ -364,6 +364,13 @@ export const SETTINGS = {
     pattern: /^(on|off)$/,
     hint: "on or off",
   },
+  // calendar_delete_event deletes one event the person names, after exact approval
+  "operator.calendarDelete": {
+    env: "KRIYA_OPERATOR_CALENDAR_DELETE",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
   // G1: the Google app is in Testing, where Google expires refresh tokens
   // after 7 days; the Account card says so (OD-15). Display only
   "google.testingMode": {

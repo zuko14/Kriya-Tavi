@@ -33,6 +33,7 @@ type Filter = (typeof FILTERS)[number]["id"]
 function riskLabel(tool: string, risk: string) {
   if (tool.startsWith("schedule_")) return "Starts a scheduled job"
   if (tool === "calendar_create_event") return "Will save to your calendar"
+  if (tool === "calendar_delete_event") return "Will delete from your calendar"
   if (tool === "gmail_draft") return "Will save a draft in Gmail"
   return risk === "R4"
     ? "Will act publicly"

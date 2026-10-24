@@ -2,7 +2,7 @@
   "id": "calendar-operations",
   "name": "Calendar operations",
   "description": "Checks the calendar for clashes first, prepares complete event details for one approval, and confirms the event from the result.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "status": "active",
   "trust": "curated",
   "license": "MIT",
@@ -37,7 +37,7 @@
   "tools": {
     "all": ["calendar_events"],
     "any": [],
-    "uses": ["calendar_create_event"]
+    "uses": ["calendar_create_event", "calendar_delete_event"]
   },
   "prerequisites": ["Google Calendar connected in Account → Connected accounts"],
   "verification": "Events are added only after the person approves the exact call (R3); the tool's result is the evidence.",

@@ -697,6 +697,17 @@ export async function calendarEvents(
   return { timeZone: data.timeZone ?? null, events: (data.items ?? []).map(event) }
 }
 
+// One event by id, as calendar_events lists it
+export async function calendarEvent(userId: string, eventId: string) {
+  return event(
+    await api<GoogleEvent>(
+      userId,
+      "google",
+      `${GOOGLE}/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`
+    )
+  )
+}
+
 export async function calendarCreate(
   userId: string,
   input: {
@@ -759,8 +770,8 @@ function sameAddresses(found: string[], wanted: string[]) {
 const addresses = (header: string | undefined) =>
   header?.match(/[^\s<>,"]+@[^\s<>,"]+/g) ?? []
 
-// Undo (K3): deletes an event Kriya created (Google sends attendees a
-// cancellation when it had invited them), then reads it back. True when it
+// Undo (K3) and calendar_delete_event: deletes an event (Google sends
+// attendees a cancellation when `notify`), then reads it back. True when it
 // is gone: missing, or kept by Google as "cancelled".
 export async function calendarDelete(userId: string, eventId: string, notify: boolean) {
   const url = `${GOOGLE}/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`

@@ -292,6 +292,8 @@ export const TOOL_CLASSES: Record<string, RiskClass> = {
   document_render: "R1",
   drive_share: "R4",
   gmail_send_draft: "R4",
+  // Changes only the person's own calendar; guests aren't emailed
+  calendar_delete_event: "R3",
 }
 
 export function classifyTool(name: string, input: unknown): RiskClass {
@@ -398,6 +400,7 @@ export const TOOL_WRITES: Record<string, string[]> = {
   document_render: ["files+"],
   drive_share: [],
   gmail_send_draft: [],
+  calendar_delete_event: [],
 }
 
 // Changes only the person makes, through their own server actions. Agent

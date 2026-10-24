@@ -6329,3 +6329,30 @@ Not done / blockers:
 
 Next exact action: owner reviews `screenshots/ui-upgrade/U3/`; then U0
 (baseline screenshots of every signed-in route + decisions UD-01…UD-05).
+
+### OD-22 calendar_delete_event (2026-10-24, owner request)
+
+Why: an agent told the person "I have no delete tool" when asked to remove
+an event it had added. Owner asked for deletion end to end.
+
+Changed: `lib/connectors.ts` (additive `calendarEvent`; `calendarDelete`
+reused), `lib/agent/tools.ts` (`calendar_delete_event` in
+`createGoogleV2Tools`, `SIDE_EFFECT_TOOLS`), `lib/agent/policy.ts` (R3,
+no writes), `lib/agent/capabilities.ts` (api_readback, not grantable),
+`lib/agent/approvals.ts`, `lib/agent/verify.ts` (one claim row),
+`lib/agent/run-task.ts`, `lib/config.ts` (`operator.calendarDelete`,
+default off), `components/thread/tool-call.tsx`,
+`components/workbench/activity.tsx`, `app/(workspace)/inbox/page.tsx`,
+`skills/calendar-operations` (1.1.0), `docs/operator/DECISIONS.md`
+(OD-22), `docs/operator/CHANGE_IMPACT_AND_SAFETY.md`,
+`tests/operator/google-g2.test.ts` (5 new tests).
+
+Safety: deletes only when the event's current title and start equal the
+approved input; guests not emailed; read back as gone; never grantable.
+
+Not done: browser check of the approval card on the isolated stack (O rule
+7); no real Google call made.
+
+Next exact action: owner sets `operator.calendarDelete` to `on` in
+`/owner/config` (or `KRIYA_OPERATOR_CALENDAR_DELETE=on` on Render) after
+deploy.

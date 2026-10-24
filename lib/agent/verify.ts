@@ -57,6 +57,13 @@ const CLAIMS: { pattern: RegExp; tools: string[] | null; onlyIfRan?: boolean }[]
   },
   {
     pattern: new RegExp(
+      `${I_DID}(?:deleted|removed|cancelled|canceled)\\b.*\\b(?:calendar|event|meeting|invite)`,
+      "i"
+    ),
+    tools: ["calendar_delete_event"],
+  },
+  {
+    pattern: new RegExp(
       `${I_DID}(?:drafted|saved (?:a|an|the|your) (?:draft|email|reply))`,
       "i"
     ),
