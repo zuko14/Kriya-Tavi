@@ -88,6 +88,30 @@ describe("billing events", () => {
     expect(await subscription()).toBe("canceled")
   })
 
+  it("records a late charge even though its event is stale", async () => {
+    await applyEvent("razorpay", "evt_2", event("subscription.cancelled", t0 + 100))
+    const payment = {
+      payment: {
+        entity: {
+          id: "pay_late",
+          amount: 49900,
+          currency: "INR",
+          status: "captured",
+          created_at: t0,
+        },
+      },
+    }
+    expect(
+      await applyEvent("razorpay", "evt_1", event("subscription.charged", t0, payment))
+    ).toBe("stale")
+    // The status stays as the newer event left it; the payment is kept
+    expect(await subscription()).toBe("canceled")
+    const { rows } = await pg.query<{ n: number }>(
+      "select count(*)::int as n from kriya.payments where provider_payment_id = 'pay_late'"
+    )
+    expect(rows[0].n).toBe(1)
+  })
+
   it("records each payment once", async () => {
     const payment = {
       payment: {

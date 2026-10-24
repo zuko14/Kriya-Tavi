@@ -1,20 +1,26 @@
 import type { UIMessageChunk } from "ai"
 import { and, asc, desc, eq, gt, inArray, or, sql } from "drizzle-orm"
 
-import { privileged, rowsOf, withUser, type Q } from "@/db"
+import { privileged, rowsOf, withUser, type Q, type Tx } from "@/db"
 import {
   approvals,
   squadMembers,
   taskEvents,
   tasks,
   threads,
+  type Plan,
   type Task,
   type TaskInput,
 } from "@/db/schema"
 import { loadMessages, saveMessage, textOf } from "@/lib/agent/messages"
 import type { KriyaMessage } from "@/lib/agent/tools"
 import { getMaxSteps, getSetting } from "@/lib/config"
-import { checkTaskAllowed, usageSummary } from "@/lib/entitlements"
+import {
+  checkTaskAllowed,
+  dailyLimit,
+  tasksTodayLocked,
+  usageSummary,
+} from "@/lib/entitlements"
 import { capToProviderMicroUsd, parseRate } from "@/lib/money"
 import {
   isGatewayConfigured,
@@ -169,6 +175,13 @@ function taskRow(
   }
 }
 
+// The plan's daily limit again, inside the transaction that inserts the task
+// (prepare() checked it before, without a lock)
+async function holdDailyLimit(tx: Tx, userId: string, plan: Plan) {
+  const limit = dailyLimit(plan, await tasksTodayLocked(tx, userId))
+  if (!limit.ok) throw new TurnError(limit.message, 402, limit.code)
+}
+
 // The same request again is the same task; a second task while one runs is refused
 async function insertTask(
   userId: string,
@@ -222,6 +235,7 @@ export async function enqueueTurn({
   // Thread ownership was checked above; the message and the task land together
   return insertTask(userId, idempotencyKey ?? null, () =>
     privileged.transaction(async (tx) => {
+      await holdDailyLimit(tx, userId, prepared.plan)
       await saveMessage(tx, userId, threadId, userMessage)
       await tx
         .update(threads)
@@ -292,6 +306,7 @@ export async function enqueueScheduled({
 
   return insertTask(userId, key, () =>
     privileged.transaction(async (tx) => {
+      await holdDailyLimit(tx, userId, prepared.plan)
       await saveMessage(tx, userId, threadId, message)
       await tx
         .update(threads)
@@ -371,6 +386,7 @@ export async function enqueuePart({
 
   return insertTask(userId, key, () =>
     privileged.transaction(async (tx) => {
+      await holdDailyLimit(tx, userId, prepared.plan)
       await saveMessage(tx, userId, threadId, message)
       await tx
         .update(threads)
@@ -476,6 +492,7 @@ export async function enqueueApproval({
   const key = `approval:${threadId}:${approvalId}`
   return insertTask(userId, key, () =>
     privileged.transaction(async (tx) => {
+      await holdDailyLimit(tx, userId, prepared.plan)
       await saveMessage(tx, userId, threadId, answered)
       await decide(tx)
       const [task] = await tx

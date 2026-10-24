@@ -1,6 +1,6 @@
 import { and, count, eq, gte, inArray, sql, sum } from "drizzle-orm"
 
-import { privileged, rowsOf } from "@/db"
+import { privileged, rowsOf, type Q } from "@/db"
 import {
   agents,
   charges,
@@ -95,16 +95,33 @@ export async function usageSummary(userId: string) {
 
 export type UsageSummary = Awaited<ReturnType<typeof usageSummary>>
 
-export function checkTaskAllowed(usage: UsageSummary): Limit {
-  const { plan } = usage
-  if (usage.tasksToday >= plan.maxTasksPerDay) {
+export function dailyLimit(plan: Plan, tasksToday: number): Limit {
+  if (tasksToday >= plan.maxTasksPerDay) {
     return {
       ok: false,
       code: "daily_limit",
       message: `You've used today's ${plan.maxTasksPerDay} tasks on the ${plan.name} plan. They reset at midnight IST, or upgrade for more.`,
     }
   }
-  return checkAllowance(usage)
+  return { ok: true }
+}
+
+// Today's tasks of a person, counted under a per-person lock held until the
+// transaction ends. Called in the transaction that inserts a task, it makes
+// "count, then insert" one step, so a burst of parallel requests can't each
+// see room for one more.
+export async function tasksTodayLocked(tx: Q, userId: string) {
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`tasks:${userId}`}))`)
+  const [row] = await tx
+    .select({ n: count() })
+    .from(tasks)
+    .where(and(eq(tasks.userId, userId), gte(tasks.createdAt, istStart("day"))))
+  return row?.n ?? 0
+}
+
+export function checkTaskAllowed(usage: UsageSummary): Limit {
+  const daily = dailyLimit(usage.plan, usage.tasksToday)
+  return daily.ok ? checkAllowance(usage) : daily
 }
 
 // A phone call spends the same allowance; the daily task count is for agents

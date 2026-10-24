@@ -6398,7 +6398,7 @@ guard (ND-21), is proven to remove nothing today.
 | Phase | Name | Status | Depends on | Decisions needed |
 | --- | --- | --- | --- | --- |
 | N0 | Blueprint and decisions | IN_PROGRESS (documents done 2026-10-24; awaiting owner approval) | — | — |
-| NP-1 | Baseline re-check on the current `main` | NOT_STARTED (baseline recorded on `038c2e3`: 1590 passed / 27 skipped, exit 0) | N0 | — |
+| NP-1 | Baseline re-check on the current `main` | COMPLETE (2026-10-24, on `ce8d2fe`: 1590 passed / 27 skipped, exit 0) | N0 | — |
 | N1 | Data model (one migration) | NOT_STARTED | NP-1 | ND-02, ND-04, ND-07, ND-13, ND-22 |
 | N2 | Delivery status, owner delivery page | NOT_STARTED | N1 | ND-03, ND-17, ND-23 |
 | N3 | Late re-check | NOT_STARTED | N2 | ND-04 |
@@ -6479,6 +6479,54 @@ The Coordination board at the top of this file is shared by every track.
   ND-22) and writes "Approved ND-…" (or changes) below; then assign NP-1,
   and in parallel N4 and N8.
 
+## Phase NP-1 — Baseline re-check
+
+**Status:** COMPLETE (2026-10-24).
+
+- **Session result (2026-10-24, Claude Code / Sonnet 5.5, worktree
+  `claude/remote-control-5de9d7` fast-forwarded to `ce8d2fe`):** no code or
+  file changes for the phase. Preflight: `git status --short` empty, branch
+  `claude/remote-control-5de9d7`, HEAD `ce8d2fe`. Ran
+  `env -u OPENROUTER_API_KEY npm run check`: typecheck, lint (2 existing
+  warnings in `tests/operator/golden/harness.ts`), format check and tests
+  passed; **Test Files 135 passed | 3 skipped (138); Tests 1590 passed | 27
+  skipped (1617); exit 0**. Equal to the baseline, so the exit check
+  ("counts ≥ the baseline") holds.
+- Not done: no `npm run build` (not needed, nothing under `app/` changed).
+- **Next exact action:** owner approves the decisions N1, N4, N8 and the N9
+  gate need (ND-02, ND-04, ND-05, ND-07, ND-13, ND-14, ND-15, ND-22) in
+  "Track N owner approvals"; then assign one of those phases.
+
+## Audit fixes (2026-10-24, owner request in chat)
+
+The owner asked for the fixes from the two repo audits ("proceed first all
+the fixes"). That is the owner's approval for editing `lib/billing.ts`,
+`lib/files.ts` (outside their G2 rows) and `package.json`, for these
+changes only. Recorded in `docs/operator/CHANGE_IMPACT_AND_SAFETY.md` §3.
+
+| Fix | Files | Test |
+| --- | --- | --- |
+| Next.js 16.4.0 → 16.4.3 (critical advisories: image-optimization RCE, `use cache` RCE, Server Actions DoS); `zod` and `undici` patched by `npm audit fix` | `package.json`, `package-lock.json` | `npm audit --omit=dev`: 0 vulnerabilities (was 1 critical, 2 high) |
+| Upload confirm refuses an object of another size before downloading it | `lib/files.ts` (`FileStore.size?`) | `tests/agent/files.test.ts` |
+| A late `subscription.charged` payment is recorded before the stale check | `lib/billing.ts` | `tests/billing.test.ts` |
+| Daily task limit checked again, under a per-person lock, in the insert transaction | `lib/entitlements.ts`, `lib/agent/queue.ts` | `tests/agent/daily-limit.test.ts` (fails without the fix) |
+| Request bodies read with a byte cap (chunked bodies had none) | `lib/json-body.ts`, the turn and approvals routes | `tests/json-body.test.ts` |
+| Worker logs an unhandled rejection instead of exiting | `worker/index.ts` | none (process-level) |
+| `calendar_delete_event`: guests on the approval card and checked at run time; runner wiring test | `lib/agent/tools.ts`, `components/thread/tool-call.tsx` | `tests/operator/google-g2.test.ts` |
+
+Not changed, on purpose: the calendar skill text now mentions
+`calendar_delete_event` even with the switch off (a skill edit, version
+1.1.0; recorded under OD-22); the first X-Forwarded-For entry for rate
+limits (needs one check on Render staging before changing); the ₹
+allowance check is still check-then-write (bounded by concurrent tasks and
+per-task cost caps).
+
+Commands: `env -u OPENROUTER_API_KEY npm run check` → typecheck, lint (the 2
+existing warnings), format and tests passed; **Test Files 137 passed | 3
+skipped (140); Tests 1598 passed | 27 skipped (1625); exit 0**. Not run: a
+real Google, Razorpay, storage or Render call; `npm run build` (needs
+`.env.verify`).
+
 ## Track N check log
 
 | Date | Check | Result |
@@ -6489,4 +6537,6 @@ The Coordination board at the top of this file is shared by every track.
 
 ## Track N owner approvals
 
-(none yet)
+- 2026-10-24 (owner, in chat): **Approved: implement NP-1** (baseline
+  re-check). NP-1 lists no decisions. No `ND-…` decision is approved yet;
+  N1 and later phases still wait on NB-01.

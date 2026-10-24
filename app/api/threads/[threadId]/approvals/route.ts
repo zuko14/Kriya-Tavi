@@ -3,6 +3,7 @@ import { z } from "zod"
 import { enqueueApproval, TurnError } from "@/lib/agent/queue"
 import { authenticate } from "@/lib/auth"
 import { log } from "@/lib/log"
+import { readJson } from "@/lib/json-body"
 import { allow } from "@/lib/rate-limit"
 
 const bodySchema = z.object({
@@ -26,7 +27,9 @@ export async function POST(
   if (!user) return fail("Sign in to continue.", 401, "unauthenticated")
   const id = threadId.safeParse((await ctx.params).threadId)
   if (!id.success) return fail("Thread not found.", 404, "not_found")
-  const parsed = bodySchema.safeParse(await request.json().catch(() => null))
+  const body = await readJson(request, 4_000)
+  if (!body.ok && body.tooLarge) return fail("Request is too large.", 413, "too_large")
+  const parsed = bodySchema.safeParse(body.ok ? body.body : null)
   if (!parsed.success) return fail("Malformed request.")
 
   if (!(await allow(`approval:${user.id}`, 30, 60))) {

@@ -142,18 +142,8 @@ export async function applyEvent(
         })
         .returning()
     }
-    if (sub.lastEventAt && at < sub.lastEventAt) return done("stale")
-
-    await tx
-      .update(subscriptions)
-      .set({
-        status,
-        lastEventAt: at,
-        currentPeriodStart: seconds(entity.current_start) ?? sub.currentPeriodStart,
-        currentPeriodEnd: seconds(entity.current_end) ?? sub.currentPeriodEnd,
-      })
-      .where(eq(subscriptions.id, sub.id))
-
+    // A charge is a fact whatever order its event arrives in: record it before
+    // the stale check (which only protects the subscription's status)
     const payment = event.payload.payment?.entity
     if (payment && event.event === "subscription.charged") {
       await tx
@@ -172,6 +162,18 @@ export async function applyEvent(
         })
         .onConflictDoNothing({ target: [payments.provider, payments.providerPaymentId] })
     }
+    if (sub.lastEventAt && at < sub.lastEventAt) return done("stale")
+
+    await tx
+      .update(subscriptions)
+      .set({
+        status,
+        lastEventAt: at,
+        currentPeriodStart: seconds(entity.current_start) ?? sub.currentPeriodStart,
+        currentPeriodEnd: seconds(entity.current_end) ?? sub.currentPeriodEnd,
+      })
+      .where(eq(subscriptions.id, sub.id))
+
     return done("applied")
   })
 }

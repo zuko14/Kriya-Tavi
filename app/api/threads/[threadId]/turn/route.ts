@@ -12,6 +12,7 @@ import type { KriyaMessage } from "@/lib/agent/tools"
 import { authenticate } from "@/lib/auth"
 import { LITE_HEADER } from "@/lib/lite"
 import { log } from "@/lib/log"
+import { readJson } from "@/lib/json-body"
 import { allow } from "@/lib/rate-limit"
 
 const MAX_TEXT = 20_000
@@ -61,7 +62,9 @@ export async function POST(
   if (Number(request.headers.get("content-length") ?? 0) > 200_000) {
     return fail("Message is too long.", 413, "too_large")
   }
-  const parsed = bodySchema.safeParse(await request.json().catch(() => null))
+  const body = await readJson(request, 200_000)
+  if (!body.ok && body.tooLarge) return fail("Message is too long.", 413, "too_large")
+  const parsed = bodySchema.safeParse(body.ok ? body.body : null)
   if (!parsed.success) return fail("Malformed message.")
   const text = parsed.data.message.parts.map((part) => part.text).join("")
   if (!text.trim()) return fail("Message is empty.")

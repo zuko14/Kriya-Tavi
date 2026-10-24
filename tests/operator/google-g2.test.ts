@@ -461,11 +461,13 @@ describe("calendar_delete_event (operator.calendarDelete)", () => {
     summary: "Meeting with Taiyo Labs",
     start: { dateTime: "2026-10-24T10:00:00+05:30" },
     end: { dateTime: "2026-10-24T11:00:00+05:30" },
+    attendees: [{ email: "Asha@Example.test" }],
   }
   const input = {
     eventId: "ev_1",
     title: "Meeting with Taiyo Labs",
     start: "2026-10-24T10:00:00+05:30",
+    attendees: ["asha@example.test"],
   }
 
   it("deletes the approved event without emailing guests, and reads it back gone", async () => {
@@ -509,6 +511,10 @@ describe("calendar_delete_event (operator.calendarDelete)", () => {
         start: "2026-10-25T10:00:00+05:30",
       })
     ).rejects.toThrow(/nothing was deleted/)
+    // The card showed other guests than the event has
+    await expect(
+      run(tools, "calendar_delete_event", { ...input, attendees: [] })
+    ).rejects.toThrow(/1 guest/)
     expect(calls.every((c) => c.method === "GET")).toBe(true)
   })
 
@@ -540,9 +546,8 @@ describe("calendar_delete_event (operator.calendarDelete)", () => {
     expect(
       createGoogleV2Tools(env("u"), calendar, { ...on, calendarDelete: false })
     ).toEqual({})
-    expect(createGoogleV2Tools(env("u"), connected, on)).toEqual({
-      ...createGoogleV2Tools(env("u"), connected, { ...on, calendarDelete: false }),
-    })
+    // Without Calendar connected the switch alone adds nothing
+    expect(createGoogleV2Tools(env("u"), connected, on)).toEqual({})
   })
 
   it('backs "I deleted the event" only with a successful delete', () => {
@@ -554,5 +559,26 @@ describe("calendar_delete_event (operator.calendarDelete)", () => {
     expect(
       unconfirmedClaims(claim, [{ tool: "calendar_delete_event", status: "failed" }])
     ).toHaveLength(1)
+  })
+
+  it("the runner offers it only with the switch on and Calendar connected", async () => {
+    const w = await world()
+    const reset = () =>
+      ((globalThis as { __kriyaSettings?: unknown }).__kriyaSettings = undefined)
+    await w.pg.query(
+      "update kriya.connections set scopes = scopes || array['https://www.googleapis.com/auth/calendar.events']"
+    )
+    try {
+      await w.turn("hello")
+      const before = seen.offered.at(-1)!
+      expect(before).not.toContain("calendar_delete_event")
+      process.env.KRIYA_OPERATOR_CALENDAR_DELETE = "on"
+      reset()
+      await w.turn("hello")
+      expect(seen.offered.at(-1)).toEqual([...before, "calendar_delete_event"].sort())
+    } finally {
+      delete process.env.KRIYA_OPERATOR_CALENDAR_DELETE
+      switches(false)
+    }
   })
 })

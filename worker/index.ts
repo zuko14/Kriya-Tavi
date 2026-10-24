@@ -419,6 +419,9 @@ async function stop(signal: string) {
   process.exit(0)
 }
 
+// A stray rejected promise in one background job must not end the process:
+// it would take every running task (and call) down with it
+process.on("unhandledRejection", (error) => log.error("unhandled rejection", { error }))
 process.on("SIGTERM", () => void stop("SIGTERM"))
 process.on("SIGINT", () => void stop("SIGINT"))
 

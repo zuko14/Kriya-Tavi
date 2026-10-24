@@ -21,6 +21,8 @@ export interface FileStore {
   uploadUrl(path: string): Promise<string>
   // null when the object isn't there (or can't be read right now)
   read(path: string): Promise<Buffer | null>
+  // The stored object's size without downloading it; null when unknown
+  size?(path: string): Promise<number | null>
   write(path: string, bytes: Buffer, mime: string): Promise<void>
   signedUrl(path: string, seconds: number, downloadName: string): Promise<string>
   remove(paths: string[]): Promise<void>
@@ -49,6 +51,10 @@ export function fileStore(): FileStore | null {
     async read(path) {
       const { data, error } = await bucket.download(path)
       return error || !data ? null : Buffer.from(await data.arrayBuffer())
+    },
+    async size(path) {
+      const { data, error } = await bucket.info(path)
+      return error || typeof data?.size !== "number" ? null : data.size
     },
     async write(path, bytes, mime) {
       const { error } = await bucket.upload(path, bytes, {
@@ -216,12 +222,18 @@ export async function confirmUpload(userId: string, fileId: string) {
   if (!row) return { error: "That file wasn't found." }
   if (row.status !== "pending") return { status: row.status }
 
-  const bytes = await store.read(objectPath(row))
-  if (!bytes) return { error: "The upload hasn't arrived yet. Try again in a moment." }
+  // The signed link has no size cap: a larger object is refused before it is
+  // downloaded into the server's memory
+  const stored = await store.size?.(objectPath(row))
+  const wrongSize = stored != null && stored !== row.sizeBytes
+  const bytes = wrongSize ? null : await store.read(objectPath(row))
+  if (!wrongSize && !bytes) {
+    return { error: "The upload hasn't arrived yet. Try again in a moment." }
+  }
   const check =
-    bytes.length !== row.sizeBytes
+    wrongSize || bytes!.length !== row.sizeBytes
       ? { ok: false as const, reason: "The upload's size doesn't match." }
-      : sniff(bytes, row.mime)
+      : sniff(bytes!, row.mime)
   const own = and(
     eq(files.id, row.id),
     eq(files.userId, userId),
@@ -237,7 +249,7 @@ export async function confirmUpload(userId: string, fileId: string) {
   }
   await privileged
     .update(files)
-    .set({ status: "ready", sha256: sha256(bytes) })
+    .set({ status: "ready", sha256: sha256(bytes!) })
     .where(own)
   return { status: "ready" as const }
 }

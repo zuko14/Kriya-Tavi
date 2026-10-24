@@ -1813,19 +1813,27 @@ export function createGoogleV2Tools(
     ...(unbook && {
       calendar_delete_event: tool({
         description:
-          "Delete one event from the person's Google Calendar, only when they ask. Give its id, title and start exactly as calendar_events returned them. The person approves the exact event; guests aren't emailed, and a deleted event can't be brought back.",
+          "Delete one event from the person's Google Calendar, only when they ask. Give its id, title, start and attendees exactly as calendar_events returned them. The person approves the exact event; guests aren't emailed but lose it too, and a deleted event can't be brought back.",
         inputSchema: z.object({
           // Google's ids, including one occurrence of a repeating event
           eventId: z.string().regex(/^[A-Za-z0-9_-]{1,1024}$/),
           title: z.string().min(1).max(200),
           start: z.string().min(1).max(40),
+          // Shown on the approval card: deleting removes it for them too
+          attendees: z.array(email).max(20).default([]),
         }),
-        execute: async ({ eventId, title, start }) => {
+        execute: async ({ eventId, title, start, attendees = [] }) => {
           // Deletes only the event the person saw on the approval card
           const found = await calendarEvent(user, eventId)
-          if (found.title !== title || found.start !== start)
+          const norm = (list: string[]) =>
+            [...new Set(list.map((a) => a.trim().toLowerCase()))].sort().join(",")
+          if (
+            found.title !== title ||
+            found.start !== start ||
+            norm(found.attendees) !== norm(attendees)
+          )
             throw new ConnectorError(
-              `That event is "${found.title}" at ${found.start}, not what the person approved, so nothing was deleted. Look it up again with calendar_events.`
+              `That event is "${found.title}" at ${found.start} with ${found.attendees.length} guest(s), not what the person approved, so nothing was deleted. Look it up again with calendar_events.`
             )
           const gone = await calendarDelete(user, eventId, false)
           return {

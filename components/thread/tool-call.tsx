@@ -277,6 +277,7 @@ const A8_ROWS: Record<string, (i: Record<string, unknown>) => [string, string][]
   calendar_delete_event: (i) => [
     ["Event", str(i.title)],
     ["Starts", str(i.start)],
+    ["Guests", list(i.attendees) || "None"],
   ],
 }
 const A8_TEXT: Record<string, (i: Record<string, unknown>) => string> = {
@@ -315,7 +316,7 @@ const A8_NOTES: Record<string, string> = {
   gmail_send_draft:
     "Sends the draft exactly as saved in your Gmail, as you. A sent email can't be taken back.",
   calendar_delete_event:
-    "Deletes this event from your Google Calendar. Guests aren't emailed, and it can't be undone.",
+    "Deletes this event from your Google Calendar. Guests aren't emailed, but it disappears from their calendars too. It can't be undone.",
 }
 
 export function toolName(part: ToolPart) {

@@ -1,5 +1,5 @@
 import { drizzle } from "drizzle-orm/pglite"
-import { afterEach, beforeEach, describe, expect, it } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { setDatabaseForTests, type DB } from "@/db"
 import * as schema from "@/db/schema"
@@ -181,6 +181,27 @@ describe("AT-FILE-01 upload links and confirmation", () => {
     })
     // Idempotent
     expect(await confirmUpload(alice, good)).toEqual({ status: "ready" })
+  })
+
+  it("refuses an object larger than announced without downloading it", async () => {
+    const inner = memoryStore()
+    const read = vi.fn(inner.read)
+    setFileStoreForTests({
+      ...inner,
+      read,
+      size: async (path) => objects.get(path)?.length ?? null,
+    })
+    const big = await upload(alice, "n.txt", "text/plain", Buffer.alloc(50, "a"), 5)
+    expect(await confirmUpload(alice, big)).toMatchObject({
+      status: "rejected",
+      reason: "The upload's size doesn't match.",
+    })
+    expect(read).not.toHaveBeenCalled()
+    expect(objects.has(objectPath({ userId: alice, id: big }))).toBe(false)
+    // A matching size still goes on to be read and checked
+    const good = await upload(alice, "n.txt", "text/plain", Buffer.from("hello"))
+    expect(await confirmUpload(alice, good)).toEqual({ status: "ready" })
+    expect(read).toHaveBeenCalledTimes(1)
   })
 
   it("another person can't confirm, download or delete it", async () => {
