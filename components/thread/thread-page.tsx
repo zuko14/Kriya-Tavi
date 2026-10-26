@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 
 import { ThreadView } from "@/components/thread/thread-view"
 import { requireUser } from "@/lib/auth"
+import { agentGlyph } from "@/lib/glyph"
 import { getThread, getThreadsFor } from "@/queries/workspace"
 
 // Shared by the agent and squad thread routes
@@ -25,7 +26,7 @@ export async function ThreadPage({
     id: agent.id,
     name: agent.name,
     role: agent.role,
-    glyph: agent.glyph,
+    glyph: agentGlyph(agent),
     model: agent.model,
   }))
 
@@ -34,7 +35,7 @@ export async function ThreadPage({
         id: thread.agent!.id,
         name: thread.agent!.name,
         subtitle: thread.agent!.role,
-        glyphs: [thread.agent!.glyph],
+        glyphs: [agentGlyph(thread.agent!)],
       }
     : {
         id: thread.squad!.id,

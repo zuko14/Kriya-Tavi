@@ -128,8 +128,13 @@ afterAll(() => {
 })
 
 // Authorizes the canonical task, dials it, and connects its media stream
-async function dialAndConnect(voice: NonNullable<typeof service>, autoPlay = true) {
+async function dialAndConnect(
+  voice: NonNullable<typeof service>,
+  autoPlay = true,
+  extra: { threadId?: string } = {}
+) {
   const draft = await createDraft(user, {
+    ...extra,
     idempotencyKey: `key-${Math.random()}`,
     recipientLabel: "my CA",
     recipientPhone: "98765 43210",
@@ -358,6 +363,58 @@ describe("a connected call, end to end on mocks", () => {
     client.stop()
     await client.closed
     await Promise.all(sessions)
+  })
+
+  it("owner scenario 1: the summary reaches the call's thread once the call settles", async () => {
+    await pg.query(
+      "insert into kriya.agents (id, user_id, name, role, glyph) values ('a1', $1, 'Meera', 'Research', 'g')",
+      [user]
+    )
+    await pg.query(
+      "insert into kriya.threads (id, user_id, agent_id) values ('t1', $1, 'a1')",
+      [user]
+    )
+    const { attemptId, client, complete } = await dialAndConnect(await start(), true, {
+      threadId: "t1",
+    })
+    const callee = stt.streams[0]
+    await heard(attemptId, 1)
+    callee.say("Hello?")
+    await heard(attemptId, 2)
+    callee.say("Yes, speaking.")
+    await heard(attemptId, 3)
+    callee.say("Yes, that works.")
+    await client.closed
+    await Promise.all(sessions)
+    await outcomeOf(attemptId)
+    // Not before the provider's final word: the call isn't settled yet
+    expect(await q("select 1 from kriya.messages where thread_id = 't1'")).toEqual([])
+    await complete()
+    const rows = await q<{ role: string; parts: { text: string }[] }>(
+      "select role, parts from kriya.messages where thread_id = 't1'"
+    )
+    expect(rows).toHaveLength(1)
+    expect(rows[0].role).toBe("assistant")
+    expect(rows[0].parts[0].text).toContain("**Call to my CA: agreed**")
+    expect(rows[0].parts[0].text).toContain("- **Agreed:** Wednesday the 14th at 3 PM")
+  })
+
+  it("S29 a voicemail greeting: Tavi hangs up without another word", async () => {
+    const { attemptId, client } = await dialAndConnect(await start())
+    await heard(attemptId, 1)
+    stt.streams[0].say("The number you have dialled is currently switched off.")
+    expect((await client.closed).code).toBe(1000)
+    await Promise.all(sessions)
+    const [attempt] = await q<{ end_reason: string }>(
+      "select end_reason from kriya.call_attempts where id = $1",
+      [attemptId]
+    )
+    expect(attempt.end_reason).toBe("voicemail")
+    const tavi = await q(
+      "select 1 from kriya.conversation_turns where call_attempt_id = $1 and speaker = 'tavi'",
+      [attemptId]
+    )
+    expect(tavi).toHaveLength(1)
   })
 
   it("'don't call me again' suppresses the number for everyone (S24)", async () => {

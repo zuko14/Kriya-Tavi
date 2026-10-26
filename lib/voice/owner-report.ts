@@ -225,6 +225,8 @@ export function reportText(
   const times = [...new Set(proposed)]
 
   if (outcome && outcome.status !== "accepted") return { text: r.review(label), times }
+  const notes = (interpreted as { notes?: { end?: string } } | null | undefined)?.notes
+  if (outcome && notes?.end === "voicemail") return { text: r.voicemail(label), times }
   if (outcome && interpreted) {
     const agreed = interpreted.agreed_times?.find((a) => !a.superseded)
     const byCallee = (interpreted.proposed_times ?? [])
@@ -257,12 +259,18 @@ export function reportText(
         hourCycle: "h23",
       }).format(at)
     )
-  const last = tried.at(-1)!.status
+  const last = tried.at(-1)!
   return {
     text: r.notReached(
       label,
       tried.map((a) => clockAt(a.requestedAt!)),
-      last === "busy" ? "busy" : last === "no_answer" ? "no_answer" : "failed"
+      last.status === "busy"
+        ? "busy"
+        : last.status === "no_answer"
+          ? "no_answer"
+          : last.endReason === "voicemail"
+            ? "voicemail"
+            : "failed"
     ),
     times,
   }
@@ -285,7 +293,8 @@ export async function reportCall(
     task.recipientLabel,
     spec.timezone,
     await loadReportContext(task.id, userId),
-    spec.language
+    // The owner's own calls stay in English, whatever the callee spoke (D-21)
+    "en-IN"
   )
   const evidence = (turnSeq: number) => ({ attemptId: attempt.id, turnSeq })
 
@@ -389,7 +398,7 @@ export async function reportCall(
       times,
       timezone: spec.timezone,
       quiet,
-      language: spec.language,
+      language: "en-IN",
     },
     effects
   )

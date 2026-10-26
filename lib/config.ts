@@ -94,6 +94,22 @@ export const SETTINGS = {
     pattern: /^(on|off)$/,
     hint: "on or off",
   },
+  // D-19: drafts may carry a contact's number for Tavi to give the callee.
+  // Off until counsel answers Q12 (docs/voice-assistant/UPGRADE_PROPOSAL.md)
+  "voice.shareContact": {
+    env: null,
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // D-21: languages calls may use, English first. Hindi and Telugu are draft
+  // translations until a native speaker and counsel (Q4) review them
+  "voice.languages": {
+    env: null,
+    fallback: "en-IN",
+    pattern: /^en-IN(,(hi-IN|te-IN)){0,2}$/,
+    hint: "en-IN, or en-IN,hi-IN,te-IN",
+  },
   // Until phase 9 a real provider dials only these numbers (F25). Unset: none
   "voice.testNumbers": {
     env: "KRIYA_VOICE_TEST_NUMBERS",

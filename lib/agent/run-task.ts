@@ -85,6 +85,7 @@ import {
 } from "@/lib/agent/tools"
 import { browserProvider, TaskBrowser } from "@/lib/browser/session"
 import { getSetting } from "@/lib/config"
+import { agentGlyph } from "@/lib/glyph"
 import { BASELINE_POLICY, bundleFor, stampTask, type Policy } from "@/lib/improve"
 import { EXTRA_GOOGLE_SERVICES, googleServices } from "@/lib/connectors"
 import { log } from "@/lib/log"
@@ -712,7 +713,7 @@ export async function runTask(task: Task, ctx: WorkerContext) {
         return {
           agentId: agent.id,
           name: agent.name,
-          glyph: agent.glyph,
+          glyph: agentGlyph(agent),
           brief: part,
           status: "working",
           text: "",

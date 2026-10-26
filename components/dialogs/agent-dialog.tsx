@@ -3,15 +3,14 @@
 import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
-import { ShuffleIcon, Trash2Icon } from "lucide-react"
-import { nanoid } from "nanoid"
+import { Trash2Icon } from "lucide-react"
 import { Controller, useForm, useWatch } from "react-hook-form"
 
 import { createAgent, deleteAgent, updateAgent } from "@/actions/agents"
 import { Confirm } from "@/components/confirm"
 import { AppChoices } from "@/components/dialogs/app-choices"
+import { AvatarPicker } from "@/components/dialogs/avatar-picker"
 import { SkillPicker } from "@/components/dialogs/skill-picker"
-import { Glyph } from "@/components/glyph"
 import { TierPicker } from "@/components/model-picker"
 import { Button } from "@/components/ui/button"
 import {
@@ -50,8 +49,6 @@ const UNEXPECTED =
 function AgentForm({ agent, template }: { agent?: NavAgent; template?: AgentTemplate }) {
   const router = useRouter()
   const { status, closeDialog } = useWorkspace()
-  const [initialGlyph] = React.useState(() => agent?.glyph ?? nanoid(10))
-
   const form = useForm({
     resolver: zodResolver(agentInputSchema),
     defaultValues: {
@@ -59,7 +56,8 @@ function AgentForm({ agent, template }: { agent?: NavAgent; template?: AgentTemp
       role: agent?.role ?? template?.role ?? "",
       instructions: agent?.instructions ?? template?.instructions ?? "",
       model: isTier(agent?.model) ? agent.model : "",
-      glyph: initialGlyph,
+      // The person's chosen avatar; unset follows the role (never sent then)
+      glyph: agent?.glyphChoice ?? undefined,
       // Unset (role defaults) until the person changes a skill; never sent
       // while the Skills section is hidden
       skills: status.skills ? (agent?.skills ?? undefined) : undefined,
@@ -116,6 +114,7 @@ function AgentForm({ agent, template }: { agent?: NavAgent; template?: AgentTemp
 
   const instructions = useWatch({ control: form.control, name: "instructions" }) ?? ""
   const role = useWatch({ control: form.control, name: "role" }) ?? ""
+  const name = useWatch({ control: form.control, name: "name" }) ?? ""
 
   return (
     <form onSubmit={onSubmit} className="flex min-h-0 flex-col">
@@ -161,17 +160,12 @@ function AgentForm({ agent, template }: { agent?: NavAgent; template?: AgentTemp
               name="glyph"
               control={form.control}
               render={({ field }) => (
-                <div className="flex flex-col items-center gap-1.5">
-                  <Glyph seed={field.value ?? initialGlyph} className="size-[60px]" />
-                  <button
-                    type="button"
-                    onClick={() => field.onChange(nanoid(10))}
-                    className="inline-flex items-center gap-1 font-mono text-[10.5px] text-muted-foreground hover:text-foreground"
-                  >
-                    <ShuffleIcon className="size-3" />
-                    reroll
-                  </button>
-                </div>
+                <AvatarPicker
+                  value={field.value ?? undefined}
+                  role={role}
+                  name={name}
+                  onChange={(value) => field.onChange(value)}
+                />
               )}
             />
             <div className="grid flex-1 gap-3">

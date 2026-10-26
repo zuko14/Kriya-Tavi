@@ -32,7 +32,18 @@ function activity(tools: string[] | undefined) {
 
 // A squad lead's `assign` call: every member's part, live while they work
 // side by side, then each result
-export function SquadWork({ part, live }: { part: ToolPart; live: boolean }) {
+export function SquadWork({
+  part,
+  live,
+  members = [],
+}: {
+  part: ToolPart
+  live: boolean
+  // Today's faces: an older card stored the glyph its members had then
+  members?: { id: string; glyph: string }[]
+}) {
+  const faceOf = (row: Partial<Assignment>) =>
+    members.find((member) => member.id === row.agentId)?.glyph ?? row.glyph
   const input = (part.input ?? {}) as {
     assignments?: { agentId?: string; brief?: string }[]
   }
@@ -84,8 +95,8 @@ export function SquadWork({ part, live }: { part: ToolPart; live: boolean }) {
             <li key={row.agentId ?? i}>
               <Collapsible className="group/member" disabled={!open}>
                 <CollapsibleTrigger className="flex min-h-14 w-full min-w-0 items-start gap-3 px-3.5 py-3 text-left enabled:hover:bg-accent/30">
-                  {row.glyph ? (
-                    <Glyph seed={row.glyph} className="mt-0.5 size-8 shrink-0" />
+                  {faceOf(row) ? (
+                    <Glyph seed={faceOf(row)!} className="mt-0.5 size-8 shrink-0" />
                   ) : (
                     <span className="mt-0.5 size-8 shrink-0 rounded-lg bg-muted" />
                   )}

@@ -1,0 +1,42 @@
+{
+  "id": "S38-wrong-number-indic",
+  "about": "Wrong number said in English, Hindi or Telugu: no task details, polite close",
+  "provider_script": [
+    {
+      "status": "ringing",
+      "atMs": 0
+    },
+    {
+      "status": "answered",
+      "atMs": 4000
+    },
+    {
+      "status": "completed",
+      "atMs": 90000
+    }
+  ],
+  "callee": [
+    {
+      "say": "Hello?"
+    },
+    {
+      "say": "Galat number hai"
+    }
+  ],
+  "variants": [
+    ["Hello?", "Galat number hai"],
+    ["Hello?", "Wrong number"],
+    ["Hello?", "Rong number, sorry"],
+    ["Hello?", "Tappu number andi"],
+    ["Hello?", "गलत नंबर है"],
+    ["Hello?", "తప్పు నంబర్"]
+  ],
+  "gold": {
+    "dialogue": {
+      "result": "wrong_person",
+      "end": "wrong_person",
+      "notSaid": ["meet you"],
+      "maxModelCalls": 0
+    }
+  }
+}

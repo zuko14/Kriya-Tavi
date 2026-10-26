@@ -1,0 +1,57 @@
+{
+  "id": "S40-hindi-alternative",
+  "about": "A call in Hindi (D-21): the callee proposes another time in Hindi or Hinglish; read back in Hindi, then agreed",
+  "spec": {
+    "language": "hi-IN"
+  },
+  "provider_script": [
+    {
+      "status": "ringing",
+      "atMs": 0
+    },
+    {
+      "status": "answered",
+      "atMs": 4000
+    },
+    {
+      "status": "completed",
+      "atMs": 90000
+    }
+  ],
+  "callee": [
+    {
+      "say": "हाँ, बोलिए"
+    },
+    {
+      "say": "जी हाँ"
+    },
+    {
+      "say": "कल शाम 4 बजे?"
+    },
+    {
+      "say": "हाँ, ठीक है"
+    }
+  ],
+  "variants": [
+    ["हाँ, बोलिए", "जी हाँ", "कल शाम 4 बजे?", "हाँ, ठीक है"],
+    ["Haan boliye", "Haan ji", "Kal shaam 4 baje kar sakte hain?", "Haan"],
+    ["Haan ji", "Haan", "3 baje nahi, 4 baje shaam ko", "Haan theek hai"],
+    ["हाँ", "जी", "कल 4 बजे शाम को?", "जी हाँ"],
+    ["Haan", "Haan ji", "Kal chaar baje shaam?", "Bilkul"]
+  ],
+  "gold": {
+    "dialogue": {
+      "result": "agreed",
+      "agreed": [
+        {
+          "date": "2026-10-21",
+          "time": "16:00"
+        }
+      ],
+      "said": [
+        "नमस्ते, यह Kriya Tavi है — Asha की ओर से एक AI सहायक की कॉल।",
+        "तो बुधवार 21 तारीख को शाम 4 बजे, ठीक है?"
+      ]
+    }
+  }
+}

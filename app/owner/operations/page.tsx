@@ -102,6 +102,19 @@ export default async function OwnerOperations() {
             hint="lease expired while dialing or on a call"
           />
           <Tile
+            label="confirm → ring"
+            value={
+              voice.setup.ringP50 == null
+                ? "none yet"
+                : `${voice.setup.ringP50.toFixed(1)} s`
+            }
+            hint={
+              voice.setup.ringP95 == null
+                ? "median, last 7 days"
+                : `median · p95 ${voice.setup.ringP95.toFixed(1)} s · dial ${voice.setup.dialP50!.toFixed(1)} s · ${voice.setup.calls} calls`
+            }
+          />
+          <Tile
             label="needs the owner"
             value={voice.calls
               .filter((c) => c.status === "needs_owner")

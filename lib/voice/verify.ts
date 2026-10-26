@@ -23,6 +23,7 @@ import type { VoiceTaskSpec } from "./schemas"
 import { bundleFor } from "./policy"
 import { hashToken } from "./streams"
 import { TERMINAL_CALL, TERMINAL_TASK, transition } from "./tasks"
+import { postThreadSummary } from "./thread-summary"
 
 // Provider truth for voice calls (CONVERSATION_AND_VERIFICATION.md §7,
 // TELEPHONY_PROVIDER_ASSESSMENT.md §2.3). Status webhooks are unsigned, so a
@@ -328,8 +329,10 @@ export async function finishOutcome(
   let interpreted: Record<string, unknown> = { notes }
   let model: string | null = null
   let status: "accepted" | "needs_review" = "needs_review"
+  // A voicemail greeting has nothing to interpret: no model is asked (D-22)
+  const voicemail = notes?.end === "voicemail"
   const extracted =
-    notes && models
+    notes && models && !voicemail
       ? await extractOutcome({
           spec,
           turns,
@@ -340,7 +343,10 @@ export async function finishOutcome(
         }).catch(() => null)
       : null
   if (!notes) reasons.push("no notes from the call")
-  else if (!extracted) reasons.push("the outcome couldn't be extracted")
+  else if (voicemail) {
+    reasons.push("voicemail or a network message answered")
+    if (!lost) status = "accepted"
+  } else if (!extracted) reasons.push("the outcome couldn't be extracted")
   else {
     const checked = checkOutcome(extracted.interpreted, { spec, turns, notes })
     interpreted = { ...checked.interpreted, notes }
@@ -407,8 +413,12 @@ export const latestAttempt = (q: Q, callId: string) =>
     .limit(1)
     .then(([a]) => a)
 
-const resultOf = (status: string | undefined) =>
-  status === "busy" || status === "no_answer" ? status : "call_failed"
+const resultOf = (attempt: { status: string; endReason: string | null } | undefined) =>
+  attempt?.status === "busy" || attempt?.status === "no_answer"
+    ? attempt.status
+    : attempt?.endReason === "voicemail"
+      ? "no_answer"
+      : "call_failed"
 
 // Decides a dialing call's next state once its attempt is final: retry,
 // exhausted, needs the owner, or cancelled. Then moves its task on. Safe to
@@ -423,7 +433,8 @@ export async function settleCall(callId: string) {
     if (!call) return
     const last = await latestAttempt(tx, call.id)
     // Someone talked to the callee: this call settles from its outcome and
-    // is never retried (a lost session didn't move it to in_call itself)
+    // is never retried, unless only a voicemail answered (D-22) (a lost
+    // session didn't move it to in_call itself)
     if (call.status === "dialing" && last?.connectedAt) {
       await transition(tx, "call", call.id, "in_call", "worker")
       call.status = "in_call"
@@ -446,8 +457,12 @@ export async function settleCall(callId: string) {
         call.cancelRequestedAt ? "canceled" : "settled",
         call.cancelRequestedAt ? "worker" : "verifier"
       )
-      // A report not heard to its end goes round again (VOICE_REMINDERS §3)
-      if (call.kind === "owner_report" && !call.cancelRequestedAt && !call.deliveredAt) {
+      // A report not heard to its end goes round again (VOICE_REMINDERS §3).
+      // So does an outreach call that reached voicemail or a network message:
+      // nobody spoke to Tavi, so nobody was reached (D-22, S29)
+      const again =
+        call.kind === "owner_report" ? !call.deliveredAt : last.endReason === "voicemail"
+      if (again && !call.cancelRequestedAt) {
         await transition(tx, "call", call.id, "retry_wait", "worker")
         await retryOrEnd(tx, call)
       }
@@ -481,6 +496,10 @@ export async function settleCall(callId: string) {
     }
     if (call.voiceTaskId) await followTask(tx, call.voiceTaskId)
   })
+  // The thread the call was drafted from hears how it went, once it's over
+  await postThreadSummary(callId).catch((error) =>
+    log.error("voice thread summary failed", { callId, error })
+  )
 }
 
 // When a call may be tried again, or null once it's done: attempts used,
@@ -597,7 +616,7 @@ async function followTask(tx: Q, taskId: string) {
       ? TASK_RESULTS.includes(said ?? "")
         ? said
         : "unclear"
-      : resultOf(last?.status)
+      : resultOf(last)
   const reports = calls.filter((c) => c.kind === "owner_report")
   const delivered = reports.find((c) => c.deliveredAt)
   if (!task.reportRequested || delivered) {

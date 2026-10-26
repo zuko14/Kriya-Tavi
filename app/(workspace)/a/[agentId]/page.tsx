@@ -5,6 +5,7 @@ import { StartThread } from "@/components/thread/start-thread"
 import { withUser } from "@/db"
 import { agents } from "@/db/schema"
 import { requireUser } from "@/lib/auth"
+import { agentGlyph } from "@/lib/glyph"
 import { getLatestThreadId } from "@/queries/workspace"
 
 export default async function Page({ params }: { params: Promise<{ agentId: string }> }) {
@@ -23,7 +24,7 @@ export default async function Page({ params }: { params: Promise<{ agentId: stri
       owner={{ agentId }}
       name={agent.name}
       subtitle={agent.role}
-      glyphs={[agent.glyph]}
+      glyphs={[agentGlyph(agent)]}
     />
   )
 }

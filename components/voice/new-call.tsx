@@ -31,6 +31,8 @@ type Draft = {
     | { type: "deliver_message"; message: string; askForReply: boolean }
     | { type: "ask_question"; question: string }
   authority?: { mayAcceptWithinAcceptable: boolean; mayProposeAlternatives: boolean }
+  share?: { label: string; phone: string }
+  language?: string
 }
 
 // The questions of §3, one per missing field
@@ -82,7 +84,21 @@ function Field({
   )
 }
 
-export function NewCall() {
+const LANGUAGE_NAMES: Record<string, string> = {
+  "en-IN": "English",
+  "hi-IN": "Hindi",
+  "te-IN": "Telugu",
+}
+
+// share: voice.shareContact is on (D-19), so a number to give can be added;
+// languages: the call languages switched on (voice.languages, D-21)
+export function NewCall({
+  share = false,
+  languages = ["en-IN"],
+}: {
+  share?: boolean
+  languages?: string[]
+}) {
   const router = useRouter()
   const [text, setText] = React.useState("")
   const [interim, setInterim] = React.useState("")
@@ -144,6 +160,9 @@ export function NewCall() {
         question: g?.type === "ask_question" ? g.question : "",
         accept: d.authority?.mayAcceptWithinAcceptable ? "yes" : "",
         propose: d.authority?.mayProposeAlternatives ? "yes" : "",
+        language: d.language ?? "",
+        shareLabel: d.share?.label ?? "",
+        sharePhone: d.share?.phone ?? "",
       })
       setMissing(result.missing)
     } catch {
@@ -177,6 +196,15 @@ export function NewCall() {
           mayDiscuss: [],
         },
         mustNot: [],
+        ...(languages.length > 1 &&
+          languages.includes(f("language")) &&
+          f("language") !== "en-IN" && {
+            language: f("language") as "hi-IN" | "te-IN",
+          }),
+        ...(share &&
+          f("sharePhone") && {
+            share: { label: f("shareLabel") || "this contact", phone: f("sharePhone") },
+          }),
       })
       if (result.ok) return router.push(`/calls/${result.taskId}`)
       const detail = result.fields ? Object.values(result.fields) : []
@@ -396,6 +424,47 @@ export function NewCall() {
                 onChange={(e) => set("question")(e.target.value)}
               />
             </Field>
+          )}
+
+          {languages.length > 1 && (
+            <Field id="field-language" label="Speak on the call in">
+              <select
+                id="field-language"
+                className="min-h-11 rounded-md border bg-transparent px-3 text-[14px]"
+                value={f("language") || "en-IN"}
+                onChange={(e) => set("language")(e.target.value)}
+              >
+                {languages.map((code) => (
+                  <option key={code} value={code}>
+                    {LANGUAGE_NAMES[code] ?? code}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
+          {share && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field id="field-share-label" label="Give them whose number?">
+                <Input
+                  id="field-share-label"
+                  className={tap}
+                  placeholder="Ravi (optional)"
+                  value={f("shareLabel")}
+                  onChange={(e) => set("shareLabel")(e.target.value)}
+                />
+              </Field>
+              <Field id="field-share-phone" label="That number">
+                <Input
+                  id="field-share-phone"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="off"
+                  className={tap}
+                  value={f("sharePhone")}
+                  onChange={(e) => set("sharePhone")(e.target.value)}
+                />
+              </Field>
+            </div>
           )}
 
           {error && (

@@ -3,6 +3,7 @@ import { and, eq, gt } from "drizzle-orm"
 import { withUser } from "@/db"
 import { agents, tasks, threads } from "@/db/schema"
 import { authenticate } from "@/lib/auth"
+import { joinedGlyph } from "@/lib/glyph"
 import { previewText, type KriyaEvent } from "@/lib/events"
 
 // A server-sent event stream of the person's tasks starting and finishing,
@@ -38,6 +39,7 @@ export async function GET(request: Request) {
           agentId: agents.id,
           name: agents.name,
           glyph: agents.glyph,
+          role: agents.role,
         })
         .from(tasks)
         .innerJoin(threads, eq(threads.id, tasks.threadId))
@@ -59,7 +61,7 @@ export async function GET(request: Request) {
           ? `/s/${row.squadId}/${row.threadId}`
           : `/a/${row.agentId}/${row.threadId}`,
         name: row.name ?? "Your agent",
-        glyph: row.glyph ?? "",
+        glyph: joinedGlyph(row.glyph, row.role) ?? "",
       }
       if (kind === "started") events.push({ ...common, type: "turn-started" })
       // A task the person stopped needs no news

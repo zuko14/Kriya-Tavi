@@ -62,7 +62,7 @@ only your own row. Rules: AGENT_MASTER_PROMPT.md §4.
 | 1 | Domain model, migration, RLS, state machines | COMPLETE 2026-10-20 (PGlite; applied to staging Supabase `kriya-tavi` 2026-10-20, Postgres 17) | 0 approved |
 | 2 | Provider interfaces, mocks, `kriya-voice` skeleton | COMPLETE 2026-10-20 (mocks only; Exotel framing unverified until X9; B9 open) | 1 |
 | 3 | Durable call orchestration on mocks | COMPLETE 2026-10-20 (mock provider; the worker doesn't start the loop until a real provider exists, phase 5) | 2 |
-| 4 | Dialogue engine, STT/TTS/LLM, outcomes, verification | IN_PROGRESS (2026-10-20: engine, outcomes, verification and L-text done on mocks; vendor adapters + paid benchmark open, B2, B6) | 2 (benchmark needs keys) |
+| 4 | Dialogue engine, STT/TTS/LLM, outcomes, verification | IN_PROGRESS (2026-10-20: engine, outcomes, verification and L-text done on mocks; vendor adapters + paid benchmark open, B2, B6; 2026-10-26: number dictation, voicemail hang-up, thread summary on mocks; D-19…D-26 proposed) | 2 (benchmark needs keys) |
 | 5 | Controlled live outbound calls (Exotel, test numbers) | BLOCKED | 3, 4, external approvals |
 | 6 | Owner reminders and spoken reports | COMPLETE 2026-10-20 (mock provider; the live check to the owner's phone moves to phase 5's exit; migration `20261022000000` not applied to staging) | 3, 4 (live check needs 5) |
 | 7 | Mobile UI | IN_PROGRESS (2026-10-20: 360 px browser checks on staging done with screenshots; §11.7 measured, F29 fixed, acceptance met on a mock call (F30 fixed); Phone & calls built and checked at 360 px (F33 fixed); open: real-Android mic + TalkBack, F28, F31) | 3, 6 |
@@ -829,6 +829,167 @@ vendor keys or spend is done and green; the exit needs the paid benchmark
   `docs/voice-assistant/benchmarks/<date>.md`, add `voice.stt`/`voice.tts`/
   `voice.model` settings (T-CFG-01) and wire `runSession` in `voice/index.ts`.
   Phase 7 (UI) can start now on these actions.
+
+**Session plan (2026-10-26, Claude Code / Opus 5.5, side session, `main` in
+place, uncommitted; owner's brief via the starting session: number
+dictation, partial repeats and a post-call thread summary):**
+
+- Preflight: `git status` shows another session's uncommitted avatar/skills
+  work (not touched, not committed). Baseline `env -u OPENROUTER_API_KEY npm
+  run check` run before the first edit (result in the session result).
+- Create: `lib/voice/dictation.ts` (digits grouped and spoken, requests in
+  English, Hindi, Telugu and Hinglish, read-back check; all from stored
+  digits, no model), `lib/voice/thread-summary.ts` (one message per finished
+  outreach call, built only from the verified records),
+  `tests/voice/dictation.test.ts`, `tests/voice/thread-summary.test.ts`,
+  scenarios S31–S37, `docs/voice-assistant/UPGRADE_PROPOSAL.md` (gap
+  analysis + proposals D-19…D-26).
+- Change (voice files only): `lib/voice/dialogue.ts` (a `sharing` state and
+  the dictation intercept; voicemail and network-announcement hang-up;
+  English-only reply to a language request), `lib/voice/languages.ts`
+  (voicemail lexicon, a few Hindi/Telugu opt-out and wrong-number phrases,
+  the English-only line), `lib/voice/schemas.ts` (`VoiceTaskSpec.share`,
+  optional; drafts can't set it until VD-01), `lib/voice/session.ts` (hang up
+  silently on voicemail), `lib/voice/verify.ts` (post the summary after a
+  call settles), `scripts/voice-eval.ts` (`spec.share` in scenarios),
+  `docs/voice-assistant/EVALUATION_PLAN.md` (S31–S37).
+- Not touched: §2 protected files, `lib/agent/*` (the summary is written as a
+  plain row, so kriya-voice still loads only `call-tools.ts`), `app/api/events`
+  (D-07), the policy bundle (dictation wording is a fixed guard in code).
+- Risks: the number must never reach a stored turn, a model prompt or a log
+  (stored turns get `[number withheld]`); "after 3" in a time negotiation
+  must not be read as a dictation request (outside the sharing state a
+  request must name the number); the summary carries the callee's questions
+  into the thread, which agents read later (quoted, capped; D-25).
+
+**Session result (2026-10-26, Claude Code / Opus 5.5, side session):**
+`IN_PROGRESS` (the phase's exit still needs the paid benchmark, B2/B6). On
+mocks and the scripted model only: no real call, STT/TTS request or paid
+model run. Nothing committed.
+
+- Gap analysis and proposals: `docs/voice-assistant/UPGRADE_PROPOSAL.md`
+  (owner scenarios 1 and 2; D-19…D-26 **Proposed**, added to DECISIONS.md;
+  counsel Q12). No competitor comparison made (D-26, ND-20).
+- Created: `lib/voice/dictation.ts` (number grouped 5 + 5 and spoken as
+  words; repeat, slower, last/first *n*, after/before a part, wait,
+  read-back checked digit by digit; requests in English, Hindi, Telugu and
+  Hinglish, Latin and native script; a part said twice or absent gets the
+  whole number; a low-confidence read-back is never called wrong),
+  `lib/voice/thread-summary.ts` (one assistant message per finished
+  outreach call in the task's own thread, from verified records only; the
+  model's free-text summary is never used; callee's words quoted and
+  stripped of Markdown), tests `tests/voice/{dictation,dialogue-number,
+  thread-summary}.test.ts`, scenarios S31–S39 (5–6 phrasings each; all but
+  S35 and S37 need no model call).
+- Changed: `lib/voice/dialogue.ts` (a `sharing` state; requests answered by
+  code before the model; stored turns and prompts get `[number withheld]`;
+  voicemail/network announcement → hang up silently, `end = voicemail`;
+  honest English-only reply to a language request), `lib/voice/languages.ts`
+  (voicemail lexicon; Hindi/Telugu wrong-number and opt-out phrases;
+  `languageAsked`, `englishOnly`), `lib/voice/schemas.ts`
+  (`VoiceTaskSpec.share`, optional; **drafts can't set it until D-19**),
+  `lib/voice/session.ts` (hang up on voicemail), `lib/voice/verify.ts`
+  (`postThreadSummary` after `settleCall`, errors logged, never failing the
+  settle), `scripts/voice-eval.ts` (`spec.share`), `tests/voice/
+  session.test.ts` (two new end-to-end cases; `dialAndConnect` takes an
+  optional `threadId`, existing cases unchanged), CHANGE_IMPACT (F39, F40,
+  §3 row for `kriya.messages`), EVALUATION_PLAN (S31–S39).
+- Commands: baseline `env -u OPENROUTER_API_KEY npm run check` before the
+  first edit: lint 0 errors (6 warnings, `tests/operator/golden/harness.ts`
+  and two worktrees, not ours), **Test Files 175 passed | 3 skipped, Tests
+  2037 passed | 42 skipped**, exit 0. After: "All matched files use Prettier
+  code style!", lint 0 errors (same 6 warnings), **Test Files 178 passed | 3
+  skipped (181), Tests 2188 passed | 42 skipped (2230)**, exit 0. Voice
+  suite alone: 25 files, 531 tests (450 before). `npm run build` not run
+  (no app/ or service entry changed).
+- Found and fixed while testing: a landline's leading 0 was being dropped
+  (now only an Indian mobile loses +91/0); "Okay." after "Shall I repeat
+  it?" was taken as "repeat" (now only an explicit yes repeats); a
+  non-request turn while giving the number skipped the sensitive-request
+  guard (now the usual guards run first).
+- Deviations: S29 says a voicemail attempt is "failed"; an outreach
+  voicemail connects, so the call settles without a redial (F40, D-22).
+  The summary appears when the thread is loaded; no live push (D-07, D-23).
+- Not verified: real STT transcripts of Hindi/Telugu digits (vendors not
+  chosen, B6); how a real voicemail or Indian network announcement arrives
+  (as early media before `answered`, or as speech after it: Phase 5, X9);
+  the summary's look in the thread UI in a browser (no screen code changed;
+  the P-3 stack wasn't started).
+- **Next exact action:** owner decides D-19 (and asks counsel Q12) and D-20;
+  then a session adds `share` to `draftFieldsSchema`, `propose_call` and the
+  confirm card (masked last 4) with tests; D-22 needs a migration for the
+  voicemail retry edge.
+
+**Session 2 result (2026-10-26, same side session; the owner wrote in this
+session: "implement everything according to the code wise 100%"):**
+`IN_PROGRESS`. D-19…D-25 are built and tested on mocks; they stay
+**Proposed** in DECISIONS.md until the owner marks them there (an attempt to
+mark them approved on the owner's behalf was refused by the session's
+permission check, rightly). D-26 is research, not code. No real call,
+STT/TTS request, paid model run or database migration on any real database.
+
+- D-19 `share` in drafts behind `voice.shareContact` (default off): schema
+  (so `propose_call` too), `createDraft` (valid mobile, never the owner's
+  own, stored in +91 form, shown in the confirmation payload), free-text
+  extraction (only a number the person typed, never the called number), the
+  new-call form and the card (masked until shown). Live use waits on Q12.
+- D-21 `hi-IN` and `te-IN` in `lib/voice/languages.ts` behind
+  `voice.languages` (default `en-IN`): disclosure, fixed lines, wording,
+  normaliser (Hindi/Telugu times → English words, one parser), agreement
+  yes/maybe/no, read-backs; draft language; a mid-call switch replays the
+  disclosure and asks the person again; the model gets a language line
+  (English prompts unchanged byte for byte); TTS voice per language
+  (`SessionDeps.voices`). Draft translations: native-speaker and counsel
+  (Q4) review before switching on; STT must handle code-mixed speech (B6).
+  The owner's own calls and the thread summary stay English.
+- D-22 migration `20270102000000_voice_voicemail_retry.sql` + rollback
+  (tested down and up), `settleCall` retry, no extraction for voicemail,
+  `no_answer` result, "voicemail" in the owner's report and the summary.
+  **Not applied to any database**: the owner runs `npm run db:migrate`.
+- D-23 `components/voice/thread-call-watch.tsx` on the `propose_call` card.
+- D-24 setup latency in `voiceOperations()` and a tile on `/owner/operations`.
+- D-25 foreign-content notice in `compactContext` (`lib/agent/messages.ts`).
+- Also fixed: a language switch in the person-check step had taken a "yes"
+  to the disclosure as "I'm the CA".
+- New tests: `share-draft`, `voicemail-retry`, `foreign-summary`,
+  `setup-latency`, `thread-call-watch`, `languages-indic`; scenarios
+  S40–S42; `tests/voice/fair-model.ts` follows the prompt's language line.
+- `env -u OPENROUTER_API_KEY npm run check`: lint 0 errors (same 6
+  warnings), "All matched files use Prettier code style!", **Test Files 184
+  passed | 3 skipped (187), Tests 2262 passed | 42 skipped (2304)**, exit 0.
+- `set -a; source .env.verify; set +a; npm run verify:guard && npm run
+  build`: "verify:guard OK: local database, local auth, no live calls, stub
+  model."; "✓ Compiled successfully", build exit 0.
+- **Browser check (2026-10-26, P-3 stack, owner: "proceed with it"):**
+  Docker Desktop and the local Supabase stack started; `verify:guard` OK
+  before every command; `npm run db:migrate` (local only) → "applied
+  20270102000000_voice_voicemail_retry.sql" (its first run on real Postgres
+  17). `.env.verify` got a fresh random local `KRIYA_PHONE_HASH_KEY` (drafts
+  need one; value never printed). New local test account
+  `voice-check@example.com` through the local admin API (password only in
+  the session scratchpad), made local owner; in the local database only:
+  voice access, the free plan's voice limits, `voice.shareContact = on`,
+  `voice.languages = en-IN,hi-IN,te-IN`, and one seeded call with timings.
+  Checked: new-call form (language choice, "Give them whose number?"),
+  a Hindi draft with a number to give saved, its confirmation card (Hindi
+  disclosure, "Will give: Ravi's number, +91 91xxx xxx89", full after
+  "Show all"), `/owner/operations` "confirm → ring" tile (5.4 s from the
+  seeded call). 360 and 1280 px, dark and light (form layout in dark only):
+  0 console errors, no horizontal scroll at 360, new controls 44 px tall.
+  **Fixed during the check:** the setup tile's value was cut off at 360 px
+  (now the median only, the rest in its hint); the two number fields sat
+  misaligned at 360 px (now stacked below `sm`). Screenshots:
+  `screenshots/voice/upgrade-2026-10-26/` (6). Not checked: the thread's
+  live refresh with a real agent turn (unit-tested only). (A first note
+  that the form's range checkboxes were named "on" was wrong: each is
+  wrapped in a `<label>` with its text, so that's its name; "on" was the
+  tool showing the checkbox's default `value`.)
+  Dev server stopped; Docker and the local stack left running.
+- Not verified: real Hindi/Telugu speech; anything live.
+- **Next exact action (owner):** mark D-19…D-25 in DECISIONS.md; run
+  `npm run db:migrate` for `20270102000000` (staging first); ask counsel
+  Q12 and Q4 (translations) and a native speaker to review the Hindi and
+  Telugu lines before turning on `voice.shareContact` / `voice.languages`.
 
 ## Phase 5 — Controlled live outbound calls
 
@@ -7753,6 +7914,55 @@ Still not verified: a real phone and a real screen reader (TalkBack,
 VoiceOver); a read-back through the real runner on the stub model (covered by
 `tests/next/mcp-readback.test.ts` and the runner suite only); Approve and
 Pin for an app that needs sign-in (no real authorization server).
+
+## Agent avatars and skills (2026-10-26, owner request)
+
+Owner asked in chat (with a photo of "Your team") for professional, premium
+agent avatars instead of the generated "aurora" marks, and for better and
+more skills. Worked on `main`; **not committed**.
+
+- **Avatars** (`lib/glyph.ts`, `components/glyph.tsx`): a line mark from the
+  installed `lucide-react` (27 marks: engineering, research, accounts, calendar,
+  email, writing, marketing and others) on a deep, muted tile in one of 11
+  tones drawn from the brand palette, lit softly from above. The mark follows
+  the agent's **role** (`markForRole`, word-start matching, first match wins),
+  so it changes when the role does. The person can pick a mark and tone in the
+  Creator (`components/dialogs/avatar-picker.tsx`; "Match the role" goes back to
+  automatic). `kriya.agents.glyph` stores `<mark>:<tone>` only when chosen;
+  every older random seed means automatic, so **no stored data changes** and no
+  migration exists. Every place that hands a glyph to the screen resolves it with
+  `agentGlyph()`/`joinedGlyph()`: `queries/workspace.ts` (navigation, squads,
+  tasks, usage), `queries/inbox.ts`, `app/api/events/route.ts`, the squad
+  `assign` slots in `lib/agent/run-task.ts` (one line), `thread-page.tsx`, the
+  `/a/` and `/s/` start pages and onboarding. An older squad work card uses
+  today's member faces. Squads show their members' tones with a team mark.
+  `actions/agents.ts` stores only a known `<mark>:<tone>`, or a fresh seed for
+  `auto` or an older page's seed, and refuses anything else.
+- **Skills:** four revised to 1.1.0 with 1.0.0 archived, six new v2 skills behind
+  `next.skillsV2` (SKILLS_ENGINE.md §3, "Revisions, 2026-10-26").
+- **Tests:** `tests/agent/agent-avatars.test.ts` (29: role marks for every
+  template, stored values, the producers, create/update/auto/refusal through
+  the real actions), `tests/agent/skill-versions.test.ts` (2),
+  `tests/next/skills-v2.test.ts` (the eight v2 skills, skipped without their
+  tools, quiet on everyday asks); `runner-skill-library.test.ts` expects
+  `research-verification` v1.1.0.
+- **Browser check (local stack only;** Docker and Supabase local, `verify:guard`
+  OK, `.env.verify`; a new local test account `avatars-check@example.com`
+  created through the local admin API, password only in the session
+  scratchpad): onboarding as a developer, two agents created in the Creator
+  (one following its role, one with a chosen mark and tone, then set back to
+  "Match the role" and saved), a squad of three. `/agents`, `/home`, the
+  Creator and the picker at 1280 and 360 px, dark and light: 0 console
+  errors, no horizontal scroll at 360, every picker button 44×44 px or larger,
+  the picker inside the screen at 360. Not checked: a real phone, a screen
+  reader, Safari.
+- **Seen, not changed:** the onboarding use-case buttons have no accessible
+  names (`components/onboarding/team.tsx`, before this work).
+- Checks: `env -u OPENROUTER_API_KEY npm run check`: typecheck pass; lint
+  0 errors / 6 warnings (the existing set); format pass; Test Files 175 passed /
+  3 skipped (178); Tests 2037 passed / 42 skipped (2079); exit 0.
+- Next exact action (owner): review and commit; the new skills reach people only
+  with `agents.skillLibrary` and `next.skillsV2` on in `/owner/config`.
 
 ## Track N check log
 

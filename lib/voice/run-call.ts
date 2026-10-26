@@ -118,6 +118,7 @@ export async function loadReportContext(taskId: string, userId: string) {
       status: callAttempts.status,
       requestedAt: callAttempts.requestedAt,
       connectedAt: callAttempts.connectedAt,
+      endReason: callAttempts.endReason,
     })
     .from(callAttempts)
     .innerJoin(
@@ -131,7 +132,10 @@ export async function loadReportContext(taskId: string, userId: string) {
     )
     .where(eq(callAttempts.userId, userId))
     .orderBy(callAttempts.attempt)
-  const connected = attempts.filter((a) => a.connectedAt).at(-1)
+  // The outcome that counts is the last attempt's: after a voicemail (D-22)
+  // a later busy attempt is the news
+  const last = attempts.at(-1)
+  const connected = last?.connectedAt ? last : undefined
   const [outcome] = connected
     ? await privileged
         .select({

@@ -1,0 +1,68 @@
+{
+  "id": "writing-and-editing",
+  "name": "Writing and editing",
+  "description": "Writes and edits posts, proposals, letters and scripts for a clear reader and goal, in the person's voice, with facts kept exact.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["writing", "communication"],
+  "roles": [
+    "content",
+    "writer",
+    "writing",
+    "copy",
+    "editor",
+    "proposal",
+    "marketing",
+    "social",
+    "creator",
+    "career",
+    "coach",
+    "hiring",
+    "assistant"
+  ],
+  "activation": {
+    "keywords": [
+      "write",
+      "rewrite",
+      "edit",
+      "proofread",
+      "polish",
+      "caption",
+      "post",
+      "linkedin",
+      "blog",
+      "article",
+      "proposal",
+      "cover letter",
+      "bio",
+      "script",
+      "headline",
+      "tagline"
+    ],
+    "keywordsIntl": [
+      "लिखो",
+      "लिख दो",
+      "सुधारो",
+      "కాప్షన్",
+      "రాయి",
+      "రాసి",
+      "likh do",
+      "likho",
+      "post likho"
+    ]
+  },
+  "tools": { "all": [], "any": [], "uses": [] },
+  "dependsOn": [],
+  "prerequisites": [],
+  "verification": "Facts, figures and names in the text come from the person or a cited source; changes in an edit are listed for the person to accept.",
+  "limits": { "maxChars": 2800 },
+  "evals": [
+    { "ask": "Write a LinkedIn post about our product launch", "expect": "activate" },
+    { "ask": "Proofread my cover letter", "expect": "activate" },
+    { "ask": "इस पोस्ट के लिए कैप्शन लिखो", "expect": "activate" },
+    { "ask": "What time is it in London?", "expect": "skip" }
+  ]
+}

@@ -28,6 +28,14 @@ in `COMPETITOR_RESEARCH.md` and `TELEPHONY_PROVIDER_ASSESSMENT.md`.
 | D-16 | Automated calls are treated as A2P under TRAI's Third Amendment until counsel says otherwise | Approved |
 | D-17 | Self-improvement is a governed loop: cases → regression scenarios → gated, versioned, rolled-out policy changes; never autonomous | Approved |
 | D-18 | Premium voice UI built only from existing components and tokens; no new UI dependency | Approved |
+| D-19 | A draft may carry a contact's number for Tavi to give (`spec.share`); see UPGRADE_PROPOSAL.md | Proposed |
+| D-20 | Post-call summary in the originating thread (built) | Proposed |
+| D-21 | Hindi, Telugu and Hinglish calls as language registry entries | Proposed |
+| D-22 | Voicemail or a network announcement counts as "not reached" and may be retried | Proposed |
+| D-23 | Live refresh of the thread when the summary arrives | Proposed |
+| D-24 | Measure call setup latency (L-setup) | Proposed |
+| D-25 | Agents treat voice summaries in a thread as foreign content | Proposed |
+| D-26 | No comparison with a named product until a primary-source review | Proposed |
 
 ---
 

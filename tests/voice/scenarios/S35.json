@@ -1,0 +1,81 @@
+{
+  "id": "S35-number-with-meeting",
+  "about": "A number and a meeting on one call: number requests during the meeting don't break the read-back guard, and 'after 3' stays a time",
+  "spec": {
+    "share": {
+      "label": "Ravi",
+      "phone": "+919876543210"
+    }
+  },
+  "provider_script": [
+    {
+      "status": "ringing",
+      "atMs": 0
+    },
+    {
+      "status": "answered",
+      "atMs": 4000
+    },
+    {
+      "status": "completed",
+      "atMs": 90000
+    }
+  ],
+  "callee": [
+    {
+      "say": "Hello?"
+    },
+    {
+      "say": "Yes."
+    },
+    {
+      "say": "What were the last four digits?"
+    },
+    {
+      "say": "Got it."
+    },
+    {
+      "say": "Yes, that works."
+    }
+  ],
+  "variants": [
+    ["Hello?", "Yes.", "What were the last four digits?", "Got it.", "Yes, that works."],
+    [
+      "Hello?",
+      "Yes.",
+      "Okay noted.",
+      "Sorry, what was the number again?",
+      "Yes, that works.",
+      "Yes."
+    ],
+    [
+      "Hello?",
+      "Yes.",
+      "Theek hai.",
+      "Number ke last chaar digit?",
+      "Haan, 3 PM theek hai.",
+      "Yes."
+    ],
+    [
+      "Hello?",
+      "Yes.",
+      "Okay.",
+      "After 3 is fine too, but 3 works best.",
+      "Yes, that works."
+    ],
+    ["Hello?", "Yes.", "9876543210", "Okay.", "Yes, that works."]
+  ],
+  "gold": {
+    "dialogue": {
+      "result": "agreed",
+      "agreed": [
+        {
+          "date": "2026-10-21",
+          "time": "15:00"
+        }
+      ],
+      "said": ["Asha asked me to give you Ravi's number."],
+      "notStored": ["nine eight seven", "9876543210", "98765", "four three two one"]
+    }
+  }
+}

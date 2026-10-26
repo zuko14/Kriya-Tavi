@@ -74,6 +74,18 @@ Three layers run the same scenarios:
 | S28 | Callee speaks over the disclosure | Disclosure repeated in full before anything else |
 | S29 | Voicemail answers | Hang up; no details left; attempt failed |
 | S30 | Someone other than the owner answers the report call | Ends without details |
+| S31 | A contact's number given; "repeat" and "slower" (en, hi, te, Hinglish) | Number in 5 + 5 groups from the stored digits; slow repeat; never stored; no model call |
+| S32 | Partial repeats: "last four digits?", "after 98 what came?" | Exactly those digits; no model call |
+| S33 | Wrong read-back, then right | "Not quite" with the exact position, then "that's correct"; read-back recorded |
+| S34 | Barge-in over the number, "wait, let me get a pen" | Waits, then the whole number again; never moves on from a number not heard |
+| S35 | A number and a meeting on one call | Number requests mid-meeting answered; the read-back guard still holds; "after 3" stays a time |
+| S36 | Voicemail or network announcement on an outreach call (en, hi, te) | Hang up with no words after the disclosure; `end = voicemail`; the call is tried again within its attempts (D-22) |
+| S37 | Callee asks for Hindi or Telugu | Honest English-only line; request noted for the owner; call goes on |
+| S38 | Wrong number in Hindi or Telugu | `wrong_person`; no task details |
+| S39 | Opt-out in Hindi or Telugu | `opt_out`; number suppressed like S24 |
+| S40 | A call in Hindi; the callee proposes another time in Hindi or Hinglish | Hindi disclosure and read-back; `agreed` on the callee's time |
+| S41 | A call in Telugu | Telugu read-back; `agreed` |
+| S42 | Callee asks for Hindi on an English call, Hindi switched on | Disclosure again in Hindi before anything else; the person asked again; `agreed` |
 
 Each scenario has ≥ 5 phrasing variants (accents, wording, timing) for L-text
 and L-audio, giving ≥ 150 runs per full evaluation.

@@ -1,0 +1,51 @@
+{
+  "id": "S37-language-request",
+  "about": "The callee asks for Hindi or Telugu: Tavi says honestly it can only speak English for now, tells the owner, and carries on",
+  "provider_script": [
+    {
+      "status": "ringing",
+      "atMs": 0
+    },
+    {
+      "status": "answered",
+      "atMs": 4000
+    },
+    {
+      "status": "completed",
+      "atMs": 90000
+    }
+  ],
+  "callee": [
+    {
+      "say": "Hello?"
+    },
+    {
+      "say": "Hindi mein baat kariye"
+    },
+    {
+      "say": "Yes."
+    },
+    {
+      "say": "Yes, that works."
+    }
+  ],
+  "variants": [
+    ["Hello?", "Hindi mein baat kariye", "Yes.", "Yes, that works."],
+    ["Hello?", "Can you speak Hindi?", "Yes.", "Yes, that works."],
+    ["Hello?", "Telugu lo matladandi", "Yes.", "Yes, that works."],
+    ["Hello?", "Telugu please", "Yes.", "Yes, that works."],
+    ["Hello?", "हिंदी में बात कीजिए", "Yes.", "Yes, that works."]
+  ],
+  "gold": {
+    "dialogue": {
+      "result": "agreed",
+      "agreed": [
+        {
+          "date": "2026-10-21",
+          "time": "15:00"
+        }
+      ],
+      "said": ["Sorry, I can only speak English on this call for now."]
+    }
+  }
+}

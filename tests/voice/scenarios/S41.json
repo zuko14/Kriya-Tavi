@@ -1,0 +1,51 @@
+{
+  "id": "S41-telugu-meeting",
+  "about": "A call in Telugu (D-21): the owner's time agreed in Telugu or Tenglish",
+  "spec": {
+    "language": "te-IN"
+  },
+  "provider_script": [
+    {
+      "status": "ringing",
+      "atMs": 0
+    },
+    {
+      "status": "answered",
+      "atMs": 4000
+    },
+    {
+      "status": "completed",
+      "atMs": 90000
+    }
+  ],
+  "callee": [
+    {
+      "say": "Avunu, cheppandi"
+    },
+    {
+      "say": "Avunu"
+    },
+    {
+      "say": "Sare, kudurutundi"
+    }
+  ],
+  "variants": [
+    ["Avunu, cheppandi", "Avunu", "Sare, kudurutundi"],
+    ["అవును", "అవును, నేనే", "సరే"],
+    ["Hello", "Avunu andi", "Avunu, sare"],
+    ["Avunu andi", "Avunu, nene", "Alage, kudurutundi"],
+    ["Cheppandi", "Avunu", "Tappakunda"]
+  ],
+  "gold": {
+    "dialogue": {
+      "result": "agreed",
+      "agreed": [
+        {
+          "date": "2026-10-21",
+          "time": "15:00"
+        }
+      ],
+      "said": ["బుధవారం, 21వ తేదీ మధ్యాహ్నం 3 గంటలకు"]
+    }
+  }
+}

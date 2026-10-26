@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation"
 
 import { StartThread } from "@/components/thread/start-thread"
 import { requireUser } from "@/lib/auth"
+import { agentGlyph } from "@/lib/glyph"
 import { getLatestThreadId, getSquads } from "@/queries/workspace"
 
 export default async function Page({ params }: { params: Promise<{ squadId: string }> }) {
@@ -18,7 +19,7 @@ export default async function Page({ params }: { params: Promise<{ squadId: stri
       owner={{ squadId }}
       name={squad.name}
       subtitle={squad.agents.map((a) => a.name).join(" · ")}
-      glyphs={squad.agents.map((a) => a.glyph)}
+      glyphs={squad.agents.map(agentGlyph)}
     />
   )
 }

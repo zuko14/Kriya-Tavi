@@ -207,7 +207,7 @@ describe("agents.skillLibrary on", () => {
     )
     // Loaded before the first model call
     expect(calls[0].system).toContain("# Skills")
-    expect(calls[0].system).toContain("## Research and source verification (v1.0.0)")
+    expect(calls[0].system).toContain("## Research and source verification (v1.1.0)")
     expect(calls[0].system).toContain("## Verification before completion (v1.0.0)")
     expect(calls[0].system).not.toContain("## Invoices, ledger and GST")
     // After every platform section
@@ -233,7 +233,7 @@ describe("agents.skillLibrary on", () => {
     )
     expect(msgs[0].metadata.skills).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: "research-verification", version: "1.0.0" }),
+        expect.objectContaining({ id: "research-verification", version: "1.1.0" }),
       ])
     )
   })
@@ -244,7 +244,7 @@ describe("agents.skillLibrary on", () => {
     const { skillActivity } = await import("@/lib/owner")
     const rows = await skillActivity()
     expect(rows.find((r) => r.skillId === "research-verification")).toMatchObject({
-      version: "1.0.0",
+      version: "1.1.0",
       active: 1,
       succeeded: 1,
       failed: 0,

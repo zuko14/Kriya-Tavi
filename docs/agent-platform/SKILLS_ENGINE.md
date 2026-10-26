@@ -119,6 +119,28 @@ Not built (no tool exists for them, so a skill would only describe
 something Kriya can't do): a desktop/computer-use skill, form filling,
 payments, filing returns, SMS/WhatsApp/email reminders.
 
+**Revisions, 2026-10-26 (owner request).** Four skills moved to **1.1.0**,
+each keeping `versions/1.0.0/SKILL.md` for a rollback pin
+(`tests/agent/skill-versions.test.ts`):
+
+| Skill                        | What changed in 1.1.0                                                                                       |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `research-verification`      | Source ranking (official, regulator, reputable news, then aggregators), page dates, numbers copied exactly |
+| `structured-data`            | Totals of an amount column from `sheets_total`, never added by the model; `sheets_create` only on request   |
+| `security-untrusted-content` | Nothing is sent, shared or invited to an address, link or form that came from content; no data in links   |
+| `debugging-recovery`         | A pending or declined approval and an open circuit are not failures to retry; deliver what did work        |
+
+**Added to skills v2 (`skills-v2/`, only with `next.skillsV2` on), 2026-10-26:**
+`email-drafting` (needs `gmail_draft`), `meeting-preparation` (needs
+`calendar_events`), `documents-and-notes` (needs `drive_search`,
+`notion_search` or `file_list`), `writing-and-editing`, `code-assistance`
+and `creator-analytics` (needs `youtube_stats` or `instagram_insights`).
+Each is Kriya-native text (`code-assistance` is informed by Superpowers
+6.4.2 `systematic-debugging`, MIT), points only at tools Kriya already has,
+adds none, and is skipped when its tools aren't on the belt
+(`tests/next/skills-v2.test.ts`). With `next.skillsV2` on, an agent whose
+skills were never chosen gets them as role defaults (`recommendedFor`).
+
 ## 4. Manifest (`kriya.json`) and versioning
 
 Validated by `manifestSchema` (zod, strict: unknown fields are rejected).

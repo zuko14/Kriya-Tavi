@@ -20,10 +20,12 @@ import {
   type VoiceCallStatus,
   type VoiceTaskStatus,
 } from "@/db/schema"
+import { getSetting } from "@/lib/config"
 import { checkVoiceAllowed, getPlan, usageSummary, type Limit } from "@/lib/entitlements"
 import { log } from "@/lib/log"
 import { usageFromMetadata } from "@/lib/models"
 
+import { languageFor } from "./languages"
 import {
   clock,
   dayStart,
@@ -32,12 +34,7 @@ import {
   outreachWindowEnd,
   reportWindowEnd,
 } from "./schedule"
-import {
-  disclosure,
-  parseIndianMobile,
-  type DraftInput,
-  type VoiceTaskSpec,
-} from "./schemas"
+import { parseIndianMobile, type DraftInput, type VoiceTaskSpec } from "./schemas"
 import { extractSpec } from "./spec"
 
 // What the owner does with a voice task (API_AND_EXECUTION_CONTRACTS.md §2):
@@ -226,6 +223,32 @@ export async function createDraft(userId: string, input: DraftInput) {
     log.warn("voice draft refused: KRIYA_PHONE_HASH_KEY is not set")
     return UNAVAILABLE
   }
+  // Hindi or Telugu only when switched on (D-21)
+  const language = input.language ?? "en-IN"
+  if (
+    language !== "en-IN" &&
+    !((await getSetting("voice.languages")) ?? "en-IN").split(",").includes(language)
+  ) {
+    return fail("invalid", "Calls in that language aren't switched on yet.", {
+      language: "Only English is available for now.",
+    })
+  }
+  // A contact's number for Tavi to give (D-19): only with the switch on
+  let share: VoiceTaskSpec["share"]
+  if (input.share) {
+    if ((await getSetting("voice.shareContact")) !== "on") {
+      return fail("invalid", "Giving a number on a call isn't switched on yet.", {
+        share: "Giving a number on a call isn't available yet.",
+      })
+    }
+    const shared = parseIndianMobile(input.share.phone)
+    if (!shared) {
+      return fail("invalid", "Enter the number to give as an Indian mobile number.", {
+        share: "Enter a 10-digit Indian mobile number.",
+      })
+    }
+    share = { label: input.share.label, phone: shared }
+  }
   return privileged.transaction(async (tx) => {
     const [existing] = await tx
       .select({ id: voiceTasks.id })
@@ -249,18 +272,25 @@ export async function createDraft(userId: string, input: DraftInput) {
     }
     if (await suppressed(tx, hash))
       return fail("suppressed", "This number can't be called.")
+    // Never the person's own number (authority.mayShareOwnerPhone)
+    if (share && share.phone === profile?.ownerPhoneE164) {
+      return fail("invalid", "Tavi doesn't give out your own number.", {
+        share: "That's your own number.",
+      })
+    }
     const [owner] = await tx
       .select({ name: profiles.displayName })
       .from(profiles)
       .where(eq(profiles.id, userId))
     const spec: VoiceTaskSpec = {
       version: 1,
-      language: "en-IN",
+      language,
       owner: { displayName: owner?.name ?? "" },
       recipient: { label: input.recipientLabel, name: input.recipientName },
       goal: input.goal,
       authority: input.authority,
       mustNot: input.mustNot,
+      ...(share && { share }),
       earliestAt: input.earliestAt ?? null,
       report: { at: input.reportAt ?? null, mode: profile?.reportMode ?? "scheduled" },
       timezone: profile?.timezone ?? "Asia/Kolkata",
@@ -413,7 +443,10 @@ export async function requestConfirmation(userId: string, taskId: string) {
       goal: spec.goal,
       authority: spec.authority,
       mustNot: spec.mustNot,
-      disclosure: disclosure(owner.name),
+      ...(spec.share && { share: spec.share }),
+      // The opening in the call's language; English keeps the payload as before
+      disclosure: languageFor(spec.language).disclosure(owner.name),
+      ...(spec.language !== "en-IN" && { language: spec.language }),
       earliestCallAt: notBefore.toISOString(),
       reportAt: task.reportAt?.toISOString() ?? null,
       timezone: spec.timezone,

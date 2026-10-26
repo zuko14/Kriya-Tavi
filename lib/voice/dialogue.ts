@@ -12,7 +12,14 @@ import {
   type CallToolName,
 } from "@/lib/agent/call-tools"
 
-import { languageFor, type Language } from "./languages"
+import {
+  answerNumberRequest,
+  giveNumber,
+  nationalDigits,
+  parseNumberRequest,
+  type NumberRequest,
+} from "./dictation"
+import { LANGUAGE_CODES, LANGUAGES, languageFor, type Language } from "./languages"
 import { ACTIVE_POLICY, fill, type VoicePolicy } from "./policy/v1"
 import type { VoiceTaskSpec } from "./schemas"
 
@@ -25,6 +32,8 @@ import type { VoiceTaskSpec } from "./schemas"
 export type DialogueState =
   | "opening"
   | "confirm_person"
+  // Giving the number the owner asked Tavi to share (lib/voice/dictation.ts)
+  | "sharing"
   | "negotiate"
   | "confirm_details"
   | "unresolved"
@@ -47,6 +56,8 @@ export type EndReason =
   | "emergency"
   | "budget"
   | "model_failed"
+  // A voicemail greeting or a network announcement answered: no details left
+  | "voicemail"
 
 // What the call established, from guarded tool calls and code's own checks.
 // Persisted as call_outcomes.interpreted.notes; the verifier reads it
@@ -63,6 +74,9 @@ export type CallNotes = {
   wrongPerson: { turnSeq: number } | null
   callback: { when: string | null; turnSeq: number } | null
   optOut: { turnSeq: number } | null
+  // The number the owner asked Tavi to give: how often it was said, and how
+  // the callee's last read-back compared. Never the digits
+  shared?: { label: string; times: number; readBack: "correct" | "wrong" | null }
   flags: string[]
   // Tool calls the guards refused, with why
   rejected: { tool: string; reason: string }[]
@@ -102,6 +116,9 @@ export type DialogueOptions = {
     usage: LanguageModelUsage
     providerMetadata: unknown
   }) => void | Promise<void>
+  // Languages switched on (voice.languages, D-21) the callee may switch to;
+  // only the spec's own when absent
+  languages?: string[]
   // Tests only: the fixed limit of turns without progress in one state
   unhandledTurns?: number
 }
@@ -119,6 +136,8 @@ const MAX_SAY = 300
 const TOOLS: Record<DialogueState, CallToolName[]> = {
   opening: [],
   confirm_person: ["note_wrong_person", "note_callback_request", "end_call"],
+  // Code answers every turn here; the model isn't asked
+  sharing: [],
   negotiate: ["note_proposed_time", "note_question_for_owner", "end_call"],
   confirm_details: ["note_agreement", "end_call"],
   unresolved: ["note_question_for_owner", "end_call"],
@@ -143,7 +162,7 @@ export class Dialogue {
   escalated = false
 
   private readonly policy: VoicePolicy
-  private readonly lang: Language
+  private lang: Language
   private readonly now: () => number
   private readonly startedAt: number
   private readonly owner: string
@@ -157,6 +176,11 @@ export class Dialogue {
   private unhandled = 0
   private invalidStreak = 0
   private closingRepeats = 0
+  // The number to give (spec.share), and how it's going
+  private readonly digits: string | null
+  private slow = false
+  private waiting = false
+  private numberTurn: { seq: number; heard: boolean; asked: boolean } | null = null
   // Refusals from the last model turn, told to the model once
   private feedback: string[] = []
   // What this turn's tool calls recorded
@@ -173,21 +197,29 @@ export class Dialogue {
     this.startedAt = this.now()
     this.owner = options.spec.owner.displayName
     this.recipient = options.spec.recipient.label.replace(/^(my|our)\s+/i, "")
+    this.digits = options.spec.share ? nationalDigits(options.spec.share.phone) : null
   }
 
   /* ─────────────────────────── speaking ─────────────────────────── */
 
+  // The call's language now (it can change mid-call, D-21)
+  get language() {
+    return this.lang.code
+  }
+
   private words(key: keyof VoicePolicy["wording"], extra: Record<string, string> = {}) {
-    return fill(this.policy.wording[key], {
+    return fill(this.lang.wording[key] ?? this.policy.wording[key], {
       owner: this.owner,
       recipient: this.recipient,
       ...extra,
     })
   }
 
-  private say(text: string, end = false): Reply {
+  // stored: the turn as kept and shown to the model, when it differs (a
+  // number withheld)
+  private say(text: string, end = false, stored = text): Reply {
     const seq = this.turns.length
-    this.turns.push({ seq, speaker: "tavi", text, confidence: null })
+    this.turns.push({ seq, speaker: "tavi", text: stored, confidence: null })
     return { seq, text, end }
   }
 
@@ -212,6 +244,7 @@ export class Dialogue {
   // From the media stream's marks: whether a turn played to the end
   played(seq: number, complete: boolean) {
     if (seq === this.disclosureSeq && complete) this.disclosureHeard = true
+    if (seq === this.numberTurn?.seq) this.numberTurn.heard = complete
   }
 
   /* ─────────────────────────── listening ────────────────────────── */
@@ -234,6 +267,17 @@ export class Dialogue {
       this.notes.optOut = { turnSeq: seq }
       return this.close("opt_out", this.lang.fixed.optOut)
     }
+    // A machine answered (S29): hang up without another word
+    if (
+      (this.state === "opening" || this.state === "confirm_person") &&
+      is.voicemail(safe)
+    ) {
+      this.notes.flags.push("voicemail or network message")
+      this.notes.end = "voicemail"
+      this.state = "closing"
+      this.closingRepeats = 1
+      return null
+    }
     // Nothing else until the disclosure has been heard in full (S28)
     if (!this.disclosureHeard) return this.opening()
 
@@ -248,6 +292,32 @@ export class Dialogue {
     }
     if (is.injection(safe)) this.notes.flags.push("callee attempted to redirect")
     if (is.askingIfAi(safe)) return this.say(this.lang.fixed.isAi(this.owner))
+    // "Hindi mein boliye": switch to a language that's on, and say the AI
+    // disclosure again in it before anything else; otherwise say so honestly
+    const asked = this.lang.languageAsked(safe)
+    const code = asked ? LANGUAGE_CODES[asked] : undefined
+    if (asked && code !== this.lang.code) {
+      if (code && (this.options.languages ?? []).includes(code)) {
+        this.lang = LANGUAGES[code]
+        this.notes.flags.push(`switched to ${asked}`)
+        this.disclosureHeard = false
+        // A yes to the disclosure's "good moment?" isn't "I'm the CA": the
+        // person is asked again, in the new language
+        if (this.state === "confirm_person") this.state = "opening"
+        return this.opening()
+      }
+      this.notes.questions.push({ question: `Asked to speak in ${asked}`, turnSeq: seq })
+      return this.say(this.lang.fixed.cantSwitch(this.owner))
+    }
+    // The callee's own words, before redaction: only code reads the digits
+    if (this.digits && this.notes.shared) {
+      const sharing = this.state === "sharing"
+      const request = parseNumberRequest(text, { explicit: !sharing })
+      if (sharing && this.waiting && request?.kind !== "wait") {
+        return this.dictate({ kind: "repeat", slow: this.slow }, null)
+      }
+      if (request) return this.dictate(request, confidence)
+    }
     if (is.sensitive(safe)) {
       this.notes.flags.push("sensitive request")
       return this.say(this.words("cantSensitive"))
@@ -271,6 +341,8 @@ export class Dialogue {
         return this.confirmDetails(safe, confidence)
       case "unresolved":
         return this.close("done", this.words("checkWithOwner"), this.words("closing"))
+      case "sharing":
+        return this.afterNumber(safe)
     }
   }
 
@@ -299,14 +371,22 @@ export class Dialogue {
   }
 
   // Tavi states the goal. A meeting's preferred time is said in full, so
-  // the sentence is also its read-back
+  // the sentence is also its read-back. A number to share comes first
   private purpose(): Reply {
-    const goal = this.options.spec.goal
+    const { goal, share } = this.options.spec
+    if (this.digits && share && !this.notes.shared) {
+      this.notes.shared = { label: share.label, times: 1, readBack: null }
+      const given = giveNumber(this.owner, share.label, this.digits)
+      const reply = this.say(given.text, false, given.stored)
+      this.numberTurn = { seq: reply.seq, heard: false, asked: true }
+      this.move("sharing")
+      return reply
+    }
     if (goal.type === "schedule_meeting") {
       const reply = this.say(
         this.words("meeting", {
-          when: `on ${this.lang.speak(goal.date, goal.preferred)}`,
-          place: goal.place ? ` at ${goal.place}` : "",
+          when: this.lang.at(goal.date, goal.preferred),
+          place: goal.place ? this.lang.placeAt(goal.place) : "",
         })
       )
       this.notes.proposed.push({
@@ -330,6 +410,38 @@ export class Dialogue {
     }
     this.move("unresolved")
     return this.say(this.words("question", { question: goal.question }))
+  }
+
+  // One answer about the number, from its digits (lib/voice/dictation.ts)
+  private dictate(request: NumberRequest, confidence: number | null): Reply {
+    const shared = this.notes.shared!
+    const unsure =
+      confidence !== null && confidence < this.policy.thresholds.lowConfidence
+    if (request.kind === "repeat" && request.slow) this.slow = true
+    this.waiting = request.kind === "wait"
+    const given = answerNumberRequest(this.digits!, shared.label, request, {
+      slow: this.slow,
+      unsure,
+    })
+    if (request.kind !== "wait" && request.kind !== "check") shared.times += 1
+    if (given.readBack) shared.readBack = given.readBack
+    const reply = this.say(given.text, false, given.stored)
+    this.numberTurn = { seq: reply.seq, heard: false, asked: false }
+    return reply
+  }
+
+  // Anything else while giving the number: "yes" to "Shall I repeat it?",
+  // or a number talked over, hears it again; otherwise on to the goal.
+  // "Okay" or "got it" means noted, not "repeat"
+  private afterNumber(text: string) {
+    const turn = this.numberTurn!
+    const again =
+      /^\W*(yes|yeah|yep|please|sure|haan|ha|ji|avunu|aunu)\b/i.test(text) &&
+      !/\b(got|noted|thanks|thank|saved|done|likh|ok|okay|fine)\b/i.test(text)
+    if (!turn.heard || (turn.asked && again)) {
+      return this.dictate({ kind: "repeat", slow: this.slow }, null)
+    }
+    return this.purpose()
   }
 
   private unsure(text: string, confidence: number | null) {
@@ -468,10 +580,12 @@ export class Dialogue {
         ...this.feedback.map((f) => `\nYour last tool call wasn't recorded: ${f}`),
       ].join(""),
     }
-    return fill(this.policy.prompts.dialogue, {
+    const prompt = fill(this.policy.prompts.dialogue, {
       ...values,
       job: fill(this.policy.prompts.states[this.state] ?? "", values),
     })
+    // English calls get the bundle's prompt byte for byte
+    return this.lang.instruction ? `${prompt}\n${this.lang.instruction}` : prompt
   }
 
   private messages(): ModelMessage[] {

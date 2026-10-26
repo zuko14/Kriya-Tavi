@@ -17,6 +17,7 @@ import {
 import { requireUser } from "@/lib/auth"
 import { getSetting } from "@/lib/config"
 import { checkAgentAllowed } from "@/lib/entitlements"
+import { parseGlyph } from "@/lib/glyph"
 import { CATALOG, CATALOG_V2, checkSkillPrefs } from "@/lib/skill-library"
 
 const id = z.string().min(1).max(32)
@@ -48,6 +49,14 @@ function skillPrefs(input: unknown, catalog: typeof CATALOG) {
   }
 }
 
+// A chosen avatar is kept as it is. "auto" (or a seed from an older page)
+// stores a fresh seed, so the avatar follows the role again.
+function storedGlyph(glyph: string) {
+  if (parseGlyph(glyph)) return glyph
+  if (glyph === "auto" || /^[A-Za-z0-9_-]{1,32}$/.test(glyph)) return nanoid(10)
+  throw new AgentError("Choose an avatar from the list.")
+}
+
 async function normalize(values: AgentInput) {
   const data = agentInputSchema.parse(values)
   // Skills only with the library on, whatever the browser sends
@@ -59,7 +68,7 @@ async function normalize(values: AgentInput) {
     role: data.role,
     instructions: data.instructions?.trim() || null,
     model: data.model?.trim() || null,
-    ...(data.glyph && { glyph: data.glyph }),
+    ...(data.glyph && { glyph: storedGlyph(data.glyph) }),
     // Only when the Creator's Skills section sent them; ids checked here
     ...(skillsOn &&
       data.skills !== undefined && {

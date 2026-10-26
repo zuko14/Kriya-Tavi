@@ -1,0 +1,72 @@
+{
+  "id": "S31-number-repeat",
+  "about": "Owner scenario 2: Tavi gives a contact's number; the callee asks for it again and slower, in English, Hindi, Telugu and Hinglish",
+  "spec": {
+    "goal": {
+      "type": "deliver_message",
+      "message": "Ravi will call you about the GST filing.",
+      "askForReply": false
+    },
+    "share": {
+      "label": "Ravi",
+      "phone": "+919876543210"
+    }
+  },
+  "provider_script": [
+    {
+      "status": "ringing",
+      "atMs": 0
+    },
+    {
+      "status": "answered",
+      "atMs": 4000
+    },
+    {
+      "status": "completed",
+      "atMs": 90000
+    }
+  ],
+  "callee": [
+    {
+      "say": "Hello?"
+    },
+    {
+      "say": "Yes."
+    },
+    {
+      "say": "Can you repeat the number?"
+    },
+    {
+      "say": "Slower please"
+    },
+    {
+      "say": "Got it, thanks."
+    }
+  ],
+  "variants": [
+    ["Hello?", "Yes.", "Can you repeat the number?", "Slower please", "Got it, thanks."],
+    [
+      "Hello?",
+      "Haan ji.",
+      "Phir se bolo",
+      "Thoda dheere boliye",
+      "Theek hai, likh liya."
+    ],
+    ["Hello?", "Yes.", "Malli cheppandi", "Nemmadiga cheppandi", "Sare, rasukunna."],
+    ["Hi", "Yes, speaking.", "Sorry?", "Can you say it slowly?", "Okay, noted."],
+    ["Hello?", "Yes.", "మళ్ళీ చెప్పండి", "నెమ్మదిగా చెప్పండి", "Okay."],
+    ["Hello?", "Yes.", "फिर से बोलिए", "धीरे बोलिए", "Ok thank you"]
+  ],
+  "gold": {
+    "dialogue": {
+      "end": "done",
+      "said": [
+        "Ravi's number is nine eight seven six five, four three two one zero.",
+        "Slowly: nine, eight, seven, six, five. four, three, two, one, zero.",
+        "Asha asked me to pass on a message"
+      ],
+      "notStored": ["nine eight seven", "9876543210", "98765", "four three two one"],
+      "maxModelCalls": 0
+    }
+  }
+}

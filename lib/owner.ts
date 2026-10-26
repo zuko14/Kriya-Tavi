@@ -681,6 +681,33 @@ export async function voiceOperations() {
       select count(*)::int as n from kriya.voice_calls
       where status in ('dialing', 'in_call') and lease_expires_at < now()`)
   )
+  // L-setup (voice D-24): the person's confirmation to the first dial and
+  // the first ring, over 7 days, for calls meant to start at once (not
+  // moved to calling hours or a later time)
+  const [setup] = rowsOf<{
+    n: number
+    dial_p50: number | null
+    dial_p95: number | null
+    ring_p50: number | null
+    ring_p95: number | null
+  }>(
+    await privileged.execute(sql`
+      with firsts as (
+        select a.decided_at as confirmed, min(t.requested_at) as dialled,
+          min(t.ringing_at) as ringing
+        from kriya.voice_approvals a
+        join kriya.voice_calls c on c.voice_task_id = a.voice_task_id and c.kind = 'outreach'
+        join kriya.call_attempts t on t.voice_call_id = c.id
+        where a.status = 'approved' and a.decided_at >= now() - interval '7 days'
+          and c.not_before <= a.decided_at + interval '1 minute'
+        group by a.id, a.decided_at)
+      select count(*)::int as n,
+        percentile_cont(0.5) within group (order by extract(epoch from dialled - confirmed)) as dial_p50,
+        percentile_cont(0.95) within group (order by extract(epoch from dialled - confirmed)) as dial_p95,
+        percentile_cont(0.5) within group (order by extract(epoch from ringing - confirmed)) as ring_p50,
+        percentile_cont(0.95) within group (order by extract(epoch from ringing - confirmed)) as ring_p95
+      from firsts`)
+  )
   // Owners at 80 % of their allowance (§5)
   const voiceUsers = await privileged
     .select({ userId: voiceAccess.userId })
@@ -704,6 +731,14 @@ export async function voiceOperations() {
     attempts,
     stuck: stuck?.n ?? 0,
     nearAllowance,
+    setup: {
+      calls: setup?.n ?? 0,
+      // Seconds; null with no calls (never a made-up figure)
+      dialP50: setup?.dial_p50 == null ? null : Number(setup.dial_p50),
+      dialP95: setup?.dial_p95 == null ? null : Number(setup.dial_p95),
+      ringP50: setup?.ring_p50 == null ? null : Number(setup.ring_p50),
+      ringP95: setup?.ring_p95 == null ? null : Number(setup.ring_p95),
+    },
   }
 }
 

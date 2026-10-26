@@ -38,6 +38,22 @@ const extractedSchema = z.object({
   mayAcceptWithinAcceptable: z.boolean(),
   mayProposeAlternatives: z.boolean(),
   reportAt: z.string().max(40).nullable(),
+  // The language to speak on the call, if the person asked for one (D-21)
+  language: z
+    .enum(["en-IN", "hi-IN", "te-IN"])
+    .nullish()
+    .describe("Only if the person asked for the call in Hindi (hi-IN) or Telugu (te-IN)"),
+  // A number the person wants Tavi to give the callee (D-19)
+  shareLabel: z
+    .string()
+    .max(80)
+    .nullish()
+    .describe("Whose number the person wants Tavi to give the callee, e.g. Ravi"),
+  sharePhone: z
+    .string()
+    .max(32)
+    .nullish()
+    .describe("That number, exactly as typed; null unless they asked to give a number"),
 })
 
 export type SpecDraft = Partial<Omit<DraftInput, "idempotencyKey" | "threadId">>
@@ -132,6 +148,20 @@ export async function extractSpec(input: {
   } else if (got?.goalType === "ask_question" && got.question?.trim()) {
     draft.goal = { type: "ask_question", question: got.question.trim() }
   } else missing.push("goal")
+
+  // The same rule as the number to call: typed by the person, and not that one
+  const sharePhone = got?.sharePhone
+  if (
+    sharePhone &&
+    got?.shareLabel?.trim() &&
+    parseIndianMobile(sharePhone) &&
+    digits(input.text).includes(digits(sharePhone).slice(-10)) &&
+    parseIndianMobile(sharePhone) !== parseIndianMobile(draft.recipientPhone ?? "")
+  ) {
+    draft.share = { label: got.shareLabel.trim(), phone: sharePhone }
+  }
+
+  if (got?.language && got.language !== "en-IN") draft.language = got.language
 
   if (got?.reportAt && !Number.isNaN(Date.parse(got.reportAt))) {
     draft.reportAt = got.reportAt

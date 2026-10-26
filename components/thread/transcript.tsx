@@ -96,10 +96,13 @@ function Parts({
   parts,
   streaming,
   awaiting = false,
+  members,
 }: {
   parts: Part[]
   streaming: boolean
   awaiting?: boolean
+  // The squad's agents as they are now, for the faces on its work card
+  members?: AgentLite[]
 }) {
   // Consecutive tool calls are grouped into one block
   const blocks: (
@@ -136,7 +139,14 @@ function Parts({
         }
         const { part, index } = block
         if (part.type === "tool-assign") {
-          return <SquadWork key={part.toolCallId} part={part} live={streaming} />
+          return (
+            <SquadWork
+              key={part.toolCallId}
+              part={part}
+              live={streaming}
+              members={members}
+            />
+          )
         }
         if (part.type === "text") {
           return part.text ? (
@@ -268,6 +278,7 @@ function AgentMessage({
                 parts={segment.parts}
                 streaming={streaming && i === parts.length - 1}
                 awaiting={awaiting && i === parts.length - 1}
+                members={members}
               />
             )}
           </div>

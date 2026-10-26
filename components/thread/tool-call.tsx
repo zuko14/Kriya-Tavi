@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/collapsible"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
+import { ThreadCallWatch } from "@/components/voice/thread-call-watch"
 import type { KriyaMessage } from "@/lib/agent/tools"
 import { cn } from "@/lib/utils"
 
@@ -687,9 +688,19 @@ export function ToolCall({
   const interrupted = pending && !live
   const failed = part.state === "output-error"
   const summary = meta.summary?.((part.input ?? {}) as Record<string, unknown>) ?? ""
+  // A drafted call's summary lands in this thread when it's over (voice D-23);
+  // mounted beside the card, which is collapsed by default
+  const callHref =
+    name === "propose_call" && part.state === "output-available"
+      ? str((part.output as Record<string, unknown> | undefined)?.href)
+      : ""
+  const watch = /^\/calls\/[0-9a-f-]{36}$/.test(callHref) && (
+    <ThreadCallWatch taskId={callHref.slice("/calls/".length)} />
+  )
 
   return (
     <Collapsible className="group/tool">
+      {watch}
       <CollapsibleTrigger
         className={cn(
           "flex min-h-11 w-full min-w-0 items-center gap-2 rounded-md border border-transparent px-2 py-1 text-left font-mono text-[12px] transition-colors hover:border-border hover:bg-accent/40",

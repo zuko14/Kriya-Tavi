@@ -1,0 +1,83 @@
+{
+  "id": "S33-number-readback",
+  "about": "The callee reads the number back wrong, is told exactly where, then reads it back right",
+  "spec": {
+    "goal": {
+      "type": "deliver_message",
+      "message": "Ravi will call you about the GST filing.",
+      "askForReply": false
+    },
+    "share": {
+      "label": "Ravi",
+      "phone": "+919876543210"
+    }
+  },
+  "provider_script": [
+    {
+      "status": "ringing",
+      "atMs": 0
+    },
+    {
+      "status": "answered",
+      "atMs": 4000
+    },
+    {
+      "status": "completed",
+      "atMs": 90000
+    }
+  ],
+  "callee": [
+    {
+      "say": "Hello?"
+    },
+    {
+      "say": "Yes."
+    },
+    {
+      "say": "9876443210?"
+    },
+    {
+      "say": "9876543210"
+    },
+    {
+      "say": "Thanks."
+    }
+  ],
+  "variants": [
+    ["Hello?", "Yes.", "9876443210?", "9876543210", "Thanks."],
+    [
+      "Hello?",
+      "Yes.",
+      "nine eight seven six four, four three two one zero",
+      "nine eight seven six five, four three two one zero",
+      "Okay."
+    ],
+    [
+      "Hello?",
+      "Yes.",
+      "nau aath saat chhah chaar chaar teen do ek shunya",
+      "nau aath saat chhah paanch chaar teen do ek shunya",
+      "Theek hai."
+    ],
+    [
+      "Hello?",
+      "Yes.",
+      "tommidi enimidi edu aaru naalugu naalugu moodu rendu okati sunna",
+      "tommidi enimidi edu aaru aidu naalugu moodu rendu okati sunna",
+      "Sare."
+    ],
+    ["Hello?", "Yes.", "So it's 98764 43210?", "Plus 91 98765 43210?", "Got it."],
+    ["Hello?", "Yes.", "९८७६४ ४३२१०", "९८७६५ ४३२१०", "ठीक है"]
+  ],
+  "gold": {
+    "dialogue": {
+      "end": "done",
+      "said": [
+        "Not quite, after nine eight seven six it's five, not four.",
+        "Yes, that's correct."
+      ],
+      "notStored": ["nine eight seven", "9876543210", "98765", "four three two one"],
+      "maxModelCalls": 0
+    }
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "id": "S34-number-interrupted",
+  "about": "Barge-in over the number: Tavi waits if asked, then gives the whole number again; never moves on from a number that wasn't heard",
+  "spec": {
+    "goal": {
+      "type": "deliver_message",
+      "message": "Ravi will call you about the GST filing.",
+      "askForReply": false
+    },
+    "share": {
+      "label": "Ravi",
+      "phone": "+919876543210"
+    }
+  },
+  "provider_script": [
+    {
+      "status": "ringing",
+      "atMs": 0
+    },
+    {
+      "status": "answered",
+      "atMs": 4000
+    },
+    {
+      "status": "completed",
+      "atMs": 90000
+    }
+  ],
+  "callee": [
+    {
+      "say": "Hello?"
+    },
+    {
+      "say": "Yes."
+    },
+    {
+      "say": "Wait wait, let me get a pen",
+      "bargeIn": true
+    },
+    {
+      "say": "Okay, go ahead."
+    },
+    {
+      "say": "Got it."
+    }
+  ],
+  "variants": [
+    [
+      "Hello?",
+      "Yes.",
+      {
+        "say": "Wait wait, let me get a pen",
+        "bargeIn": true
+      },
+      "Okay, go ahead.",
+      "Got it."
+    ],
+    [
+      "Hello?",
+      "Yes.",
+      {
+        "say": "Ek minute ruko",
+        "bargeIn": true
+      },
+      "Haan boliye",
+      "Likh liya."
+    ],
+    [
+      "Hello?",
+      "Yes.",
+      {
+        "say": "Oka nimisham aagandi",
+        "bargeIn": true
+      },
+      "Cheppandi",
+      "Sare."
+    ],
+    [
+      "Hello?",
+      "Yes.",
+      {
+        "say": "Hello? Hello?",
+        "bargeIn": true
+      },
+      "Okay.",
+      "Thanks."
+    ],
+    [
+      "Hello?",
+      "Yes.",
+      {
+        "say": "Hold on",
+        "bargeIn": true
+      },
+      "Ready.",
+      "Okay."
+    ]
+  ],
+  "gold": {
+    "dialogue": {
+      "end": "done",
+      "said": ["Ravi's number is nine eight seven six five, four three two one zero."],
+      "notStored": ["nine eight seven", "9876543210", "98765", "four three two one"],
+      "maxModelCalls": 0
+    }
+  }
+}

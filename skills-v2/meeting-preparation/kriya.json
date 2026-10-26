@@ -1,0 +1,61 @@
+{
+  "id": "meeting-preparation",
+  "name": "Meeting preparation",
+  "description": "Builds a one-page brief for a meeting from the calendar, past mail and shared documents, each fact with its source.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["planning", "google"],
+  "roles": [
+    "assistant",
+    "executive",
+    "secretary",
+    "calendar",
+    "meeting",
+    "manager",
+    "founder",
+    "sales",
+    "client",
+    "hiring",
+    "google"
+  ],
+  "activation": {
+    "keywords": [
+      "brief",
+      "briefing",
+      "prep",
+      "prepare for",
+      "agenda",
+      "before the meeting",
+      "before my meeting",
+      "meeting notes",
+      "talking points",
+      "interview prep"
+    ],
+    "keywordsIntl": ["तैयारी", "एजेंडा", "సన్నద్ధం", "ఎజెండా", "taiyari", "agenda banao"]
+  },
+  "tools": {
+    "all": ["calendar_events"],
+    "any": [],
+    "uses": [
+      "gmail_search",
+      "gmail_read",
+      "drive_search",
+      "drive_read",
+      "notion_search",
+      "notion_read"
+    ]
+  },
+  "dependsOn": [],
+  "prerequisites": ["Google Calendar connected in Account"],
+  "verification": "Every fact in the brief names its source (the invite, an email, a document); nothing is changed by this skill.",
+  "limits": { "maxChars": 2600 },
+  "evals": [
+    { "ask": "Prepare a brief for my 3 pm meeting with Asha", "expect": "activate" },
+    { "ask": "कल की मीटिंग की तैयारी करवाओ", "expect": "activate" },
+    { "ask": "Add a meeting at 3 pm tomorrow", "expect": "skip" },
+    { "ask": "Write a poem about the sea", "expect": "skip" }
+  ]
+}

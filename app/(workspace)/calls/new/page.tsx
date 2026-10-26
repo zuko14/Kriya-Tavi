@@ -5,6 +5,7 @@ import { ChevronLeftIcon } from "lucide-react"
 
 import { NewCall } from "@/components/voice/new-call"
 import { requireUser } from "@/lib/auth"
+import { getSetting } from "@/lib/config"
 import { voiceAvailable } from "@/lib/voice/tasks"
 
 export const metadata: Metadata = { title: "New call" }
@@ -26,7 +27,10 @@ export default async function Page() {
         <h1 className="font-display text-[28px] leading-none font-normal sm:text-[34px]">
           Who should I call?
         </h1>
-        <NewCall />
+        <NewCall
+          share={(await getSetting("voice.shareContact")) === "on"}
+          languages={((await getSetting("voice.languages")) ?? "en-IN").split(",")}
+        />
       </div>
     </div>
   )

@@ -8,6 +8,7 @@ import { completeTeamOnboarding, type FormState } from "@/actions/account"
 import { LanguageSelect, UseCasePicker } from "@/components/account/forms"
 import { StateNotice, SubmitButton, TextField } from "@/components/auth/auth-kit"
 import { Glyph } from "@/components/glyph"
+import { agentGlyph } from "@/lib/glyph"
 import { packFor } from "@/lib/templates"
 import { cn } from "@/lib/utils"
 
@@ -120,7 +121,10 @@ export function TeamOnboarding({
                     onChange={() => toggle(member.name)}
                     className="sr-only"
                   />
-                  <Glyph seed={member.name} className="size-9 shrink-0 rounded-lg" />
+                  <Glyph
+                    seed={agentGlyph({ glyph: null, role: member.role })}
+                    className="size-9 shrink-0 rounded-lg"
+                  />
                   <span className="flex min-w-0 flex-1 flex-col gap-1">
                     <span className="flex items-center justify-between gap-2">
                       <span className="text-[14px] font-semibold">{member.name}</span>

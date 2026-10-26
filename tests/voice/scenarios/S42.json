@@ -1,0 +1,58 @@
+{
+  "id": "S42-switch-to-hindi",
+  "about": "The callee asks for Hindi on an English call with Hindi switched on: the AI disclosure again in Hindi, the person asked again, the rest in Hindi",
+  "languages": ["en-IN", "hi-IN"],
+  "provider_script": [
+    {
+      "status": "ringing",
+      "atMs": 0
+    },
+    {
+      "status": "answered",
+      "atMs": 4000
+    },
+    {
+      "status": "completed",
+      "atMs": 90000
+    }
+  ],
+  "callee": [
+    {
+      "say": "Hello?"
+    },
+    {
+      "say": "Hindi mein baat kariye"
+    },
+    {
+      "say": "Haan"
+    },
+    {
+      "say": "Haan ji"
+    },
+    {
+      "say": "Haan, theek hai"
+    }
+  ],
+  "variants": [
+    ["Hello?", "Hindi mein baat kariye", "Haan", "Haan ji", "Haan, theek hai"],
+    ["Hello?", "Can you speak Hindi?", "हाँ", "जी हाँ", "जी, ठीक है"],
+    ["Hello?", "हिंदी में बात कीजिए", "हाँ", "हाँ", "हाँ ठीक है"],
+    ["Hi", "Hindi please", "Haan", "Haan main hoon", "Bilkul"],
+    ["Yes?", "Hindi mein boliye", "Haan boliye", "Haan ji", "Theek hai, chalega"]
+  ],
+  "gold": {
+    "dialogue": {
+      "result": "agreed",
+      "agreed": [
+        {
+          "date": "2026-10-21",
+          "time": "15:00"
+        }
+      ],
+      "said": [
+        "नमस्ते, यह Kriya Tavi है — Asha की ओर से एक AI सहायक की कॉल।",
+        "क्या मेरी बात Asha के CA से हो रही है?"
+      ]
+    }
+  }
+}

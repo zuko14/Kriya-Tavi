@@ -14,6 +14,7 @@ import {
 } from "@/db/schema"
 import { textOf } from "@/lib/agent/messages"
 import { getSetting } from "@/lib/config"
+import { joinedGlyph } from "@/lib/glyph"
 import { crewsOn } from "@/lib/operator/crew-threads"
 import type { KriyaMessage } from "@/lib/agent/tools"
 import { notesToReview } from "@/lib/memory/person"
@@ -54,6 +55,7 @@ export async function getInbox(userId: string) {
         expiresAt: approvals.expiresAt,
         agentName: agents.name,
         agentGlyph: agents.glyph,
+        agentRole: agents.role,
         thread: { id: threads.id, agentId: threads.agentId, squadId: threads.squadId },
       })
       .from(approvals)
@@ -131,8 +133,9 @@ export async function getInbox(userId: string) {
     )
 
     return {
-      approvals: waiting.map(({ thread, ...approval }) => ({
+      approvals: waiting.map(({ thread, agentRole, ...approval }) => ({
         ...approval,
+        agentGlyph: joinedGlyph(approval.agentGlyph, agentRole),
         href: threadHref(thread),
         jobTitle: jobOfPart.get(approval.threadId) ?? null,
       })),

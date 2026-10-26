@@ -1,7 +1,7 @@
 import type { LanguageModelV4Prompt } from "@ai-sdk/provider"
 import { MockLanguageModelV4 } from "ai/test"
 
-import { LANGUAGES } from "@/lib/voice/languages"
+import { LANGUAGES, type Language } from "@/lib/voice/languages"
 
 // A scripted stand-in for a competent dialogue model (L-text, EVALUATION_PLAN
 // §1): it reads only what the real prompt gives it — the state, its job,
@@ -46,6 +46,8 @@ export type Seen = {
   today: string
   meetDate: string | null
   readBack: { date: string; time: string; seq: number } | null
+  // The call's language, from the prompt's language line (D-21)
+  lang: Language
 }
 
 export function read(prompt: LanguageModelV4Prompt): Seen {
@@ -65,6 +67,11 @@ export function read(prompt: LanguageModelV4Prompt): Seen {
     today: /Today is (\d{4}-\d{2}-\d{2})/.exec(system)?.[1] ?? "",
     meetDate: /Meet on (\d{4}-\d{2}-\d{2})/.exec(system)?.[1] ?? null,
     readBack: back ? { date: back[1], time: back[2], seq: Number(back[3]) } : null,
+    lang: /The callee is speaking Hindi/.test(system)
+      ? LANGUAGES["hi-IN"]
+      : /The callee is speaking Telugu/.test(system)
+        ? LANGUAGES["te-IN"]
+        : en,
   }
 }
 
@@ -77,11 +84,11 @@ export function fair(seen: Seen): Content[] {
       }
       return [say("Am I speaking with the right person?")]
     case "negotiate": {
-      const m = en.normalize(last, seen.today)
+      const m = seen.lang.normalize(last, seen.today)
       if (m.time) {
         // A day named in an earlier turn still holds
         const named = seen.heard
-          .map((text) => en.normalize(text, seen.today).date)
+          .map((text) => seen.lang.normalize(text, seen.today).date)
           .findLast(Boolean)
         return [
           call("note_proposed_time", {
@@ -98,7 +105,7 @@ export function fair(seen: Seen): Content[] {
       return [say("What time would suit you?")]
     }
     case "confirm_details":
-      if (seen.readBack && en.is.affirmative(last)) {
+      if (seen.readBack && seen.lang.is.affirmative(last)) {
         return [
           call("note_agreement", {
             date: seen.readBack.date,

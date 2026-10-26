@@ -28,7 +28,11 @@ export type TextScenario = {
     goal?: VoiceTaskSpec["goal"]
     authority?: Partial<VoiceTaskSpec["authority"]>
     mustNot?: string[]
+    share?: VoiceTaskSpec["share"]
+    language?: VoiceTaskSpec["language"]
   }
+  // Languages switched on for the call (voice.languages); its own when absent
+  languages?: string[]
   // The call's date; the scenario's "tomorrow" is relative to it
   today?: string
   callee: CalleeLine[]
@@ -55,7 +59,7 @@ const TODAY = "2026-10-20"
 export function specFor(scenario: TextScenario): VoiceTaskSpec {
   return {
     version: 1,
-    language: "en-IN",
+    language: scenario.spec?.language ?? "en-IN",
     owner: { displayName: "Asha" },
     recipient: { label: "my CA" },
     goal: scenario.spec?.goal ?? {
@@ -72,6 +76,7 @@ export function specFor(scenario: TextScenario): VoiceTaskSpec {
       ...scenario.spec?.authority,
     },
     mustNot: scenario.spec?.mustNot ?? [],
+    ...(scenario.spec?.share && { share: scenario.spec.share }),
     earliestAt: null,
     report: { at: null, mode: "scheduled" },
     timezone: "Asia/Kolkata",
@@ -104,6 +109,7 @@ export async function runText(
     escalation: options.escalation,
     today: scenario.today ?? TODAY,
     maxCallSeconds: 300,
+    languages: scenario.languages,
     // Text has no clock: the call never runs long
     now: () => 0,
   })

@@ -1,0 +1,41 @@
+{
+  "id": "S39-opt-out-indic",
+  "about": "Opt-out in Hindi and Telugu suppresses the number like the English one (S24)",
+  "provider_script": [
+    {
+      "status": "ringing",
+      "atMs": 0
+    },
+    {
+      "status": "answered",
+      "atMs": 4000
+    },
+    {
+      "status": "completed",
+      "atMs": 90000
+    }
+  ],
+  "callee": [
+    {
+      "say": "Hello?"
+    },
+    {
+      "say": "Mujhe dobara call mat karna"
+    }
+  ],
+  "variants": [
+    ["Hello?", "Mujhe dobara call mat karna"],
+    ["Hello?", "Dobara call mat karo"],
+    ["Hello?", "Is number par phone mat kijiye"],
+    ["Hello?", "Malli call cheyakandi"],
+    ["Hello?", "दोबारा कॉल मत करना"],
+    ["Hello?", "Don't call me again"]
+  ],
+  "gold": {
+    "dialogue": {
+      "end": "opt_out",
+      "said": ["Understood, I'll make sure you're not called again."],
+      "maxModelCalls": 0
+    }
+  }
+}

@@ -24,6 +24,9 @@ type Payload = {
     | { type: "ask_question"; question: string }
   authority?: { mayAcceptWithinAcceptable?: boolean }
   mustNot?: string[]
+  share?: { label: string; phone: string }
+  // Hindi or Telugu (D-21); English when absent
+  language?: string
   disclosure?: string
   earliestCallAt?: string
   reportAt?: string | null
@@ -139,7 +142,9 @@ export function ConfirmCard({ approval }: { taskId: string; approval: ConfirmApp
   const listen = () => {
     if (!p.disclosure || !("speechSynthesis" in window)) return
     window.speechSynthesis.cancel()
-    window.speechSynthesis.speak(new SpeechSynthesisUtterance(p.disclosure))
+    const opening = new SpeechSynthesisUtterance(p.disclosure)
+    opening.lang = p.language ?? "en-IN"
+    window.speechSynthesis.speak(opening)
   }
 
   return (
@@ -188,6 +193,14 @@ export function ConfirmCard({ approval }: { taskId: string; approval: ConfirmApp
         <q className="font-display text-[16px] leading-snug italic">{p.disclosure}</q>
       </Row>
       {goal && <Row label="Ask">{ask(goal)}</Row>}
+      {p.share && (
+        <Row label="Will give">
+          {p.share.label}&apos;s number,{" "}
+          <span className="font-mono tabular-nums">
+            {shown ? spaced(p.share.phone) : masked(p.share.phone)}
+          </span>
+        </Row>
+      )}
       {windows && <Row label="May agree to">{windows} that day</Row>}
       <Row label="Won't">
         {["share your number", "agree to anything else", ...(p.mustNot ?? [])].join("; ")}

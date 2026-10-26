@@ -151,15 +151,67 @@ describe("only the person's words pick a skill (NT-SKL-02)", () => {
 describe("the v2 skills (NT-SKL-04)", () => {
   const v2 = CATALOG_V2.filter((s) => !CATALOG.some((c) => c.id === s.id))
 
-  it("are the two named in ND-14, each parsed and listed once", () => {
-    expect(v2.map((s) => s.id).sort()).toEqual([
-      "delivery-proof",
-      "indian-documents-reading",
+  // The two named in ND-14, and six the owner asked for on 2026-10-26
+  const V2_IDS = [
+    "code-assistance",
+    "creator-analytics",
+    "delivery-proof",
+    "documents-and-notes",
+    "email-drafting",
+    "indian-documents-reading",
+    "meeting-preparation",
+    "writing-and-editing",
+  ]
+
+  it("are the eight listed, each parsed, listed once and in its own directory", () => {
+    expect(v2.map((s) => s.id).sort()).toEqual(V2_IDS)
+    expect(fs.readdirSync(SKILLS_V2_ROOT).sort()).toEqual(V2_IDS)
+  })
+
+  it("never need a tool the person hasn't got: without it they are skipped", () => {
+    const needs: [string, string, string[]][] = [
+      ["email-drafting", "Reply to Ravi's email", ["gmail_draft"]],
+      ["meeting-preparation", "Prepare a brief for my meeting", ["calendar_events"]],
+      [
+        "documents-and-notes",
+        "Find it in my Google Drive",
+        ["drive_search", "notion_search", "file_list"],
+      ],
+      [
+        "creator-analytics",
+        "How are my YouTube views?",
+        ["youtube_stats", "instagram_insights"],
+      ],
+    ]
+    for (const [id, ask, missing] of needs) {
+      expect(ids(resolve(ask, { unicode: true })), id).toContain(id)
+      const r = resolve(ask, {
+        unicode: true,
+        tools: ALL_TOOLS.filter((t) => !missing.includes(t)),
+      })
+      expect(ids(r), id).not.toContain(id)
+      expect(r.skipped.find((s) => s.id === id)?.reason, id).toBeTruthy()
+    }
+  })
+
+  it("stay quiet on everyday asks that aren't theirs", () => {
+    const added = V2_IDS.filter(
+      (id) => !["delivery-proof", "indian-documents-reading"].includes(id)
+    )
+    for (const ask of [
+      "tell me a joke",
+      "thanks, bye",
+      "aaj mausam kaisa hai",
+      "मुझे एक कविता सुनाओ",
+      "నాకు ఒక కథ చెప్పు",
+      "What is the capital of Karnataka?",
+      "kal ka plan batao",
+      "Book a table for two tonight",
     ])
-    expect(fs.readdirSync(SKILLS_V2_ROOT).sort()).toEqual([
-      "delivery-proof",
-      "indian-documents-reading",
-    ])
+      expect(
+        ids(resolve(ask, { unicode: true })).filter((id) => added.includes(id)),
+        ask
+      ).toEqual([])
   })
 
   it("load, fit their size limit, name only real tools and declare each one", () => {

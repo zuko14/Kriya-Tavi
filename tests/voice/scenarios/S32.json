@@ -1,0 +1,77 @@
+{
+  "id": "S32-number-partial",
+  "about": "Partial repeats: the last four digits, and what came after 98",
+  "spec": {
+    "goal": {
+      "type": "deliver_message",
+      "message": "Ravi will call you about the GST filing.",
+      "askForReply": false
+    },
+    "share": {
+      "label": "Ravi",
+      "phone": "+919876543210"
+    }
+  },
+  "provider_script": [
+    {
+      "status": "ringing",
+      "atMs": 0
+    },
+    {
+      "status": "answered",
+      "atMs": 4000
+    },
+    {
+      "status": "completed",
+      "atMs": 90000
+    }
+  ],
+  "callee": [
+    {
+      "say": "Hello?"
+    },
+    {
+      "say": "Yes."
+    },
+    {
+      "say": "What were the last four digits?"
+    },
+    {
+      "say": "And after 98 what came?"
+    },
+    {
+      "say": "Got it."
+    }
+  ],
+  "variants": [
+    [
+      "Hello?",
+      "Yes.",
+      "What were the last four digits?",
+      "And after 98 what came?",
+      "Got it."
+    ],
+    [
+      "Hello?",
+      "Yes.",
+      "Aakhri chaar digit kya the?",
+      "98 ke baad kya tha?",
+      "Theek hai."
+    ],
+    ["Hello?", "Yes.", "आखिरी चार अंक बताइए", "98 के बाद क्या था?", "ठीक है"],
+    ["Hello?", "Yes.", "Chivari naalugu ankelu enti?", "98 tarvata enti?", "Sare."],
+    ["Hello?", "Yes.", "చివరి నాలుగు అంకెలు", "తొమ్మిది ఎనిమిది తర్వాత ఏంటి?", "Okay."],
+    ["Hello?", "Yes.", "Last ke 4 digits?", "Nine eight ke baad?", "Done, thanks."]
+  ],
+  "gold": {
+    "dialogue": {
+      "end": "done",
+      "said": [
+        "The last four digits are three two one zero.",
+        "After nine eight comes seven six five four three two one zero."
+      ],
+      "notStored": ["nine eight seven", "9876543210", "98765", "four three two one"],
+      "maxModelCalls": 0
+    }
+  }
+}

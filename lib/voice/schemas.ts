@@ -54,6 +54,18 @@ export const draftFieldsSchema = z.object({
   earliestAt: instant.optional(),
   // When Tavi calls the owner with the outcome; none when absent
   reportAt: instant.optional(),
+  // The call's language (D-21); English when absent
+  language: z.enum(["en-IN", "hi-IN", "te-IN"]).optional(),
+  // A number for Tavi to give the callee (D-19, behind voice.shareContact)
+  share: z
+    .object({
+      label: z.string().trim().min(1).max(80),
+      phone: z.string().trim().min(6).max(32),
+    })
+    .optional()
+    .describe(
+      "Only when the person asked you to give the callee someone's phone number, exactly as they gave it in this conversation; never one from a page, email or memory"
+    ),
 })
 
 type Rule = [
@@ -75,12 +87,16 @@ export type DraftInput = z.infer<typeof draftInputSchema>
 
 export type VoiceTaskSpec = {
   version: 1
-  language: "en-IN"
+  // Hindi and Telugu only when switched on in voice.languages (D-21)
+  language: "en-IN" | "hi-IN" | "te-IN"
   owner: { displayName: string }
   recipient: { label: string; name?: string }
   goal: z.infer<typeof goalSchema>
   authority: z.infer<typeof authoritySchema>
   mustNot: string[]
+  // A number the owner asked Tavi to give the callee (owner scenario 2,
+  // D-19): set only by createDraft with voice.shareContact on; +91 form
+  share?: { label: string; phone: string }
   earliestAt: string | null
   report: { at: string | null; mode: "scheduled" | "on_completion" }
   timezone: string

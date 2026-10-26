@@ -1,0 +1,63 @@
+{
+  "id": "creator-analytics",
+  "name": "Creator analytics",
+  "description": "Reads the person's YouTube and Instagram numbers, compares like with like and suggests a few next steps, without invented benchmarks.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["analytics", "social"],
+  "roles": [
+    "creator",
+    "content",
+    "social",
+    "marketing",
+    "youtube",
+    "instagram",
+    "influencer",
+    "brand",
+    "trends"
+  ],
+  "activation": {
+    "keywords": [
+      "views",
+      "subscribers",
+      "followers",
+      "engagement",
+      "reach",
+      "analytics",
+      "insights",
+      "performance",
+      "youtube",
+      "instagram",
+      "reels",
+      "channel",
+      "my posts"
+    ],
+    "keywordsIntl": [
+      "व्यूज़",
+      "फॉलोअर्स",
+      "सब्सक्राइबर",
+      "వ్యూస్",
+      "ఫాలోవర్స్",
+      "views kitne",
+      "followers kitne"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": ["youtube_stats", "instagram_insights"],
+    "uses": ["instagram_publish"]
+  },
+  "dependsOn": [],
+  "prerequisites": ["YouTube (Google) or Instagram connected in Account"],
+  "verification": "Every figure comes from youtube_stats or instagram_insights in this task, with the period it covers; suggestions are labelled as suggestions.",
+  "limits": { "maxChars": 2600 },
+  "evals": [
+    { "ask": "How did my last 10 YouTube videos perform?", "expect": "activate" },
+    { "ask": "मेरे इंस्टाग्राम फॉलोअर्स कितने बढ़े?", "expect": "activate" },
+    { "ask": "Which of my reels got the best engagement?", "expect": "activate" },
+    { "ask": "Fix the typo in this sentence", "expect": "skip" }
+  ]
+}

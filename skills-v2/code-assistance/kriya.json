@@ -1,0 +1,70 @@
+{
+  "id": "code-assistance",
+  "name": "Code assistance",
+  "description": "Reads the code and the exact error, explains the cause, proposes the smallest correct change with a test, and never claims code was run.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [
+    {
+      "project": "Superpowers",
+      "version": "6.4.2",
+      "commit": "8ca22dba9a",
+      "path": "skills/systematic-debugging",
+      "license": "MIT",
+      "url": "https://github.com/obra/superpowers"
+    }
+  ],
+  "categories": ["engineering"],
+  "roles": [
+    "engineer",
+    "developer",
+    "software",
+    "code",
+    "coding",
+    "programmer",
+    "devops",
+    "github",
+    "release",
+    "tech"
+  ],
+  "activation": {
+    "keywords": [
+      "code",
+      "bug",
+      "error",
+      "exception",
+      "stack trace",
+      "traceback",
+      "function",
+      "api",
+      "endpoint",
+      "unit test",
+      "tests",
+      "refactor",
+      "typescript",
+      "javascript",
+      "python",
+      "java",
+      "sql",
+      "regex",
+      "react",
+      "compile",
+      "crash",
+      "code review"
+    ],
+    "keywordsIntl": ["कोड", "एरर", "కోడ్", "ఎర్రర్", "code mein", "error aa raha"]
+  },
+  "tools": { "all": [], "any": [], "uses": [] },
+  "dependsOn": [],
+  "prerequisites": [],
+  "verification": "Changes are shown as code for the person to apply; the reply says the code wasn't run and gives the command that checks it.",
+  "limits": { "maxChars": 2800 },
+  "evals": [
+    { "ask": "Why does this Python function throw a KeyError?", "expect": "activate" },
+    { "ask": "Review this SQL query for bugs", "expect": "activate" },
+    { "ask": "मेरे कोड में एरर आ रहा है", "expect": "activate" },
+    { "ask": "Plan a weekend trip to Goa", "expect": "skip" }
+  ]
+}

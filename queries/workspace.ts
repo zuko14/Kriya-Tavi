@@ -15,6 +15,7 @@ import {
 } from "@/db/schema"
 import { loadMessages } from "@/lib/agent/messages"
 import { isOwner } from "@/lib/auth"
+import { agentGlyph, joinedGlyph, parseGlyph } from "@/lib/glyph"
 import { crewsOn } from "@/lib/operator/crew-threads"
 import { checkTaskAllowed, usageSummary } from "@/lib/entitlements"
 import { isGatewayConfigured, TIER_LABELS } from "@/lib/models"
@@ -103,7 +104,9 @@ export async function getNavigation(userId: string) {
         id: agent.id,
         name: agent.name,
         role: agent.role,
-        glyph: agent.glyph,
+        glyph: agentGlyph(agent),
+        // Only a chosen avatar; null follows the role (the Creator's picker)
+        glyphChoice: parseGlyph(agent.glyph) ? agent.glyph : null,
         model: agent.model,
         instructions: agent.instructions,
         skills: agent.skills,
@@ -114,7 +117,7 @@ export async function getNavigation(userId: string) {
         id: squad.id,
         name: squad.name,
         agentIds: squad.agents.map((agent) => agent.id),
-        glyphs: squad.agents.map((agent) => agent.glyph),
+        glyphs: squad.agents.map(agentGlyph),
         latestThreadId: latest.get(squad.id) ?? null,
         busy: busy.has(squad.id),
       })),
@@ -284,6 +287,7 @@ export async function getTasks(userId: string, limit = 60) {
         agentId: tasks.agentId,
         agentName: agents.name,
         agentGlyph: agents.glyph,
+        agentRole: agents.role,
         charge: charges.chargeMicroInr,
         chargeStatus: charges.status,
       })
@@ -295,6 +299,12 @@ export async function getTasks(userId: string, limit = 60) {
       .where(notCrewPart(tx, crews, tasks.threadId))
       .orderBy(desc(tasks.createdAt))
       .limit(limit)
+      .then((rows) =>
+        rows.map(({ agentRole, ...row }) => ({
+          ...row,
+          agentGlyph: joinedGlyph(row.agentGlyph, agentRole),
+        }))
+      )
   )
 }
 
@@ -388,6 +398,7 @@ export async function getUsage(userId: string, days = 30) {
         agentId: tasks.agentId,
         name: agents.name,
         glyph: agents.glyph,
+        role: agents.role,
         tasks: sql<number>`count(*)::int`,
         charge: sql<number>`coalesce(sum(${charges.chargeMicroInr}), 0)::bigint`.mapWith(
           Number
@@ -397,8 +408,11 @@ export async function getUsage(userId: string, days = 30) {
       .leftJoin(agents, eq(tasks.agentId, agents.id))
       .leftJoin(charges, eq(charges.taskId, tasks.id))
       .where(window)
-      .groupBy(tasks.agentId, agents.name, agents.glyph)
+      .groupBy(tasks.agentId, agents.name, agents.glyph, agents.role)
       .orderBy(desc(sql`count(*)`))
+      .then((rows) =>
+        rows.map(({ role, ...row }) => ({ ...row, glyph: joinedGlyph(row.glyph, role) }))
+      )
 
     // Day buckets in India time, oldest first
     const daily = await tx
@@ -429,6 +443,7 @@ export async function getUsage(userId: string, days = 30) {
         agentId: tasks.agentId,
         agentName: agents.name,
         agentGlyph: agents.glyph,
+        agentRole: agents.role,
         charge: charges.chargeMicroInr,
         chargeStatus: charges.status,
       })
@@ -438,6 +453,12 @@ export async function getUsage(userId: string, days = 30) {
       .leftJoin(charges, eq(charges.taskId, tasks.id))
       .orderBy(desc(tasks.createdAt))
       .limit(25)
+      .then((rows) =>
+        rows.map(({ agentRole, ...row }) => ({
+          ...row,
+          agentGlyph: joinedGlyph(row.agentGlyph, agentRole),
+        }))
+      )
 
     return { days, totals, tokens, byAgent, daily, recent }
   })

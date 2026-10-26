@@ -1,0 +1,69 @@
+{
+  "id": "email-drafting",
+  "name": "Email drafting",
+  "description": "Reads the thread first, writes a clear email with only the recipients the person gave, and leaves sending to them.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["communication", "google"],
+  "roles": [
+    "assistant",
+    "executive",
+    "secretary",
+    "email",
+    "mail",
+    "client",
+    "proposal",
+    "sales",
+    "support",
+    "hiring",
+    "freelance",
+    "founder",
+    "manager",
+    "google"
+  ],
+  "activation": {
+    "keywords": [
+      "email",
+      "emails",
+      "e-mail",
+      "mail",
+      "reply",
+      "respond",
+      "follow up",
+      "follow-up",
+      "inbox",
+      "draft",
+      "gmail",
+      "write to"
+    ],
+    "keywordsIntl": [
+      "ईमेल",
+      "मेल",
+      "जवाब",
+      "ఈమెయిల్",
+      "మెయిల్",
+      "జవాబు",
+      "mail likho",
+      "reply karo",
+      "jawab do"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": ["gmail_draft"],
+    "uses": ["gmail_search", "gmail_read", "gmail_send_draft"]
+  },
+  "dependsOn": [],
+  "prerequisites": ["Gmail connected in Account"],
+  "verification": "gmail_draft reads the saved draft back; a send happens only through gmail_send_draft after the person's approval of that exact draft.",
+  "limits": { "maxChars": 2800 },
+  "evals": [
+    { "ask": "Reply to Ravi's email about the invoice", "expect": "activate" },
+    { "ask": "Draft a follow-up to the client about payment", "expect": "activate" },
+    { "ask": "राहुल को ईमेल का जवाब लिखो", "expect": "activate" },
+    { "ask": "What's the capital of Kerala?", "expect": "skip" }
+  ]
+}

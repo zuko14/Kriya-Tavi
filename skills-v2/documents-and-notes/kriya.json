@@ -1,0 +1,66 @@
+{
+  "id": "documents-and-notes",
+  "name": "Documents and notes",
+  "description": "Finds the person's own Drive, Notion and Kriya documents, answers from them with exact references, and says when the answer isn't there.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["documents", "research"],
+  "roles": [
+    "assistant",
+    "knowledge",
+    "notes",
+    "document",
+    "research",
+    "operations",
+    "hiring",
+    "legal",
+    "manager",
+    "founder",
+    "study"
+  ],
+  "activation": {
+    "keywords": [
+      "drive",
+      "google drive",
+      "notion",
+      "my notes",
+      "my docs",
+      "my document",
+      "my documents",
+      "the doc",
+      "policy document",
+      "in my files",
+      "our wiki"
+    ],
+    "keywordsIntl": [
+      "नोट्स",
+      "ड्राइव",
+      "नोशन",
+      "నోట్స్",
+      "డ్రైవ్",
+      "mere notes",
+      "drive mein"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": ["drive_search", "notion_search", "file_list"],
+    "uses": ["drive_read", "notion_read", "file_read"]
+  },
+  "dependsOn": [],
+  "prerequisites": ["Google Drive or Notion connected in Account, or files in Kriya"],
+  "verification": "Each answer quotes the document it came from and where in it; nothing is changed by this skill.",
+  "limits": { "maxChars": 2600 },
+  "evals": [
+    {
+      "ask": "What does my Notion page say about the leave policy?",
+      "expect": "activate"
+    },
+    { "ask": "Find the pricing doc in my Google Drive", "expect": "activate" },
+    { "ask": "मेरे नोट्स में GST की तारीख क्या लिखी है?", "expect": "activate" },
+    { "ask": "Tell me a joke", "expect": "skip" }
+  ]
+}

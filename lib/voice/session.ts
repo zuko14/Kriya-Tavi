@@ -11,6 +11,7 @@ import {
   voiceProfiles,
   voiceUsage,
 } from "@/db/schema"
+import { getSetting } from "@/lib/config"
 import { log } from "@/lib/log"
 import { usageFromMetadata } from "@/lib/models"
 
@@ -55,6 +56,9 @@ export type SessionDeps = {
   model: LanguageModel
   escalation?: LanguageModel | null
   voice: string
+  // A TTS voice per call language (D-21), when it isn't `voice`; the STT
+  // vendor must take code-mixed speech, since a call can switch language
+  voices?: Partial<Record<string, string>>
   sampleRate: 8000 | 16000
   heartbeatMs?: number
   // How long to wait for the answered webhook when the stream comes first
@@ -171,6 +175,7 @@ export async function runSession(call: LiveCall, deps: SessionDeps) {
           escalation: deps.escalation,
           today: localDate(clock.now(), spec.timezone),
           maxCallSeconds: task.maxCallSeconds,
+          languages: ((await getSetting("voice.languages")) ?? "en-IN").split(","),
           onModelCall: llm("llm"),
         })
       : kind === "owner_report" && task
@@ -261,6 +266,7 @@ export async function runSession(call: LiveCall, deps: SessionDeps) {
 
   async function speak(reply: Reply) {
     await persist()
+    const voice = (outreach && deps.voices?.[outreach.language]) || deps.voice
     const abort = new AbortController()
     speaking = { seq: reply.seq, abort, from: sent, end: reply.end }
     // TTS fails: the sentence once more, then the call ends (VOICE_ARCH §6)
@@ -269,14 +275,14 @@ export async function runSession(call: LiveCall, deps: SessionDeps) {
         requestKey: `${attemptId}:tts:${reply.seq}:${attempt}`,
         component: "tts",
         provider: deps.tts.name,
-        product: deps.voice,
+        product: voice,
         quantity: deps.tts.billedUnits(reply.text),
         unit: "character",
         usageStatus: "counted",
       })
       try {
         for await (const pcm of deps.tts.synthesize(reply.text, {
-          voice: deps.voice,
+          voice,
           sampleRate: deps.sampleRate,
           signal: abort.signal,
         })) {
@@ -357,6 +363,8 @@ export async function runSession(call: LiveCall, deps: SessionDeps) {
         await persist()
         await saveNotes()
         if (reply) await speak(reply)
+        // A voicemail greeting or network message: nothing more is said
+        else if (outreach?.notes.end === "voicemail") hangUp("voicemail")
       })
       .catch((error) => {
         log.error("voice turn failed", { attemptId, error })
