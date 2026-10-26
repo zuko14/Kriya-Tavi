@@ -7531,6 +7531,81 @@ pushed; no real model, provider, phone or app was called.
    `next.mcp` off at once.
 10. Real phone and screen-reader pass on the changed screens (second pass gap).
 
+#### Track N forensic re-verification (2026-10-26)
+
+On `main` at `7cea0aa` plus the uncommitted fixes below (not committed: the
+owner has not authorized this commit). Local only; no real model, provider,
+app, phone or database outside PGlite was used.
+
+| Subsystem | Tests run | Result | Notes |
+| --- | --- | --- | --- |
+| Static: `typecheck`, `lint`, `format:check` | — | pass | lint 0 errors / 6 warnings: one unused-parameter warning pair in `tests/operator/golden/harness.ts`, counted three times because eslint also scans two copies under `.claude/worktrees/` |
+| NR-2 regression: `tests/next/regression.test.ts`, AT-REG-01 (`tests/agent/regression.test.ts`), OT-REG-01 (`tests/operator/runner-grants.test.ts`, `kill-switch.test.ts`) | 3 + 8 + 15 | pass | the AT-REG-01 snapshot file is unchanged since `e7eb8ef` (track A) |
+| DB: `migrations.test.ts`, `next-*-rls.test.ts` (NT-DB-01…07), `lint.test.ts` (NT-DB-08) | 20 + 26 + 4 | pass | all 6 new trigger functions have `set search_path = ''` (and `lint.test.ts` enforces it for every `kriya` function); forward and rollback with data for `20270101000000`, `…0200`, `…0300` |
+| Raw SQL parameters (`recheck-params.test.ts` + a scan of every `sql` template in track N files) | 1 | pass | no `Date` reaches a raw query; `metrics.ts` passes an integer into `make_interval`; the other `Date` uses go through column operators |
+| Security: `mcp-fetch` (NT-MCP-10…14), AS-MCP-SEC (200 cases), `mcp-policy`, `mcp-rotation` | 9 + 2 + 27 + 3 | pass | 200/200 scripted attacks; 0 unapproved side effects; NM8 = 0 |
+| Delivery and re-checks: `delivery`, `delivery-whatidid`, `recheck`, `mcp-recheck` | 19 + 5 + 20 + 11 | pass | 4 bugs fixed in the app-run re-check (below) |
+| Reliability: `reliability`, `reliability-runner` | 13 + 1 | pass | |
+| Skills v2: `skills-v2` (AS-SKL-ML) | 55 | pass | |
+| Memory rerank: `memory-rerank`, `memory-rerank-runner` | 12 + 1 | pass | |
+| Apps and registry: `mcp-connect`, `mcp-apps`, `mcp-owner`, `mcp-runtime`, `mcp-runner`, `mcp-readback`, `mcp-recorded` | 20 + 12 + 25 + 12 + 10 + 10 + 4 | pass | 2 bugs fixed (below) |
+| Golden: `tests/next/golden/` | 90 | pass | NG-01…NG-24 all present (`coverage.test.ts`), AS-DLV 30, AS-MCP-SEC 200 |
+| Full `env -u OPENROUTER_API_KEY npm run check` | 2046 | pass | Test Files 173 passed / 3 skipped (176); Tests 2004 passed / 42 skipped (2046); exit 0; 494 s |
+
+**Bugs found and fixed** (each with a test that fails on the old code, checked
+by putting the old file back and running it):
+
+1. **The app-run late re-check ignored the kill switches.** With `next.mcp`
+   (or `agents.inbox`) off, or the tool or its read tool in
+   `operator.disabledTools`, the worker could still have called the app.
+   `lib/mcp/recheck.ts` now checks them first, exactly as the runner does,
+   and records `unverified` without contacting the app.
+2. **It ignored an open circuit** (N4): now `assertClosed("mcp:<id>")`, as
+   the runner and the drift check do.
+3. **It could call a good run "failed".** The run's stored input passes
+   through `redactInput`, which replaces values of keys such as `token…` or
+   `card…` with `[redacted]`. A spec comparing against one of those would have
+   compared the app's real value with `[redacted]`. Such a run is now
+   `unverified` and the app isn't asked.
+4. **App runs without a read-back spec crowded out runs that could be
+   checked.** The candidate query took every `mcp_*` run with no
+   verification. Those can never be checked, but they filled the 50 slots of
+   each pass for 30 minutes. They are no longer candidates
+   (`lib/delivery/recheck.ts`).
+5. **The recorded-response gate (NT-MCP-20) could be bypassed.** It ran
+   only on draft → active, so pinning a new tool on an app that was already
+   active, or pinning while suspended and resuming, put an untested tool on
+   people's belts. `pinTool` now refuses an untested tool on an active app,
+   and every move to `active` checks (`actions/owner-apps.ts`).
+6. **`disableApp(app, agentId)` said "ok" and did nothing** when the app
+   was on for all agents. It now does what unticking the agent does
+   (`setAppForAgent(…, false)`) (`actions/apps.ts`). No screen calls it, but
+   it is a server action anyone signed in can call.
+
+Changed: `lib/mcp/recheck.ts`, `lib/delivery/recheck.ts`, `actions/owner-apps.ts`,
+`actions/apps.ts`, `tests/next/mcp-recheck.test.ts`, `tests/next/mcp-owner.test.ts`,
+`tests/next/mcp-apps.test.ts`, this file.
+
+Reviewed and left as they are (with the reason):
+- An app that needs no sign-in (`auth = none`) can't be turned on by a person,
+  because enabling needs a connection. This is the documented v1 limit
+  (N6 result above); such servers exist for the fixture.
+- `mcpDisconnect` looks up revocation at `/.well-known/oauth-authorization-server`
+  at the issuer's origin, so an issuer with a path finds no endpoint. Revocation is
+  best effort, and the tokens are deleted either way.
+- The drift check marks a server checked before it reads, so a failed read
+  waits a day; the runner checks hashes on every task anyway (comment in
+  `lib/mcp/drift.ts`).
+- `rerankByMeaning` logs the error's message, not only its name. Every
+  message on that path is Kriya's own or the driver's; no note text is in it.
+- The re-check of built-in tools doesn't read `operator.disabledTools`. It only
+  reads, as the person, through official APIs, and that is out of track N's
+  MCP scope. Raise it with the owner if a kill should also stop reads.
+
+Recommendations: commit these fixes; drop `.claude/worktrees/` from eslint's
+scan (or remove the stale worktrees) so lint counts only this tree; and the
+open gates in the third-pass checklist above are unchanged.
+
 ### N10 session result (2026-10-25): cost measurement and prompt caching
 
 - Approval: ND-16 by id (owner, in chat, 2026-10-25). No paid run is approved by
@@ -7698,6 +7773,7 @@ Pin for an app that needs sign-in (no real authorization server).
 | 2026-10-24 | N3: `env -i … npm run check` (clean environment) | typecheck pass; lint 0 errors / 6 warnings (same existing set); format pass; Test Files 152 passed / 3 skipped (155); Tests 1806 passed / 27 skipped (1833); exit 0 |
 | 2026-10-24 | N6: `env -i … npm run check` (clean environment) | typecheck pass; lint 0 errors / 6 warnings (same existing set); format pass; Test Files 155 passed / 3 skipped (158); Tests 1845 passed / 27 skipped (1872); exit 0 |
 | 2026-10-24 | N6: `npm run db:migrate` on the local stack (guard OK) | `20270101000300_mcp_connections.sql` applied on local Postgres 17 |
+| 2026-10-26 | Track N forensic re-verification: `env -u OPENROUTER_API_KEY npm run check` (with 6 bug fixes, uncommitted) | typecheck pass; lint 0 errors / 6 warnings (the existing set); format pass; Test Files 173 passed / 3 skipped (176); Tests 2004 passed / 42 skipped (2046); exit 0 |
 | 2026-10-26 | N12 third pass: `env -u OPENROUTER_API_KEY npm run check` (after commit `266c870`) | typecheck pass; lint 0 errors / 6 warnings (the existing set); format pass; Test Files 173 passed / 3 skipped (176); Tests 1998 passed / 42 skipped (2040); exit 0 |
 | 2026-10-25 | N12 second pass: `env -u OPENROUTER_API_KEY npm run check` | typecheck pass; lint 0 errors / 6 warnings (the existing set); format pass; Test Files 169 passed / 3 skipped (172); Tests 1985 passed / 27 skipped (2012); exit 0 (the run took 614 s against about 330 s before; not investigated) |
 | 2026-10-25 | N12: `env -u OPENROUTER_API_KEY npm run check` | typecheck pass; lint 0 errors / 6 warnings (the existing set); format pass; Test Files 168 passed / 3 skipped (171); Tests 1984 passed / 27 skipped (2011); exit 0 |

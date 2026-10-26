@@ -110,6 +110,15 @@ async function appRun(
   return (made[0] as { id: string }).id
 }
 
+const SWITCHES = ["KRIYA_NEXT_MCP", "KRIYA_AGENTS_INBOX", "KRIYA_OPERATOR_DISABLED_TOOLS"]
+function setSwitches(values: Partial<Record<string, string>>) {
+  for (const key of SWITCHES) {
+    if (values[key]) process.env[key] = values[key]
+    else delete process.env[key]
+  }
+  ;(globalThis as { __kriyaSettings?: unknown }).__kriyaSettings = undefined
+}
+
 const checks = async () =>
   (await q("select execution_id, kind, status, note from kriya.delivery_checks"))
     .rows as {
@@ -141,6 +150,7 @@ describe("the late re-check of an app run", () => {
       { name: "create_item", risk: "R3", verify: SPEC },
     ])
     signIn.state = "ok"
+    setSwitches({ KRIYA_NEXT_MCP: "on", KRIYA_AGENTS_INBOX: "on" })
   })
 
   const tick = () => recheckDeliveries(new Date())
@@ -198,10 +208,75 @@ describe("the late re-check of an app run", () => {
     }
   })
 
-  it("a run with no spec, or a verified one, is left alone", async () => {
+  it("a run with no spec, or a verified one, is not even a candidate", async () => {
     await appRun({ verification: null })
     await appRun({ verification: { ...unverified, status: "verified" } })
-    expect(await tick()).toMatchObject({ checked: 0, skipped: 1 })
+    await appRun({ verification: { ...unverified, status: "failed" } })
+    expect(await tick()).toMatchObject({ candidates: 0, checked: 0, skipped: 0 })
     expect(await checks()).toEqual([])
+  })
+
+  it("app runs without a spec never crowd out runs that can be checked", async () => {
+    for (let i = 0; i < 3; i++) await appRun({ verification: null })
+    await appRun()
+    expect(await recheckDeliveries(new Date(), { limit: 1 })).toMatchObject({
+      candidates: 1,
+      checked: 1,
+      verified: 1,
+    })
+  })
+
+  it("obeys the off switches: next.mcp, agents.inbox and the tool kill list", async () => {
+    for (const off of [
+      { KRIYA_AGENTS_INBOX: "on" },
+      { KRIYA_NEXT_MCP: "on" },
+      {
+        KRIYA_NEXT_MCP: "on",
+        KRIYA_AGENTS_INBOX: "on",
+        KRIYA_OPERATOR_DISABLED_TOOLS: "mcp_tracker_get_item",
+      },
+      {
+        KRIYA_NEXT_MCP: "on",
+        KRIYA_AGENTS_INBOX: "on",
+        KRIYA_OPERATOR_DISABLED_TOOLS: "mcp_tracker_create_item",
+      },
+    ]) {
+      setSwitches(off)
+      await appRun()
+      fixture.state.calls.length = 0
+      expect(await tick()).toMatchObject({ checked: 1, unverified: 1 })
+      expect(fixture.state.calls).toEqual([])
+      await q("delete from kriya.delivery_checks")
+      await q("delete from kriya.tool_executions")
+    }
+  })
+
+  it("an app whose circuit is open is not asked", async () => {
+    const { record, reset } = await import("@/lib/reliability/breaker")
+    reset()
+    for (let i = 0; i < 5; i++) record("mcp:tracker")
+    await appRun()
+    fixture.state.calls.length = 0
+    expect(await tick()).toMatchObject({ checked: 1, unverified: 1 })
+    expect(fixture.state.calls).toEqual([])
+    reset()
+  })
+
+  it("a value the run's record redacted is never compared: unverified, not failed", async () => {
+    await q("update kriya.mcp_tools set verify = $1 where name = 'create_item'", [
+      JSON.stringify({
+        tool: "get_item",
+        args: { id: "/structuredContent/id" },
+        expect: { "/structuredContent/title": "/input/tokenName" },
+      }),
+    ])
+    const id = await appRun()
+    await q("update kriya.tool_executions set input = $1 where id = $2", [
+      JSON.stringify({ title: "Hello", tokenName: "[redacted]" }),
+      id,
+    ])
+    fixture.state.calls.length = 0
+    expect(await tick()).toMatchObject({ checked: 1, unverified: 1, failed: 0 })
+    expect(fixture.state.calls).toEqual([])
   })
 })

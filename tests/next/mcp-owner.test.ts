@@ -580,6 +580,20 @@ describe("NT-MCP-20 no activation without a recorded-response test", () => {
     })
   })
 
+  it("no way around it: a new tool on a live app, or one pinned while it was paused", async () => {
+    await pinTool(null, form(pinFields()))
+    expect(await activate()).toEqual({ message: "Now active." })
+    const getItem = pinFields({ name: "get_item", kriyaName: "mcp_tracker_get_item" })
+    expect(await pinTool(null, form(getItem))).toEqual({
+      error: "No recorded-response test yet for: get_item.",
+    })
+    await setServerStatus(null, form({ id: "tracker", status: "suspended" }))
+    expect(await pinTool(null, form(getItem))).toEqual({ message: "Pinned." })
+    expect(await activate()).toEqual({
+      error: "No recorded-response test yet for: get_item.",
+    })
+  })
+
   it("every listed app has a recorded fixture for each of its tools", async () => {
     const { RECORDED } =
       await vi.importActual<typeof import("@/lib/mcp/recorded")>("@/lib/mcp/recorded")

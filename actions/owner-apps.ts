@@ -191,8 +191,9 @@ export async function setServerStatus(
       .from(mcpServers)
       .where(eq(mcpServers.id, id))
     if (!server) return { error: "No such app." }
-    if (status === "active" && server.status === "draft") {
-      // Pinned tools and a recorded-response test for each (NT-MCP-20)
+    if (status === "active" && server.status !== "active") {
+      // Pinned tools and a recorded-response test for each (NT-MCP-20), also
+      // when a suspended app comes back with tools pinned while it was off
       const pinned = await privileged
         .select({ name: mcpTools.name })
         .from(mcpTools)
@@ -275,6 +276,10 @@ export async function pinTool(_: OwnerState, form: FormData): Promise<OwnerState
       .where(and(eq(mcpTools.serverId, pin.serverId), eq(mcpTools.name, pin.name)))
     if (existing && existing.status !== "disabled")
       return { error: "That tool is already pinned." }
+    // A live app's new tool reaches people at once, so it needs its recorded-
+    // response test now, as the app did when it was made active (NT-MCP-20)
+    if (server.status === "active" && !RECORDED[server.id]?.includes(pin.name))
+      return { error: `No recorded-response test yet for: ${pin.name}.` }
 
     // The definition the owner read: pasted from the provider's own tool list
     // (an app nobody can sign in to yet), or fetched as the owner

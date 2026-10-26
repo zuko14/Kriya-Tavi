@@ -209,6 +209,8 @@ export async function recheckDeliveries(
           RECHECK_TOOLS.map((tool) => sql`${tool}`),
           sql`, `
         )}) or left(te.tool_name, 4) = 'mcp_')
+        -- An app run without a read-back spec has no verification: never eligible
+        and (left(te.tool_name, 4) <> 'mcp_' or te.verification ->> 'status' = 'unverified')
         and (te.verification is null or te.verification ->> 'status' = 'unverified')
         and te.finished_at >= ${from.toISOString()}::timestamptz
         and te.finished_at <= ${to.toISOString()}::timestamptz

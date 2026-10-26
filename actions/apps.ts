@@ -73,19 +73,14 @@ export async function enableApp(app: string, chosen: "all" | string[]): Promise<
 
 // Turns an app off for every agent, or for one
 export async function disableApp(app: string, agentId?: string): Promise<Answer> {
+  // One agent: the same as unticking it, which also handles "all my agents"
+  if (agentId !== undefined) return setAppForAgent(app, agentId, false)
   const user = await requireUser()
   const id = serverId.safeParse(app)
   if (!id.success) return { error: "That isn't an app Kriya knows." }
   if (!(await ready())) return NOT_READY
   await withUser(user.id, (tx) =>
-    tx
-      .delete(mcpEnablements)
-      .where(
-        and(
-          eq(mcpEnablements.serverId, id.data),
-          agentId ? eq(mcpEnablements.agentId, agentId) : undefined
-        )
-      )
+    tx.delete(mcpEnablements).where(eq(mcpEnablements.serverId, id.data))
   )
   revalidatePath("/account")
   return { ok: true }

@@ -161,6 +161,14 @@ describe("enableApp, disableApp, setAppForAgent", () => {
     expect(await enabled(alice)).toEqual([])
   })
 
+  it("turning one agent off from 'all my agents' really turns it off", async () => {
+    await enableApp("tracker", "all")
+    expect(await disableApp("tracker", "a1")).toEqual({ ok: true })
+    expect(await enabled(alice)).not.toContain(null)
+    expect(await enabled(alice)).not.toContain("a1")
+    expect((await enabled(alice)).length).toBeGreaterThan(0)
+  })
+
   it("not another person's agent, not an app that isn't connected, not a paused one", async () => {
     expect(await enableApp("tracker", ["b1"])).toEqual({
       error: "Choose your own agents.",
