@@ -67,12 +67,13 @@ async function check(
   range: string,
   rows: Cell[][]
 ) {
+  // A read that can't be done leaves the write unverified, not failed (N3)
   const back = await sheets<Values>(
     userId,
     valuesUrl(spreadsheetId, range, "?valueRenderOption=UNFORMATTED_VALUE")
-  )
+  ).catch(() => null)
   return readBack(
-    sameCells(back.values ?? [], rows),
+    back === null ? null : sameCells(back.values ?? [], rows),
     [
       { kind: "url", value: link(spreadsheetId) },
       { kind: "provider_id", value: range },

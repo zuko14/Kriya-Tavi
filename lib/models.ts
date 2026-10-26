@@ -1,5 +1,11 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
-import { APICallError, RetryError, type LanguageModel } from "ai"
+import {
+  APICallError,
+  RetryError,
+  wrapLanguageModel,
+  type LanguageModel,
+  type LanguageModelMiddleware,
+} from "ai"
 import { eq } from "drizzle-orm"
 
 import { privileged } from "@/db"
@@ -7,6 +13,7 @@ import { models, TIERS, type Plan, type Tier } from "@/db/schema"
 import { isTier } from "@/lib/tiers"
 import { getSecret, getSetting } from "@/lib/config"
 import { creditsToMicroUsd } from "@/lib/money"
+import { CACHE_VERIFIED } from "@/lib/next"
 
 export { isTier, TIER_LABELS } from "@/lib/tiers"
 
@@ -90,7 +97,36 @@ function pack(usage: OpenRouterUsage | null) {
   return usage ? { openrouter: { usage: JSON.stringify(usage) } } : undefined
 }
 
-export function createGatewayModel(modelId: string): LanguageModel {
+// N10 (ND-16): a cache marker on the system message, added only for a model
+// route proven to keep it (NRG-2) and only while next.promptCache is on; every
+// other route gets the unwrapped model, so its requests are byte for byte what
+// they were. The marker's shape is what NRG-2 tests; if OpenRouter wants it
+// elsewhere, that run changes this and the list together.
+const cacheMarker: LanguageModelMiddleware = {
+  transformParams: async ({ params }) => {
+    if ((await getSetting("next.promptCache")) !== "on") return params
+    const at = params.prompt.findIndex((message) => message.role === "system")
+    if (at < 0) return params
+    const prompt = [...params.prompt]
+    const system = prompt[at]
+    prompt[at] = {
+      ...system,
+      providerOptions: {
+        ...system.providerOptions,
+        openaiCompatible: {
+          ...system.providerOptions?.openaiCompatible,
+          cache_control: { type: "ephemeral" },
+        },
+      },
+    }
+    return { ...params, prompt }
+  },
+}
+
+export function createGatewayModel(
+  modelId: string,
+  verified: readonly string[] = CACHE_VERIFIED
+): LanguageModel {
   const apiKey = getSecret("OPENROUTER_API_KEY")
   if (!apiKey) {
     throw new ModelConfigError("OPENROUTER_API_KEY is not set on the server.")
@@ -98,7 +134,7 @@ export function createGatewayModel(modelId: string): LanguageModel {
   const baseURL = (
     process.env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1"
   ).replace(/\/+$/, "")
-  return createOpenAICompatible({
+  const model = createOpenAICompatible({
     name: "openrouter",
     baseURL,
     apiKey,
@@ -122,6 +158,9 @@ export function createGatewayModel(modelId: string): LanguageModel {
       },
     },
   }).chatModel(modelId)
+  return verified.includes(modelId)
+    ? wrapLanguageModel({ model, middleware: cacheMarker })
+    : model
 }
 
 // Provider failures worth retrying on another model: rate limits, overload,

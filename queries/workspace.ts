@@ -19,6 +19,7 @@ import { crewsOn } from "@/lib/operator/crew-threads"
 import { checkTaskAllowed, usageSummary } from "@/lib/entitlements"
 import { isGatewayConfigured, TIER_LABELS } from "@/lib/models"
 import { isWebConfigured } from "@/lib/web"
+import { appChoices } from "@/queries/apps"
 import { skillOptions } from "@/queries/skills"
 
 // Reads for server components. Every query runs as the signed-in person
@@ -330,6 +331,8 @@ export async function getSystemStatus(user: {
     tiers: TIER_LABELS,
     // The Creator's Skills section; null with agents.skillLibrary off
     skills: await skillOptions(user.id, usage.plan),
+    // N6: the apps a person may switch on for an agent; null with the switches off
+    apps: await appChoices(user.id),
     usage: {
       usedMicroInr: usage.usedMicroInr,
       allowanceMicroInr: usage.allowanceMicroInr,

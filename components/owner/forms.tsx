@@ -68,12 +68,15 @@ export function SettingForm({
   source,
   hint,
   env,
+  note,
 }: {
   settingKey: string
   value: string | null
   source: string | null
   hint: string | null
   env: string | null
+  // ND-23: why a switch that is on has no effect yet
+  note?: string | null
 }) {
   const [state, action] = useActionState<OwnerState, FormData>(saveSetting, null)
   return (
@@ -101,6 +104,7 @@ export function SettingForm({
         />
         <Submit>Save</Submit>
       </div>
+      {note && <p className="text-[12px] text-betelgeuse">{note}</p>}
       <StateNotice state={state} />
     </form>
   )

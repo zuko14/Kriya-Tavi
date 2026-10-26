@@ -132,6 +132,7 @@ import { reportVerdict } from "@/lib/operator/verdict"
 import { acceptableTimesRule, draftFieldsSchema } from "@/lib/voice/schemas"
 import { createDraft } from "@/lib/voice/tasks"
 import { webFetch, webSearch } from "@/lib/web"
+import type { McpTask } from "@/lib/mcp/registry"
 
 // The tool belt an agent carries. Every tool acts on behalf of whichever
 // agent holds the turn right now, which changes when a squad delegates, and
@@ -170,6 +171,12 @@ export const SIDE_EFFECT_TOOLS = new Set<string>([
   "gmail_send_draft",
   "calendar_delete_event",
 ])
+
+// Track N (next.mcp): the owner-pinned app tools lib/mcp/registry.ts built
+// for this task, keyed by kriya_name; classed by classifyMcpTool, never by
+// SIDE_EFFECT_TOOLS or TOOL_CLASSES
+export type { McpTask }
+export const createMcpTools = (mcp: McpTask): ToolSet => mcp.tools
 
 /* ───────────────────────────── memory ───────────────────────────── */
 
@@ -1028,7 +1035,7 @@ export function privateContentSeen(messages: ModelMessage[]) {
       message.content.some(
         (part) =>
           (part.type === "tool-call" || part.type === "tool-result") &&
-          PRIVATE_READ_TOOLS.has(part.toolName)
+          (PRIVATE_READ_TOOLS.has(part.toolName) || part.toolName.startsWith("mcp_"))
       )
   )
 }
@@ -1057,7 +1064,7 @@ export function untrustedSeen(messages: ModelMessage[]) {
         message.content.some(
           (part) =>
             (part.type === "tool-call" || part.type === "tool-result") &&
-            UNTRUSTED_READ_TOOLS.has(part.toolName)
+            (UNTRUSTED_READ_TOOLS.has(part.toolName) || part.toolName.startsWith("mcp_"))
         ))
   )
 }

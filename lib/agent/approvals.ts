@@ -72,8 +72,13 @@ export function actionTitle(tool: string, input: Input, tense: "ask" | "done") {
       return `${ask ? "Send" : "Sent"} a saved Gmail draft`
     case "calendar_delete_event":
       return `${ask ? "Delete" : "Deleted"} ${quoted(input?.title)} from your calendar`
-    default:
+    default: {
+      // Track N: mcp_<app>_<tool words> → "Use/Used <tool words> in <app>"
+      const mcp = /^mcp_([a-z]+)_(.+)$/.exec(tool)
+      if (mcp)
+        return `${ask ? "Use" : "Used"} ${mcp[2].replaceAll("_", " ")} in ${mcp[1]}`
       return tool.replaceAll("_", " ")
+    }
   }
 }
 

@@ -176,3 +176,18 @@ export const disabledTools = (setting: string | undefined) =>
       .map((name) => name.trim())
       .filter(Boolean)
   )
+
+// The belt guard (ND-21): a tool runs only with a class. propose_call has
+// its own confirmation flow (OF-12) and only drafts.
+export const UNCLASSIFIED_OK = new Set(["propose_call"])
+
+// Names on a belt that have no class and must be removed
+export function unclassifiedTools(
+  names: Iterable<string>,
+  mcpClasses?: Map<string, RiskClass>
+) {
+  return [...names].filter(
+    (name) =>
+      !(name in TOOL_CLASSES) && !mcpClasses?.has(name) && !UNCLASSIFIED_OK.has(name)
+  )
+}

@@ -1,7 +1,16 @@
 import { and, desc, eq, inArray, isNull } from "drizzle-orm"
 
 import { withUser } from "@/db"
-import { charges, episodes, grants, mandates, threads, toolExecutions } from "@/db/schema"
+import {
+  charges,
+  deliveryChecks,
+  episodes,
+  grants,
+  mandates,
+  threads,
+  toolExecutions,
+} from "@/db/schema"
+import { recheckBy, recheckTarget } from "@/lib/delivery/rules"
 
 // "What I did" records (A3) for the thread view, Home and the goal page,
 // read as the person (withUser): their own records only.
@@ -59,6 +68,71 @@ export async function jobsForExecutions(userId: string, executionIds: string[]) 
       .where(inArray(toolExecutions.id, executionIds))
   )
   return Object.fromEntries(rows.map((row) => [row.executionId, row.title]))
+}
+
+// N2 (ND-03): the later checks of these tasks' runs, as the person (row
+// security: their own only), for deliveryOf. Newest first.
+export async function deliveryForTasks(userId: string, taskIds: string[]) {
+  if (taskIds.length === 0) return []
+  return withUser(userId, (tx) =>
+    tx
+      .select({
+        taskId: deliveryChecks.taskId,
+        executionId: deliveryChecks.executionId,
+        kind: deliveryChecks.kind,
+        status: deliveryChecks.status,
+        checkedAt: deliveryChecks.checkedAt,
+      })
+      .from(deliveryChecks)
+      .where(inArray(deliveryChecks.taskId, taskIds))
+      .orderBy(desc(deliveryChecks.checkedAt))
+  )
+}
+
+// N3: runs still waiting for their one late re-check, with the time by which
+// it will have happened ("Kriya will check again by …"). Same rule as the
+// worker step (lib/delivery/rules.ts), read as the person.
+export async function recheckDue(
+  userId: string,
+  executionIds: string[],
+  now = new Date()
+) {
+  if (executionIds.length === 0) return []
+  const { runs, done } = await withUser(userId, async (tx) => ({
+    runs: await tx
+      .select({
+        id: toolExecutions.id,
+        toolName: toolExecutions.toolName,
+        input: toolExecutions.input,
+        verification: toolExecutions.verification,
+        undo: toolExecutions.undo,
+        finishedAt: toolExecutions.finishedAt,
+      })
+      .from(toolExecutions)
+      .where(
+        and(
+          inArray(toolExecutions.id, executionIds),
+          eq(toolExecutions.sideEffect, true),
+          eq(toolExecutions.status, "succeeded")
+        )
+      ),
+    done: await tx
+      .select({ id: deliveryChecks.executionId })
+      .from(deliveryChecks)
+      .where(
+        and(
+          inArray(deliveryChecks.executionId, executionIds),
+          eq(deliveryChecks.kind, "recheck")
+        )
+      ),
+  }))
+  const checked = new Set(done.map((row) => row.id))
+  return runs.flatMap((run) => {
+    const by = recheckBy(run.finishedAt, now)
+    return by && !checked.has(run.id) && recheckTarget(run)
+      ? [{ executionId: run.id, by: by.toISOString() }]
+      : []
+  })
 }
 
 export async function recentEpisodes(userId: string, limit = 20) {

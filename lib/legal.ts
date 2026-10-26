@@ -11,7 +11,7 @@ export type LegalDoc = { title: string; summary: string; sections: LegalSection[
 export const LEGAL_STATUS = {
   draft: true,
   label: "Draft, pending legal review",
-  updated: "2026-10-20",
+  updated: "2026-10-24",
 }
 
 // Every outside service that may process a person's data, with what for.
@@ -31,8 +31,8 @@ export const PROCESSORS = [
   {
     name: "OpenRouter and the AI model providers it routes to",
     purpose:
-      "Generates your agents' replies from your messages and the context Kriya sends with them",
-    when: "Each time an agent works",
+      "Generates your agents' replies from your messages and the context Kriya sends with them. If Kriya turns on meaning-based memory search, your confirmed memory notes and your questions are also sent to an embedding model to turn them into number vectors that help find the right note",
+    when: "Each time an agent works, and in the background for new or changed confirmed notes",
   },
   {
     name: "Firecrawl",

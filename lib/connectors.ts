@@ -1,9 +1,27 @@
+import { randomBytes, timingSafeEqual } from "node:crypto"
+
+import {
+  auth as mcpAuth,
+  type OAuthAuthorizationServerInformation,
+  type OAuthClientInformation,
+  type OAuthClientProvider,
+  type OAuthTokens,
+} from "@ai-sdk/mcp"
 import { and, eq } from "drizzle-orm"
 import { nanoid } from "nanoid"
 
 import { privileged, withUser } from "@/db"
-import { connections, type ConnectionProvider, type Verification } from "@/db/schema"
+import {
+  connections,
+  mcpConnections,
+  mcpEnablements,
+  mcpServers,
+  type ConnectionProvider,
+  type McpServer,
+  type Verification,
+} from "@/db/schema"
 import { getSecret } from "@/lib/config"
+import { guardedFetch } from "@/lib/mcp/fetch"
 import {
   isSecretsConfigured,
   needsReseal,
@@ -607,16 +625,20 @@ export async function providerFetch(
 // message
 export const jsonOf = <T>(response: Response, what: string) => readJson<T>(response, what)
 
-// What an A8 write checked by reading its result back (TOOLS_AND_CONTRACTS §1)
+// What an A8 write checked by reading its result back (TOOLS_AND_CONTRACTS §1).
+// ok = null means the read itself couldn't be done (not found yet, a provider
+// error): "unverified", which the late re-check may settle (N3, ND-04); a read
+// that was done and disagreed stays "failed".
 export const readBack = (
-  ok: boolean,
+  ok: boolean | null,
   evidence: Verification["evidence"],
   note: string
 ): Verification => ({
-  status: ok ? "verified" : "failed",
+  status: ok === null ? "unverified" : ok ? "verified" : "failed",
   method: "api_readback",
   evidence,
-  note,
+  note:
+    ok === null ? "The read-back couldn't be done, so this isn't confirmed yet." : note,
 })
 
 const MAX_TEXT = 20_000
@@ -744,10 +766,12 @@ export async function calendarCreate(
     ? ((await check.json()) as GoogleEvent & { status?: string })
     : null
   const ok =
-    back?.id === created.id &&
-    back.status !== "cancelled" &&
-    back.summary === input.title &&
-    sameAddresses(back.attendees?.map((a) => a.email) ?? [], input.attendees ?? [])
+    back === null
+      ? null
+      : back.id === created.id &&
+        back.status !== "cancelled" &&
+        back.summary === input.title &&
+        sameAddresses(back.attendees?.map((a) => a.email) ?? [], input.attendees ?? [])
   return {
     ...event(created),
     verification: readBack(
@@ -1346,4 +1370,379 @@ export async function notionRead(userId: string, id: string) {
     return [prefix + text]
   })
   return { id, text: lines.join("\n").slice(0, MAX_TEXT) }
+}
+
+/* ───────────────────────── apps (MCP servers, N6) ───────────────────── */
+
+// A person's sign-in to an app in the owner's registry (ND-09). Additive: the
+// providers above, kriya.connections and their callers are untouched. The
+// tokens live in kriya.mcp_connections, sealed here and opened only here
+// (invariant 4). The SDK's `auth()` runs discovery, PKCE and the exchange;
+// every request it makes goes through the guarded fetch (ND-10), so it can
+// reach only the app's own host and the authorization servers the owner
+// listed. Logs carry ids only.
+
+export class McpConnectError extends ConnectorError {
+  name = "McpConnectError"
+  constructor(
+    readonly code: "expired" | "failed" | "unavailable" | "denied",
+    message: string
+  ) {
+    super(message)
+  }
+}
+
+// Ties each ciphertext to its person and app (ND-09 names the app; the person
+// is added so a row copied to another person's can't be opened)
+const mcpContext = (userId: string, serverId: string) =>
+  `mcp_connections:${serverId}:${userId}`
+const mcpFlowContext = (userId: string, serverId: string) =>
+  `mcp_flow:${serverId}:${userId}`
+
+export const MCP_FLOW_COOKIE = "kriya_mcp_oauth"
+
+// Back to Account → Apps, with what happened
+export function appsUrl(origin: string, params: Record<string, string>) {
+  const target = new URL("/account", origin)
+  for (const [key, value] of Object.entries(params)) target.searchParams.set(key, value)
+  target.hash = "apps"
+  return target
+}
+const FLOW_MS = 10 * 60_000
+
+// What travels in the sealed cookie between the redirect out and the
+// callback: nothing the app could use without the one-time code
+export type McpFlow = {
+  state?: string
+  verifier?: string
+  authServer?: OAuthAuthorizationServerInformation
+  // Where the person is sent to approve
+  url?: string
+  exp?: number
+}
+
+const appBase = () => (process.env.KRIYA_APP_URL ?? "").replace(/\/+$/, "")
+
+export const mcpCallbackUrl = (serverId: string, base = appBase()) =>
+  `${base}/api/connect/mcp/${serverId}/callback`
+// A hosted Client ID Metadata Document (auth = oauth_cimd): its address is the id
+export const mcpClientIdUrl = (base = appBase()) => `${base}/api/connect/mcp/client.json`
+
+async function mcpServer(serverId: string) {
+  const [server] = await privileged
+    .select()
+    .from(mcpServers)
+    .where(eq(mcpServers.id, serverId))
+  if (!server) throw new McpConnectError("unavailable", "That app isn't available.")
+  return server
+}
+
+// Who Kriya is to the app. A confidential client's secret is read from the
+// environment variable whose NAME the registry stores, never from a column.
+function mcpClient(server: McpServer): OAuthClientInformation | undefined {
+  if (server.auth === "oauth_cimd") {
+    const base = appBase()
+    return base ? { client_id: mcpClientIdUrl(base) } : undefined
+  }
+  if (!server.clientId) return undefined
+  const secret =
+    server.auth === "oauth_confidential" && server.secretEnv
+      ? process.env[server.secretEnv]
+      : undefined
+  return secret
+    ? { client_id: server.clientId, client_secret: secret }
+    : { client_id: server.clientId }
+}
+
+const origins = (server: McpServer) =>
+  new Set([
+    new URL(server.url).origin,
+    ...server.allowedAuthOrigins.map((u) => new URL(u).origin),
+  ])
+
+function openMcp(sealed: string, userId: string, serverId: string) {
+  try {
+    return open(sealed, mcpContext(userId, serverId))
+  } catch (error) {
+    if (error instanceof SecretsConfigError && !/retired/.test(error.message)) throw error
+    throw new ConnectorError(
+      "This app's access has stopped working. Reconnect it in Account → Apps."
+    )
+  }
+}
+
+// `flow` present: the connect flow (the redirect out or the callback).
+// Absent: a task in the worker, which only uses and refreshes what is stored;
+// a refresh that fails ends in UnauthorizedError, never in a redirect.
+// `fresh`: ignore stored tokens, so "Reconnect" asks the person again.
+function mcpProvider(
+  userId: string,
+  server: McpServer,
+  options: { redirectUri: string; flow?: McpFlow; fresh?: boolean }
+): OAuthClientProvider {
+  const { flow } = options
+  const keys = { userId, serverId: server.id }
+  const where = and(
+    eq(mcpConnections.userId, userId),
+    eq(mcpConnections.serverId, server.id)
+  )
+  return {
+    get redirectUrl() {
+      return options.redirectUri
+    },
+    get clientMetadata() {
+      return {
+        client_name: "Kriya Tavi",
+        redirect_uris: [options.redirectUri],
+        grant_types: ["authorization_code", "refresh_token"],
+        response_types: ["code"],
+        token_endpoint_auth_method:
+          server.auth === "oauth_confidential" ? "client_secret_post" : "none",
+        ...(server.scopes.length > 0 && { scope: server.scopes.join(" ") }),
+      }
+    },
+    clientInformation: () => mcpClient(server),
+    async tokens(): Promise<OAuthTokens | undefined> {
+      if (options.fresh) return undefined
+      const [row] = await privileged.select().from(mcpConnections).where(where)
+      if (!row) return undefined
+      const left = row.expiresAt
+        ? Math.floor((row.expiresAt.getTime() - Date.now()) / 1000)
+        : 0
+      return {
+        access_token: openMcp(row.accessToken, userId, server.id),
+        token_type: row.pin.token_type ?? "Bearer",
+        ...(row.refreshToken && {
+          refresh_token: openMcp(row.refreshToken, userId, server.id),
+        }),
+        ...(row.scopes.length > 0 && { scope: row.scopes.join(" ") }),
+        ...(left > 0 && { expires_in: left }),
+        ...(row.pin.issuer && { issuer: row.pin.issuer }),
+        ...(row.pin.authorization_server && {
+          authorization_server: row.pin.authorization_server,
+        }),
+        ...(row.pin.token_endpoint && { token_endpoint: row.pin.token_endpoint }),
+      }
+    },
+    async saveTokens(tokens) {
+      const ctx = mcpContext(userId, server.id)
+      const pin = Object.fromEntries(
+        (
+          ["issuer", "authorization_server", "token_endpoint", "token_type"] as const
+        ).flatMap((key) => (tokens[key] ? [[key, String(tokens[key])]] : []))
+      )
+      // A refresh may not send a new refresh token: keep the one we have, moved
+      // to the current key if it is on an older one (a key rotation, NR-6); if it
+      // can't be opened any more it stays as it was and the person reconnects
+      let kept: string | undefined
+      if (!tokens.refresh_token) {
+        const [old] = await privileged
+          .select({ refreshToken: mcpConnections.refreshToken })
+          .from(mcpConnections)
+          .where(where)
+        if (old?.refreshToken && needsReseal(old.refreshToken))
+          try {
+            kept = seal(openMcp(old.refreshToken, userId, server.id), ctx)
+          } catch {}
+      }
+      const sealed = {
+        accessToken: seal(tokens.access_token, ctx),
+        expiresAt: tokens.expires_in
+          ? new Date(Date.now() + tokens.expires_in * 1000)
+          : null,
+        pin,
+        needsReconnect: false,
+        ...(tokens.scope && { scopes: tokens.scope.split(" ").filter(Boolean) }),
+        ...(tokens.refresh_token && { refreshToken: seal(tokens.refresh_token, ctx) }),
+        ...(kept && { refreshToken: kept }),
+      }
+      await privileged
+        .insert(mcpConnections)
+        .values({ id: nanoid(12), ...keys, ...sealed })
+        .onConflictDoUpdate({
+          target: [mcpConnections.userId, mcpConnections.serverId],
+          set: sealed,
+        })
+    },
+    async invalidateCredentials(scope) {
+      // The server says the stored tokens no longer work: the person reconnects
+      if (scope === "tokens" || scope === "all")
+        await privileged.update(mcpConnections).set({ needsReconnect: true }).where(where)
+    },
+    redirectToAuthorization(url) {
+      if (flow) flow.url = url.toString()
+    },
+    saveCodeVerifier(verifier) {
+      if (flow) flow.verifier = verifier
+    },
+    codeVerifier() {
+      if (!flow?.verifier) throw new McpConnectError("expired", "That attempt expired.")
+      return flow.verifier
+    },
+    state: () => randomBytes(24).toString("base64url"),
+    saveState(state) {
+      if (flow) flow.state = state
+    },
+    storedState: () => flow?.state,
+    authorizationServerInformation: () => flow?.authServer,
+    saveAuthorizationServerInformation(info) {
+      if (flow) flow.authServer = info
+    },
+    // Only the app's own origin and the authorization servers the owner listed
+    validateAuthorizationServerURL(_serverUrl, authorizationServerUrl) {
+      if (!origins(server).has(new URL(authorizationServerUrl).origin)) {
+        throw new McpConnectError(
+          "failed",
+          "This app asked to sign in somewhere Kriya doesn't allow."
+        )
+      }
+    },
+  }
+}
+
+// The provider a task uses for an app the person has connected (the worker)
+export async function mcpAuthProvider(userId: string, serverId: string) {
+  return mcpProvider(userId, await mcpServer(serverId), {
+    redirectUri: mcpCallbackUrl(serverId),
+  })
+}
+
+// Step 1 of connecting: where to send the person, and the sealed cookie that
+// carries the PKCE verifier and state until they come back
+export async function mcpConnectStart(
+  userId: string,
+  serverId: string,
+  { redirectUri, fetch }: { redirectUri: string; fetch?: typeof globalThis.fetch }
+) {
+  const server = await mcpServer(serverId)
+  if (server.status !== "active" || server.auth === "none")
+    throw new McpConnectError("unavailable", "That app can't be connected.")
+  const flow: McpFlow = {}
+  const result = await mcpAuth(
+    mcpProvider(userId, server, { redirectUri, flow, fresh: true }),
+    {
+      serverUrl: server.url,
+      fetchFn: fetch ?? guardedFetch(server),
+      ...(server.scopes.length > 0 && { scope: server.scopes.join(" ") }),
+    }
+  )
+  // The person is sent only to the app's own origin or one the owner listed
+  if (
+    result !== "REDIRECT" ||
+    !flow.url ||
+    !origins(server).has(new URL(flow.url).origin)
+  )
+    throw new McpConnectError("failed", "Couldn't start signing in to this app.")
+  flow.exp = Date.now() + FLOW_MS
+  return {
+    url: flow.url,
+    cookie: seal(JSON.stringify(flow), mcpFlowContext(userId, serverId)),
+  }
+}
+
+// Step 2: the person is back with a code. Stores nothing unless the cookie is
+// theirs and fresh, the state and issuer match, and the exchange works.
+export async function mcpConnectFinish(
+  userId: string,
+  serverId: string,
+  {
+    redirectUri,
+    fetch,
+    cookie,
+    code,
+    state,
+    issuer,
+  }: {
+    redirectUri: string
+    fetch?: typeof globalThis.fetch
+    cookie: string
+    code: string
+    state: string
+    issuer?: string
+  }
+) {
+  let flow: McpFlow
+  try {
+    flow = JSON.parse(open(cookie, mcpFlowContext(userId, serverId))) as McpFlow
+  } catch {
+    throw new McpConnectError("expired", "That attempt expired.")
+  }
+  const x = Buffer.from(flow.state ?? "")
+  const y = Buffer.from(state)
+  if (
+    !flow.exp ||
+    flow.exp < Date.now() ||
+    x.length !== y.length ||
+    !timingSafeEqual(x, y)
+  )
+    throw new McpConnectError("expired", "That attempt expired.")
+  const server = await mcpServer(serverId)
+  if (server.status !== "active")
+    throw new McpConnectError("unavailable", "That app can't be connected.")
+  await mcpAuth(mcpProvider(userId, server, { redirectUri, flow }), {
+    serverUrl: server.url,
+    authorizationCode: code,
+    callbackState: state,
+    ...(issuer && { callbackIssuer: issuer }),
+    fetchFn: fetch ?? guardedFetch(server),
+  })
+}
+
+// Revokes the grant if the app's authorization server offers revocation, then
+// deletes the sign-in and the person's choices of which agents use it, in one
+// transaction. A revocation that fails never keeps the tokens (like Google's).
+export async function mcpDisconnect(
+  userId: string,
+  serverId: string,
+  { fetch }: { fetch?: typeof globalThis.fetch } = {}
+) {
+  const [row] = await privileged
+    .select()
+    .from(mcpConnections)
+    .where(and(eq(mcpConnections.userId, userId), eq(mcpConnections.serverId, serverId)))
+  if (row) {
+    try {
+      const server = await mcpServer(serverId)
+      const call = fetch ?? guardedFetch(server)
+      const as = row.pin.authorization_server
+      const token = openMcp(row.refreshToken ?? row.accessToken, userId, serverId)
+      const metadata = as
+        ? ((await (
+            await call(
+              new URL("/.well-known/oauth-authorization-server", as).toString(),
+              {
+                signal: AbortSignal.timeout(10_000),
+              }
+            )
+          ).json()) as { revocation_endpoint?: string })
+        : null
+      const client = mcpClient(server)
+      if (metadata?.revocation_endpoint && client) {
+        await call(metadata.revocation_endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            token,
+            client_id: client.client_id,
+            ...(client.client_secret && { client_secret: client.client_secret }),
+          }),
+          signal: AbortSignal.timeout(10_000),
+        })
+      }
+    } catch {
+      // Revocation is best effort; the tokens are deleted below either way
+    }
+  }
+  await privileged.transaction(async (tx) => {
+    await tx
+      .delete(mcpEnablements)
+      .where(
+        and(eq(mcpEnablements.userId, userId), eq(mcpEnablements.serverId, serverId))
+      )
+    await tx
+      .delete(mcpConnections)
+      .where(
+        and(eq(mcpConnections.userId, userId), eq(mcpConnections.serverId, serverId))
+      )
+  })
 }

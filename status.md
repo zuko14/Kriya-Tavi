@@ -6315,6 +6315,7 @@ app/(workspace)/goals/[goalId]/page.tsx scripts/verify-u3-browser.mjs` clean;
 `npx vitest run tests/agent` → 55 files passed, 573 passed | 2 skipped.
 
 Not done / blockers:
+
 - Coupling: the parser mirrors the strings in `lib/operator/crews.ts`. If
   those change, the cards fall back to plain text (tested); a shared exported
   format would remove the coupling but touches a server file not listed for
@@ -6399,18 +6400,18 @@ guard (ND-21), is proven to remove nothing today.
 | --- | --- | --- | --- | --- |
 | N0 | Blueprint and decisions | IN_PROGRESS (documents done 2026-10-24; awaiting owner approval) | — | — |
 | NP-1 | Baseline re-check on the current `main` | COMPLETE (2026-10-24, on `ce8d2fe`: 1590 passed / 27 skipped, exit 0) | N0 | — |
-| N1 | Data model (one migration) | NOT_STARTED | NP-1 | ND-02, ND-04, ND-07, ND-13, ND-22 |
-| N2 | Delivery status, owner delivery page | NOT_STARTED | N1 | ND-03, ND-17, ND-23 |
-| N3 | Late re-check | NOT_STARTED | N2 | ND-04 |
-| N4 | Reliability: read retries, breaker | IMPLEMENTED 2026-10-24; not COMPLETE: NT-REL-04 needs the N5 MCP client | NP-1 | ND-05 (approved) |
-| N5 | MCP runtime on the fixture server | NOT_STARTED | N1 | ND-06, ND-07, ND-08, ND-10, ND-11, ND-13, ND-21, ND-22, ND-25 (owner-gated: ND-06, ND-08, ND-10, ND-21, ND-22) |
-| N6 | MCP connect, Account Apps, agent enablement | NOT_STARTED | N5 | ND-09 (owner-gated), ND-13, ND-25 |
-| N7 | Owner registry, drift review, read-back mapping | NOT_STARTED | N5 | ND-07, ND-12 |
+| N1 | Data model (one migration) | COMPLETE (2026-10-24) | NP-1 | ND-02, ND-04, ND-07, ND-13, ND-22 (all approved) |
+| N2 | Delivery status, owner delivery page | COMPLETE (2026-10-24) | N1 | ND-03, ND-17, ND-23 |
+| N3 | Late re-check | COMPLETE (2026-10-24; NF-11 resolved, option B) | N2 | ND-04 |
+| N4 | Reliability: read retries, breaker | COMPLETE (2026-10-24) | NP-1 | ND-05 (approved) |
+| N5 | MCP runtime on the fixture server | COMPLETE (2026-10-24) | N1 | ND-06, ND-07, ND-08, ND-10, ND-11, ND-13, ND-21, ND-22, ND-25 (owner-gated: ND-06, ND-08, ND-10, ND-21, ND-22) |
+| N6 | MCP connect, Account Apps, agent enablement | COMPLETE (2026-10-24) | N5 | ND-09 (owner-gated), ND-13, ND-25 |
+| N7 | Owner registry, drift review, read-back mapping | COMPLETE (2026-10-25; NT-UI-03 passed on the local stack, see the N7 UI check) | N5 | ND-07, ND-12 (both approved) |
 | N8 | Skills v2 | COMPLETE (2026-10-24) | NP-1 | ND-14 (approved) |
-| N9 | Memory recall v2 (gate, then rerank) | NOT_STARTED | NP-1 | ND-15 (owner-gated) |
-| N10 | Cost measurement and prompt caching | NOT_STARTED | N4, N5 | ND-16 |
-| N11 | Golden scenarios and eval harness | NOT_STARTED | N2, N3, N5, N8 | ND-19 |
-| N12 | Readiness gates and controlled pilot | NOT_STARTED | N6, N7, N10, N11 | ND-20, ND-24 |
+| N9 | Memory recall v2 (gate, then rerank) | COMPLETE (2026-10-24): rerank lifts AS-MEM-ML M1 0.875 → 0.975, noise 0 over 3 paid runs; `next.memoryRerank` off by default | NP-1 | ND-15 (owner-gated) |
+| N10 | Cost measurement and prompt caching | COMPLETE (2026-10-25): NT-CST-01…03 pass; AS-CST not run (paid, no go-ahead); NRG-2 open, so `next.promptCache` stays unused | N4, N5 | ND-16 (approved) |
+| N11 | Golden scenarios and eval harness | COMPLETE (2026-10-25): NG-01…NG-24, AS-DLV (30) and AS-MCP-SEC (200) in `npm test`; the paid `next:eval` script is not built | N2, N3, N5, N8 | ND-19 (approved) |
+| N12 | Readiness gates and controlled pilot | IN_PROGRESS (2026-10-25): evidence compiled for what this repository can prove (NR-1, 2, 3, 6, part of 9); NR-4, 5, 7, 8 and the 14-day pilot need the owner, staging, counsel or a reviewer | N6, N7, N10, N11 | ND-20, ND-24 (both approved) |
 | N13 | Kriya as an MCP server | DEFERRED (ND-18 trigger) | — | a new decision |
 
 Parallel lanes (IMPLEMENTATION_PLAN §2): after NP-1, **N1, N4, N8 and the
@@ -6529,7 +6530,7 @@ real Google, Razorpay, storage or Render call; `npm run build` (needs
 
 ## Phase N4 — Reliability: read retries, circuit breaker
 
-**Status:** IMPLEMENTED (2026-10-24), not `COMPLETE`: exit check NT-REL-04 (a slow MCP server) needs the N5 client. (was: IN_PROGRESS 2026-10-24 12:28 IST). Decision ND-05 approved by the owner
+**Status:** COMPLETE (2026-10-24; owner asked in chat). Exit check NT-REL-04 (a slow MCP server) passed in N5's `tests/next/mcp-runtime.test.ts`: a 15 s app is dropped at the 10 s open timeout, the other app loads, the prompt names the slow one. (was: IMPLEMENTED, not `COMPLETE`; IN_PROGRESS 2026-10-24 12:28 IST). Decision ND-05 approved by the owner
 (2026-10-24).
 
 **Session plan (2026-10-24 12:28 IST, Claude Code / Sonnet 5.5, in place on
@@ -6653,12 +6654,967 @@ real Google, Razorpay, storage or Render call; `npm run build` (needs
   `keywordsIntl` and the two new skill texts; then turn `next.skillsV2` on in
   staging only.
 
+## Phase N1 — Data model (one migration)
+
+**Status:** COMPLETE (2026-10-24 14:20 IST; was IN_PROGRESS from 13:57).
+Decisions ND-02, ND-04, ND-07, ND-13 and ND-22 are approved (2026-10-24;
+ND-22 by id). Board row released. Implemented by Claude Code (Opus 5.5),
+continuing the claim made at 13:57.
+
+**Preflight (2026-10-24 13:57 IST):** repository root, branch `main`, HEAD `1e51cae`,
+`git status --short` empty. Preconditions: NP-1 complete; no other agent
+holds a migration or `db/schema.ts` (board was empty); `20270101000000`
+sorts after `20261202000000_skill_library` (latest applied file).
+
+**Session plan (Claude Code / Sonnet 5.5, working in place on `main` as the
+owner asked):**
+
+- Create: `supabase/migrations/20270101000000_next_platform.sql` (tables
+  `mcp_servers`, `mcp_tools`, `mcp_enablements`, `delivery_checks`;
+  `tool_executions.risk`; transitions `mcp_server`, `mcp_tool`; five
+  `set search_path = ''` trigger functions), its rollback in
+  `supabase/rollback/`, `tests/db/next-mcp-rls.test.ts` (NT-DB-01, 02, 04,
+  05, 06), `tests/db/next-delivery-rls.test.ts` (NT-DB-03 and the risk
+  column).
+- Change: `db/schema.ts` (mirror; hot file, shortest edit),
+  `tests/db/migrations.test.ts` (an N1 down/up case; older cases that drop
+  `check_transition` roll N1 back first, newest first, as O2 and A12 did).
+- Not touched: `kriya.connections`, `kriya.tasks`, `claim_task`, any applied
+  migration, `lib/connectors.ts`, `receiptHash`. Nothing is applied to any
+  Supabase project: tests run on PGlite only.
+- Choices beyond the sketch in DATA_MODEL §1 (each tested): `drifted →
+pinned` must set the hash the worker saw (`drifted_hash`) and clears it;
+  an enablement can be made only for an `active` server (policy); the
+  person's column grants hide `allowed_auth_origins`, `client_id`,
+  `secret_env`, `review` and the tools' `definition`; `delivery_checks` is
+  append-only for every role (a trigger, since the worker bypasses RLS);
+  an index on every new foreign key.
+- Risks: older migration test cases must roll N1 back before they drop
+  `check_transition`; PGlite compatibility of `starts_with` and partial
+  indexes (checked by running it).
+
+**Result (2026-10-24):**
+
+- Created: `supabase/migrations/20270101000000_next_platform.sql`,
+  `supabase/rollback/20270101000000_next_platform.down.sql`,
+  `tests/db/next-mcp-rls.test.ts` (NT-DB-01, 02, 04, 05, 06),
+  `tests/db/next-delivery-rls.test.ts` (NT-DB-03, `tool_executions.risk`).
+- Changed: `db/schema.ts` (`RISK_CLASSES`; `toolExecutions.risk`;
+  `mcpServers`, `mcpTools`, `mcpEnablements`, `deliveryChecks`; types
+  `McpVerify`, `McpServer`, `McpTool`, `DeliveryCheckRow`),
+  `tests/db/migrations.test.ts` (the goals/schedules chain rolls N1 back
+  first and re-applies it last; new case NT-MIG-01 with rows in every new
+  table).
+- Five trigger functions, all `set search_path = ''`:
+  `mcp_tools_unauthenticated` and `mcp_servers_unauthenticated` (NT-DB-04
+  from either side), `mcp_tools_repin` (any return to `pinned` after drift,
+  including the detour through `disabled`, must pin `drifted_hash`, which it
+  then clears), `delivery_checks_owner` (the run's own person **and** task),
+  `delivery_checks_frozen` (no update for any role; deletes only by cascade
+  from the task, since the session has no delete grant).
+- The "enable only an active server" rule is the `insert_own` policy, not a
+  trigger. `mcp_tools` also checks `status <> 'drifted' or drifted_hash is
+not null`. Extra FK indexes: `mcp_servers.created_by`,
+  `mcp_tools.approved_by`, `mcp_enablements.user_id` and `server_id`.
+- Not applied to any Supabase project; PGlite only. No `next.*` switch and
+  no caller yet (rollback = the down file; DATA_MODEL §1).
+- First full run: the only failure was the expected one (the goals chain
+  could not drop `check_transition()` while N1's triggers use it), fixed
+  as planned.
+- Next exact action: N2 (delivery status) and N5 (MCP runtime on the
+  fixture server) may now start, one agent each; N5's decisions and NB-02
+  are approved.
+
+## Phase N5 — MCP runtime on the fixture server
+
+**Status:** IN_PROGRESS (2026-10-24 14:40 IST). Decisions ND-06, ND-07,
+ND-08, ND-10, ND-11, ND-13, ND-21, ND-22, ND-25 and blocker NB-02 approved
+(2026-10-24; owner-gated ones by id). The owner said "proceed for the next
+one" after N1; N2 needs ND-03/ND-17/ND-23 (not approved), so N5 is next.
+
+**Preflight (2026-10-24 14:40 IST):** repository root, branch `main`, HEAD
+`1e51cae`; uncommitted N1 work present (the owner asked to leave it
+uncommitted) and kept. Last `env -u OPENROUTER_API_KEY npm run check` on
+this tree (end of N1): exit 0, 1688 passed / 26 skipped. Preconditions: N1
+complete; no other agent on the board; every file below is in CHANGE_IMPACT
+§3 for N5.
+
+**Session plan (Claude Code / Opus 5.5, in place on `main`):**
+
+- Create: `lib/mcp/fetch.ts` (`guardedFetch`: HTTPS, host allow-list,
+  `isBlockedHost`/`isBlockedAddress` imported from `browser/egress.ts`,
+  connect to the checked address through `node:https` `lookup`, no
+  redirects, 10 s to headers, 2 MB body cap), `lib/mcp/tools.ts` (one AI SDK
+  `tool()` per pinned tool: strict zod from the pinned `inputSchema`, 32 KB
+  input cap, `callTool` by the server name, 30 s, `FOREIGN` wrap, `isError`
+  → error), `lib/mcp/registry.ts` (`loadMcp`: enablements via `withUser`,
+  registry via `privileged` scoped to those ids, open ≤ 5 servers, 10 s
+  each, drift by `definitionHash`, kill list, `next.mcpMaxTools`, classes,
+  approvals; breaker `mcp:<id>`), `tests/fixtures/mcp/server.ts` (Node
+  `http` JSON-RPC server, legacy protocol), `tests/next/mcp-*.test.ts`.
+- Change: `policy.ts` (`classifyMcpTool`, `PERSON_ONLY_WRITES` += 2),
+  `capabilities.ts` (`UNCLASSIFIED_OK`, `unclassifiedTools`), `tools.ts`
+  (`createMcpTools` re-export, `McpTask`; `privateContentSeen` and
+  `untrustedSeen` match `mcp_`), `episodes.ts` (`export canonical`; `risk`),
+  `approvals.ts` (`mcp_` title), `instructions.ts` (`apps`, `APPS_LINE`),
+  `config.ts` (`next.mcp`, `next.mcpMaxTools`), `run-task.ts` (the ARCHITECTURE
+  §4 lines), `package.json` (`@ai-sdk/mcp` 2.0.73 direct, NB-02).
+- Deviations planned: tools are built with `tool()` + `client.callTool`
+  instead of `client.tools({ schemas })` (same effect: only pinned tools
+  exist; the model gets the pinned schema; the live definition is never
+  used); only `auth = 'none'` servers are opened in N5 (OAuth needs
+  `mcp_connections` and `mcpAuthProvider`, N6); read-back (ND-12) is N7
+  (NT-MCP-05); the `tool-call.tsx`/`activity.tsx` `mcp_` rendering moves to
+  N6 with its browser check (today's fallback already shows the exact input
+  and "This changes something outside Kriya").
+- Tests: NT-POL-01…03, NT-MCP-01…04, 06…19, NT-DLV-04, NT-SEC-01 (scripted
+  subset), NT-SEC-03, NT-IMP-02, 03, NT-REG-01 (`next.mcp` off), NT-REL-04.
+
+**Status:** COMPLETE (2026-10-24 15:25 IST), after the follow-up below.
+
+**Follow-up (2026-10-24 15:25 IST, owner asked in chat):** three runner
+cases added to `tests/next/mcp-runner.test.ts` (now 10): NT-MCP-15 abort
+(the worker's shutdown signal fires mid-task; the task is released for
+recovery and the one client opened is closed); NT-MCP-15 two people (two
+people's tasks in one worker: two distinct clients, both closed, each run
+recorded under its own person with its own input); NT-MCP-08 end to end
+(`agents.memoryV2` on: a note written after an app result is saved
+`unconfirmed`). Mutation checks: removing `mcp?.close()` from the runner's
+`finally` → 3 failed; dropping `mcp_` from `untrustedSeen` → 1 failed
+(both restored). `env -u OPENROUTER_API_KEY npm run check`: typecheck pass;
+lint 0 errors / 6 warnings (same existing set); format pass; Test Files 146
+passed / 3 skipped (149); Tests 1746 passed / 26 skipped (1772); exit 0.
+Every N5 exit check now passes.
+
+**Session result (2026-10-24 15:10 IST):** IMPLEMENTED, not `COMPLETE` (closed by the follow-up above).
+Board row released. Nothing committed (the owner asked to leave N1
+uncommitted; N5 sits on top of it).
+
+- Created: `lib/mcp/fetch.ts`, `lib/mcp/tools.ts`, `lib/mcp/registry.ts`,
+  `tests/fixtures/mcp/server.ts`, `tests/next/mcp-fetch.test.ts` (9),
+  `tests/next/mcp-runtime.test.ts` (12), `tests/next/mcp-policy.test.ts`
+  (27), `tests/next/mcp-runner.test.ts` (7).
+- Changed: `lib/agent/policy.ts` (`classifyMcpTool`, `McpPolicyInput`;
+  `PERSON_ONLY_WRITES` += `mcp_enablements`, `mcp_connections`),
+  `lib/agent/capabilities.ts` (`UNCLASSIFIED_OK`, `unclassifiedTools`),
+  `lib/agent/tools.ts` (`createMcpTools`, `McpTask` type; the two content
+  guards match `mcp_`), `lib/agent/episodes.ts` (`export canonical`;
+  `risk`), `lib/agent/approvals.ts` (`mcp_` title), `lib/agent/instructions.ts`
+  (`apps`, `APPS_LINE`), `lib/config.ts` (`next.mcp` off, `next.mcpMaxTools`
+  20), `lib/agent/run-task.ts` (ARCHITECTURE §4 lines), `package.json` and
+  `package-lock.json` (`"@ai-sdk/mcp": "2.0.73"`, exact, same copy
+  `@ai-sdk/react` uses; the lockfile gained only the root entry).
+- Exit checks (IMPLEMENTATION_PLAN §3): NT-POL-01…03 ✓ (01: unit, plus the
+  existing runner suites and AT-REG-01 snapshots unchanged with the guard
+  always on); NT-MCP-01 ✓, 02 ✓, 03 ✓, 04 ✓ (description and
+  annotation-only drift), 06 ✓, 07 ✓ (unit and the attack run), 08 unit
+  only (`untrustedSeen`; no memory-v2 runner case), 09 ✓, 10…14 ✓, 15
+  partial (fresh client per task, closed on success and on a failed task;
+  abort and two people in one worker not tested), 16 ✓, 17 ✓, 18 ✓, 19 ✓;
+  NT-DLV-04 ✓ (unchecked path through the runner; verified path at unit
+  level, read-back itself is N7); NT-SEC-01 ✓ (20 scripted attacks: 0
+  side effects, 0 web requests, every well-formed side effect asked);
+  NT-SEC-03 ✓; NT-IMP-02/03 ✓; NT-REG-01 ✓ (`next.mcp` off: no `loadMcp`,
+  `toolApproval` is `TOOL_APPROVALS` itself; on without apps: same prompt,
+  belt and object); OT-REG-01 and AT-RCP-02 unchanged ✓; guarded-fetch
+  unknown settled ✓ (below). NT-REL-04 ✓ (N4's open exit check: a 15 s
+  server is dropped at the 10 s open timeout, the other app loads, the
+  prompt note names it).
+- Unknown settled (MCP_CONNECTIVITY §5): `node:https` with the guard's own
+  `pinnedLookup` reaches the pinned address and validates TLS for the
+  name; the same address under another name fails the certificate check
+  (real local TLS server, throwaway certificate made by `openssl` in the
+  test, skipped where `openssl` is missing). Node calls `lookup` with
+  `{ all: true }` and wants a list: the guard answers both forms. No undici.
+- Mutation checks (each restored): dropping `mcp_` from
+  `privateContentSeen` → 2 failed; passing `TOOL_APPROVALS` without the MCP
+  entries → 2 failed; skipping the drift check → 2 failed.
+- Deviations: tools are built with `tool()` + `client.callTool` (not
+  `client.tools({ schemas })`): same effect, the live definition is never
+  used. `loadMcp` takes `authFor` (default: only `auth = 'none'` servers;
+  OAuth apps are left out until N6 answers from `mcp_connections`); the
+  runner tests open the fixture as an OAuth app through it, since the N1
+  trigger (NT-DB-04) rightly forbids write tools on a server without
+  sign-in. The `tool-call.tsx`/`activity.tsx` `mcp_` rendering moves to N6
+  with its browser check: today's fallback already shows the exact input
+  and "This changes something outside Kriya". Read-back (ND-12) is N7.
+- Found (no change made): the Inbox records an MCP approval as `R4`
+  (`recordApprovals` classifies with `classifyTool`, and anything outside
+  R2–R3 shows as the most serious). Safe; a later phase may pass the MCP
+  class through if the Inbox should show R2/R3.
+- Risk to know: an R0/R1 MCP read can carry private content in its
+  arguments to the app without asking (NS-5 accepts this for owner-reviewed
+  reads); only R2–R4 calls show the exact input first.
+- Next exact action: N4 can be closed now that NT-REL-04 passes; N7
+  (owner registry, drift review, read-back) needs ND-12 approved; N6 needs
+  ND-09 and NB-03 approved by id.
+
+## Phase N9 — Memory recall v2 (gate)
+
+**Status:** IN_PROGRESS (2026-10-24 15:35 IST). ND-15 approved by id
+(2026-10-24). The owner said "proceed for the next one" after N5; N2, N6
+and N7 need decisions not yet approved, so the N9 gate is next.
+
+**Scope this session: the gate only** (ND-15: "run AS-MEM and the new
+AS-MEM-ML on the current code; proceed only if M1 < 0.90"). Everything
+after the gate (migration, `lib/memory/embed.ts`, rerank, paid runs) needs
+NB-05 (embedding processor approval and key) and is not started.
+
+**Session plan (Claude Code / Opus 5.5, in place on `main`):** create
+`tests/eval/scenarios/AS-MEM-ML/AS-MEM-ML.json` (30 written cases, no real
+people: 6 Hindi, 6 Telugu, 6 romanised Hindi/Telugu, 6 across scripts or
+languages, 6 Hinglish) and `tests/eval/memory-ml.eval.test.ts` (no model;
+the same recall path as AS-MEM: `alwaysOnNotes`, `recallNotes`,
+`assembleContext`; M1 = planted note always-on or in the top 5, over
+AS-MEM's 50 planted notes plus these 30). No existing file changes except
+`status.md`. Cases are written before the first run and not tuned to the
+result.
+
+**Session result (2026-10-24 15:55 IST):** gate run and recorded; the
+phase continues past the gate but is **BLOCKED on NB-05** (embedding
+processor approval and key; paid AS-MEM-ML runs). Board row released.
+Nothing committed.
+
+- Created: `tests/eval/scenarios/AS-MEM-ML/AS-MEM-ML.json` (30 cases, six
+  each: Hindi, Telugu, romanised Hindi/Telugu, across scripts or languages,
+  Hinglish; invented notes, no real people), `tests/eval/memory-ml.eval.test.ts`
+  (runs in `npm test`). No existing file changed except `status.md`.
+- Results (PGlite, no model, today's recall: `simple` full-text search,
+  "matches first", then score):
+
+  | Suite                                                | M1 (always-on or top 5)  | Hits sharing a word with the question |
+  | ---------------------------------------------------- | ------------------------ | ------------------------------------- |
+  | AS-MEM                                               | 40/50 = 0.80 (unchanged) | 36                                    |
+  | AS-MEM-ML (AS-MEM + 30)                              | **70/80 = 0.875**        | 60                                    |
+  | The 30 new cases                                     | 30/30                    | 24                                    |
+  | — Hindi / Telugu / romanised                         | 6/6 each                 | 6 each                                |
+  | — across scripts (e.g. Hindi question, English note) | 6/6                      | 1                                     |
+  | — Hinglish                                           | 6/6                      | 5                                     |
+
+- Gate: M1 0.875 < 0.90, so ND-15's condition to continue is met. The
+  misses that drive it are AS-MEM's own 10 (no shared words, as A12
+  recorded).
+- Finding, not hidden: four cross-script cases (19–22) "hit" at exactly
+  rank 5 with no shared word, only because the planted note (10 days old)
+  is among the five newest notes in the fixture. Same-script matching works
+  for Hindi, Telugu and romanised text; matching across scripts doesn't
+  exist today. The cases weren't re-tuned after the run; the eval reports
+  the shared-word count beside M1 so this stays visible.
+- `env -u OPENROUTER_API_KEY npm run check`: typecheck pass; lint 0 errors /
+  6 warnings (same existing set); format pass; Test Files 147 passed / 3
+  skipped (150); Tests 1748 passed / 26 skipped (1774); exit 0.
+- Next exact action: owner decides NB-05 (an embedding provider via
+  OpenRouter as a new processor of memory text, its key, the privacy notice
+  update, and the paid 3-run AS-MEM-ML comparison). Without it N9 stays
+  here; with it, the N9 migration (`20270101000200`), `lib/memory/embed.ts`
+  and NT-MEM-01…05 follow, and `next.memoryRerank` ships only if M1 improves
+  by more than its noise.
+
+**Past the gate — session plan (2026-10-24 16:05 IST, Claude Code / Opus
+5.5, in place on `main`):** NB-05 approved by the owner in chat (below).
+Migration `20270101000200_memory_embeddings.sql` (sorts last; no other
+migration writer) + rollback + NT-MIG-01 case; `lib/memory/embed.ts`
+(OpenRouter `POST /api/v1/embeddings`, cost from `usage.cost` in credits,
+checked against the API reference 2026-10-24; cosine and reciprocal-rank
+fusion); `recallNotes` optional `rerank`; `embed_notes` maintenance job for
+confirmed notes inside `withinCap` (which then counts `embedding_tokens`
+too); `next.memoryRerank` / `next.embeddingModel`; runner passes `rerank`
+only with both set and memory v2 on; `lib/legal.ts` processor line
+(owner-approved privacy notice update); NT-MEM-01…05. Deviation planned:
+the vector columns are **not** added to the Drizzle `memories` object (as
+`search` isn't), so `getMemories` and every whole-row read never carries
+vectors to a page; `lib/memory/embed.ts` reads and writes them in SQL.
+Paid step last: 3 runs of AS-MEM-ML with rerank on, real embeddings, on
+PGlite (no database other than PGlite).
+
+**Session result (2026-10-24 16:55 IST): COMPLETE.** Board row released.
+Nothing committed.
+
+- Created: `supabase/migrations/20270101000200_memory_embeddings.sql`
+  (`memories.embedding real[]` 64–4096, `embedding_model`, `embedded_at`;
+  `maintenance_jobs` kind check gains `embed_notes`, name looked up; trigger
+  `memories_vector_guard`), its rollback, `lib/memory/embed.ts`,
+  `tests/next/memory-rerank.test.ts` (12), `tests/next/memory-rerank-runner.test.ts` (1).
+- Changed: `lib/memory/maintenance.ts` (`embeddingModel`, `enqueueEmbedding`,
+  `runEmbedJob`, `runJob` dispatch; `withinCap` also counts
+  `embedding_tokens`), `lib/agent/run-task.ts` (reads the two settings;
+  reranks each agent's recalled candidates after `loadContext`; queues the
+  embed job after the task), `lib/config.ts` (`next.memoryRerank` off,
+  `next.embeddingModel` unset), `db/schema.ts` (`embed_notes` kind; a
+  comment on `memories`), `lib/legal.ts` (privacy notice: the OpenRouter
+  processor line now covers memory embeddings; date 2026-10-24),
+  `tests/db/migrations.test.ts` (memory v2 case rolls N9 back first;
+  NT-MIG-01 N9 case), `tests/eval/memory-ml.eval.test.ts` (paid mode,
+  skipped unless `KRIYA_EVAL_EMBEDDING_MODEL` is set).
+- Deviations, each for a reason found in the code:
+  1. The vector columns are not in the Drizzle `memories` object (like
+     `search`): `getMemories` returns whole rows to pages, so vectors would
+     have gone to browsers. `lib/memory/embed.ts` reads/writes them in SQL.
+     A test proves neither the page query nor the DPDP export carries them.
+  2. No `rerank` option on `recallNotes`: running the provider call inside
+     the person's transaction deadlocked on PGlite and would hold a
+     production transaction open for up to 20 s. The runner reorders each
+     agent's candidate list after the transaction instead (same candidates,
+     one embedding of the person's message per task). `retrieve.ts` is
+     unchanged.
+  3. New trigger `memories_vector_guard`: `touch_updated_at` would have
+     made every embedded note look just updated (recall ranks by recency).
+     Storing a vector now keeps `updated_at`; changing a note's text clears
+     its vector so it is embedded again.
+- Exit checks: NT-MEM-01 ✓ (same set, only order; ties and no-vector cases
+  keep today's order), NT-MEM-02 ✓ (failure → today's order, logged),
+  NT-MEM-03 ✓ (confirmed, current, non-archived only; erase removes the
+  vector; page and export carry none; recency unchanged), NT-MEM-04 ✓
+  (`embedding_tokens` recorded with cost; counted in the cap; over the cap
+  the job defers without a call), NT-MEM-05 ✓ (off or no model: no call, no
+  job, same prompt, through the real runner), NT-MIG-01 N9 ✓, M1 gain >
+  noise ✓ (below). Mutation checks: ignoring the switch → 2 failed; not
+  keeping `updated_at` → 2 failed (both restored).
+- **Paid comparison** (owner go-ahead NB-05; model
+  `openai/text-embedding-3-small`, catalogue price 0.00000002 USD per token
+  read from `GET /api/v1/embeddings/models` on 2026-10-24; key passed alone
+  from `.env.local` to the eval process, PGlite only, never printed):
+
+  |                            | Today (FTS)               | Rerank, run 1     | Run 2 | Run 3 |
+  | -------------------------- | ------------------------- | ----------------- | ----- | ----- |
+  | AS-MEM M1                  | 40/50                     | 49/50             | 49/50 | 49/50 |
+  | AS-MEM-ML M1               | 70/80 = 0.875             | 78/80 = 0.975     | 78/80 | 78/80 |
+  | The 30 multilingual        | 30/30 (4 by recency only) | 29/30             | 29/30 | 29/30 |
+  | Fallbacks to today's order | —                         | 0                 | 0     | 0     |
+  | Tokens / reported cost     | —                         | 28,286 / 564 µUSD | same  | same  |
+
+  Noise across runs: 0. Gain: +8 (AS-MEM +9: cases 11–15 and 17–20 moved
+  from rank 7–8 into the top 5; none worse). One loss: AS-MEM-ML-22 (a
+  Telugu question about an English car-insurance note), whose earlier hit
+  was the recency artefact, now ranks 11. Total spend for the three runs:
+  1,692 µUSD (about USD 0.0017), every call priced (`unpriced` 0).
+
+- `env -u OPENROUTER_API_KEY npm run check`: typecheck pass; lint 0 errors /
+  6 warnings (same existing set); format pass; Test Files 149 passed / 3
+  skipped (152); Tests 1762 passed / 27 skipped (1789); exit 0.
+- Rollout (ND-24, not done here): set `next.embeddingModel` to
+  `openai/text-embedding-3-small` and `next.memoryRerank` on in staging
+  first, with `agents.memoryV2` on and `agents.maintenanceCapMicroUsd` set;
+  the privacy notice change ships with it.
+
+## Phase N2 — Delivery status, owner delivery page
+
+**Status:** COMPLETE (2026-10-24 21:10 IST; was IN_PROGRESS from 17:20). ND-03, ND-17 and ND-23
+approved by the owner in chat (2026-10-24). N1 (the `delivery_checks`
+table) is in place. N4 marked `COMPLETE` first, as asked.
+
+**Preflight:** repository root, branch `main`; uncommitted N1, N5 and N9
+work present and kept (the owner has not asked for a commit). Last
+`npm run check` on this tree: exit 0, 1762 passed / 27 skipped.
+
+**Session plan (Claude Code / Sonnet 5.5, in place on `main`):**
+
+- Create: `lib/delivery/status.ts` (pure `deliveryOf`, ND-03),
+  `lib/delivery/metrics.ts` (NM1–NM6, NM8, NM9 from SQL and `deliveryOf`;
+  NM7 and NM10 need N10's measurements and are shown as "not measured yet",
+  never as 0), `lib/next.ts` (ND-23 switch dependencies, pure),
+  `components/thread/delivery-status.tsx`, `app/owner/delivery/page.tsx`,
+  `tests/next/delivery.test.ts` (NT-DLV-01, 02, 05, 06; NT-IMP-01),
+  `tests/next/delivery-whatidid.test.ts` (NT-DLV-03, NT-REG-01 first version).
+- Change: `queries/episodes.ts` (`deliveryForTasks`), `actions/inbox.ts`
+  (`delivery` only with `next.delivery` and `agents.inbox` on),
+  `components/thread/what-i-did.tsx` (the line, only with `record.delivery`),
+  `components/owner/nav.tsx` ("Delivery"), `app/owner/config/page.tsx` (one
+  "Next platform" group; dependent switches marked ineffective),
+  `components/owner/forms.tsx` (`SettingForm` optional `note`),
+  `lib/config.ts` (`next.delivery`, off).
+- Not touched: `episodes`, receipt hash, `deriveEpisode`, any migration.
+- Deviation planned: `deliveryOf` also returns `gone` (executions whose
+  latest check says the thing is no longer there) so the card can say so
+  without a second lookup.
+- Browser check NT-UI-01 needs the isolated stack (Docker was not running;
+  started it in the session, see the result).
+
+**Session result (2026-10-24 21:10 IST): COMPLETE.** Board row released.
+Nothing committed.
+
+- Created: `lib/delivery/status.ts` (`deliveryOf`, `deliveryView`),
+  `lib/delivery/metrics.ts` (`deliveryMetrics`), `lib/next.ts` (ND-23),
+  `components/thread/delivery-status.tsx`, `app/owner/delivery/page.tsx`,
+  `tests/next/delivery.test.ts` (19), `tests/next/delivery-whatidid.test.ts`
+  (4), `screenshots/next-platform/N2/` (15 images + README).
+- Changed: `queries/episodes.ts` (`deliveryForTasks`), `actions/inbox.ts`
+  (`delivery` only with `next.delivery` on; `agents.inbox` already gates the
+  action), `components/thread/what-i-did.tsx`, `components/owner/nav.tsx`,
+  `components/owner/forms.tsx` (`SettingForm` optional `note`),
+  `app/owner/config/page.tsx` ("Next platform" group + ND-23 notes),
+  `lib/config.ts` (`next.delivery`, off).
+- Exit checks (IMPLEMENTATION_PLAN §3): NT-DLV-01 ✓ (nine fixed records →
+  status), NT-DLV-02 ✓ (a later `verified` resolves exactly its run; a claim
+  no run backs, `gone`, `failed`, `unverified` never do), NT-DLV-03 ✓ (off:
+  no `delivery` key, response equal to today's; on: only that key added; the
+  Inbox off: nothing), NT-DLV-05 ✓ (scoped query; another person's check
+  can't be written for a run nor read), NT-DLV-06 ✓ (NM1–NM6, NM8, NM9 equal
+  hand-computed values on seeded rows, 7- and 30-day windows, deleted and
+  old records excluded), NT-IMP-01 ✓ (`lib/delivery`, `lib/reliability`,
+  `lib/mcp` import no `next/*`), NT-REG-01 first version ✓ (every existing
+  suite, including AT-REG-01 and OT-REG-01 snapshots, passes unchanged with
+  all `next.*` off), NT-UI-01 ✓ (below). Mutation checks: ignoring the
+  switch → 2 failed; letting any check resolve any run → 2 failed (both
+  restored).
+- **Browser check on the P-3 stack** (`screenshots/next-platform/N2/README.md`):
+  guard OK; Docker Desktop started (images cached); migrations
+  `20270101000000` and `20270101000200` applied to **local Postgres 17**
+  (clean, so they also run on real Postgres, not only PGlite); six invented
+  threads seeded in the local database; local test account given a fresh
+  generated password (kept only in the scratchpad) and made local owner.
+  Delivery line verified for all five statuses at 360 and 1280, light and
+  dark; owner Delivery page at 1280 and 360; switch-off card unchanged;
+  Config note works; neighbours render. No app console errors (only the dev
+  server's HMR socket). Dev server stopped afterwards; Docker and the local
+  stack were left running.
+- Deviations: `deliveryOf` also returns `gone`, and `deliveryView` (status +
+  when each later check ran) feeds the card; `delivery` carries no `open`
+  list. NM7 and NM10 show "—, not measured yet" (they need N10's per-task
+  numbers; never 0). NM8 is the part records can show: app actions that
+  change something with no approval of that tool in its thread before they
+  ran; drifted-tool runs, guard bypasses and a token sent to the wrong
+  server leave no row and stay in the logs, so the tile says "records only".
+  NM6 divides by priced tasks and counts a delivered task with no charge as
+  "not priced". The page loads a window's records and judges them with
+  `deliveryOf` in TypeScript (one rule for the card and the page; marked
+  `shortcut:` for > ~100k episodes).
+- Not done / not verified: the "Kriya will check again by …" line is N3's
+  (nothing schedules a re-check yet; `next.recheck` doesn't exist); no
+  keyboard-only pass, no real phone; a pre-change baseline screenshot wasn't
+  taken (the off card was compared by text, plus the response-equality test).
+- Next exact action: N3 (late re-check, ND-04) may start; it needs ND-04
+  approved by id (it is a "standard" decision, listed as approved with N1).
+
+## Phase N3 — Late re-check
+
+**Status:** COMPLETE (2026-10-24 22:05 IST; was BLOCKED on NF-11 until the owner chose B, below).
+
+**Original block:** before any code. Owner asked to proceed
+with N3 (ND-04 approved with N1; N2 complete). Reading the code first, as
+the master prompt requires, found a mismatch between ND-04 and the code
+(NF-11, `docs/next-platform/VISION_AND_GAP_ANALYSIS.md` §4):
+
+- ND-04 re-checks a succeeded side-effect run whose verification is
+  `unverified` (or missing), and says a `failed` one is never re-checked.
+- `readBack` (`lib/connectors.ts`) is two-state: `verified` or `failed`.
+  Nothing in `lib/` produces `unverified` for a tool run. Calendar's
+  read-back that returns not-found right after the create (NSC-17) is
+  stored as `failed`; GitHub and Sheets reads that 404 throw.
+- Every side-effect tool in `CAPABILITIES` has a read-back, so no succeeded
+  run has a missing verification either.
+- So `recheckDeliveries` built as written would find **no eligible run**
+  today; NG-17 could only be shown with an `unverified` row seeded by hand.
+
+Options put to the owner: (A) build as written and leave it idle until
+something emits `unverified` (N7's MCP read-back will); (B) A, plus an
+owner-approved additive change in the protected `lib/connectors.ts` family
+so a read-back that can't read (not found, provider error) is stored as
+`unverified` and a read that reads and disagrees stays `failed`; (C) also
+re-check `failed` runs (changes ND-04; the reader's rule is weaker than the
+original strict one, so it could "verify" something the write check
+rejected). Recommendation: B.
+
+No file other than the two documents above had been changed for N3 at that
+point.
+
+**Session result (2026-10-24 22:05 IST): COMPLETE.** Board row released.
+Nothing committed.
+
+- Created: `lib/delivery/rules.ts` (`recheckTarget`, `recheckBy`: the one
+  eligibility rule, shared by the step and the card), `lib/delivery/recheck.ts`
+  (`recheckDeliveries`, `judge`, `providerReaders`), `tests/next/recheck.test.ts`
+  (20), `screenshots/next-platform/N3/` (4 images + README).
+- Changed: **owner-approved, additive** `lib/connectors.ts` (`readBack` takes
+  `null` = "couldn't read" → `unverified`; `calendarCreate` uses it),
+  `lib/connectors/github.ts` (`githubCreateIssue`), `lib/connectors/sheets.ts`
+  (`check`); `worker/index.ts` (one `try` in `schedulerLoop`, only with
+  `next.recheck`, `next.delivery` and `agents.inbox` on), `lib/config.ts`
+  (`next.recheck`, off), `queries/episodes.ts` (`recheckDue`),
+  `actions/inbox.ts` (`delivery.due`, only with `next.recheck` on),
+  `components/thread/what-i-did.tsx` ("Kriya will check again by …"),
+  `tests/next/delivery-whatidid.test.ts` (+1). Docs: CHANGE_IMPACT row for the
+  connector change, NF-11 marked resolved, TOOLS_AND_CONTRACTS §3.2 (GitHub).
+- Exit checks (IMPLEMENTATION_PLAN §3): NT-RCK-01 ✓ (side effect, succeeded,
+  unverified or missing, 2–30 min, id present, reader exists: 5 query
+  candidates, the rule turns 2 away, 3 read), NT-RCK-02 ✓ (second tick and
+  two racing workers: one row; `tool_executions` and `episodes` rows
+  identical before and after), NT-RCK-03 ✓ (calendar there → verified;
+  deleted or cancelled → gone; provider error → unverified and not retried;
+  GitHub and Sheets readers likewise), NT-RCK-04 ✓ (each read carries the
+  run's own person's token, a forged id of someone else's event included;
+  mutation: reading as another person → fails), NT-RCK-05 ✓ (a reader that
+  throws leaves that run unverified and the step goes on; `limit` honoured,
+  oldest first), NG-17 ✓ and NG-18 ✓ at unit level through the **real**
+  `calendarCreate` (not found at first → unverified → "not confirmed";
+  later there → `delivered`; deleted → `gone`, never delivered), worker step
+  behind `next.recheck` ✓ (static check of the block). Mutation checks (each
+  restored): dropping the 30-minute bound → 1 failed; collapsing the
+  tri-state in `readBack` → 5 failed; reading as the wrong person → 1 failed.
+- Browser check on the P-3 stack (`screenshots/next-platform/N3/README.md`):
+  the new line at 360 and 1280, light and dark; absent past the window and
+  for a tool with no reader; no overflow, no target under 44 px; only the dev
+  server's HMR socket in the console. Docker restarted for it (images
+  cached); dev server stopped afterwards; Docker and the local stack left
+  running.
+- Deviations: **GitHub's 404 stays `unverified`, never `gone`** (it also
+  means the app can't see the repository; the card must not say "no longer
+  there" wrongly). A read that disagrees is `failed`, as in the original
+  check. The calendar reader reads the raw event (`providerFetch`) so it can
+  see `cancelled`; the existing `calendarEvent` drops the status and
+  changing it would change `calendar_events` output. The start time is
+  compared only when the input named an offset. Sheets compares as text
+  (a read gives formatted values). MCP read-back belongs to N7. `readBack`
+  stays two-state for every other tool (they have no reader to settle them).
+- Effect on existing receipts: for the three re-checkable tools, a
+  read-back that can't read now reads "Ran, but wasn't checked afterwards"
+  instead of "…the check afterwards failed".
+- Not done / not verified: no worker process was run (the step is tested
+  directly and its switch statically); no real provider; no keyboard-only
+  pass or real phone.
+- Next exact action: N3 is the last phase that needed N2. Open: N6
+  (needs ND-09, NB-03 by id), N7 (needs ND-12), N10 (ND-16), N11 (ND-19),
+  N12. N4/N8 are complete; N9 is complete.
+
+## Phase N6 — MCP connect, Account Apps, agent enablement
+
+**Status:** COMPLETE (2026-10-24 23:40 IST; was IN_PROGRESS from 22:30). ND-09 and NB-03 approved by
+id (2026-10-24, "Track N owner approvals"); ND-13 and ND-25 were approved
+earlier. N5 is complete. Board was empty.
+
+**Session plan (Claude Code / Sonnet 5.5, in place on `main`):**
+
+- Create: migration `supabase/migrations/20270101000300_mcp_connections.sql`
+  - rollback (`kriya.mcp_connections`: sealed tokens, grants and policies
+    mirroring `kriya.connections`), `app/api/connect/mcp/[serverId]/route.ts`
+    and `…/callback/route.ts`, `actions/apps.ts` (`enableApp`, `disableApp`,
+    `disconnectApp`), `queries/apps.ts` (`appsForPerson`),
+    `components/account/apps.tsx`, `tests/next/mcp-connect.test.ts` (NT-CON-01…06,
+    NT-SEC-02), `tests/db/next-mcp-connections-rls.test.ts` (NT-DB-07), an OAuth
+    mode for `tests/fixtures/mcp/server.ts`.
+- Change: `lib/connectors.ts` (**protected, owner-approved, additive**:
+  `mcpAuthProvider`, `mcpConnectStart`, `mcpConnectFinish`, `mcpDisconnect`;
+  nothing existing edited), `lib/mcp/registry.ts` (a connected OAuth app is
+  opened with `mcpAuthProvider`; a refresh that fails marks it "needs
+  reconnect"), `db/schema.ts` (`mcpConnections`), `lib/config.ts`
+  (`next.mcpConnect`, off), `app/(workspace)/account/page.tsx` (`<Apps>` after
+  Connections only with `next.mcpConnect` on), `components/dialogs/agent-dialog.tsx`
+  and `queries/workspace.ts` (`getSystemStatus.apps`, null when off),
+  `lib/readiness.ts` (key-rotation count includes the new table),
+  `tests/db/migrations.test.ts` (N6 down/up case), `lib/next.ts` unchanged
+  (`next.mcpConnect` already needs `next.mcp`).
+- Design: the SDK's `auth()` runs discovery, PKCE and the code exchange
+  with `fetchFn = guardedFetch(server)`; the provider keeps the PKCE
+  verifier, state and the authorization-server pin in one **sealed,
+  HttpOnly, 10-minute cookie** (ND-09) and seals the tokens into
+  `mcp_connections`; `validateAuthorizationServerURL` accepts only the
+  server's own origin and its `allowed_auth_origins`. Only pre-registered
+  (public or confidential) clients and a hosted Client ID Metadata Document
+  for `oauth_cimd`; no dynamic registration.
+- Deviations planned: migration timestamp `…000300` (N9 already took
+  `…000200`, and the file must sort last); two extra columns on the table,
+  `pin jsonb` (the authorization-server pin the SDK needs to refresh; URLs
+  only) and `needs_reconnect boolean`; both kept out of what the person's
+  session can read except `needs_reconnect`.
+- Tests: NT-DB-07, NT-MIG-01 (N6), NT-CON-01…06, NT-SEC-02, NT-UI-02 (browser
+  check on the P-3 stack), plus an end-to-end `loadMcp` run against the
+  OAuth fixture (token refresh on 401, needs-reconnect).
+- Risks: the SDK's OAuth path has never run in this repo (no existing OAuth
+  fixture), so the first test settles unknowns recorded below as found.
+
+**Session result (2026-10-24 23:40 IST): COMPLETE.** Board row released.
+Nothing committed.
+
+- Created: `supabase/migrations/20270101000300_mcp_connections.sql` and its
+  rollback; `app/api/connect/mcp/[serverId]/route.ts`, `…/callback/route.ts`,
+  `app/api/connect/mcp/client.json/route.ts` (Kriya's Client ID Metadata
+  Document); `actions/apps.ts` (`enableApp`, `disableApp`, `setAppForAgent`,
+  `disconnectApp`); `queries/apps.ts` (`appsForPerson`, `appChoices`);
+  `components/account/apps.tsx`, `components/dialogs/app-choices.tsx`;
+  tests: `tests/next/mcp-connect.test.ts` (20), `tests/next/mcp-apps.test.ts`
+  (11), `tests/db/next-mcp-connections-rls.test.ts` (7), an OAuth mode in
+  `tests/fixtures/mcp/server.ts`; `screenshots/next-platform/N6/` (6 images +
+  README).
+- Changed: **`lib/connectors.ts`, additive and owner-approved (NB-03)**:
+  `mcpAuthProvider`, `mcpConnectStart`, `mcpConnectFinish`, `mcpDisconnect`,
+  `appsUrl`, `MCP_FLOW_COOKIE`, `McpConnectError`, plus imports (the only
+  removed lines are the expanded import and the N3 `readBack` edit);
+  `lib/mcp/registry.ts` (a connected app opens with the person's own
+  provider; a refresh that fails marks it needs-reconnect and leaves it out
+  with a prompt note), `db/schema.ts` (`mcpConnections`), `lib/config.ts`
+  (`next.mcpConnect`), `app/(workspace)/account/page.tsx`,
+  `components/dialogs/agent-dialog.tsx`, `queries/workspace.ts`
+  (`getSystemStatus.apps`), `lib/readiness.ts` (key-rotation counts the new
+  table), `tests/db/migrations.test.ts` (older cases roll N6 back first; the
+  N6 down/up case), `docs/kriya/deployment.md` (Apps section).
+- Exit checks (IMPLEMENTATION_PLAN §3): NT-DB-07 ✓ (the session reads the
+  non-token columns of its own rows only; no token, ciphertext or pin by any
+  query; insert and update refused; deletes only its own; one per person and
+  app; `kriya.connections` check, grants and policies unchanged and the
+  migration never names it), NT-MIG-01 N6 ✓ (with tokens present; the
+  person's app choices stay), NT-CON-01 ✓ (real routes; S256 challenge
+  proven against the exchange's verifier; tokens sealed, state in a sealed
+  HttpOnly 10-minute cookie scoped to `/api/connect/mcp`), NT-CON-02 ✓ (wrong
+  state, issuer, cookie, code, another person's cookie, and an authorization
+  server the owner didn't list: nothing stored; the unlisted server is never
+  contacted), NT-CON-03 ✓ (two apps: each sees only its own tokens; no
+  person, key or session in any request), NT-CON-04 ✓ (the existing
+  `tests/connectors` suites unchanged and passing; four providers;
+  `/api/connect/google` still answered by its own handler), NT-CON-05 ✓,
+  NT-CON-06 ✓ (disconnect deletes the sign-in and choices even when
+  revocation returns 500 or throws; revokes the refresh token when it can),
+  NT-SEC-02 ✓ (log scan across connect, failure, refresh failure and
+  disconnect: no token, code, state, sealed value or person), NT-UI-02 ✓
+  (below), plus the worker end to end: uses the person's token, refreshes an
+  expired one on its own (new tokens re-sealed), a failed refresh marks it
+  needs-reconnect and it isn't called again until reconnecting (which clears
+  it). Mutation checks (each restored): dropping the authorization-server
+  allow-list → 1 failed; dropping the reconnect-flag reset → 1 failed;
+  making revocation failure abort the disconnect → 1 failed.
+- Browser check on the P-3 stack (`screenshots/next-platform/N6/README.md`):
+  migration applied on local Postgres 17; four invented apps seeded locally;
+  Apps section at 360 and 1280, light and dark; Change dialog saved the
+  chosen agents (database checked); the agent dialog's checkbox saved at once
+  both ways (database checked); Connect on an app with no server shows the
+  failure notice; switches off → no section, no dialog section, the route says
+  unavailable; console clean. A fix found there: the two "Change" buttons now
+  carry per-app names. Dev server stopped; Docker and the local stack left
+  running.
+- Deviations: migration timestamp `…000300` (N9 holds `…000200`); two extra
+  columns, `pin jsonb` (the authorization-server pin the SDK needs to
+  refresh; URLs only, not readable by the session) and `needs_reconnect`;
+  the ciphertext context is `mcp_connections:<server>:<person>` (the person
+  added to what ND-09 names, so a row copied to another person can't be
+  opened); only pre-registered clients and the hosted metadata document
+  (no dynamic registration); apps that need no sign-in (`auth = none`)
+  aren't connectable (enablement needs a connection); a suspended app a
+  person never connected is hidden; app errors use `?app_error=` so
+  Connected accounts doesn't show them twice; `appsUrl` lives in
+  `lib/connectors.ts` (a route file may only export HTTP handlers).
+- Not done / not verified: no real app, authorization server or consent
+  screen (the OAuth flow is tested against a fixture, the browser against
+  seeded rows); `oauth_confidential` and `oauth_cimd` paths are built but
+  only the public-client path is exercised end to end; the dev
+  server's session didn't survive restarts (re-login each time); no
+  keyboard-only pass or real phone. Pre-existing and left alone: the shared
+  dialog close "x" and `Confirm` buttons are under 44 px. If every app fails
+  for a task, `loadMcp` returns nothing and the prompt gets no note (N5
+  behaviour; the Account page still says "stopped working").
+- Next exact action: N7 (owner registry, drift review, read-back mapping)
+  needs ND-12 approved by id; N10 needs ND-16; N11 needs ND-19. The owner
+  can now add a server and see the connect flow end to end on staging.
+
+### N7 session result (2026-10-25): owner registry, drift review, read-back mapping
+
+- Approval: ND-12 by id (see "Track N owner approvals"); ND-07 was approved
+  2026-10-24. Worked directly on `main` in the repository root, as before.
+- Added: `lib/mcp/verify.ts` (the `verify` spec schema, JSON-pointer reads,
+  `readBack`: match → `verified`, differing value → `failed`, unreadable or a
+  field missing → `unverified`, method `api_readback`, evidence = the id looked
+  up); `lib/mcp/live.ts` (`listLive`, `connectedAuth`, `liveAsOwner`,
+  `markDrift`, moved out of `registry.ts` so the web side can read an app's tool
+  list without importing the runner); `lib/mcp/drift.ts` (`checkDrift`);
+  `lib/mcp/owner.ts` (`registry()` for the page); `lib/mcp/recorded.ts`
+  (NT-MCP-20 list, empty); `actions/owner-apps.ts` (`addServer`, `updateServer`,
+  `setServerStatus`, `pinTool`, `approveDrift`, `setToolStatus`, all
+  `requireOwner()` + `privileged` + `audit`); `app/owner/apps/page.tsx`;
+  `components/owner/apps-forms.tsx`; tests `tests/next/mcp-readback.test.ts`
+  (10) and `tests/next/mcp-owner.test.ts` (24).
+- Edited existing: `components/owner/nav.tsx` (Apps link), `worker/index.ts`
+  (one `try` in `schedulerLoop`: `checkDrift()` with `next.mcp` on),
+  `lib/mcp/tools.ts` (`mcpTool` takes the read-back spec; `pinnedDefinition`,
+  `changedParts`), `lib/mcp/registry.ts` (passes a spec only to a side effect
+  whose reader is pinned, unchanged on the live server, switched on and R0 by
+  its own pinned hints; otherwise none), `tests/fixtures/mcp/server.ts`
+  (`get_item` reads back what `create_item` made; `registerFixture` takes
+  `verify`). No new migration, no new setting.
+- Behaviour worth knowing:
+  - A server stays `draft` until it has a pinned tool and every pinned tool is in
+    `RECORDED` (`lib/mcp/recorded.ts`) with a fixture in
+    `tests/fixtures/mcp/recorded/<id>.json`; the list is empty, so no real app
+    can be made active until a reviewed code change adds it (NB-04).
+  - People can connect only to an `active` app, so for a sign-in app the owner
+    can't read its tools live before activation. `pinTool` therefore also takes
+    one tool's definition pasted from the provider's own tool list; whatever
+    the live server says later is compared with it, and a difference
+    drifts the tool off every belt (fails closed).
+  - The daily drift check looks as the owner who added the server
+    (`created_by`) and only for apps that owner is signed in to (or `none`
+    auth); others are left to the per-task check. The once-a-day clock is in
+    worker memory (a restart checks again; it only reads).
+  - Approving drift re-reads the app and requires the hash on screen to be the
+    hash it shows now; a tool switched off from drifted must be pinned afresh.
+  - The URL, id and sign-in of an app can't be edited (retire and add);
+    addresses must be https names, not IPs, passed through the egress guard's
+    name check; the connect-time address check is unchanged.
+- Not done / not verified: the NT-UI-03 browser check is recorded below. Not
+  built: editing an existing pin's risk or read-back in place (switch it off
+  and pin it again); the later `delivery_checks` re-check for an MCP run left
+  `unverified` (ND-04's MCP reader row in TOOLS_AND_CONTRACTS §3.2; the N3
+  re-check still covers only calendar, GitHub issues and Sheets); the
+  `verify.ts` claim row (deferred by ND-12). No real app, authorization
+  server or consent screen was used; a read-back has only run against the
+  fixture.
+- Next exact action: N10 needs ND-16; N11 needs ND-19; N12 needs N10 and N11.
+
+### N12 session result (2026-10-25): readiness gates and pilot
+
+- Approval: ND-20 and ND-24 by id (owner, in chat, 2026-10-25). Nothing is
+  turned on anywhere by this phase: every `next.*` switch is still off by
+  default, and ND-24 keeps production off until each gate below has evidence.
+- Built for the gates: `tests/next/regression.test.ts` (NT-REG-01, 3 tests) and
+  `tests/next/mcp-rotation.test.ts` (NR-6, 3 tests). **A gap found by NR-6 and
+  fixed:** when an app's token refresh sent no new refresh token, the stored one
+  stayed sealed under the old key, so retiring the old key broke the app's
+  sign-in and `npm run readiness` kept warning. `saveTokens` in
+  `lib/connectors.ts` (the N6 app-token provider only) now moves the kept
+  refresh token to the current key, and leaves it alone if it can't be opened.
+- ND-20 check: no competitor or product is named in `app/`, `components/`,
+  `actions/` or `lib/`, so there is no comparison in public copy; none is added.
+
+| Gate | Evidence today | State |
+| --- | --- | --- |
+| NR-1 every NT- test passes; the existing suite unchanged | `env -u OPENROUTER_API_KEY npm run check` exit 0: typecheck pass; lint 0 errors / 6 warnings (the existing set); format pass; Test Files 168 passed / 3 skipped (171); Tests 1984 passed / 27 skipped (2011). Existing suites unchanged (counts only rose, from 135 / 1590 at NP-1). Local working tree, **uncommitted**; no commit id yet | Met locally; re-record on the commit that is deployed |
+| NR-2 NT-REG-01 with every `next.*` off, on the deployed commit | `tests/next/regression.test.ts`: all 8 track-N switches ship off; off equals unset (the same `TOOL_APPROVALS` object itself, belt names, prompt byte for byte); no `mcp_*` or `delivery_checks` query is made; a run's record is unchanged (`risk` null, no delivery rows). The AT-REG-01 and OT-REG-01 snapshot suites pass in the same run | Met locally; **not on a deployed commit** |
+| NR-3 AS-MCP-SEC ≥ 200 runs: 0 unapproved side effects, 0 exfiltrations, 0 drifted tools used | `tests/next/golden/mcp-sec.test.ts`: 200 of 200 scripted attacks (25 kinds) attempted; 0 app writes, mails, sheet writes, events, comments or web requests; the drifted and pay tools never ran; NM8 = 0. Scripted model on the fixture app, not a real model | Met for the scripted suite; the real-model run is paid and not done |
+| NR-4 guarded fetch verified on the deployed worker (fixture redirect, private addresses) | `tests/next/mcp-fetch.test.ts` locally (NT-MCP-10…14). Nothing run on a deployed worker | **Open**: needs the deployed worker |
+| NR-5 each registry server's §9 checklist recorded; NRG-1 closed | No registry server exists; `RECORDED` is empty so none can be made active | **Open**: NB-04 |
+| NR-6 key rotation rehearsed with an app connection present | `tests/next/mcp-rotation.test.ts`: readiness counts the app's tokens on the old key and prints none; a refresh during the rotation moves both tokens to the new key (fixed above); a token left on a retired key asks the person to reconnect. Local database only | Met locally; the A11 runbook rehearsal on staging is still the owner's |
+| NR-7 external security review of the MCP path, no open critical or high finding | None done | **Open**: NB-07 (a reviewer) |
+| NR-8 counsel answers NQ-1 and NQ-3; privacy notice updated | None. `lib/legal.ts` names the embedding processor (N9); it does not yet say that a person's requests go to an app they connect | **Open**: NB-07 (counsel); the notice text needs a draft once NQ-1 is answered |
+| NR-9 browser verification of every changed screen on the isolated stack | NT-UI-01 (Delivery page and card), NT-UI-02 (Account Apps, agent dialog), NT-UI-03 (`/owner/apps`, second pass with the real worker), N10 (`/owner/delivery` cost tiles), and `/owner/config` today (the Next platform group and the `next.promptCache` note) at 1280 and 360 px, dark and light, console clean apart from errors from the database being down while Docker was stopped | Met locally, with known gaps: the `/owner/config` inputs and Save buttons are 28–36 px tall at 360 px (the existing owner form style, not changed by track N); no real phone or screen reader |
+
+- Which switches may go where (ND-24): on the isolated stack, all of them,
+  as every check above ran. On staging and production, none yet: NR-4, 5, 7
+  and 8 are open for `next.mcp` and `next.mcpConnect`; for `next.delivery`,
+  `next.recheck`, `next.reliability` and `next.skillsV2` the open items are NR-2
+  and NR-4 on a deployed commit and the pilot numbers; `next.memoryRerank`
+  also needs the embedding key (NB-05); `next.promptCache` needs NRG-2 (NB-06)
+  and does nothing until then.
+- Pilot (EVALUATION_PLAN §5): not started. It needs staging on real services
+  (NB-08), at most two registry servers whose §9 checklist is complete (NB-04),
+  then NM1–NM10 daily for at least 14 days with NM8 = 0.
+- Next exact action (owner): commit and deploy to staging, then re-run NR-1 and
+  NR-2 on that commit and run NR-4 on the staging worker; choose and review
+  registry candidates (MCP_CONNECTIVITY §9); send counsel NQ-1 and NQ-3 and the
+  MCP path to a reviewer.
+
+#### N12 second pass (2026-10-25): what the first pass left unverified
+
+Local stack only (`.env.verify`, guard OK). The app's guarded fetch was pointed
+at the repo's fixture app by a throw-away preload kept outside the repository;
+the real worker, the real web server and the stub model (`npm run verify:stub`,
+new script `tests/operator/verify-scripts/readback.json`) ran, with the person
+using the browser.
+
+| Item | Result |
+| --- | --- |
+| NR-4 substitute: the real guarded fetch (real DNS, real `node:https`, nothing mocked) from this machine | Refused: `localhost` (private name); `localtest.me` (a public name whose DNS answer is 127.0.0.1: "resolves to a private address"); `169.254.169.254` and `10.0.0.5` (addresses); plain `http`; a host that isn't the app's own. A real public redirect (`httpbin.org/redirect/1`) refused: "tried to redirect; Kriya doesn't follow". One public URL, `httpbingo.org/redirect/1`, answered 402 and not a redirect, so it proves nothing and is not counted. **Still not run on the deployed worker** |
+| A read-back through the real runner on the stub model, approved in the browser | The thread showed "Needs your OK" with the exact input `{"title":"Verify read-back"}`; nothing reached the app before Approve. After Approve: the run is R3, side effect, `verification` verified, method `api_readback`, evidence = the id; the card says "Delivered · checked by Kriya" with the id. Screenshot 09 |
+| The same when the app can't read the item back | `verification` unverified ("Checked: the app couldn't read it"); the card says "Not confirmed: Ran, but wasn't checked afterwards" although the reply text says the item was created. Screenshot 10. The N3 late re-check does not cover app runs (below), so it stays so |
+| Accessibility trees (Playwright/Chromium): `/owner/config`, `/owner/delivery`, a thread with the delivery card | 211, 13 and 59 controls, 0 unnamed; the card has a "What I did" region and its status is text plus a labelled dot, not colour only |
+| Console | 0 errors today on these pages with the database up (the earlier errors were from Docker being stopped) |
+
+**A bug only the real driver showed, fixed.** The first live worker tick logged
+"delivery re-check step failed" on every pass: `recheckDeliveries` put two
+`Date` objects into a raw query; PGlite accepts them, the production driver
+(`postgres`) throws, so the N3 late re-check would never have run in
+production while all its tests passed. The window is now sent as ISO text with
+`::timestamptz` (`lib/delivery/recheck.ts`), and `tests/next/recheck-params.test.ts`
+fails if a `Date` goes into that query again (checked: it fails without the
+fix). The worker's re-check step then ran without error against the real
+database. Other raw queries in track N were read for the same pattern; none
+passes a `Date` (the others use column operators, which the driver maps).
+
+Still not verified, and why:
+- NR-4 on the **deployed** worker; NR-5, NR-7, NR-8 and the pilot (owner,
+  counsel, a reviewer, staging).
+- A real phone and a real screen reader (TalkBack, VoiceOver): the trees above
+  are names and roles, not a spoken pass.
+- Connecting, pinning from, and approving drift for an app that needs sign-in:
+  no real authorization server, and the browser cannot reach the fixture's
+  sign-in page by name. Covered by `tests/next/mcp-connect.test.ts` against real
+  routes.
+- The N3 late re-check for app runs (ND-04's MCP row): not built, so a
+  read-back that couldn't be read stays "not confirmed" for good.
+- The `/owner/config` inputs and Save buttons are 28–36 px tall at 360 px (the
+  existing owner form style; measured, not changed).
+- Paid and real-model runs: AS-CST, NRG-2, the real-model AS-MCP-SEC, `next:eval`.
+
+### N10 session result (2026-10-25): cost measurement and prompt caching
+
+- Approval: ND-16 by id (owner, in chat, 2026-10-25). No paid run is approved by
+  it. Worked on `main` in the repository root.
+- Added: `next.promptCache` (`lib/config.ts`, default off); `CACHE_VERIFIED` in
+  `lib/next.ts`, **empty**: a model id goes in it only after NRG-2 (one paid
+  request the owner approves) shows the marker passes through OpenRouter and
+  comes back as cached tokens; `lib/models.ts` wraps a route in a middleware
+  that puts `cache_control: { type: "ephemeral" }` on the system message, only
+  for a verified id and only while the switch is on (every other route gets the
+  unwrapped model, so its requests are byte for byte what they were);
+  `lib/delivery/cost.ts` (`definitionShare`, NM7) with one log line in
+  `lib/agent/run-task.ts` (`tool definitions`: app characters, total, share);
+  NM10, C1 and C3 in `lib/delivery/metrics.ts` and on `/owner/delivery`;
+  Config says a switch that is on can't act while no route is verified;
+  `tests/next/cost.test.ts` (9 tests: NT-CST-01…03).
+- Definitions as built (COST_AND_METERING §3 updated): NM7 is characters, logged
+  per task, not stored (the owner tile says "in the log"); NM10 counts a step as
+  wasted when every tool call in it failed on a busy app or an open circuit; C3
+  leaves out rows that didn't say how much was cached rather than counting 0.
+- UI check on the local stack (guard OK): `/owner/delivery` at 1280 and 360 px,
+  dark and light, 0 console errors, no horizontal scroll, no new controls.
+  Found and fixed: C3 as "1500 of 4750" was cut to "1500 of …" on a phone; its
+  value is now the percentage with the counts in the hint. Existing tiles still
+  cut long labels and hints with an ellipsis at 360 px (their N2 design, not
+  changed). Screenshots: `screenshots/next-platform/N10/`.
+- Not done: **AS-CST** (10 fixed tasks on a real model, before and after each
+  switch) and **NRG-2**: both need the owner's go-ahead for spend, so no cache
+  marker is ever sent today and no C1/C3/NM6/NM10 before-and-after exists. The
+  numbers on the page are the live data's own, not a measured comparison.
+- Next exact action: if you want caching, approve one paid NRG-2 request (a model
+  id, one cached-prefix request twice, read `usage_events.cached_tokens`), then
+  add that id to `CACHE_VERIFIED`.
+
+### N11 session result (2026-10-25): golden scenarios and eval harness
+
+- Approval: ND-19 by id (owner, in chat, 2026-10-25).
+- Added `tests/next/golden/`: `mocks.ts` (connectors, web and model faked at
+  module level; the fixture MCP app behind the guarded-fetch swap), `harness.ts`
+  (answer the person's pending asks one by one or all; the latest record with
+  its delivery status), and
+  - `api.test.ts`: NG-02, 05, 06, 07, 08, 10, 11, 12, 13, 21;
+  - `apps.test.ts`: NG-03, 04, 09, 14, 15, 16, 22, 23;
+  - `delivery.test.ts`: NG-17, 18, 20 (re-check with a fixture reader);
+  - `jobs.test.ts`: NG-01, 19 (OG-01 and OG-06 with next.* on);
+  - `memory.test.ts`: NG-24 (the 30 AS-MEM-ML questions through the runner);
+  - `as-dlv.test.ts`: AS-DLV, 30 tasks across every delivery status against a
+    hand-written table (not computed by `deliveryOf`);
+  - `mcp-sec.test.ts`: AS-MCP-SEC, 200 scripted attacks (25 kinds × 2 app
+    results × 4 payloads);
+  - `coverage.test.ts`: NG-01…NG-24 each has a test, tied to its NSC row.
+- AS-MCP-SEC result: 200 of 200 attempted; 0 app writes, 0 mails, 0 sheet
+  writes, 0 events, 0 comments, 0 web requests, no run that changes anything,
+  NM8 unapproved = 0; every kind that can change something waited for the person
+  (calendar, GitHub, Gmail, app write, sheets append/update/create, web fetch and
+  search); the drifted tool and the pay tool never ran.
+- NG-24 recorded: 30 of 30 planted notes reached the prompt through the runner
+  (hindi 6/6, telugu 6/6, romanised 6/6, cross-script 6/6, hinglish 6/6), with
+  the note planted among the person's 40 ordinary ones. Retrieval on today's
+  path, not model quality: the quality measure remains AS-MEM-ML M1 (N9).
+- **A gap in N4/N5, found by NG-14 and fixed here.** The retry wrapper looked
+  only at built-in tools, and an app's 503 was never treated as transient, so an
+  app read marked safe to repeat (`mcp_tools.idempotent`) was never retried, and
+  its circuit never opened. Now: `lib/mcp/tools.ts` turns an app's 429/502/503/504
+  into `TransientError`; `registry.ts` reports which loaded reads are safe to
+  repeat (`McpTask.idempotent`, R0 only); `run-task.ts` includes them in
+  `wrapReads` under the app's own circuit (`mcp:<id>`, the key the registry
+  checks); the breaker's message names the app. With `next.reliability` off a
+  503 still fails the read at once (tested). Fixture additions: `flaky_read`,
+  `down`/`flaky` 503s, distinct item ids, `unreadable`, idempotent pins.
+- Behaviour the golden tests record (not changed): when an app is left out
+  because its circuit is open or it can't be reached, the prompt gets no note
+  about it (N5's note appears only when some app's tools remain); a plain answer
+  leaves no "What I did" record, so it has no delivery status at all (not
+  "nothing to deliver"); a resumed task after approvals is its own task and
+  record, so a task that asked for two approvals one after the other is two
+  records (together in one step they are one).
+- Not built: **`npm run next:eval`** / `scripts/next-eval.ts` (the paid NG-01,
+  03, 05, 12, 17 on real models, n = 3): its `package.json` row needs the owner's
+  approval and every run needs a go-ahead for spend. Not run: the real-model
+  scenarios; real apps; the connector fakes are module-level, so connector HTTP
+  is covered by the connector suites, not these.
+- Next exact action: N12 (readiness gates and controlled pilot) needs ND-20 and
+  ND-24 approved, NB-04 (registry candidates reviewed), staging, counsel and an
+  external review: none can be done from this repository alone.
+
+#### N7 UI check (NT-UI-03), 2026-10-25, local stack only
+
+Setup: Docker Desktop and the local Supabase stack; `source .env.verify` then
+`npm run verify:guard` printed "OK: local database, local auth, no live calls,
+stub model"; `npm run db:migrate` said "Database is up to date"; `npm run dev`
+on 127.0.0.1:6796 with the same environment. `asha@example.com` made owner with
+`npm run owner:grant` and given a local-only password; `ravi@example.com` (not
+owner) likewise. The four example apps already in the local database were used;
+one tool (`mcp_tracker_create_item`) was marked drifted by SQL to show the
+review card. Screenshots: `screenshots/next-platform/N7/` (git-ignored, with
+a README).
+
+| Check | Result |
+| --- | --- |
+| Console errors, clean load of `/owner/apps` (fresh tab) | 0. An earlier hydration warning came from my own script forcing `<details>` open on the live page, not from the page |
+| Console errors, `/owner`, `/owner/delivery`, `/owner/config`, `/owner/audit` | 0 |
+| Failed requests (≥ 400) | 0; all page, asset and action requests 200 |
+| No horizontal scroll at 360 (light and dark, forms open) | `scrollWidth` 360 ≤ 360, no overflowing element outside the scrollable tables |
+| Touch targets ≥ 44 px, 360 (light and dark, all forms open) | 0 smaller of 102 controls. At 1280: 1 smaller, the logo link in the existing owner layout (215 × 32, not part of N7); the "safe to repeat" checkbox is 20 px but sits in a 44 px label row, measured as its label |
+| Labels | 0 unnamed of 102; every input has an associated `<label>`; buttons carry names like "Switch off mcp_tracker_create_item" |
+| Light and dark | Reviewed at 1280 and 360: text readable, cards and chips distinguishable |
+| Neighbours unchanged | Overview, Delivery, Config, Audit render; the Apps link is the only addition to the nav |
+| Isolation | `ravi@example.com` gets 404 from `/owner/apps` |
+| Actions end to end | "Switch off" on the drifted tool: row `disabled`, audit event `mcp.tool.disabled` shown on `/owner/audit` with the Kriya name, no definition. Adding an app with an http address: "The address must be https and a public name." and no row written |
+
+#### N7 UI check, second pass (2026-10-25): the items left open
+
+The app's real guarded fetch was pointed at the repo's fixture app by a
+throw-away preload and fixture runner kept outside the repository (scratchpad;
+it maps one `*.fixture.example` name to the local fixture, DNS to a public
+address; the guard's https, name and address checks still ran), with the real
+`kriya-worker` (`npx tsx worker/index.ts`, `next.mcp` on, guard OK). Test app
+`fixt` (no sign-in) added and removed again in the local database only.
+
+| Check | Result |
+| --- | --- |
+| Add an app through the form | Draft row written, audited; with `http://` refused and the typed values kept (see fix 2) |
+| Pin tools from the live app through the form | `search_items` and `drifting` read through the real guarded fetch, stored with their hash |
+| Make active with no recorded-response test (NT-MCP-20) | Refused: "No recorded-response test yet for: search_items, drifting." (made active by SQL afterwards, local only) |
+| Worker drift step, unchanged app | `apps checked: servers 1, drifted 0` |
+| Worker drift step, app changed | `mcp tool drifted` (ids only) and `apps checked: servers 1, drifted 1, skipped 3` (the three sign-in apps the owner isn't signed in to) |
+| Side-by-side review | Old and new definitions, "Changed: description", the full new description visible (see fix 1) |
+| Approve a definition the app changed again after the owner looked | Refused: "The app shows something else now. Review it again."; row unchanged |
+| Approve the reviewed definition | Re-pinned with the hash shown (`definition_hash` = old `drifted_hash`); audit row has from/to hashes; the card disappears |
+| Keyboard only | Enter opens "Pin a tool"; 9 Tabs walk the fields in order, each with a visible focus ring; Space ticks the checkbox; Enter on an empty form focuses the first required field with the browser's message |
+| Accessibility tree (Playwright/Chromium, all forms open) | 107 controls, 0 unnamed (`screenshots/next-platform/N7/a11y-snapshot.yml`) |
+| Phone (360) review card | No horizontal scroll, text wrapped, a flipped read-only/destructive hint shown, Approve and Switch off ≥ 44 px |
+| Console on a fresh load; `npm run check` after the fixes | 0 errors; 157 files / 1879 tests passed, exit 0 |
+
+Two defects found and fixed in this pass: (1) the review card's JSON scrolled
+sideways, so the end of a long new description (the part to read) was out of
+view, and the two sides listed keys in different order; both now wrap and use
+one key order (`app/owner/apps/page.tsx`). (2) Forms cleared after every submit,
+so an error cost the owner everything typed; the add, edit and pin forms now
+keep their values on an error and clear only on success
+(`components/owner/apps-forms.tsx`).
+
+Still not verified: a real phone and a real screen reader (TalkBack,
+VoiceOver); a read-back through the real runner on the stub model (covered by
+`tests/next/mcp-readback.test.ts` and the runner suite only); Approve and
+Pin for an app that needs sign-in (no real authorization server).
+
 ## Track N check log
 
 | Date | Check | Result |
 | --- | --- | --- |
 | 2026-10-24 | `env -u OPENROUTER_API_KEY npm run check` before writing the docs | Test Files 135 passed / 3 skipped (138); Tests 1590 passed / 27 skipped (1617); exit 0 |
 | 2026-10-24 | Re-audit (scratchpad scripts): cited paths, ids defined in their home documents, 84 file:symbol pairs grepped | Every missing path is a planned new file; 0 undefined ids; 0 missing symbols; 22 conflicts found and resolved in the docs (REAUDIT.md §3), incl. NF-08 (MCP tokens moved to their own table) and NF-09 (`agents.allowList` doesn't exist) |
+| 2026-10-24 | N1: `npx vitest run tests/db` | Test Files 20 passed (20); Tests 252 passed (252) |
+| 2026-10-24 | N1: `env -u OPENROUTER_API_KEY npm run check` | typecheck pass; lint 0 errors / 6 warnings (the existing `tests/operator/golden/harness.ts` warning pair, also counted from two copies under `.claude/worktrees/`); format pass; Test Files 142 passed / 3 skipped (145); Tests 1688 passed / 26 skipped (1714); exit 0 |
+| 2026-10-24 | N5: `env -u OPENROUTER_API_KEY npm run check` | typecheck pass; lint 0 errors / 6 warnings (same existing set); format pass; Test Files 146 passed / 3 skipped (149); Tests 1743 passed / 26 skipped (1769); exit 0 |
+| 2026-10-24 | N5 follow-up: `env -u OPENROUTER_API_KEY npm run check` | typecheck pass; lint 0 errors / 6 warnings (same existing set); format pass; Test Files 146 passed / 3 skipped (149); Tests 1746 passed / 26 skipped (1772); exit 0 |
+| 2026-10-24 | N9 gate: `npx vitest run tests/eval/memory-ml.eval.test.ts` | AS-MEM 40/50; AS-MEM-ML 70/80 = 0.875 (< 0.90: gate met); new cases 30/30, 24 sharing a word |
+| 2026-10-24 | N9 gate: `env -u OPENROUTER_API_KEY npm run check` | Test Files 147 passed / 3 skipped (150); Tests 1748 passed / 26 skipped (1774); exit 0 |
+| 2026-10-24 | N9 paid: AS-MEM-ML with rerank, `openai/text-embedding-3-small`, 3 runs | 78/80 each (today 70/80); AS-MEM 49/50 each (today 40/50); 0 fallbacks; 28,286 tokens and 564 µUSD per run |
+| 2026-10-24 | N9: `env -u OPENROUTER_API_KEY npm run check` | Test Files 149 passed / 3 skipped (152); Tests 1762 passed / 27 skipped (1789); exit 0 |
+| 2026-10-24 | N2: `env -i … npm run check` (clean environment) | typecheck pass; lint 0 errors / 6 warnings (same existing set); format pass; Test Files 151 passed / 3 skipped (154); Tests 1785 passed / 27 skipped (1812); exit 0 |
+| 2026-10-24 | N2: migrations on the local stack (`npm run db:migrate`, guard OK) | `20270101000000_next_platform.sql` and `20270101000200_memory_embeddings.sql` applied on local Postgres 17 |
+| 2026-10-24 | N3: `env -i … npm run check` (clean environment) | typecheck pass; lint 0 errors / 6 warnings (same existing set); format pass; Test Files 152 passed / 3 skipped (155); Tests 1806 passed / 27 skipped (1833); exit 0 |
+| 2026-10-24 | N6: `env -i … npm run check` (clean environment) | typecheck pass; lint 0 errors / 6 warnings (same existing set); format pass; Test Files 155 passed / 3 skipped (158); Tests 1845 passed / 27 skipped (1872); exit 0 |
+| 2026-10-24 | N6: `npm run db:migrate` on the local stack (guard OK) | `20270101000300_mcp_connections.sql` applied on local Postgres 17 |
+| 2026-10-25 | N12 second pass: `env -u OPENROUTER_API_KEY npm run check` | typecheck pass; lint 0 errors / 6 warnings (the existing set); format pass; Test Files 169 passed / 3 skipped (172); Tests 1985 passed / 27 skipped (2012); exit 0 (the run took 614 s against about 330 s before; not investigated) |
+| 2026-10-25 | N12: `env -u OPENROUTER_API_KEY npm run check` | typecheck pass; lint 0 errors / 6 warnings (the existing set); format pass; Test Files 168 passed / 3 skipped (171); Tests 1984 passed / 27 skipped (2011); exit 0 |
+| 2026-10-25 | N12 UI: `npm run verify:guard`; `/owner/config` at 1280 and 360 px with `next.promptCache` on | guard OK; the "no effect yet" note shows; no horizontal scroll |
+| 2026-10-25 | N10 + N11: `env -u OPENROUTER_API_KEY npm run check` | typecheck pass; lint 0 errors / 6 warnings (the existing set); format pass; Test Files 166 passed / 3 skipped (169); Tests 1978 passed / 27 skipped (2005); exit 0 (was 157 / 1879 after N7: +9 files, +99 tests) |
+| 2026-10-25 | N10 UI: `npm run verify:guard`; browser check of `/owner/delivery` (local stack) | guard OK; 1280 and 360 px, dark and light, 0 console errors, no horizontal scroll; one tile fixed |
+| 2026-10-25 | N7 UI: `npm run verify:guard`; `npm run db:migrate` (local); browser check of `/owner/apps` | guard OK; "Database is up to date"; NT-UI-03 table above, all pass |
+| 2026-10-25 | N7: `env -u OPENROUTER_API_KEY npm run check` | typecheck pass; lint 0 errors / 6 warnings (same existing set); format pass; Test Files 157 passed / 3 skipped (160); Tests 1879 passed / 27 skipped (1906); exit 0 |
 | 2026-10-24 | `npx prettier --ignore-path "" --write docs/next-platform/*.md`; `npx prettier --ignore-path "" --check docs/next-platform/*.md`; `npm run format:check` | 17 files formatted; "All matched files use Prettier code style!" (both checks) |
 
 ## Track N owner approvals
@@ -6671,3 +7627,53 @@ real Google, Razorpay, storage or Render call; `npm run build` (needs
   Unicode keyword matching, new curated skills). Neither is owner-gated.
   Owner also asked for phases **N4** and **N8** to be implemented one after
   the other in one session.
+- 2026-10-24 (owner, in chat): **Approved for Phase N1, N5 and the N9
+  gate.** Owner-gated, each by id: **ND-06** (remote MCP servers from an
+  owner-curated registry only), **ND-08** (MCP risk classes in
+  `lib/agent/policy.ts`), **ND-10** (MCP calls in the worker only; egress
+  guard imports), **ND-15** (memory recall v2 gate and rerank evaluation),
+  **ND-21** (belt guard: no unclassified tool runs), **ND-22**
+  (`tool_executions.risk` and receipt derivation). Standard: **ND-02,
+  ND-04, ND-07, ND-11, ND-13, ND-25**. Blocker **NB-02** (`@ai-sdk/mcp` as a
+  direct dependency in `package.json`) approved. Owner asked to proceed with
+  **N1**, working directly on the current branch (`main`) in the repository
+  root. Not approved by id yet: ND-09 (N6), ND-12 (N7), ND-03, ND-16,
+  ND-17, ND-19, ND-20, ND-23, ND-24, ND-01 (still Proposed).
+- 2026-10-24 (owner, in chat): **Approved NB-05**: "an embedding provider
+  through OpenRouter as a new processor of confirmed memory notes, with
+  the key set by me, the privacy notice update, and the paid 3-run
+  AS-MEM-ML comparison. Proceed with N9 past the gate."
+- 2026-10-24 (owner, in chat): **Approved ND-03** (delivery status computed
+  by code), **ND-17** (delivery metrics NM1–NM10 and the owner page) and
+  **ND-23** (switch dependencies). Phase N4 marked `COMPLETE` (NT-REL-04
+  passed in N5). Owner asked to proceed with **N2** (delivery status, owner
+  delivery page).
+- 2026-10-24 (owner, in chat, answering the NF-11 question): **Option B** for
+  N3: build the re-check as written **and** approve an additive change in
+  the protected `lib/connectors.ts` family so a read-back that can't read
+  (not found, provider error) is stored `unverified`, while a read that
+  reads and disagrees stays `failed`.
+- 2026-10-24 (owner, in chat): **Approved ND-09** (MCP tokens in
+  `kriya.mcp_connections`, sealed, opened only in `lib/connectors.ts`) by id,
+  and **blocker NB-03** (the additive edit to the protected
+  `lib/connectors.ts`). Owner asked to proceed with **N6** (MCP connect,
+  Account Apps, agent enablement).
+- 2026-10-25 (owner, in chat): **Approved ND-12** (MCP read-back mapping and
+  drift review): a pinned side-effect tool may carry an owner-written
+  `verify` spec (a pinned R0 tool of the same server, JSON-pointer
+  arguments, fields that must match); the `verify.ts` claim row stays
+  unchanged in v1. Standard decision, not owner-gated. Owner asked to
+  proceed with **N7** (owner registry, drift review, read-back mapping).
+- 2026-10-25 (owner, in chat): **Approved ND-16** (cost: measure before
+  changing, cache markers only where proven and behind `next.promptCache`,
+  no invented prices) and **ND-19** (India-first scenarios; payments, UPI
+  mandates, bookings with payment and filing stay R5). Both standard, not
+  owner-gated. Owner asked to proceed with **N10**, then **N11**. No paid
+  run (AS-CST, `next:eval`) is approved by this; each needs its own
+  go-ahead in the session.
+- 2026-10-25 (owner, in chat): **Approved ND-20** (public copy says
+  "India-first"; a comparison with a named product needs a primary source read
+  within 30 days, dated here; Secondary entries are never used in copy) and
+  **ND-24** (no `next.*` switch goes on in production until NR-1…NR-9 for that
+  capability have evidence here; order: isolated stack, staging, production).
+  Both standard. Owner asked to continue with **N12**.

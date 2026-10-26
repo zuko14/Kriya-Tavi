@@ -33,6 +33,8 @@ type Run = {
   status: string
   input: unknown
   verification: unknown
+  // An MCP run's class (ND-22); null for built-in tools
+  risk?: string | null
 }
 
 export function deriveEpisode(runs: Run[], reply: string, sources: string[]) {
@@ -40,7 +42,7 @@ export function deriveEpisode(runs: Run[], reply: string, sources: string[]) {
   const unconfirmed: EpisodeClaim[] = []
   for (const run of runs) {
     if (run.status !== "succeeded") continue
-    const risk = classifyTool(run.toolName, run.input)
+    const risk = run.risk ?? classifyTool(run.toolName, run.input)
     const verification = verificationOf({ verification: run.verification })
     // Reads and notes aren't accomplishments; consequential runs, and any
     // run that checked itself, are
@@ -74,7 +76,7 @@ export function deriveEpisode(runs: Run[], reply: string, sources: string[]) {
 }
 
 // JSON with sorted keys, so the same record always hashes the same
-const canonical = (value: unknown): string => {
+export const canonical = (value: unknown): string => {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`
   if (value && typeof value === "object") {
     const entries = Object.entries(value).filter(([, v]) => v !== undefined)
@@ -126,6 +128,7 @@ export async function writeEpisode(task: {
       status: toolExecutions.status,
       input: toolExecutions.input,
       verification: toolExecutions.verification,
+      risk: toolExecutions.risk,
     })
     .from(toolExecutions)
     .where(eq(toolExecutions.taskId, task.taskId))

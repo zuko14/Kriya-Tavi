@@ -9,6 +9,7 @@ import { Controller, useForm, useWatch } from "react-hook-form"
 
 import { createAgent, deleteAgent, updateAgent } from "@/actions/agents"
 import { Confirm } from "@/components/confirm"
+import { AppChoices } from "@/components/dialogs/app-choices"
 import { SkillPicker } from "@/components/dialogs/skill-picker"
 import { Glyph } from "@/components/glyph"
 import { TierPicker } from "@/components/model-picker"
@@ -254,6 +255,8 @@ function AgentForm({ agent, template }: { agent?: NavAgent; template?: AgentTemp
               </Field>
             )}
           />
+
+          {status.apps && agent && <AppChoices apps={status.apps} agentId={agent.id} />}
 
           {status.skills && (
             <Controller

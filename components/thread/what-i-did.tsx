@@ -7,6 +7,7 @@ import { whatIDid, type WhatIDid } from "@/actions/inbox"
 import { undoExecution, undoStatus } from "@/actions/undo"
 import { Confirm } from "@/components/confirm"
 import { DeleteRecord, VerifyRecords } from "@/components/inbox/controls"
+import { DeliveryStatus } from "@/components/thread/delivery-status"
 import { ReceiptActions } from "@/components/thread/receipt-actions"
 import { Button } from "@/components/ui/button"
 import type { KriyaMessage } from "@/lib/agent/tools"
@@ -193,6 +194,7 @@ export function WhatIDidCard({
       className="ml-[30px] flex flex-col gap-2 rounded-2xl border border-hairline px-3.5 py-3"
     >
       <h3 className="label-mono text-faint">What I did</h3>
+      {record.delivery && <DeliveryStatus status={record.delivery.status} />}
       <ul className="flex flex-col gap-1.5">
         {record.done.map((d) => (
           <li key={d.executionId} className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -212,20 +214,61 @@ export function WhatIDidCard({
             <UnderJob title={record.jobs?.[d.executionId]} />
           </li>
         ))}
-        {record.unconfirmed.map((u, i) => (
-          <li key={`u${i}`} className="flex items-start gap-2 text-muted-foreground">
-            <CircleHelpIcon
-              className="mt-0.5 size-3.5 shrink-0"
-              aria-label="not confirmed"
-            />
-            <span className="text-[13px]">
-              {u.claim} <span className="text-faint">· not confirmed: {u.reason}</span>
-              <UnderJob
-                title={u.executionId ? record.jobs?.[u.executionId] : undefined}
+        {record.unconfirmed.map((u, i) => {
+          // N2: a later check of this run (only with next.delivery on)
+          const later = record.delivery?.laterVerified.find(
+            (l) => l.executionId === u.executionId
+          )
+          const gone = !!u.executionId && !!record.delivery?.gone.includes(u.executionId)
+          if (later)
+            return (
+              <li key={`u${i}`} className="flex items-start gap-2">
+                <CheckIcon
+                  className="mt-0.5 size-3.5 shrink-0 text-ok"
+                  aria-label="checked"
+                />
+                <span className="text-[13px]">
+                  {u.claim}{" "}
+                  <span className="text-faint">
+                    · Checked again at {TIME.format(new Date(later.checkedAt))}
+                  </span>
+                  <UnderJob title={record.jobs?.[later.executionId]} />
+                </span>
+              </li>
+            )
+          return (
+            <li key={`u${i}`} className="flex items-start gap-2 text-muted-foreground">
+              <CircleHelpIcon
+                className="mt-0.5 size-3.5 shrink-0"
+                aria-label="not confirmed"
               />
-            </span>
-          </li>
-        ))}
+              <span className="text-[13px]">
+                {u.claim} <span className="text-faint">· not confirmed: {u.reason}</span>
+                {record.delivery?.due?.some((d) => d.executionId === u.executionId) && (
+                  <span className="block text-faint">
+                    Kriya will check again by{" "}
+                    {TIME.format(
+                      new Date(
+                        record.delivery.due.find((d) => d.executionId === u.executionId)!
+                          .by
+                      )
+                    )}
+                    .
+                  </span>
+                )}
+                {gone && (
+                  <span className="text-faint">
+                    {" "}
+                    · It was made, but it&apos;s no longer there.
+                  </span>
+                )}
+                <UnderJob
+                  title={u.executionId ? record.jobs?.[u.executionId] : undefined}
+                />
+              </span>
+            </li>
+          )
+        })}
         {unsupported.map((c, i) => (
           <li key={`c${i}`} className="flex items-start gap-2 text-betelgeuse">
             <TriangleAlertIcon

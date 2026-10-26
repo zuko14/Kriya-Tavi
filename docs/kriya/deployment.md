@@ -249,6 +249,23 @@ person's approval and is read back. With `agents.undo` on, calendar events,
 Gmail drafts, GitHub comments and labels can be undone, and GitHub issues
 closed, for 10 minutes; the worker runs the undo.
 
+### Apps (track N, `next.mcp` and `next.mcpConnect`, optional)
+
+Apps are remote servers the **owner** adds to the registry (`kriya.mcp_servers`)
+after reviewing each one (docs/next-platform/MCP_CONNECTIVITY.md §9); a person
+can only connect to those. Nothing is needed in the environment for a public
+client (a registered client id, or Kriya's hosted client metadata document at
+`/api/connect/mcp/client.json`). A confidential client's secret is read from the
+environment variable whose **name** the registry stores, always
+`KRIYA_MCP_<NAME>` (for example `KRIYA_MCP_TRACKER`); never put the value in
+the database. `KRIYA_TOKEN_KEY` seals the person's sign-in tokens (the same key
+as connected accounts) and `KRIYA_APP_URL` must be the public address, because
+the callback is `<KRIYA_APP_URL>/api/connect/mcp/<app>/callback`. Both switches
+stay off until the readiness gates in docs/next-platform/SECURITY_AND_THREATS.md
+§5 have evidence. Rolling back: turn both switches off, then run
+`supabase/rollback/20270101000300_mcp_connections.down.sql` (it deletes the
+sealed tokens, so people reconnect).
+
 ### Agent browser (`kriya-browser`, optional)
 
 A Render **private service** built from `browser/Dockerfile` (in

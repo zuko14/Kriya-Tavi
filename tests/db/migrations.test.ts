@@ -68,6 +68,8 @@ describe("migrations", () => {
       [user]
     )
 
+    // Newest first: N9's vector columns sit on memories (track N)
+    await pg.exec(read("rollback", "20270101000200_memory_embeddings.down.sql"))
     await pg.exec(memoryDown)
     expect(await columns()).toEqual([
       "agent_id",
@@ -176,10 +178,13 @@ describe("migrations", () => {
         )
       ).rows.length
     expect(await added()).toBe(12)
-    // Rollbacks run newest first: crews (O11) reference jobs; operator jobs
+    // Rollbacks run newest first: track N (N1) uses check_transition();
+    // crews (O11) reference jobs; operator jobs
     // (O2) reference goals and use check_transition(), as do policy versions
     // (A12), radar (A13), ledger (A7), files (A5), skills (A9) and login
     // profiles (A6); obligations reference goals
+    await pg.exec(read("rollback", "20270101000300_mcp_connections.down.sql"))
+    await pg.exec(read("rollback", "20270101000000_next_platform.down.sql"))
     await pg.exec(read("rollback", "20261201000100_operator_crews.down.sql"))
     await pg.exec(read("rollback", "20261201000000_operator_mandates.down.sql"))
     await pg.exec(read("rollback", "20261114000000_policy_versions.down.sql"))
@@ -204,6 +209,8 @@ describe("migrations", () => {
     await pg.exec(read("migrations", "20261114000000_policy_versions.sql"))
     await pg.exec(read("migrations", "20261201000000_operator_mandates.sql"))
     await pg.exec(read("migrations", "20261201000100_operator_crews.sql"))
+    await pg.exec(read("migrations", "20270101000000_next_platform.sql"))
+    await pg.exec(read("migrations", "20270101000300_mcp_connections.sql"))
   })
 
   it("rolls the A8 providers and undo columns back and applies them again", async () => {
@@ -638,5 +645,207 @@ describe("migrations", () => {
     await pg.exec(read("migrations", "20261020000000_voice_core.sql"))
     await pg.exec(read("migrations", "20261023000000_voice_improvement.sql"))
     expect(await added()).toBe(VOICE_TABLES)
+  })
+
+  it("NT-MIG-01 rolls the track N data model back with data in it and applies it again", async () => {
+    const read = (dir: string, file: string) =>
+      fs.readFileSync(path.join(process.cwd(), "supabase", dir, file), "utf8")
+    const pg = await createTestDb()
+    await pg.exec(
+      "create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key); insert into supabase_migrations.schema_migrations values ('20270101000000')"
+    )
+    const added = async () =>
+      (
+        await pg.query(
+          `select relname from pg_class where relname in
+             ('mcp_servers', 'mcp_tools', 'mcp_enablements', 'delivery_checks')
+           union all select column_name from information_schema.columns
+             where table_schema = 'kriya' and table_name = 'tool_executions' and column_name = 'risk'
+           union all select proname from pg_proc where proname in
+             ('mcp_tools_unauthenticated', 'mcp_servers_unauthenticated', 'mcp_tools_repin',
+              'delivery_checks_owner', 'delivery_checks_frozen')
+           union all select entity from kriya.allowed_transitions
+             where entity in ('mcp_server', 'mcp_tool')`
+        )
+      ).rows.length
+    // 4 tables, 1 column, 5 functions, 11 transitions
+    expect(await added()).toBe(21)
+
+    const user = "00000000-0000-0000-0000-0000000000ab"
+    await pg.query("insert into auth.users (id) values ($1)", [user])
+    await pg.query(
+      "insert into kriya.agents (id, user_id, name, role, glyph) values ('a1', $1, 'L', 'r', 'g')",
+      [user]
+    )
+    await pg.query(
+      "insert into kriya.threads (id, user_id, agent_id) values ('t1', $1, 'a1')",
+      [user]
+    )
+    const { rows: tasks } = await pg.query<{ id: string }>(
+      `insert into kriya.tasks (user_id, thread_id, input, plan_id, tier, deadline_at, step_budget, cost_budget_micro_usd)
+       values ($1, 't1', '{}', 'free', 'budget', now() + interval '1 hour', 10, 1000) returning id`,
+      [user]
+    )
+    const { rows: runs } = await pg.query<{ id: string }>(
+      `insert into kriya.tool_executions (task_id, user_id, attempt, tool_call_id, tool_name, risk)
+       values ($1, $2, 1, 'c1', 'mcp_tracker_create_item', 'R2') returning id`,
+      [tasks[0].id, user]
+    )
+    await pg.query(
+      `insert into kriya.mcp_servers (id, name, url, auth, client_id, status)
+       values ('tracker', 'Tracker', 'https://mcp.example.com/mcp', 'oauth_public', 'kriya', 'active')`
+    )
+    await pg.query(
+      `insert into kriya.mcp_tools (server_id, name, kriya_name, definition, definition_hash, description, owner_risk)
+       values ('tracker', 'create_item', 'mcp_tracker_create_item', '{}', repeat('a', 64), 'Create an item', 'R2')`
+    )
+    await pg.query(
+      "insert into kriya.mcp_enablements (user_id, server_id) values ($1, 'tracker')",
+      [user]
+    )
+    await pg.query(
+      `insert into kriya.delivery_checks (user_id, task_id, execution_id, kind, status)
+       values ($1, $2, $3, 'recheck', 'verified')`,
+      [user, tasks[0].id, runs[0].id]
+    )
+
+    // Newest first: N6's sign-ins point at the registry
+    await pg.exec(read("rollback", "20270101000300_mcp_connections.down.sql"))
+    await pg.exec(read("rollback", "20270101000000_next_platform.down.sql"))
+    expect(await added()).toBe(0)
+    const { rows: version } = await pg.query(
+      "select 1 from supabase_migrations.schema_migrations where version = '20270101000000'"
+    )
+    expect(version).toEqual([])
+    // The run itself stays; only its risk class goes
+    const { rows: kept } = await pg.query("select tool_name from kriya.tool_executions")
+    expect(kept).toEqual([{ tool_name: "mcp_tracker_create_item" }])
+
+    await pg.exec(read("migrations", "20270101000000_next_platform.sql"))
+    await pg.exec(read("migrations", "20270101000300_mcp_connections.sql"))
+    expect(await added()).toBe(21)
+    const { rows: rls } = await pg.query(
+      `select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
+       where n.nspname = 'kriya' and c.relkind = 'r' and not c.relrowsecurity`
+    )
+    expect(rls).toEqual([])
+  })
+
+  it("NT-MIG-01 rolls memory embeddings back with vectors in them and applies them again", async () => {
+    const read = (dir: string, file: string) =>
+      fs.readFileSync(path.join(process.cwd(), "supabase", dir, file), "utf8")
+    const pg = await createTestDb()
+    await pg.exec(
+      "create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key); insert into supabase_migrations.schema_migrations values ('20270101000200')"
+    )
+    const added = async () =>
+      (
+        await pg.query(
+          `select column_name from information_schema.columns
+           where table_schema = 'kriya' and table_name = 'memories'
+             and column_name in ('embedding', 'embedding_model', 'embedded_at')`
+        )
+      ).rows.length
+    expect(await added()).toBe(3)
+    const guard = async () =>
+      (await pg.query("select 1 from pg_proc where proname = 'memories_vector_guard'"))
+        .rows.length
+    expect(await guard()).toBe(1)
+    const user = "00000000-0000-0000-0000-0000000000ac"
+    await pg.query("insert into auth.users (id) values ($1)", [user])
+    await pg.query(
+      "insert into kriya.agents (id, user_id, name, role, glyph) values ('a', $1, 'A', 'r', 'g')",
+      [user]
+    )
+    await pg.query(
+      `insert into kriya.memories (id, user_id, agent_id, content, embedding, embedding_model, embedded_at)
+       values ('n1', $1, 'a', 'likes tea', array_fill(0.5::real, array[64]), 'test/embed', now())`,
+      [user]
+    )
+    await pg.query(
+      "insert into kriya.maintenance_jobs (user_id, kind, ref) values ($1::uuid, 'embed_notes', $1::text)",
+      [user]
+    )
+    // Too short a vector, or a kind that doesn't exist, is refused
+    await expect(
+      pg.query(
+        "update kriya.memories set embedding = array[1, 2]::real[] where id = 'n1'"
+      )
+    ).rejects.toThrow()
+
+    await pg.exec(read("rollback", "20270101000200_memory_embeddings.down.sql"))
+    expect(await added()).toBe(0)
+    expect(await guard()).toBe(0)
+    const { rows: version } = await pg.query(
+      "select 1 from supabase_migrations.schema_migrations where version = '20270101000200'"
+    )
+    expect(version).toEqual([])
+    // The note stays; only its vector and the embedding jobs go
+    const { rows: notes } = await pg.query("select id, content from kriya.memories")
+    expect(notes).toEqual([{ id: "n1", content: "likes tea" }])
+    const { rows: jobs } = await pg.query("select 1 from kriya.maintenance_jobs")
+    expect(jobs).toEqual([])
+    await expect(
+      pg.query(
+        "insert into kriya.maintenance_jobs (user_id, kind, ref) values ($1, 'embed_notes', 'x')",
+        [user]
+      )
+    ).rejects.toThrow()
+
+    await pg.exec(read("migrations", "20270101000200_memory_embeddings.sql"))
+    expect(await added()).toBe(3)
+    await pg.query(
+      "insert into kriya.maintenance_jobs (user_id, kind, ref) values ($1::uuid, 'embed_notes', $1::text)",
+      [user]
+    )
+  })
+
+  it("NT-MIG-01 rolls MCP sign-ins back with tokens in them and applies them again", async () => {
+    const read = (dir: string, file: string) =>
+      fs.readFileSync(path.join(process.cwd(), "supabase", dir, file), "utf8")
+    const pg = await createTestDb()
+    await pg.exec(
+      "create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key); insert into supabase_migrations.schema_migrations values ('20270101000300')"
+    )
+    const exists = async () =>
+      (
+        await pg.query(
+          "select 1 from pg_tables where schemaname = 'kriya' and tablename = 'mcp_connections'"
+        )
+      ).rows.length
+    expect(await exists()).toBe(1)
+    const user = "00000000-0000-0000-0000-0000000000ad"
+    await pg.query("insert into auth.users (id) values ($1)", [user])
+    await pg.query(
+      `insert into kriya.mcp_servers (id, name, url, auth, client_id, status)
+       values ('tracker', 'Tracker', 'https://tracker.example.com/mcp', 'oauth_public', 'kriya', 'active')`
+    )
+    await pg.query(
+      "insert into kriya.mcp_enablements (user_id, server_id) values ($1, 'tracker')",
+      [user]
+    )
+    await pg.query(
+      `insert into kriya.mcp_connections (id, user_id, server_id, access_token, refresh_token)
+       values ('c1', $1, 'tracker', 'v2_deadbeef.x.y.z', 'v2_deadbeef.x.y.z')`,
+      [user]
+    )
+
+    await pg.exec(read("rollback", "20270101000300_mcp_connections.down.sql"))
+    expect(await exists()).toBe(0)
+    const { rows: version } = await pg.query(
+      "select 1 from supabase_migrations.schema_migrations where version = '20270101000300'"
+    )
+    expect(version).toEqual([])
+    // The person's app choice and the registry stay; only the tokens go
+    const { rows: kept } = await pg.query("select server_id from kriya.mcp_enablements")
+    expect(kept).toEqual([{ server_id: "tracker" }])
+
+    await pg.exec(read("migrations", "20270101000300_mcp_connections.sql"))
+    expect(await exists()).toBe(1)
+    const { rows: rls } = await pg.query(
+      `select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
+       where n.nspname = 'kriya' and c.relkind = 'r' and not c.relrowsecurity`
+    )
+    expect(rls).toEqual([])
   })
 })

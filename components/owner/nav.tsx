@@ -12,6 +12,8 @@ import {
   BookCheckIcon,
   BriefcaseIcon,
   FlaskConicalIcon,
+  PackageCheckIcon,
+  PlugIcon,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -28,6 +30,10 @@ const NAV = [
   { href: "/owner/facts", label: "Facts", icon: BookCheckIcon },
   // A12: policy versions, canary and rollback
   { href: "/owner/improve", label: "Improve", icon: FlaskConicalIcon },
+  // N2: delivery metrics NM1–NM10
+  { href: "/owner/delivery", label: "Delivery", icon: PackageCheckIcon },
+  // N7: the MCP registry, pinned tools and drift review
+  { href: "/owner/apps", label: "Apps", icon: PlugIcon },
   { href: "/owner/audit", label: "Audit", icon: ScrollTextIcon },
 ]
 

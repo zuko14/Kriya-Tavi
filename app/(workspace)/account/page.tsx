@@ -11,6 +11,7 @@ import {
   LiteModeToggle,
   ProfileForm,
 } from "@/components/account/forms"
+import { Apps } from "@/components/account/apps"
 import { Connections } from "@/components/account/connections"
 import { connectionHealth } from "@/queries/connections"
 import { Files } from "@/components/account/files"
@@ -29,6 +30,7 @@ import { getSetting } from "@/lib/config"
 import { googleServices, isProviderConfigured, listConnections } from "@/lib/connectors"
 import { usageSummary } from "@/lib/entitlements"
 import { listFiles } from "@/lib/files"
+import { appsForPerson } from "@/queries/apps"
 import { listLogins } from "@/queries/logins"
 import { listShares } from "@/lib/share"
 import { formatInr } from "@/lib/money"
@@ -88,10 +90,22 @@ const dateFormat: Intl.DateTimeFormatOptions = {
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: Promise<{ billing?: string; connected?: string; connect_error?: string }>
+  searchParams: Promise<{
+    billing?: string
+    connected?: string
+    connected_app?: string
+    connect_error?: string
+    app_error?: string
+  }>
 }) {
   const user = await requireUser()
-  const { billing, connected, connect_error: connectError } = await searchParams
+  const {
+    billing,
+    connected,
+    connected_app: connectedApp,
+    connect_error: connectError,
+    app_error: appError,
+  } = await searchParams
   const accounts = await listConnections(user.id)
   const googleRow = accounts.find((a) => a.provider === "google")
   const notionRow = accounts.find((a) => a.provider === "notion")
@@ -124,6 +138,11 @@ export default async function AccountPage({
   const radarOn =
     (await getSetting("agents.radar")) === "on" ||
     (await getSetting("agents.watchers")) === "on"
+  // N6: Apps, after Connected accounts, only with both switches on
+  const appsOn =
+    (await getSetting("next.mcp")) === "on" &&
+    (await getSetting("next.mcpConnect")) === "on"
+  const apps = appsOn ? await appsForPerson(user.id) : null
   // Voice phase 7: "Phone & calls", with voice access only (UX spec §7)
   const voiceOn = await voiceAvailable(user.id)
 
@@ -250,6 +269,27 @@ export default async function AccountPage({
             sheets={sheetsOn}
           />
         </Section>
+
+        {apps && (
+          <Section
+            id="apps"
+            title="Apps"
+            description="Let your agents use apps outside Kriya, as you. Anything that changes something in an app waits for your OK first."
+          >
+            {connectedApp && (
+              <Notice tone="success">
+                {apps.apps.find((a) => a.id === connectedApp)?.name ?? "The app"} is
+                connected. Choose which agents may use it.
+              </Notice>
+            )}
+            {appError && (
+              <Notice tone="error">
+                {CONNECT_ERRORS[appError] ?? CONNECT_ERRORS.failed}
+              </Notice>
+            )}
+            <Apps apps={apps.apps} agents={apps.agents} />
+          </Section>
+        )}
 
         {voiceOn && (
           <Section

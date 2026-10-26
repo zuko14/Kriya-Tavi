@@ -124,12 +124,12 @@ export function deliveryOf(
 The provider id comes from the run's `verification.evidence` (`kind:
 "provider_id"`) or its `undo` spec; a run with neither isn't eligible.
 
-| Tool                             | Reader (existing export)                               | `verified` when                               | `gone` when                     |
-| -------------------------------- | ------------------------------------------------------ | --------------------------------------------- | ------------------------------- |
-| `calendar_create_event`          | `calendarEvent(userId, eventId)` (`lib/connectors.ts`) | Event exists, title and start equal the input | 404 / cancelled                 |
-| `github_create_issue`            | `githubReadIssue` (`lib/connectors/github.ts`)         | Issue exists with the input title             | 404                             |
-| `sheets_append`, `sheets_update` | `sheetsRead` (`lib/connectors/sheets.ts`), `sameCells` | The written range holds the written cells     | Sheet not found                 |
-| `mcp_*` with a `verify` spec     | The pinned read tool, through a fresh client           | The spec's `expect` matches                   | The read tool returns not-found |
+| Tool                             | Reader (existing export)                               | `verified` when                               | `gone` when                                                                                      |
+| -------------------------------- | ------------------------------------------------------ | --------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `calendar_create_event`          | `calendarEvent(userId, eventId)` (`lib/connectors.ts`) | Event exists, title and start equal the input | 404 / cancelled                                                                                  |
+| `github_create_issue`            | `githubReadIssue` (`lib/connectors/github.ts`)         | Issue exists with the input title             | never: GitHub's 404 also means "the app can't see the repository", so it stays `unverified` (N3) |
+| `sheets_append`, `sheets_update` | `sheetsRead` (`lib/connectors/sheets.ts`), `sameCells` | The written range holds the written cells     | Sheet not found                                                                                  |
+| `mcp_*` with a `verify` spec     | The pinned read tool, through a fresh client           | The spec's `expect` matches                   | The read tool returns not-found                                                                  |
 
 Not re-checkable in v1 (no exported reader; adding one would touch
 protected `lib/connectors.ts`): `gmail_draft`, `drive_share`,
@@ -182,15 +182,15 @@ the model.
 
 ## 6. Server actions (`"use server"`; `requireUser`/`requireOwner`, zod, `withUser` or audited `privileged`)
 
-| Action                                         | File                    | Does                                                                                                                              |
-| ---------------------------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `enableApp(serverId, agentIds \| "all")`       | `actions/apps.ts`       | Checks `next.mcpConnect`, server active, a connection exists, agents are the person's; replaces enablements                       |
-| `disableApp(serverId, agentId?)`               | `actions/apps.ts`       | Deletes enablements                                                                                                               |
-| `disconnectApp(serverId)`                      | `actions/apps.ts`       | `mcpDisconnect` (`lib/connectors.ts`) + enablements, one transaction                                                              |
-| `addServer`, `updateServer`, `setServerStatus` | `actions/owner-apps.ts` | Owner registry edits; URL and origins validated (https, not blocked host); audited                                                |
-| `pinTool(serverId, name, fields)`              | `actions/owner-apps.ts` | Fetches the live definition through the guarded client as the **owner's own** connection (or `none` auth), stores it and its hash |
-| `approveDrift(serverId, name)`                 | `actions/owner-apps.ts` | Shows old and new definitions side by side; on approval stores the new definition and hash, `drifted → pinned`                    |
-| `setToolStatus(serverId, name, status)`        | `actions/owner-apps.ts` | `disabled` / re-pin                                                                                                               |
+| Action                                         | File                    | Does                                                                                                                                                                                                                                    |
+| ---------------------------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enableApp(serverId, agentIds \| "all")`       | `actions/apps.ts`       | Checks `next.mcpConnect`, server active, a connection exists, agents are the person's; replaces enablements                                                                                                                             |
+| `disableApp(serverId, agentId?)`               | `actions/apps.ts`       | Deletes enablements                                                                                                                                                                                                                     |
+| `disconnectApp(serverId)`                      | `actions/apps.ts`       | `mcpDisconnect` (`lib/connectors.ts`) + enablements, one transaction                                                                                                                                                                    |
+| `addServer`, `updateServer`, `setServerStatus` | `actions/owner-apps.ts` | Owner registry edits; URL and origins validated (https, not blocked host); audited                                                                                                                                                      |
+| `pinTool(serverId, name, fields)`              | `actions/owner-apps.ts` | Fetches the live definition through the guarded client as the **owner's own** connection (or `none` auth), or takes one pasted from the provider's tool list (an app nobody can sign in to before it is active), stores it and its hash |
+| `approveDrift(serverId, name)`                 | `actions/owner-apps.ts` | Shows old and new definitions side by side; on approval stores the new definition and hash, `drifted → pinned`                                                                                                                          |
+| `setToolStatus(serverId, name, status)`        | `actions/owner-apps.ts` | `disabled` / re-pin                                                                                                                                                                                                                     |
 
 Routes: `GET /api/connect/mcp/[serverId]` and
 `GET /api/connect/mcp/[serverId]/callback`. Like the existing
@@ -204,12 +204,12 @@ and asserts the old handler still answers).
 
 ## 7. Queries
 
-| Function                        | File                                                       | Returns                                                                                                 |
-| ------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `appsForPerson(userId)`         | `queries/apps.ts`                                          | Active servers, connected?, needs reconnect?, pinned tools (name, description, asks/reads), enablements |
-| `deliveryForTasks(userId, ids)` | `queries/episodes.ts` (extends `episodesForTasks`' caller) | `delivery_checks` rows for those tasks' executions                                                      |
-| `deliveryMetrics(days)`         | `lib/delivery/metrics.ts`                                  | NM1–NM10 (owner)                                                                                        |
-| `registry()`                    | `lib/mcp/registry.ts`                                      | Owner view: servers, tools, drift, usage counts (never inputs or outputs)                               |
+| Function                        | File                                                                        | Returns                                                                                                 |
+| ------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `appsForPerson(userId)`         | `queries/apps.ts`                                                           | Active servers, connected?, needs reconnect?, pinned tools (name, description, asks/reads), enablements |
+| `deliveryForTasks(userId, ids)` | `queries/episodes.ts` (extends `episodesForTasks`' caller)                  | `delivery_checks` rows for those tasks' executions                                                      |
+| `deliveryMetrics(days)`         | `lib/delivery/metrics.ts`                                                   | NM1–NM10 (owner)                                                                                        |
+| `registry()`                    | `lib/mcp/owner.ts` (not `registry.ts`: NT-IMP-03 keeps that for the runner) | Owner view: servers, tools, drift, usage counts (never inputs or outputs)                               |
 
 ## 8. Worker steps
 

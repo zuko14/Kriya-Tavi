@@ -14,6 +14,8 @@ import { log } from "@/lib/log"
 import { claimFile, extractFile, modelReader } from "@/lib/extract"
 import { runFactJob } from "@/lib/facts"
 import { guardCanary } from "@/lib/improve"
+import { recheckDeliveries } from "@/lib/delivery/recheck"
+import { checkDrift } from "@/lib/mcp/drift"
 import { reviewCrews } from "@/lib/operator/crews"
 import { reviewMandates } from "@/lib/operator/loop"
 import { markMissed } from "@/lib/radar/obligations"
@@ -294,6 +296,31 @@ async function schedulerLoop() {
       }
     } catch (error) {
       log.error("crew review failed", { error })
+    }
+    // N3: one late look at runs that weren't confirmed (ND-04, ND-23: needs the
+    // Inbox and the delivery line); reads only, in its own try
+    try {
+      if (
+        (await getSetting("next.recheck")) === "on" &&
+        (await getSetting("next.delivery")) === "on" &&
+        (await getSetting("agents.inbox")) === "on"
+      ) {
+        const rechecked = await recheckDeliveries()
+        if (rechecked.checked > 0 || rechecked.errors > 0)
+          log.info("deliveries re-checked", rechecked)
+      }
+    } catch (error) {
+      log.error("delivery re-check step failed", { error })
+    }
+    // N7: once a day per app, look at whether a pinned tool changed (ND-07);
+    // reads the app's tool list only, in its own try
+    try {
+      if ((await getSetting("next.mcp")) === "on") {
+        const drift = await checkDrift()
+        if (drift.servers > 0 || drift.errors > 0) log.info("apps checked", drift)
+      }
+    } catch (error) {
+      log.error("app drift step failed", { error })
     }
     await sleep(SCHEDULER_POLL_MS)
   }

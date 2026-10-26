@@ -1,0 +1,10 @@
+{
+  "turns": [
+    {
+      "toolCalls": [
+        { "name": "mcp_fixt_create_item", "input": { "title": "Verify read-back" } }
+      ]
+    },
+    { "text": "I created the item in Fixture after you approved it." }
+  ]
+}

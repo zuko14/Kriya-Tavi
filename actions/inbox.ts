@@ -9,8 +9,14 @@ import { episodes } from "@/db/schema"
 import { verifyChain } from "@/lib/agent/episodes"
 import { requireUser } from "@/lib/auth"
 import { getSetting } from "@/lib/config"
+import { deliveryView } from "@/lib/delivery/status"
 import { undoStates, type UndoState } from "@/lib/undo"
-import { episodesForTasks, jobsForExecutions } from "@/queries/episodes"
+import {
+  deliveryForTasks,
+  episodesForTasks,
+  jobsForExecutions,
+  recheckDue,
+} from "@/queries/episodes"
 import { inboxCount } from "@/queries/inbox"
 
 // The Inbox badge and "What I did" (A3, agents.inbox), and the receipt's
@@ -56,10 +62,41 @@ export async function whatIDid(ids: string[]) {
           )
         )
       : {}
+  // N2 (ND-03, ND-23): the delivery line, only with next.delivery on (this
+  // action already answers nothing without agents.inbox); off = today's records
+  const checks =
+    (await getSetting("next.delivery")) === "on"
+      ? await deliveryForTasks(
+          user.id,
+          records.flatMap((r) => (r.taskId ? [r.taskId] : []))
+        )
+      : null
+  // N3: which unconfirmed runs still wait for their one late re-check
+  // (next.recheck needs next.delivery, ND-23)
+  const due =
+    checks && (await getSetting("next.recheck")) === "on"
+      ? await recheckDue(
+          user.id,
+          records.flatMap((r) => r.unconfirmed.flatMap((u) => u.executionId ?? []))
+        )
+      : null
   return {
     receipts,
     records: records.map((record) => ({
       ...record,
+      ...(checks && {
+        delivery: {
+          ...deliveryView(
+            record,
+            checks.filter((check) => check.taskId === record.taskId)
+          ),
+          ...(due && {
+            due: due.filter((d) =>
+              record.unconfirmed.some((u) => u.executionId === d.executionId)
+            ),
+          }),
+        },
+      }),
       jobs,
       undo: undo.filter((u) => record.done.some((d) => d.executionId === u.executionId)),
       shareable,

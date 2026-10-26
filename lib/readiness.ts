@@ -221,6 +221,10 @@ export async function databaseChecks(
          union all select 'connections', split_part(access_token, '.', 1) from kriya.connections
          union all select 'connections', split_part(refresh_token, '.', 1)
            from kriya.connections where refresh_token is not null
+         union all select 'mcp_connections', split_part(access_token, '.', 1)
+           from kriya.mcp_connections
+         union all select 'mcp_connections', split_part(refresh_token, '.', 1)
+           from kriya.mcp_connections where refresh_token is not null
        ) s group by source, key order by source, key`
     )
     const old = rows.filter((r) => r.key !== current)

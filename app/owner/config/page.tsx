@@ -11,6 +11,7 @@ import { Empty, Section, Table, Td } from "@/components/owner/ui"
 import { requireOwner } from "@/lib/auth"
 import { formatInr, formatUsd } from "@/lib/money"
 import { VoicePriceForm } from "@/components/owner/voice-price-form"
+import { ineffectiveNote } from "@/lib/next"
 import { configView, voicePriceSheet } from "@/lib/owner"
 
 export const metadata: Metadata = { title: "Config" }
@@ -47,6 +48,12 @@ const GROUPS: { title: string; description: string; prefix: string[] }[] = [
       "Track O switches and limits. Jobs need agents.goals and agents.inbox on. The kill list removes tools from every agent from the next task on.",
     prefix: ["operator."],
   },
+  {
+    title: "Next platform",
+    description:
+      "Track N switches: delivery status, apps, memory and skills. Each is off until set to on. A switch whose dependency is off says so beside it.",
+    prefix: ["next."],
+  },
   { title: "Other", description: "", prefix: ["firecrawl.", "support."] },
 ]
 
@@ -60,6 +67,9 @@ export default async function OwnerConfig() {
   await requireOwner()
   const config = await configView()
   const prices = await voicePriceSheet()
+  const valueOf = (key: string) =>
+    config.settings.find((setting) => setting.key === key)?.value ?? null
+  const tokenKeySet = config.secrets.some((s) => s.name === "KRIYA_TOKEN_KEY" && s.set)
 
   return (
     <>
@@ -88,6 +98,7 @@ export default async function OwnerConfig() {
                   source={setting.source}
                   hint={setting.hint}
                   env={setting.env}
+                  note={ineffectiveNote(setting.key, valueOf, tokenKeySet)}
                 />
               ))}
           </div>

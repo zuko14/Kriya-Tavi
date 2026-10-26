@@ -14,6 +14,7 @@ import {
 import { getSetting } from "@/lib/config"
 import { activePolicy } from "@/lib/improve"
 import { log } from "@/lib/log"
+import { openRouterEmbed, recordEmbedding, type Embedder } from "@/lib/memory/embed"
 import {
   coveredCount,
   dropped,
@@ -39,7 +40,7 @@ const MAX_ATTEMPTS = 3
 export type MaintenanceJob = {
   id: string
   userId: string
-  kind: "thread_summary" | "episode_summary" | "consolidate"
+  kind: "thread_summary" | "episode_summary" | "consolidate" | "embed_notes"
   ref: string
   attempts: number
 }
@@ -146,7 +147,7 @@ export async function withinCap(userId: string) {
     select coalesce(sum(cost_micro_usd), 0)::bigint as spent,
            count(*) filter (where cost_micro_usd is null)::int as unpriced
     from kriya.resource_usage
-    where user_id = ${userId} and kind = 'maintenance_model'
+    where user_id = ${userId} and kind in ('maintenance_model', 'embedding_tokens')
       and created_at >= date_trunc('day', now() at time zone 'Asia/Kolkata') at time zone 'Asia/Kolkata'`)
   const row = rowsOf<{ spent: string | number; unpriced: number }>(result)[0]
   return row.unpriced === 0 && Number(row.spent) < cap
@@ -275,14 +276,83 @@ export async function runSummaryJob(
   return "rejected"
 }
 
+/* ─────────────────────────── embeddings (N9) ───────────────────── */
+
+const EMBED_BATCH = 50
+
+// The embedding model, or null when next.memoryRerank is off or no model is set
+export async function embeddingModel() {
+  if ((await getSetting("next.memoryRerank")) !== "on") return null
+  return (await getSetting("next.embeddingModel")) || null
+}
+
+// After a task: one open embed job per person (unique index on kind, ref)
+export async function enqueueEmbedding(userId: string) {
+  const inserted = await privileged
+    .insert(maintenanceJobs)
+    .values({ userId, kind: "embed_notes", ref: userId })
+    .onConflictDoNothing()
+    .returning({ id: maintenanceJobs.id })
+  return inserted.length > 0
+}
+
+// Vectors for this person's confirmed, current notes that have none for the
+// model in use (ND-15: never unconfirmed or untrusted notes). Up to 50 per
+// run; a full batch queues the next.
+export async function runEmbedJob(
+  job: MaintenanceJob,
+  embed: Embedder = openRouterEmbed
+): Promise<JobOutcome> {
+  const model = await embeddingModel()
+  if (!model) {
+    await finish(job, "done", "embeddings off")
+    return "nothing"
+  }
+  if (!(await withinCap(job.userId))) {
+    await defer(job, "daily maintenance cap reached or not set")
+    return "deferred"
+  }
+  const notes = rowsOf<{ id: string; content: string }>(
+    await privileged.execute(sql`
+      select id, content from kriya.memories
+      where user_id = ${job.userId} and invalid_at is null and not archived
+        and trust = 'trusted' and embedding_model is distinct from ${model}
+      order by updated_at desc, id
+      limit ${EMBED_BATCH}`)
+  )
+  if (notes.length === 0) {
+    await finish(job, "done", "nothing to embed")
+    return "nothing"
+  }
+  const result = await embed(
+    model,
+    notes.map((note) => note.content)
+  )
+  await recordEmbedding(job.userId, `embedding:${job.id}:${job.attempts}`, result)
+  for (const [i, note] of notes.entries()) {
+    // Skipped if the person changed or erased the note meanwhile
+    await privileged.execute(sql`
+      update kriya.memories
+      set embedding = ${`{${result.vectors[i].join(",")}}`}::real[],
+          embedding_model = ${model}, embedded_at = now()
+      where id = ${note.id} and user_id = ${job.userId} and content = ${note.content}
+        and trust = 'trusted' and invalid_at is null`)
+  }
+  await finish(job, "done")
+  if (notes.length === EMBED_BATCH) await enqueueEmbedding(job.userId)
+  return "done"
+}
+
 // Runs one claimed job; a crash puts it back with a delay, or fails it
 // after the last attempt
 export async function runJob(
   job: MaintenanceJob,
-  summarize?: Summarizer
+  summarize?: Summarizer,
+  embed?: Embedder
 ): Promise<JobOutcome> {
   try {
     if (job.kind === "thread_summary") return await runSummaryJob(job, summarize)
+    if (job.kind === "embed_notes") return await runEmbedJob(job, embed)
     await finish(job, "failed", `no runner for ${job.kind} yet`)
     return "rejected"
   } catch (error) {

@@ -379,9 +379,64 @@ export const SETTINGS = {
     pattern: /^(on|off)$/,
     hint: "on or off",
   },
+  // N2: the delivery line on "What I did" (ND-03); needs agents.inbox
+  "next.delivery": {
+    env: "KRIYA_NEXT_DELIVERY",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // N3: one late re-check of runs that weren't confirmed (ND-04); needs
+  // agents.inbox and next.delivery
+  "next.recheck": {
+    env: "KRIYA_NEXT_RECHECK",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // N6: Account → Apps and the connect flow (ND-09); needs next.mcp
+  "next.mcpConnect": {
+    env: "KRIYA_NEXT_MCP_CONNECT",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // N5: owner-pinned MCP tools on the belt (ND-06); needs agents.inbox
+  "next.mcp": {
+    env: "KRIYA_NEXT_MCP",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // N5: most MCP tools on one belt (ND-13)
+  "next.mcpMaxTools": {
+    env: "KRIYA_NEXT_MCP_MAX_TOOLS",
+    fallback: "20",
+    pattern: /^([1-9]|[1-3][0-9]|40)$/,
+    hint: "1 to 40",
+  },
+  // N9: rerank recalled notes by meaning (ND-15); needs agents.memoryV2 and
+  // next.embeddingModel. Confirmed notes go to the embedding provider (NB-05)
+  "next.memoryRerank": {
+    env: "KRIYA_NEXT_MEMORY_RERANK",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // N9: the OpenRouter embedding model; unset = no rerank, whatever the switch
+  "next.embeddingModel": { env: "KRIYA_NEXT_EMBEDDING_MODEL", pattern: MODEL_ID },
   // N8: Unicode keyword matching and the v2 skills (ND-14); needs agents.skillLibrary
   "next.skillsV2": {
     env: "KRIYA_NEXT_SKILLS_V2",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // N10: provider cache markers on the model routes proven to pass them through
+  // (CACHE_VERIFIED in lib/next.ts, NRG-2). No route is proven yet, so this
+  // changes nothing until one is (ND-16)
+  "next.promptCache": {
+    env: "KRIYA_NEXT_PROMPT_CACHE",
     fallback: "off",
     pattern: /^(on|off)$/,
     hint: "on or off",

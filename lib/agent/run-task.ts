@@ -47,7 +47,12 @@ import {
 import { recordApprovals, redactInput } from "@/lib/agent/approvals"
 import { writeEpisode } from "@/lib/agent/episodes"
 import { chargeTask, recordUsage } from "@/lib/agent/metering"
-import { CAPABILITIES, disabledTools, isIdempotentRead } from "@/lib/agent/capabilities"
+import {
+  CAPABILITIES,
+  disabledTools,
+  isIdempotentRead,
+  unclassifiedTools,
+} from "@/lib/agent/capabilities"
 import { approvalFor, classifyTool, TOOL_CLASSES } from "@/lib/agent/policy"
 import { verificationOf } from "@/lib/agent/verify"
 import {
@@ -64,6 +69,7 @@ import {
   createMemoryToolsV2,
   createLedgerTools,
   createMandateTools,
+  createMcpTools,
   createProposeCallTool,
   createRadarTools,
   createSkillTools,
@@ -74,6 +80,7 @@ import {
   privateContentSeen,
   type Connected,
   type KriyaMessage,
+  type McpTask,
   type ToolEnv,
 } from "@/lib/agent/tools"
 import { browserProvider, TaskBrowser } from "@/lib/browser/session"
@@ -81,9 +88,17 @@ import { getSetting } from "@/lib/config"
 import { BASELINE_POLICY, bundleFor, stampTask, type Policy } from "@/lib/improve"
 import { EXTRA_GOOGLE_SERVICES, googleServices } from "@/lib/connectors"
 import { log } from "@/lib/log"
+import { definitionShare } from "@/lib/delivery/cost"
+import { loadMcp } from "@/lib/mcp/registry"
 import { jobOfThread } from "@/lib/operator/crews"
 import { activeGrants, consumeGrant, withGrants } from "@/lib/operator/grants"
-import { enqueueSummary } from "@/lib/memory/maintenance"
+import { rerankByMeaning } from "@/lib/memory/embed"
+import {
+  embeddingModel,
+  enqueueEmbedding,
+  enqueueSummary,
+  withinCap,
+} from "@/lib/memory/maintenance"
 import { alwaysOnNotes, recallNotes } from "@/lib/memory/retrieve"
 import { renderSummary } from "@/lib/memory/summaries"
 import {
@@ -459,6 +474,12 @@ export async function runTask(task: Task, ctx: WorkerContext) {
   }
   // N4: retries and a circuit breaker for reads that are safe to repeat (ND-05)
   const reliable = (await getSetting("next.reliability")) === "on"
+  // N5: owner-pinned app tools (ND-06); needs agents.inbox so they reach "What I did"
+  const mcpOn = inbox && (await getSetting("next.mcp")) === "on"
+  // N9: recalled notes reordered by meaning (ND-15); needs memory v2, a model,
+  // and room under the person's maintenance cap
+  const embedModel = memoryV2 ? await embeddingModel() : null
+  const rerankModel = embedModel && (await withinCap(task.userId)) ? embedModel : null
   const browser = provider
     ? new TaskBrowser(provider, task, { profiles: loginProfiles })
     : null
@@ -505,13 +526,38 @@ export async function runTask(task: Task, ctx: WorkerContext) {
   // What the skill library loaded for each agent that held the turn
   const skillsUsed = new Map<string, Resolution>()
   const skillRecords: Promise<void>[] = []
+  let mcp: McpTask | null = null
 
   try {
     const context = await loadContext(task, memoryV2, connectorsV2, policy, sheetsOn)
     if (!context) throw new Error("The thread for this task no longer exists.")
     const { thread, members, notes, memory, history, covered, connected } = context
+    // N9: each agent's recalled candidates reordered by meaning, outside the
+    // person's transaction (one embedding of their message); a failure keeps
+    // today's order
+    if (rerankModel && memory.size > 0) {
+      const ask = history.findLast((message) => message.role === "user")
+      const entries = [...memory.entries()]
+      const lists = await rerankByMeaning(
+        { userId: task.userId, model: rerankModel, query: ask ? textOf(ask) : "" },
+        entries.map(([, context]) => context.recalled)
+      )
+      entries.forEach(([id, context], i) =>
+        memory.set(id, { ...context, recalled: lists[i] })
+      )
+    }
     const first = members.find((member) => member.id === task.input.agentId) ?? members[0]
     if (!first) throw new Error("This thread has no agents left in it.")
+    // Apps the person turned on for this agent; a failure means no apps, never a failed task
+    if (mcpOn) {
+      mcp = await loadMcp(task, first.id, {
+        maxTools: Number(await getSetting("next.mcpMaxTools")),
+        disabled,
+      }).catch((error) => {
+        log.error("mcp load failed", { taskId: task.id, error })
+        return null
+      })
+    }
 
     /* Delegation: whoever holds the turn owns the tools and the prompt */
     let current = first
@@ -525,6 +571,7 @@ export async function runTask(task: Task, ctx: WorkerContext) {
       ...(inbox && { citations: true }),
       ...(voice && { voice: true }),
       ...(mandates && { mandates: true }),
+      ...(mcp && { apps: { names: mcp.apps, notes: mcp.notes } }),
     }
     const env: ToolEnv = {
       current: () => current,
@@ -601,7 +648,9 @@ export async function runTask(task: Task, ctx: WorkerContext) {
         if (spentMicroUsd > task.costBudgetMicroUsd) stop("budget")
       },
       onToolExecutionStart: async ({ toolCall }) => {
-        const sideEffect = SIDE_EFFECT_TOOLS.has(toolCall.toolName)
+        const sideEffect =
+          SIDE_EFFECT_TOOLS.has(toolCall.toolName) ||
+          (mcp?.sideEffects.has(toolCall.toolName) ?? false)
         if (sideEffect) sideEffects = true
         await privileged
           .insert(toolExecutions)
@@ -614,6 +663,8 @@ export async function runTask(task: Task, ctx: WorkerContext) {
             sideEffect,
             input: redactInput(toolCall.input),
             grantId: granted.get(toolCall.toolCallId) ?? null,
+            // ND-22: only MCP runs carry their class
+            ...(mcp && { risk: mcp.classes.get(toolCall.toolName) ?? null }),
           })
           .onConflictDoNothing()
           .catch((error) => log.error("tool record failed", { taskId: task.id, error }))
@@ -754,6 +805,7 @@ export async function runTask(task: Task, ctx: WorkerContext) {
       ...(voice ? createProposeCallTool(env) : {}),
       ...(mandates ? createMandateTools(env, { reports }) : {}),
       ...(crewJob ? createCrewTools(env) : {}),
+      ...(mcp ? createMcpTools(mcp) : {}),
       ...(thread.squad ? createAssignTool(runAssignments) : {}),
       ...(thread.squad
         ? createDelegateTool((targetId, handoverBrief) => {
@@ -775,8 +827,26 @@ export async function runTask(task: Task, ctx: WorkerContext) {
     // shortcut: the prompt may still describe a killed tool's ability; pass
     // the list into Capabilities if owners start killing connector tools.
     for (const name of disabled) delete tools[name]
+    // ND-21: no tool runs without a class (removes nothing today)
+    for (const name of unclassifiedTools(Object.keys(tools), mcp?.classes)) {
+      delete tools[name]
+      log.warn("unclassified tool removed", { taskId: task.id, tool: name })
+    }
     if (reliable)
-      wrapReads(tools, (name) => CAPABILITIES[name]?.system ?? "kriya", isIdempotentRead)
+      wrapReads(
+        tools,
+        (name) =>
+          // An app's circuit is its own, the same key the registry checks
+          name.startsWith("mcp_")
+            ? `mcp:${name.split("_")[1]}`
+            : (CAPABILITIES[name]?.system ?? "kriya"),
+        (name) => isIdempotentRead(name) || (mcp?.idempotent.has(name) ?? false)
+      )
+    // NM7 (N10): the app share of the tool definitions, a number in the log
+    if (mcp)
+      await definitionShare(tools, mcp.classes.keys())
+        .then((nm7) => log.info("tool definitions", { taskId: task.id, ...nm7 }))
+        .catch(() => {})
 
     // Resolved once per agent that holds the turn, from the person's latest
     // message and this final belt: text only, never a tool. A failure means
@@ -824,13 +894,15 @@ export async function runTask(task: Task, ctx: WorkerContext) {
           return []
         })
       : []
+    // Today's map itself unless app tools are on the belt
+    const approvalMap = mcp ? { ...TOOL_APPROVALS, ...mcp.approvals } : TOOL_APPROVALS
     const toolApproval = jobGrants.length
-      ? withGrants(TOOL_APPROVALS, jobGrants, async (grantId, toolCallId) => {
+      ? withGrants(approvalMap, jobGrants, async (grantId, toolCallId) => {
           const ok = await consumeGrant(task.userId, grantId, task.id, toolCallId)
           if (ok) granted.set(toolCallId, grantId)
           return ok
         })
-      : TOOL_APPROVALS
+      : approvalMap
 
     const result = streamText({
       model: createGatewayModel(modelId),
@@ -919,6 +991,7 @@ export async function runTask(task: Task, ctx: WorkerContext) {
     await browser
       ?.close()
       .catch((error) => log.error("browser close failed", { taskId: task.id, error }))
+    await mcp?.close()
   }
 
   // Lost the lease, or the worker is stopping: leave the task to recovery,
@@ -1045,6 +1118,12 @@ export async function runTask(task: Task, ctx: WorkerContext) {
   if (memoryV2) {
     await enqueueSummary(task.userId, task.threadId).catch((error) =>
       log.error("summary enqueue failed", { taskId: task.id, error })
+    )
+  }
+  // N9: vectors for new or changed confirmed notes, in the background
+  if (embedModel) {
+    await enqueueEmbedding(task.userId).catch((error) =>
+      log.error("embedding enqueue failed", { taskId: task.id, error })
     )
   }
 

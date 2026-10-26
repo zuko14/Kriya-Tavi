@@ -1,0 +1,186 @@
+[
+  {
+    "id": "AS-MEM-ML-01",
+    "family": "hindi",
+    "query": "मेरा लैपटॉप बजट कितना है?",
+    "note": { "content": "लैपटॉप का बजट ₹70,000 है", "kind": "fact" }
+  },
+  {
+    "id": "AS-MEM-ML-02",
+    "family": "hindi",
+    "query": "दादी को दवा कब देनी है?",
+    "note": { "content": "दादी की दवा सुबह 8 बजे देनी है", "kind": "fact" }
+  },
+  {
+    "id": "AS-MEM-ML-03",
+    "family": "hindi",
+    "query": "बिजली बिल की आखिरी तारीख क्या है?",
+    "note": { "content": "बिजली का बिल हर महीने 5 तारीख तक भरना है", "kind": "fact" }
+  },
+  {
+    "id": "AS-MEM-ML-04",
+    "family": "hindi",
+    "query": "स्कूल फीस कब जमा करनी है?",
+    "note": { "content": "बेटी के स्कूल की फीस हर तिमाही जमा होती है", "kind": "fact" }
+  },
+  {
+    "id": "AS-MEM-ML-05",
+    "family": "hindi",
+    "query": "मेरा किराया कितना है?",
+    "note": { "content": "घर का किराया ₹18,000 महीना है", "kind": "fact" }
+  },
+  {
+    "id": "AS-MEM-ML-06",
+    "family": "hindi",
+    "query": "डॉक्टर ने खाने के बारे में क्या कहा?",
+    "note": { "content": "डॉक्टर ने मीठा कम खाने को कहा है", "kind": "fact" }
+  },
+
+  {
+    "id": "AS-MEM-ML-07",
+    "family": "telugu",
+    "query": "అమ్మ పుట్టినరోజు ఎప్పుడు?",
+    "note": { "content": "అమ్మ పుట్టినరోజు ఆగస్టు 14", "kind": "fact" }
+  },
+  {
+    "id": "AS-MEM-ML-08",
+    "family": "telugu",
+    "query": "నా ఇంటి అద్దె ఎంత?",
+    "note": { "content": "ఇంటి అద్దె నెలకు ₹15,000", "kind": "fact" }
+  },
+  {
+    "id": "AS-MEM-ML-09",
+    "family": "telugu",
+    "query": "ఆఫీసు బస్సు ఎన్ని గంటలకు వస్తుంది?",
+    "note": { "content": "ఆఫీసు బస్సు ఉదయం 8:30కి వస్తుంది", "kind": "fact" }
+  },
+  {
+    "id": "AS-MEM-ML-10",
+    "family": "telugu",
+    "query": "కారు ఇన్సూరెన్స్ ఎప్పుడు రెన్యూ చేయాలి?",
+    "note": { "content": "కారు ఇన్సూరెన్స్ డిసెంబర్‌లో రెన్యూ చేయాలి", "kind": "fact" }
+  },
+  {
+    "id": "AS-MEM-ML-11",
+    "family": "telugu",
+    "query": "నా తమ్ముడు ఎక్కడ ఉంటాడు?",
+    "note": { "content": "తమ్ముడు పుణెలో ఉంటాడు", "kind": "relationship" }
+  },
+  {
+    "id": "AS-MEM-ML-12",
+    "family": "telugu",
+    "query": "నాకు ఏ సినిమాలు ఇష్టం?",
+    "note": { "content": "వీకెండ్‌లో తెలుగు సినిమాలు చూడటం ఇష్టం", "kind": "preference" }
+  },
+
+  {
+    "id": "AS-MEM-ML-13",
+    "family": "romanised",
+    "query": "gas cylinder kab book karna hai?",
+    "note": { "content": "Gas cylinder har 45 din mein book karna hai", "kind": "fact" }
+  },
+  {
+    "id": "AS-MEM-ML-14",
+    "family": "romanised",
+    "query": "papa ki dawai kab deni hai?",
+    "note": { "content": "Papa ki BP ki dawai raat ko khane ke baad", "kind": "fact" }
+  },
+  {
+    "id": "AS-MEM-ML-15",
+    "family": "romanised",
+    "query": "amma birthday eppudu?",
+    "note": { "content": "Amma birthday August 14 na untundi", "kind": "fact" }
+  },
+  {
+    "id": "AS-MEM-ML-16",
+    "family": "romanised",
+    "query": "maid ko kitni salary deni hai?",
+    "note": { "content": "Maid ki salary 8000 rupaye mahina", "kind": "fact" }
+  },
+  {
+    "id": "AS-MEM-ML-17",
+    "family": "romanised",
+    "query": "gym membership kab khatam hogi?",
+    "note": { "content": "Gym membership March mein khatam hogi", "kind": "fact" }
+  },
+  {
+    "id": "AS-MEM-ML-18",
+    "family": "romanised",
+    "query": "office cab kitne baje aati hai?",
+    "note": { "content": "Office ki cab subah 9 baje aati hai", "kind": "fact" }
+  },
+
+  {
+    "id": "AS-MEM-ML-19",
+    "family": "cross",
+    "query": "किराया कितना है?",
+    "note": { "content": "Rent is ₹22,000 a month, due on the 5th", "kind": "fact" }
+  },
+  {
+    "id": "AS-MEM-ML-20",
+    "family": "cross",
+    "query": "स्कूल की फीस कब भरनी है?",
+    "note": { "content": "Daughter's school fees are paid every quarter", "kind": "fact" }
+  },
+  {
+    "id": "AS-MEM-ML-21",
+    "family": "cross",
+    "query": "అమ్మ కంటి పరీక్ష ఎప్పుడు?",
+    "note": { "content": "Mother's eye check-up is on 12 November", "kind": "fact" }
+  },
+  {
+    "id": "AS-MEM-ML-22",
+    "family": "cross",
+    "query": "కారు ఇన్సూరెన్స్ ఎప్పుడు?",
+    "note": { "content": "Car insurance renews in December", "kind": "fact" }
+  },
+  {
+    "id": "AS-MEM-ML-23",
+    "family": "cross",
+    "query": "मुझे जवाब किस भाषा में चाहिए?",
+    "note": { "content": "Prefers replies in Hindi", "kind": "preference" }
+  },
+  {
+    "id": "AS-MEM-ML-24",
+    "family": "cross",
+    "query": "bijli ka bill kab tak bharna hai?",
+    "note": { "content": "Electricity bill is due by the 10th", "kind": "fact" }
+  },
+
+  {
+    "id": "AS-MEM-ML-25",
+    "family": "hinglish",
+    "query": "client meeting kis din hoti hai?",
+    "note": { "content": "Client meeting every Tuesday at 11 am", "kind": "fact" }
+  },
+  {
+    "id": "AS-MEM-ML-26",
+    "family": "hinglish",
+    "query": "replies kitne lambe chahiye?",
+    "note": { "content": "Prefers short replies, at most 5 lines", "kind": "preference" }
+  },
+  {
+    "id": "AS-MEM-ML-27",
+    "family": "hinglish",
+    "query": "GST filing ki date kya hai?",
+    "note": { "content": "GST filing is monthly, by the 20th", "kind": "fact" }
+  },
+  {
+    "id": "AS-MEM-ML-28",
+    "family": "hinglish",
+    "query": "Netflix ka renewal kab hai?",
+    "note": { "content": "Netflix subscription renews on the 3rd", "kind": "fact" }
+  },
+  {
+    "id": "AS-MEM-ML-29",
+    "family": "hinglish",
+    "query": "bete ki tuition fees kitni hai?",
+    "note": { "content": "Son's tuition fees are ₹4,500 a month", "kind": "fact" }
+  },
+  {
+    "id": "AS-MEM-ML-30",
+    "family": "hinglish",
+    "query": "invoice kis format mein bhejna hai?",
+    "note": { "content": "Wants invoices sent as PDF", "kind": "preference" }
+  }
+]

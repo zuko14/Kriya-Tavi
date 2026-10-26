@@ -272,6 +272,9 @@ export const memories = kriya.table("memories", {
   contentHash: text(),
   createdAt: createdAt(),
   updatedAt: createdAt(),
+  // Not mirrored, so whole-row reads never carry them to a page: search
+  // (generated) and N9's embedding, embedding_model, embedded_at, which
+  // lib/memory/embed.ts reads and writes in SQL
 })
 
 // Checkpoints of a thread's older turns (memory v2), written by the worker
@@ -298,7 +301,9 @@ export type ThreadSummary = {
 export const maintenanceJobs = kriya.table("maintenance_jobs", {
   id: uuid().primaryKey().defaultRandom(),
   userId: uuid().notNull(),
-  kind: text({ enum: ["thread_summary", "episode_summary", "consolidate"] }).notNull(),
+  kind: text({
+    enum: ["thread_summary", "episode_summary", "consolidate", "embed_notes"],
+  }).notNull(),
   ref: text().notNull(),
   status: text({ enum: ["queued", "running", "done", "failed"] })
     .notNull()
@@ -998,6 +1003,9 @@ export const taskEvents = kriya.table("task_events", {
   createdAt: createdAt(),
 })
 
+// lib/agent/policy.ts RiskClass, as stored (track N)
+export const RISK_CLASSES = ["R0", "R1", "R2", "R3", "R4", "R5"] as const
+
 export const toolExecutions = kriya.table("tool_executions", {
   id: uuid().primaryKey().defaultRandom(),
   taskId: uuid().notNull(),
@@ -1024,6 +1032,8 @@ export const toolExecutions = kriya.table("tool_executions", {
   undoneAt: at(),
   // The job's grant that answered its approval (track O); not in receipts
   grantId: uuid(),
+  // An MCP run's risk class (track N, ND-22); null for built-in tools
+  risk: text({ enum: RISK_CLASSES }),
 })
 
 // What a reversible tool's compensation needs: provider ids, never tokens
@@ -1044,6 +1054,108 @@ export type Verification = {
   // What was checked, in one line
   note?: string
 }
+
+/* ───────────────────────────── MCP and delivery (track N) ───────── */
+
+// The owner's registry (N1); people read active servers' public columns
+export const mcpServers = kriya.table("mcp_servers", {
+  id: text().primaryKey(),
+  name: text().notNull(),
+  url: text().notNull(),
+  allowedAuthOrigins: text().array().notNull().default([]),
+  auth: text({
+    enum: ["oauth_public", "oauth_cimd", "oauth_confidential", "none"],
+  }).notNull(),
+  clientId: text(),
+  // An environment variable name (KRIYA_MCP_*), never the secret
+  secretEnv: text(),
+  scopes: text().array().notNull().default([]),
+  transport: text({ enum: ["http", "sse"] })
+    .notNull()
+    .default("http"),
+  status: text({ enum: ["draft", "active", "suspended", "retired"] })
+    .notNull()
+    .default("draft"),
+  review: text(),
+  createdBy: uuid(),
+  createdAt: createdAt(),
+  updatedAt: createdAt(),
+})
+
+// Read-back after a side effect (ND-12): JSON pointers into the result and input
+export type McpVerify = {
+  tool: string
+  args: Record<string, string>
+  expect: Record<string, string>
+}
+
+export const mcpTools = kriya.table(
+  "mcp_tools",
+  {
+    serverId: text().notNull(),
+    name: text().notNull(),
+    kriyaName: text().notNull().unique(),
+    definition: jsonb().notNull(),
+    definitionHash: text().notNull(),
+    description: text().notNull(),
+    ownerRisk: text({ enum: RISK_CLASSES }).notNull().default("R4"),
+    category: text({ enum: ["payments", "identity", "credentials", "filing"] }),
+    idempotent: boolean().notNull().default(false),
+    verify: jsonb().$type<McpVerify>(),
+    status: text({ enum: ["pinned", "drifted", "disabled"] })
+      .notNull()
+      .default("pinned"),
+    driftedHash: text(),
+    approvedBy: uuid(),
+    approvedAt: createdAt(),
+    updatedAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.serverId, t.name] })]
+)
+
+// The person's own; agentId null = all their agents
+export const mcpEnablements = kriya.table("mcp_enablements", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: uuid().notNull(),
+  serverId: text().notNull(),
+  agentId: text(),
+  createdAt: createdAt(),
+})
+
+// A person's sign-in to an app (N6, ND-09). The tokens are ciphertext
+// (lib/secrets.ts); only lib/connectors.ts writes or opens them, so neither
+// is mirrored for reading elsewhere by accident: select named columns.
+export const mcpConnections = kriya.table("mcp_connections", {
+  id: text().primaryKey(),
+  userId: uuid().notNull(),
+  serverId: text().notNull(),
+  account: text(),
+  scopes: text().array().notNull().default([]),
+  accessToken: text().notNull(),
+  refreshToken: text(),
+  expiresAt: at(),
+  pin: jsonb().notNull().default({}).$type<Record<string, string>>(),
+  needsReconnect: boolean().notNull().default(false),
+  createdAt: createdAt(),
+  updatedAt: createdAt(),
+})
+
+// Append-only re-checks of a run, written by the worker (ND-04)
+export const deliveryChecks = kriya.table("delivery_checks", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: uuid().notNull(),
+  taskId: uuid().notNull(),
+  executionId: uuid().notNull(),
+  kind: text({ enum: ["recheck", "mcp_readback"] }).notNull(),
+  status: text({ enum: ["verified", "unverified", "failed", "gone"] }).notNull(),
+  evidence: jsonb().notNull().default([]).$type<Verification["evidence"]>(),
+  note: text(),
+  checkedAt: createdAt(),
+})
+
+export type McpServer = typeof mcpServers.$inferSelect
+export type McpTool = typeof mcpTools.$inferSelect
+export type DeliveryCheckRow = typeof deliveryChecks.$inferSelect
 
 /* ───────────────────────────── metering ─────────────────────────── */
 

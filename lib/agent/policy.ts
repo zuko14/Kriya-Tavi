@@ -302,6 +302,33 @@ export function classifyTool(name: string, input: unknown): RiskClass {
   return TOOL_CLASSES[name] ?? "R5"
 }
 
+// An owner-pinned MCP tool (ND-08). The owner's floor, raised (never
+// lowered) by the pinned annotations, which are the server's untrusted
+// hints; payments, identity, credentials and filing are never a tool.
+export type McpPolicyInput = {
+  ownerRisk: RiskClass
+  annotations?: {
+    readOnlyHint?: boolean
+    destructiveHint?: boolean
+    openWorldHint?: boolean
+  }
+  category?: "payments" | "identity" | "credentials" | "filing" | null
+}
+
+const MCP_R5 = new Set(["payments", "identity", "credentials", "filing"])
+
+export function classifyMcpTool(tool: McpPolicyInput): RiskClass {
+  if (tool.category && MCP_R5.has(tool.category)) return "R5"
+  let cls = tool.ownerRisk
+  if (tool.annotations?.readOnlyHint !== true) cls = raise(cls, "R3")
+  if (
+    tool.annotations?.destructiveHint === true ||
+    tool.annotations?.openWorldHint === true
+  )
+    cls = raise(cls, "R4")
+  return cls
+}
+
 // What each tool changes in Kriya's own tables (AT-POL-07): "table+" inserts
 // rows, "table-" deletes them, "table.column" changes existing rows, with
 // the values it can set after a colon. Kept by hand next to the classes,
@@ -437,4 +464,7 @@ export const PERSON_ONLY_WRITES = [
   "mandates.confirmed",
   "grants",
   "grant_uses",
+  // Track N: only the person turns an app on or connects it
+  "mcp_enablements",
+  "mcp_connections",
 ]

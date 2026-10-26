@@ -17,7 +17,7 @@ export class AppUnavailableError extends Error {
   name = "AppUnavailableError"
   constructor(system: string) {
     super(
-      `${NAMES[system] ?? system} isn't responding; Kriya stopped trying for a minute.`
+      `${NAMES[system] ?? system.replace(/^mcp:/, "")} isn't responding; Kriya stopped trying for a minute.`
     )
   }
 }

@@ -179,13 +179,16 @@ export async function githubCreateIssue(
     method: "POST",
     body: { title, body },
   })
-  const back = await gh<Issue>(userId, `/repos/${repo}/issues/${created.number}`)
+  // A read that can't be done leaves the issue unverified, not failed (N3)
+  const back = await gh<Issue>(userId, `/repos/${repo}/issues/${created.number}`).catch(
+    () => null
+  )
   return {
     repo,
     number: created.number,
     url: created.html_url,
     verification: readBack(
-      back.title === title && back.state === "open",
+      back === null ? null : back.title === title && back.state === "open",
       [
         { kind: "url", value: created.html_url },
         { kind: "provider_id", value: `${repo}#${created.number}` },
