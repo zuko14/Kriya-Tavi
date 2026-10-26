@@ -6398,7 +6398,7 @@ guard (ND-21), is proven to remove nothing today.
 
 | Phase | Name | Status | Depends on | Decisions needed |
 | --- | --- | --- | --- | --- |
-| N0 | Blueprint and decisions | IN_PROGRESS (documents done 2026-10-24; awaiting owner approval) | — | — |
+| N0 | Blueprint and decisions | COMPLETE (2026-10-26): the 17 documents in `docs/next-platform/` are written and formatted, and ND-01…ND-25 and NB-01…NB-03, NB-05 are approved (see "Track N owner approvals") | — | — |
 | NP-1 | Baseline re-check on the current `main` | COMPLETE (2026-10-24, on `ce8d2fe`: 1590 passed / 27 skipped, exit 0) | N0 | — |
 | N1 | Data model (one migration) | COMPLETE (2026-10-24) | NP-1 | ND-02, ND-04, ND-07, ND-13, ND-22 (all approved) |
 | N2 | Delivery status, owner delivery page | COMPLETE (2026-10-24) | N1 | ND-03, ND-17, ND-23 |
@@ -6410,8 +6410,8 @@ guard (ND-21), is proven to remove nothing today.
 | N8 | Skills v2 | COMPLETE (2026-10-24) | NP-1 | ND-14 (approved) |
 | N9 | Memory recall v2 (gate, then rerank) | COMPLETE (2026-10-24): rerank lifts AS-MEM-ML M1 0.875 → 0.975, noise 0 over 3 paid runs; `next.memoryRerank` off by default | NP-1 | ND-15 (owner-gated) |
 | N10 | Cost measurement and prompt caching | COMPLETE (2026-10-25): NT-CST-01…03 pass; AS-CST not run (paid, no go-ahead); NRG-2 open, so `next.promptCache` stays unused | N4, N5 | ND-16 (approved) |
-| N11 | Golden scenarios and eval harness | COMPLETE (2026-10-25): NG-01…NG-24, AS-DLV (30) and AS-MCP-SEC (200) in `npm test`; the paid `next:eval` script is not built | N2, N3, N5, N8 | ND-19 (approved) |
-| N12 | Readiness gates and controlled pilot | IN_PROGRESS (2026-10-25): evidence compiled for what this repository can prove (NR-1, 2, 3, 6, part of 9); NR-4, 5, 7, 8 and the 14-day pilot need the owner, staging, counsel or a reviewer | N6, N7, N10, N11 | ND-20, ND-24 (both approved) |
+| N11 | Golden scenarios and eval harness | COMPLETE (2026-10-25): NG-01…NG-24, AS-DLV (30) and AS-MCP-SEC (200) in `npm test`; `npm run next:eval` built 2026-10-26 (paid; **not run**) | N2, N3, N5, N8 | ND-19 (approved) |
+| N12 | Readiness gates and controlled pilot | IN_PROGRESS (2026-10-26): everything this repository can do is done (NR-1, 2, 3, 6, part of 9; app-run late re-check, `next:eval`, draft notice, recorded-fixture format); NR-4 deployed, NR-5, 7, 8 and the 14-day pilot need the owner, staging, counsel or a reviewer | N6, N7, N10, N11 | ND-20, ND-24 (both approved) |
 | N13 | Kriya as an MCP server | DEFERRED (ND-18 trigger) | — | a new decision |
 
 Parallel lanes (IMPLEMENTATION_PLAN §2): after NP-1, **N1, N4, N8 and the
@@ -6454,7 +6454,7 @@ The Coordination board at the top of this file is shared by every track.
 
 ## Phase N0 — Blueprint and decisions
 
-**Status:** IN_PROGRESS — documents written 2026-10-24; exit needs owner approval (NB-01).
+**Status:** COMPLETE (2026-10-26) — documents written 2026-10-24; every decision ND-01…ND-25 and the blockers NB-01…NB-03 and NB-05 approved by the owner in chat ("Track N owner approvals"), formatted by the repository's `format:check`. NB-04, 06, 07, 08 belong to N12, not to this phase.
 
 - **Done (2026-10-24, Claude Code / Opus 5.5, worktree
   `claude/dreamy-noether-dd685d` at `038c2e3`, uncommitted):** the 16
@@ -7441,6 +7441,96 @@ Still not verified, and why:
   existing owner form style; measured, not changed).
 - Paid and real-model runs: AS-CST, NRG-2, the real-model AS-MCP-SEC, `next:eval`.
 
+#### N12 third pass (2026-10-26): committed, and the in-repository items finished
+
+Worked on `main` in the repository root. The owner authorized committing all
+Track N work in chat on 2026-10-26 (Conventional Commits, no push). Nothing was
+pushed; no real model, provider, phone or app was called.
+
+- **Commit:** `266c870` `feat(next): delivery status, mcp runtime, apps connect,
+  registry, skills v2, memory rerank`: everything N1–N11 and the N12 first and
+  second passes had left uncommitted (81 paths). The numbers recorded as "local
+  working tree, uncommitted" for NR-1 and NR-2 above were taken before this
+  commit and are re-recorded below on the tree that follows it.
+- **Late re-check of app runs** (ND-04's MCP row, which the second pass listed
+  as not built): `recheckTarget` (`lib/delivery/rules.ts`) now returns an `mcp`
+  target for a succeeded side-effect run named `mcp_<app>_<tool>` whose read-back
+  was `unverified` (no verification at all means the owner gave it no spec, so it
+  is left alone; `verified` and `failed` are never re-checked). The worker step
+  (`lib/delivery/recheck.ts`) reads the run's `input` and the structured result
+  as far as `output_summary` kept it, then `lib/mcp/recheck.ts` runs the owner's
+  own `verify` spec once more as the run's person, through the guarded fetch:
+  the tool must still be pinned, the read tool pinned, unchanged (live hash),
+  R0 by `classifyMcpTool`, the app active and the person signed in. Anything
+  else is recorded `unverified`, never a guess. One `delivery_checks` row
+  (`kind: recheck`), append-only like the others. `callTool` now appears in two
+  files under `lib/mcp/`; `tests/next/mcp-policy.test.ts` (NT-IMP-02/03) says so.
+  **Known limit:** `output_summary` is cut at 500 characters, so a long
+  structured result cannot supply the lookup id; that run's re-check is
+  `unverified` (tested), not wrong. Fix if it matters in the pilot: keep the
+  lookup values in the run's `evidence` (a change to `run-task.ts`, a hot spot,
+  not made here).
+- **`npm run next:eval`** (`scripts/next-eval.ts`, `tests/next/eval/next.eval.test.ts`;
+  the `package.json` row from CHANGE_IMPACT): NG-01, 03, 05, 12 and 17 on a real
+  model, `--n` runs each (default 3), with the golden suites' own world (PGlite,
+  faked connectors, the fixture app). It refuses without `--model`, `--go` (the
+  owner's go-ahead for spend) and `OPENROUTER_API_KEY` in the shell, loads no
+  `.env` and removes every database variable from the child. Each run is pass or
+  fail by code; results go to a JSON file with the provider-reported cost (null
+  when none was reported). **Not run.** In `npm test` it is 15 skipped tests.
+  Checked: it exits 1 with usage when called bare; with a model name and no key
+  every run records "can't reach its AI models", so the wiring up to the first
+  model call works; **the assertions after a real model's answer have never run**
+  (expect to adjust the prompts after the first paid run). NG-01 is a simplified
+  form (two reminder drafts in chat, not the playbook job; the job itself is
+  covered by the scripted NG-01).
+- **Privacy notice (NR-8, draft only):** `lib/legal.ts` lists "Apps you connect
+  to Kriya" as a recipient (what goes to the app, approval before changes, the
+  app's own terms, retention unknown, Disconnect). Still "Draft, pending legal
+  review"; `tests/next/legal-apps.test.ts`. Counsel's answers to NQ-1 and NQ-3
+  are still needed before it can be called done.
+- **Recorded responses (NR-5, NB-04): format only.** `tests/fixtures/mcp/recorded/fixture-app.json`
+  holds answers captured over HTTP from the repo's own fixture app (not a
+  provider); `tests/next/mcp-recorded.test.ts` replays any file in that folder
+  through `pinnedSchema` and `readBack`. **`RECORDED` in `lib/mcp/recorded.ts`
+  stays empty on purpose:** listing a server there is what lets the owner make
+  it active, and no real server has been reviewed or captured. Inventing a
+  provider's responses would be fabricating provider behaviour (AGENTS.md voice
+  rule 6). A real server needs its own capture and the §9 checklist (NB-04).
+
+| Item | Result |
+| --- | --- |
+| New tests | `tests/next/mcp-recheck.test.ts` (7: rule, verified, failed, unverified, cut summary, changed read tool / suspended app, signed out, no spec), `tests/next/mcp-recorded.test.ts` (4), `tests/next/legal-apps.test.ts` (1), `tests/next/eval/` (skipped) |
+| `env -u OPENROUTER_API_KEY npm run check` after `266c870` + these changes | typecheck pass; lint 0 errors / 6 warnings (the existing set); format pass; Test Files 173 passed / 3 skipped (176); Tests 1998 passed / 42 skipped (2040); exit 0. A first run failed one test (NT-IMP-02/03 allowed `callTool` in one file only); fixed by moving the reader into `lib/mcp/` and updating that boundary test |
+
+##### Checklist for external deployment (all owner, counsel or reviewer)
+
+1. **Push and deploy to staging** (NB-08): the owner pushes `main` (nothing was
+   pushed here) to the staging service; apply `20270101000000`,
+   `20270101000200` and `20270101000300` with `npm run db:migrate`
+   (`MIGRATION_DATABASE_URL` of staging); every `next.*` switch stays off until
+   each gate has evidence (ND-24).
+2. **Re-run NR-1 and NR-2 on the deployed commit**, and record its id here.
+3. **NR-4 on the staging worker:** the fixture redirect, a private-address app
+   URL and `localtest.me`-style names refused, as in the second pass.
+4. **Counsel (NB-07):** send NQ-1 and NQ-3 and the draft notice above; NR-8 is
+   done only when the answers are in and the notice is updated.
+5. **External security review of the MCP path (NR-7):** `lib/mcp/*`,
+   `lib/connectors.ts` (app token provider), `app/api/connect/mcp/`, `actions/apps.ts`,
+   `actions/owner-apps.ts`; no open critical or high finding.
+6. **Choose at most two registry servers (NB-04, NR-5):** fill MCP_CONNECTIVITY §9
+   for each, capture real responses for each pinned tool into
+   `tests/fixtures/mcp/recorded/<id>.json`, then a reviewed code change lists them
+   in `RECORDED`.
+7. **Embedding key and processor approval (NB-05)** for `next.memoryRerank`;
+   **NRG-2 (NB-06)** (one paid request) before `next.promptCache` does anything.
+8. **Paid runs, each on a go-ahead:** `npm run next:eval -- --model <id> --go`,
+   AS-CST, the real-model AS-MCP-SEC.
+9. **Pilot (EVALUATION_PLAN §5):** the owner's account, then invited testers on
+   staging, NM1–NM10 daily for at least 14 days with NM8 = 0; any NM8 > 0 turns
+   `next.mcp` off at once.
+10. Real phone and screen-reader pass on the changed screens (second pass gap).
+
 ### N10 session result (2026-10-25): cost measurement and prompt caching
 
 - Approval: ND-16 by id (owner, in chat, 2026-10-25). No paid run is approved by
@@ -7608,6 +7698,7 @@ Pin for an app that needs sign-in (no real authorization server).
 | 2026-10-24 | N3: `env -i … npm run check` (clean environment) | typecheck pass; lint 0 errors / 6 warnings (same existing set); format pass; Test Files 152 passed / 3 skipped (155); Tests 1806 passed / 27 skipped (1833); exit 0 |
 | 2026-10-24 | N6: `env -i … npm run check` (clean environment) | typecheck pass; lint 0 errors / 6 warnings (same existing set); format pass; Test Files 155 passed / 3 skipped (158); Tests 1845 passed / 27 skipped (1872); exit 0 |
 | 2026-10-24 | N6: `npm run db:migrate` on the local stack (guard OK) | `20270101000300_mcp_connections.sql` applied on local Postgres 17 |
+| 2026-10-26 | N12 third pass: `env -u OPENROUTER_API_KEY npm run check` (after commit `266c870`) | typecheck pass; lint 0 errors / 6 warnings (the existing set); format pass; Test Files 173 passed / 3 skipped (176); Tests 1998 passed / 42 skipped (2040); exit 0 |
 | 2026-10-25 | N12 second pass: `env -u OPENROUTER_API_KEY npm run check` | typecheck pass; lint 0 errors / 6 warnings (the existing set); format pass; Test Files 169 passed / 3 skipped (172); Tests 1985 passed / 27 skipped (2012); exit 0 (the run took 614 s against about 330 s before; not investigated) |
 | 2026-10-25 | N12: `env -u OPENROUTER_API_KEY npm run check` | typecheck pass; lint 0 errors / 6 warnings (the existing set); format pass; Test Files 168 passed / 3 skipped (171); Tests 1984 passed / 27 skipped (2011); exit 0 |
 | 2026-10-25 | N12 UI: `npm run verify:guard`; `/owner/config` at 1280 and 360 px with `next.promptCache` on | guard OK; the "no effect yet" note shows; no horizontal scroll |
@@ -7677,3 +7768,8 @@ Pin for an app that needs sign-in (no real authorization server).
   **ND-24** (no `next.*` switch goes on in production until NR-1…NR-9 for that
   capability have evidence here; order: isolated stack, staging, production).
   Both standard. Owner asked to continue with **N12**.
+- 2026-10-26 (owner, in chat): authorized committing all uncommitted Track N
+  work on `main` (Conventional Commits; no push), closing **N0**, and the
+  remaining in-repository N12 items (app-run late re-check, `next:eval`, draft
+  notice for connected apps, recorded-response fixtures). No paid run, push or
+  deploy is approved by this.

@@ -13,6 +13,7 @@ import {
   type RecheckTarget,
 } from "@/lib/delivery/rules"
 import { log } from "@/lib/log"
+import { mcpReadBack } from "@/lib/mcp/recheck"
 
 // The late re-check (ND-04): once, 2 to 30 minutes after a side-effect run
 // finished without being confirmed, read what it made again with the run's
@@ -50,6 +51,12 @@ export type Readers = {
     userId: string,
     ref: { spreadsheetId: string; range: string }
   ): Promise<Cell[][] | "gone">
+  // An MCP run's own read-back spec, run once more as the run's person. Throws
+  // when it can't (spec gone, tool drifted, not signed in, app down).
+  mcp?(
+    userId: string,
+    target: { kriyaName: string; input: unknown; result: unknown }
+  ): Promise<Verification>
 }
 
 const GOOGLE = "https://www.googleapis.com/calendar/v3/calendars/primary/events"
@@ -99,6 +106,7 @@ export const providerReaders: Readers = {
       throw error
     }
   },
+  mcp: mcpReadBack,
 }
 
 // The same email addresses, ignoring case, order and display names
@@ -107,7 +115,11 @@ const norm = (list: string[]) =>
 // A read gives formatted text, a write gave numbers and text: compare as text
 const asText = (rows: Cell[][]) => rows.map((row) => row.map(String))
 
-export type Verdict = { status: CheckStatus; note: string }
+export type Verdict = {
+  status: CheckStatus
+  note: string
+  evidence?: Verification["evidence"]
+}
 
 // What a read of the run's own object says about it. Throws if it can't read.
 export async function judge(
@@ -144,6 +156,18 @@ export async function judge(
           note: "Checked again: the issue's title differs from what was created.",
         }
   }
+  if (target.kind === "mcp") {
+    if (!readers.mcp) throw new Error("no app reader")
+    const checked = await readers.mcp(userId, target)
+    return {
+      status:
+        checked.status === "verified" || checked.status === "failed"
+          ? checked.status
+          : "unverified",
+      note: (checked.note ?? "").replace(/^Checked:/, "Checked again:"),
+      evidence: checked.evidence,
+    }
+  }
   const found = await readers.sheetsRange(userId, target)
   if (found === "gone")
     return { status: "gone", note: "Checked again: the spreadsheet is no longer there." }
@@ -160,6 +184,7 @@ type Candidate = {
   input: unknown
   verification: unknown
   undo: unknown
+  output_summary: string | null
 }
 
 // One re-check per eligible run per tick, at most `limit` runs (the unique
@@ -176,13 +201,14 @@ export async function recheckDeliveries(
   // a candidate it rejects only costs a slot for its 30 minutes
   const candidates = rowsOf<Candidate>(
     await privileged.execute(sql`
-      select te.id, te.user_id, te.task_id, te.tool_name, te.input, te.verification, te.undo
+      select te.id, te.user_id, te.task_id, te.tool_name, te.input, te.verification, te.undo,
+        te.output_summary
       from kriya.tool_executions te
       where te.side_effect and te.status = 'succeeded'
-        and te.tool_name in (${sql.join(
+        and (te.tool_name in (${sql.join(
           RECHECK_TOOLS.map((tool) => sql`${tool}`),
           sql`, `
-        )})
+        )}) or left(te.tool_name, 4) = 'mcp_')
         and (te.verification is null or te.verification ->> 'status' = 'unverified')
         and te.finished_at >= ${from.toISOString()}::timestamptz
         and te.finished_at <= ${to.toISOString()}::timestamptz
@@ -207,6 +233,7 @@ export async function recheckDeliveries(
         input: run.input,
         verification: run.verification,
         undo: run.undo,
+        outputSummary: run.output_summary,
       })
       if (!target) {
         result.skipped++
@@ -224,7 +251,7 @@ export async function recheckDeliveries(
         })
         verdict = { status: "unverified", note: "Checked again: it couldn't be read." }
       }
-      const evidence: Verification["evidence"] = [
+      const evidence: Verification["evidence"] = verdict.evidence ?? [
         {
           kind: "provider_id",
           value:
@@ -232,7 +259,9 @@ export async function recheckDeliveries(
               ? target.eventId
               : target.kind === "github_issue"
                 ? `${target.repo}#${target.number}`
-                : target.range,
+                : target.kind === "sheets"
+                  ? target.range
+                  : target.kriyaName,
         },
       ]
       const inserted = await privileged

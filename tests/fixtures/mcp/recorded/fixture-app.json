@@ -1,0 +1,62 @@
+{
+  "_meta": {
+    "source": "the repository's own fixture MCP app (tests/fixtures/mcp/server.ts), recorded over HTTP JSON-RPC; not a provider",
+    "note": "Replays the wire shape the runtime reads; a real server needs its own capture (NR-5)"
+  },
+  "create_item": {
+    "request": {
+      "name": "create_item",
+      "arguments": {
+        "title": "Hello"
+      }
+    },
+    "response": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Created."
+        }
+      ],
+      "structuredContent": {
+        "id": "item-1",
+        "title": "Hello"
+      }
+    }
+  },
+  "get_item": {
+    "request": {
+      "name": "get_item",
+      "arguments": {
+        "id": "item-1"
+      }
+    },
+    "response": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Item."
+        }
+      ],
+      "structuredContent": {
+        "id": "item-1",
+        "title": "Hello"
+      }
+    }
+  },
+  "search_items": {
+    "request": {
+      "name": "search_items",
+      "arguments": {
+        "query": "hello"
+      }
+    },
+    "response": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Found 2 items for hello."
+        }
+      ]
+    }
+  }
+}

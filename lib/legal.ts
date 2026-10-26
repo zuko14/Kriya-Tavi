@@ -11,7 +11,7 @@ export type LegalDoc = { title: string; summary: string; sections: LegalSection[
 export const LEGAL_STATUS = {
   draft: true,
   label: "Draft, pending legal review",
-  updated: "2026-10-24",
+  updated: "2026-10-26",
 }
 
 // Every outside service that may process a person's data, with what for.
@@ -54,6 +54,12 @@ export const PROCESSORS = [
     name: "Google, Notion, GitHub and Meta (Instagram)",
     purpose: "Only the accounts you connect, for the actions you ask for",
     when: "Only after you connect an account",
+  },
+  {
+    name: "Apps you connect to Kriya (for example a project tracker or a notes app)",
+    purpose:
+      "Kriya's owner reviews each app before it can be offered. When you connect one and turn it on for an agent, the details of what you ask it to do (the item's title, text or search words) go to that app, and its answers come back to Kriya. Kriya shows you the exact action and waits for your OK before anything that changes something there. Each app keeps data under its own terms and privacy notice, not Kriya's, and Kriya does not yet know where an app stores it. You can disconnect an app at any time in Account, which removes your sign-in from Kriya and asks the app to revoke it",
+    when: "Only after you connect an app and turn it on for an agent",
   },
 ] as const
 

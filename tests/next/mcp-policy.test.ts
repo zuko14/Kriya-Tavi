@@ -212,7 +212,8 @@ describe("NT-IMP-02/03 module boundaries", () => {
       /import type \{ McpTask \} from "@\/lib\/mcp\/registry"/
     )
     const callers = files.filter((file) => /\.callTool\(/.test(read(file)))
-    expect(callers).toEqual(["lib/mcp/tools.ts"])
+    // The late re-check's read-back (worker only: lib/delivery/recheck.ts)
+    expect(callers).toEqual(["lib/mcp/recheck.ts", "lib/mcp/tools.ts"])
   })
 
   it("no client component imports lib/mcp", () => {

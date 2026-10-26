@@ -15,7 +15,8 @@ export const RECHECK_UNTIL_MS = 30 * 60_000
 // The tools that have a reader. Not re-checkable in v1: gmail_draft,
 // drive_share, gmail_send_draft, instagram_publish, github_comment,
 // github_label, github_open_pr (no exported reader), calendar_delete_event
-// (its own read-back already proves "gone"). MCP read-back belongs to N7.
+// (its own read-back already proves "gone"). An MCP run is re-checked by its
+// own read-back spec (see the "mcp" target), not by a tool name here.
 export const RECHECK_TOOLS = [
   "calendar_create_event",
   "github_create_issue",
@@ -36,12 +37,16 @@ export type RecheckTarget =
     }
   | { kind: "github_issue"; repo: string; number: number; title: string }
   | { kind: "sheets"; spreadsheetId: string; range: string; rows: Cell[][] }
+  // `result`: the app's structured answer as far as the run's summary kept it
+  // (undefined when it was cut); the worker looks up the pinned read spec
+  | { kind: "mcp"; kriyaName: string; input: unknown; result: unknown }
 
 export type RecheckRun = {
   toolName: string
   input: unknown
   verification: unknown
   undo?: unknown
+  outputSummary?: string | null
 }
 
 type Obj = Record<string, unknown>
@@ -56,8 +61,30 @@ const providerId = (verification: Verification | null) =>
 // The thing to read again, or null when the run isn't eligible: its
 // read-back must have been inconclusive (unverified) or missing, never
 // failed (ND-04), and it must say what it made and what it was told to make.
+const MCP_NAME = /^mcp_[a-z]{2,12}_[a-z_]{2,22}$/
+
+// The structured result an MCP run's summary kept; the summary is cut at 500
+// characters, so a long answer is gone and the lookup may then be unverified
+function savedResult(summary: string | null | undefined): unknown {
+  try {
+    return summary ? (JSON.parse(summary) as { result?: unknown }).result : undefined
+  } catch {
+    return undefined
+  }
+}
+
 export function recheckTarget(run: RecheckRun): RecheckTarget | null {
   const verification = verificationOf({ verification: run.verification })
+  if (MCP_NAME.test(run.toolName))
+    // No verification at all means the owner gave it no read-back spec
+    return verification?.status === "unverified"
+      ? {
+          kind: "mcp",
+          kriyaName: run.toolName,
+          input: run.input,
+          result: savedResult(run.outputSummary),
+        }
+      : null
   if (verification && verification.status !== "unverified") return null
   const input = obj(run.input)
   const undo = obj(run.undo)
