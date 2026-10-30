@@ -23,6 +23,7 @@ import deliveryProof from "../skills-v2/delivery-proof/kriya.json"
 import documentsAndNotes from "../skills-v2/documents-and-notes/kriya.json"
 import emailDrafting from "../skills-v2/email-drafting/kriya.json"
 import indianDocumentsReading from "../skills-v2/indian-documents-reading/kriya.json"
+import linkedinPresence from "../skills-v2/linkedin-presence/kriya.json"
 import meetingPreparation from "../skills-v2/meeting-preparation/kriya.json"
 import writingAndEditing from "../skills-v2/writing-and-editing/kriya.json"
 
@@ -52,4 +53,7 @@ export const SKILL_MANIFESTS_V2: unknown[] = [
   writingAndEditing,
   codeAssistance,
   creatorAnalytics,
+  // Added 2026-10-30 at the owner's request: adapted from
+  // sergebulaev/linkedin-skills (MIT), assisted mode only (AD-06)
+  linkedinPresence,
 ]

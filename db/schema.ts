@@ -582,6 +582,8 @@ export const resourceUsage = kriya.table("resource_usage", {
       "embedding_tokens",
       "maintenance_model",
       "web_fetch",
+      // Skill Studio designs (next.skillStudio)
+      "skill_design",
     ],
   }).notNull(),
   quantity: micro().notNull(),
@@ -785,6 +787,30 @@ export const skillActivations = kriya.table(
   },
   (t) => [primaryKey({ columns: [t.taskId, t.attempt, t.agentId, t.skillId] })]
 )
+
+// Skill Studio (next.skillStudio): skills a person had Kriya design from a
+// few words, checked by lib/skill-studio/design.ts; the person's own rows
+export const USER_SKILL_STATUSES = ["draft", "active", "retired"] as const
+export const userSkills = kriya.table("user_skills", {
+  // my-<10 lowercase letters or digits>: never the person's words
+  id: text().primaryKey(),
+  userId: uuid().notNull(),
+  status: text({ enum: USER_SKILL_STATUSES }).notNull().default("draft"),
+  version: integer().notNull().default(1),
+  intent: text().notNull(),
+  name: text().notNull(),
+  description: text().notNull(),
+  body: text().notNull(),
+  // keywords, categories, tools, verification, evals (storedManifestSchema)
+  manifest: jsonb().$type<unknown>().notNull(),
+  // The perspectives, review scores and removed lines, shown to the person
+  design: jsonb().$type<Record<string, unknown>>().notNull().default({}),
+  model: text(),
+  approvedAt: at(),
+  createdAt: createdAt(),
+  updatedAt: createdAt(),
+})
+export type UserSkill = typeof userSkills.$inferSelect
 
 export const policyVersions = kriya.table("policy_versions", {
   id: text().primaryKey(),

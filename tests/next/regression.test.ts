@@ -112,7 +112,8 @@ describe("NT-REG-01: every next.* switch off", () => {
         (SETTINGS as unknown as Record<string, { pattern?: RegExp }>)[key].pattern
           ?.source === "^(on|off)$"
     )
-    // delivery, recheck, reliability, skillsV2, mcp, mcpConnect, memoryRerank, promptCache
+    // delivery, recheck, reliability, skillsV2, mcp, mcpConnect, memoryRerank,
+    // promptCache, and Skill Studio (2026-10-30)
     expect(switchesOf.sort()).toEqual([
       "next.delivery",
       "next.mcp",
@@ -121,6 +122,7 @@ describe("NT-REG-01: every next.* switch off", () => {
       "next.promptCache",
       "next.recheck",
       "next.reliability",
+      "next.skillStudio",
       "next.skillsV2",
     ])
     for (const key of switchesOf)

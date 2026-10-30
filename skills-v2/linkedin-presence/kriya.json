@@ -1,0 +1,71 @@
+{
+  "id": "linkedin-presence",
+  "name": "LinkedIn presence",
+  "description": "Audits and rewrites a LinkedIn profile, drafts posts in the person's voice, plans a weekly rhythm and drafts comments and connection notes; the person applies each one.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [
+    {
+      "project": "sergebulaev/linkedin-skills",
+      "version": "main",
+      "commit": "8f8bc4b40a2d5419b2dcf898772b85712cfbdf41",
+      "path": "skills/linkedin-profile-optimizer, linkedin-post-writer, linkedin-content-planner",
+      "license": "MIT",
+      "url": "https://github.com/sergebulaev/linkedin-skills"
+    }
+  ],
+  "categories": ["career", "social", "writing"],
+  "roles": [
+    "linkedin",
+    "career",
+    "personal brand",
+    "job seeker",
+    "placement",
+    "founder",
+    "networking"
+  ],
+  "activation": {
+    "keywords": [
+      "linkedin",
+      "linked in",
+      "headline",
+      "about section",
+      "personal brand",
+      "connection request",
+      "recommendation request",
+      "featured section",
+      "networking post",
+      "profile audit"
+    ],
+    "keywordsIntl": ["लिंक्डइन", "లింక్డ్ఇన్"]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": [
+      "kit_prepare",
+      "kit_check",
+      "browser_open",
+      "memory_search",
+      "memory_write",
+      "schedule_create"
+    ]
+  },
+  "dependsOn": [],
+  "prerequisites": [],
+  "verification": "Every fact in a draft comes from the person or their files; applied profile changes are read back with kit_check, or the reply says they weren't checked.",
+  "limits": { "maxChars": 6000 },
+  "evals": [
+    {
+      "ask": "Rewrite my LinkedIn headline and About for internships",
+      "expect": "activate"
+    },
+    { "ask": "Write a LinkedIn post about my hackathon win", "expect": "activate" },
+    { "ask": "Help me build my personal brand as a founder", "expect": "activate" },
+    { "ask": "मेरी लिंक्डइन प्रोफाइल सुधारो", "expect": "activate" },
+    { "ask": "Summarise this PDF for me", "expect": "skip" },
+    { "ask": "Book a table for two tonight", "expect": "skip" }
+  ]
+}

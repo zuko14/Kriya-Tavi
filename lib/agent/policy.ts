@@ -467,4 +467,6 @@ export const PERSON_ONLY_WRITES = [
   // Track N: only the person turns an app on or connects it
   "mcp_enablements",
   "mcp_connections",
+  // Skill Studio: only the person designs, edits, approves or retires a skill
+  "user_skills",
 ]

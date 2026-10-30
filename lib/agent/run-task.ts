@@ -113,6 +113,7 @@ import { wrapReads } from "@/lib/reliability/retry"
 import { isSecretsConfigured } from "@/lib/secrets"
 import { readSkill, recordActivations, settleActivations } from "@/lib/skill-engine"
 import {
+  CATALOG,
   CATALOG_V2,
   parsePins,
   parseSkillList,
@@ -120,6 +121,8 @@ import {
   skillsBlock,
   type Resolution,
 } from "@/lib/skill-library"
+import { personalCatalog } from "@/lib/skill-studio"
+import { PERSONAL_ID } from "@/lib/skill-studio/design"
 import { loadSkillV2 } from "@/lib/skills-v2"
 import { undoColumns } from "@/lib/undo"
 import { voiceAvailable } from "@/lib/voice/tasks"
@@ -438,6 +441,26 @@ export async function runTask(task: Task, ctx: WorkerContext) {
           }),
         }
       : null
+  // Skill Studio: the person's approved skills join the catalogue. A failed
+  // read means none of them, never a failed task; off changes nothing
+  if (skillLibrary && (await getSetting("next.skillStudio")) === "on") {
+    const personal = await personalCatalog(task.userId).catch((error) => {
+      log.error("personal skills failed", { taskId: task.id, error })
+      return null
+    })
+    if (personal?.manifests.length) {
+      const load = skillLibrary.load ?? readSkill
+      Object.assign(skillLibrary, {
+        // First in the catalogue: among skills picked the same way, one the
+        // person approved for this agent comes before a library default
+        // (required safeguards still lead, by mode). Found on a real task,
+        // where library skills filled the budget first (2026-10-30).
+        catalog: [...personal.manifests, ...(skillLibrary.catalog ?? CATALOG)],
+        load: (id: string, version: string) =>
+          PERSONAL_ID.test(id) ? personal.load(id, version) : load(id, version),
+      })
+    }
+  }
   // A7: ledger tools need the switch and a plan with the ledger
   const ledgerTools =
     (await getSetting("agents.ledger")) === "on" && Boolean(plan?.ledgerEnabled)

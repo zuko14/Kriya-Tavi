@@ -19,6 +19,7 @@ import { getSetting } from "@/lib/config"
 import { checkAgentAllowed } from "@/lib/entitlements"
 import { parseGlyph } from "@/lib/glyph"
 import { CATALOG, CATALOG_V2, checkSkillPrefs } from "@/lib/skill-library"
+import { personalCatalog, studioOn } from "@/lib/skill-studio"
 
 const id = z.string().min(1).max(32)
 
@@ -57,12 +58,17 @@ function storedGlyph(glyph: string) {
   throw new AgentError("Choose an avatar from the list.")
 }
 
-async function normalize(values: AgentInput) {
+async function normalize(values: AgentInput, userId: string) {
   const data = agentInputSchema.parse(values)
   // Skills only with the library on, whatever the browser sends
   const skillsOn = (await getSetting("agents.skillLibrary")) === "on"
   // N8: the v2 skills may be chosen only with next.skillsV2 on
-  const catalog = (await getSetting("next.skillsV2")) === "on" ? CATALOG_V2 : CATALOG
+  const library = (await getSetting("next.skillsV2")) === "on" ? CATALOG_V2 : CATALOG
+  // Skill Studio: and the person's own approved skills, read under their id
+  const catalog =
+    skillsOn && data.skills && (await studioOn())
+      ? [...library, ...(await personalCatalog(userId)).manifests]
+      : library
   return {
     name: data.name,
     role: data.role,
@@ -81,7 +87,7 @@ async function normalize(values: AgentInput) {
 export async function createAgent(values: AgentInput) {
   const user = await requireUser()
   return expected(async () => {
-    const data = await normalize(values)
+    const data = await normalize(values, user.id)
     const allowed = await checkAgentAllowed(user.id)
     if (!allowed.ok) throw new AgentError(allowed.message)
     const result = await withUser(user.id, async (tx) => {
@@ -103,7 +109,7 @@ export async function createAgent(values: AgentInput) {
 export async function updateAgent(agentId: string, values: AgentInput) {
   const user = await requireUser()
   return expected(async () => {
-    const data = await normalize(values)
+    const data = await normalize(values, user.id)
     const [agent] = await withUser(user.id, (tx) =>
       tx
         .update(agents)

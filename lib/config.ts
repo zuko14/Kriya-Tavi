@@ -448,6 +448,30 @@ export const SETTINGS = {
     pattern: /^(on|off)$/,
     hint: "on or off",
   },
+  // Skill Studio (docs/next-platform/SKILL_STUDIO.md): people describe a skill
+  // and Kriya designs it; they approve it before any agent uses it. Needs
+  // agents.skillLibrary. Off: no page, and every prompt and catalogue as today
+  "next.skillStudio": {
+    env: "KRIYA_NEXT_SKILL_STUDIO",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // The OpenRouter model that designs skills (owner's choice, 2026-10-30:
+  // structured outputs, 1M context; checked in the OpenRouter catalogue)
+  "next.skillStudioModel": {
+    env: "KRIYA_NEXT_SKILL_STUDIO_MODEL",
+    fallback: "deepseek/deepseek-v4.1-flash-1017",
+    pattern: MODEL_ID,
+    hint: "An OpenRouter model id with structured outputs",
+  },
+  // Skill designs per person per day (three model calls each)
+  "next.skillStudioDaily": {
+    env: "KRIYA_NEXT_SKILL_STUDIO_DAILY",
+    fallback: "10",
+    pattern: /^([1-9]|[1-9]\d)$/,
+    hint: "1 to 99",
+  },
   // N10: provider cache markers on the model routes proven to pass them through
   // (CACHE_VERIFIED in lib/next.ts, NRG-2). No route is proven yet, so this
   // changes nothing until one is (ND-16)

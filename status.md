@@ -8059,3 +8059,112 @@ more skills. Worked on `main`; **not committed**.
   remaining in-repository N12 items (app-run late re-check, `next:eval`, draft
   notice for connected apps, recorded-response fixtures). No paid run, push or
   deploy is approved by this.
+- 2026-10-30 (owner, in chat): asked for the LinkedIn agent skill from GitHub
+  to be used in Kriya, and for a "skill harness" that designs a skill end to
+  end from a few words of intent through OpenRouter, from several expert
+  perspectives, and applies it to the agent the person chooses. Recorded as
+  the approval for the Skill Studio rows in `CHANGE_IMPACT_AND_SAFETY.md` §3
+  (2026-10-30). No commit, push, deploy or real model call is approved by this.
+
+### Skill Studio and `linkedin-presence` (2026-10-30, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+Design and rules: `docs/next-platform/SKILL_STUDIO.md`. Both ship off:
+`next.skillStudio` (needs `agents.skillLibrary`) and `next.skillsV2` for
+the LinkedIn skill.
+
+- **Skill Studio.** Intent → plan (five lenses) → write → strict review,
+  three structured OpenRouter calls (`next.skillStudioModel`, unset =
+  balanced tier); `finalize` checks by code (real tools only, every named
+  tool declared, forbidden lines scrubbed and shown, size, keywords, sample
+  requests run through the real resolver). Stored as a draft in
+  `kriya.user_skills`; only the person approves it and picks agents (role
+  defaults written down first, so nothing else changes); the runner adds
+  active personal skills to the catalogue under `withUser`. Limits in SQL:
+  5/hour, `next.skillStudioDaily` (10)/day, 50 per person. Costs recorded
+  as `resource_usage.kind = 'skill_design'` (platform cost, no customer
+  charge).
+- **LinkedIn.** Cloned `github.com/sergebulaev/linkedin-skills` (MIT,
+  `8f8bc4b40a2d5419b2dcf898772b85712cfbdf41`) into the session scratchpad,
+  read it, and wrote `skills-v2/linkedin-presence` in Kriya's words from its
+  profile optimizer, post writer and content planner. Not carried over: its
+  Publora auto-publishing, Apify scraping of posts, commenters and
+  engagers, the custom-poster hook and every script. LinkedIn stays
+  `assisted` (AD-06): Kriya prepares (`kit_prepare`), the person posts or
+  saves, `kit_check` reads back. Unattended posting, connecting or
+  messaging is not built and would need AB-04.
+
+Changed files: `db/schema.ts` (`userSkills`, `skill_design` kind),
+`lib/skill-library.ts` (`SkillManifest.trust` type also allows
+`"personal"`; `manifestSchema` unchanged), `lib/agent/run-task.ts`
+(personal catalogue, switch on only), `lib/agent/policy.ts`
+(`PERSON_ONLY_WRITES += "user_skills"`), `lib/config.ts` (three
+`next.skillStudio*` keys), `queries/skills.ts`, `actions/agents.ts`
+(personal skills in the Creator and its save check, switch on only),
+`app/(workspace)/agents/page.tsx` (link, switch on only), `skills/index.ts`,
+`tests/next/skills-v2.test.ts` (nine v2 ids). New: `lib/skill-studio/`,
+`actions/skill-studio.ts`, `components/skill-studio/studio.tsx`,
+`app/(workspace)/agents/skills/page.tsx`, `skills-v2/linkedin-presence/`,
+migration `20270103000000_skill_studio.sql` + rollback,
+`tests/next/skill-studio.test.ts`, `docs/next-platform/SKILL_STUDIO.md`.
+
+Commands: baseline `env -u OPENROUTER_API_KEY npm run check` before the
+migration was added → Test Files 184 passed | 3 skipped (187), Tests 2262
+passed | 42 skipped, exit 0. `npx vitest run tests/next/skill-studio.test.ts`
+→ 23 passed. Final `env -u OPENROUTER_API_KEY npm run check` (after adding
+`next.skillStudio` to NT-REG-01's exhaustive switch list) → typecheck pass,
+lint 0 errors / 6 warnings (existing), format pass, Test Files 185 passed | 3
+skipped (188), Tests 2285 passed | 42 skipped (2327), exit 0.
+
+Superseded by the live check below.
+
+- 2026-10-30 (owner, in chat): "do the things that are not done, like the
+  browser check", use `deepseek/deepseek-v4.1-flash-1017` on OpenRouter with
+  the key in `.env`. Recorded as the go-ahead for real model calls in this
+  session on the isolated stack only. No commit, push or deploy.
+
+#### Skill Studio live check (2026-10-30, local stack, real OpenRouter)
+
+Setup: Docker Desktop and the local Supabase stack (API 127.0.0.1:54321, DB
+:54322, Mailpit :54324); session env = `.env.verify` + the OpenRouter key
+from `.env` (never printed), `OPENROUTER_BASE_URL` unset,
+`KRIYA_VERIFY_PAID=1`; `npm run verify:guard` OK before every command;
+`npm run db:migrate` → "applied 20270103000000_skill_studio.sql"; web via
+`preview_start web-verify-paid`, worker via `npx tsx worker/index.ts` with the
+same env. Model id confirmed in the OpenRouter catalogue (1M context,
+structured outputs, US$0.30/M in, US$1.20/M out) and made the default of
+`next.skillStudioModel`. Local test account `studio-check@example.com`
+(admin API, password only in the session scratchpad), agents Kavya and Arjun
+seeded locally.
+
+Defects the live run found, each fixed and covered by a test
+(`tests/next/skill-studio.test.ts`, now 27):
+
+| Found | Fix |
+| --- | --- |
+| OpenRouter adapter drops `responseFormat` (no `structuredOutputs`): first design unparseable | Schema in instructions, `parseJsonReply`, one repair try (`-retry` usage row); `lib/models.ts` untouched |
+| Lines under "## Never" scrubbed (safety rules removed) | `scrub`/`lint` read prohibition headings; "decline", "reject" rule a thing out |
+| Reviewed text over 6,000 cut, losing its last sections | `.max(6000)` on the reply's instructions → repair try; prompts ask for < 5,000 |
+| Phrase keywords: 2 of 3 activate samples missed | Prompt asks for single words; `tuneKeywords` adds one word per missed sample, never a skip sample's |
+| Reviewer had no tool list, stripped real tools as "invented" | `reviewPrompt` gets the tool list |
+| Review ran out of output tokens (`finishReason: length`, reasoning model) | Budgets 8k/16k/16k |
+| Description cut mid-word | Word-boundary cut with "…" |
+| Model marked `kit_prepare` required → skill hidden with `agents.kits` off | Personal skills never require a tool (`toManifest`); risk unchanged |
+| Approved skill skipped on a real task (library skills filled the budget) | Personal skills first in the runner's catalogue; safeguards still lead |
+| Agent checkboxes unnamed; inputs 32 px on phones | `aria-label`, 44 px on phones |
+
+Results (detail in `docs/next-platform/SKILL_STUDIO.md` §8): four domains
+designed (LinkedIn x3, GATE study plan, investor update); after the fixes 5/5
+sample requests correct on each, all sections present. Kavya's real task
+loaded the approved skill and replied with only the given facts and labelled
+blanks. Browser: 360/1280 px, light/dark, console 0 errors, no horizontal
+scroll, 0 unnamed controls, neighbours load, switch off → 404 page and no
+link. Real spend: US$0.0398 designs (14 calls) + US$0.0065 agent replies.
+
+Commands: `env -u OPENROUTER_API_KEY npm run check` → typecheck pass, lint 0
+errors / 6 warnings (existing), format pass, Test Files 185 passed | 3
+skipped (188), Tests 2289 passed | 42 skipped (2331), exit 0. Production
+build with `.env.verify` exported → compiled, route list printed, exit 0.
+
+Open: migration not applied to staging or production; nothing committed.
+Next exact action: owner decides on commit; then apply
+`20270103000000_skill_studio.sql` on staging and repeat this check there.

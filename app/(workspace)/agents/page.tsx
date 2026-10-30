@@ -9,6 +9,7 @@ import {
   TemplateGrid,
 } from "@/components/home/actions"
 import { requireUser } from "@/lib/auth"
+import { studioOn } from "@/lib/skill-studio"
 import { TIER_LABELS, isTier } from "@/lib/tiers"
 import { getNavigation, getSystemStatus } from "@/queries/workspace"
 
@@ -32,7 +33,11 @@ function SectionTitle({
 
 export default async function Page() {
   const user = await requireUser()
-  const [nav, status] = await Promise.all([getNavigation(user.id), getSystemStatus(user)])
+  const [nav, status, studio] = await Promise.all([
+    getNavigation(user.id),
+    getSystemStatus(user),
+    studioOn(),
+  ])
   const atLimit = nav.agents.length >= status.plan.maxAgents
 
   return (
@@ -47,6 +52,14 @@ export default async function Page() {
             squad and the lead splits a request between them so they work at the same
             time.
           </p>
+          {studio && (
+            <Link
+              href="/agents/skills"
+              className="flex min-h-11 items-center self-start text-[13px] text-rigel hover:underline sm:min-h-8"
+            >
+              Skill Studio: design a skill from a few words
+            </Link>
+          )}
         </header>
 
         <section className="flex flex-col gap-4">

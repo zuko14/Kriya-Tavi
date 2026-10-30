@@ -151,7 +151,8 @@ describe("only the person's words pick a skill (NT-SKL-02)", () => {
 describe("the v2 skills (NT-SKL-04)", () => {
   const v2 = CATALOG_V2.filter((s) => !CATALOG.some((c) => c.id === s.id))
 
-  // The two named in ND-14, and six the owner asked for on 2026-10-26
+  // The two named in ND-14, six the owner asked for on 2026-10-26 and
+  // linkedin-presence on 2026-10-30
   const V2_IDS = [
     "code-assistance",
     "creator-analytics",
@@ -159,11 +160,12 @@ describe("the v2 skills (NT-SKL-04)", () => {
     "documents-and-notes",
     "email-drafting",
     "indian-documents-reading",
+    "linkedin-presence",
     "meeting-preparation",
     "writing-and-editing",
   ]
 
-  it("are the eight listed, each parsed, listed once and in its own directory", () => {
+  it("are the nine listed, each parsed, listed once and in its own directory", () => {
     expect(v2.map((s) => s.id).sort()).toEqual(V2_IDS)
     expect(fs.readdirSync(SKILLS_V2_ROOT).sort()).toEqual(V2_IDS)
   })

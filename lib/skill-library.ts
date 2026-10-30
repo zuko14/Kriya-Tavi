@@ -77,7 +77,11 @@ export const manifestSchema = z.strictObject({
     .min(2)
     .max(10),
 })
-export type SkillManifest = z.infer<typeof manifestSchema>
+// Repository manifests always parse as curated; "personal" skills are the
+// person's own, built in code from kriya.user_skills (lib/skill-studio)
+export type SkillManifest = Omit<z.infer<typeof manifestSchema>, "trust"> & {
+  trust: "curated" | "personal"
+}
 
 // Throws on anything malformed, so a bad manifest fails the build and tests
 export function buildCatalog(manifests: unknown[]): SkillManifest[] {

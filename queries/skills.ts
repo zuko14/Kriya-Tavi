@@ -6,6 +6,7 @@ import { EXTRA_GOOGLE_SERVICES, googleServices } from "@/lib/connectors"
 import { isSecretsConfigured } from "@/lib/secrets"
 import { skillRisk } from "@/lib/skill-engine"
 import { CATALOG, CATALOG_V2, parseSkillList } from "@/lib/skill-library"
+import { personalCatalog, studioOn } from "@/lib/skill-studio"
 import { voiceAvailable } from "@/lib/voice/tasks"
 import { isWebConfigured } from "@/lib/web"
 
@@ -67,8 +68,10 @@ export async function skillOptions(userId: string, plan: Plan) {
   const disabled = parseSkillList(await getSetting("skills.disabled"))
   const tools = await availableTools(userId, plan)
   // N8: the v2 skills only with next.skillsV2 on, as the runner does
-  const catalog = (await getSetting("next.skillsV2")) === "on" ? CATALOG_V2 : CATALOG
-  return catalog
+  const library = (await getSetting("next.skillsV2")) === "on" ? CATALOG_V2 : CATALOG
+  // Skill Studio: the person's approved skills, after the library's
+  const personal = (await studioOn()) ? (await personalCatalog(userId)).manifests : []
+  return [...library, ...personal]
     .filter((s) => s.status === "active")
     .map((s) => {
       const missing = s.tools.all.filter((t) => !tools.has(t))
@@ -81,9 +84,12 @@ export async function skillOptions(userId: string, plan: Plan) {
         version: s.version,
         required: s.required,
         roles: s.roles,
-        source: s.source.length
-          ? s.source.map((x) => `${x.project} ${x.version} (${x.license})`).join(", ")
-          : "Kriya",
+        source:
+          s.trust === "personal"
+            ? "You (Skill Studio)"
+            : s.source.length
+              ? s.source.map((x) => `${x.project} ${x.version} (${x.license})`).join(", ")
+              : "Kriya",
         tools: [...s.tools.all, ...s.tools.any, ...s.tools.uses],
         ...skillRisk(s),
         prerequisites: missing.length ? s.prerequisites : [],
