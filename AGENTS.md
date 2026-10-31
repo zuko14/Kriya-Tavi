@@ -249,3 +249,102 @@ track-A rules 1–12 and operator rules 1–9 apply to this track too.
    `TOOL_CLASSES`, the task's MCP classes and `UNCLASSIFIED_OK`.
 9. Retries only for R0, non-side-effect, idempotent reads; side effects
    are never retried.
+
+## Cloud execution (track C)
+
+Cloud code workspaces for agents inside the existing product: one isolated
+sandbox per workspace, Kriya's runner inside it, `workspace_*` tools on the
+existing belt, checkpoints in Supabase Storage, results published as draft
+pull requests. Planned in `docs/cloud-execution/`; progress in the root
+`status.md` (`CP-1`, `C0`–`C11`). Start from
+`docs/cloud-execution/AGENT_MASTER_PROMPT.md`. Voice rules 2, 3, 6, 7 and 12,
+track-A rules 1–12, operator rules 1–9 and track-N rules 1–9 apply to this
+track too.
+
+1. Before editing any existing file, read
+   `docs/cloud-execution/CHANGE_IMPACT_AND_SAFETY.md`: only the changes
+   listed there are allowed. All tracks share the coordination board in
+   `status.md`.
+2. Every capability ships behind a `cloud.*` switch that defaults off. Off
+   means existing agents get the same prompt, tools and the same
+   `TOOL_APPROVALS` object (CT-REG-01).
+3. One orchestrator: the Postgres queue and `runTask`. The model loop stays
+   in `kriya-worker`; only tool execution runs in the sandbox. No DSH agent
+   loop, no second queue, no Render Workflows orchestration.
+4. User code runs only in a provider sandbox with its own kernel, one per
+   workspace, never shared (or the `local` provider on the verify stack,
+   which refuses anywhere else). Never on `kriya-worker`, `kriya-web` or
+   `kriya-browser`.
+5. No secret of Kriya's or the person's enters a sandbox. The repository is
+   imported by the worker through `lib/connectors/github.ts`; the runner
+   holds only a per-workspace token derived from `KRIYA_WORKSPACE_SECRET`.
+6. Changes leave a sandbox only through `workspace_publish` (R4, a side
+   effect): the person approves the exact change set; it creates a new
+   `kriya/` branch and a draft pull request, never updates an existing ref,
+   never merges.
+7. Workspace reads are private, untrusted content (`FOREIGN`, `guardWeb`,
+   memory quarantine). "Tests passed" is only ever a `workspace_run` result.
+8. Compute is metered in `kriya.resource_usage` and limited in SQL (plan
+   `workspace_minutes`, a platform running cap); `lib/agent/metering.ts` and
+   `kriya.charges` are unchanged.
+9. Persistent identity, disposable compute: sandboxes pause when a task
+   ends, are destroyed after a day unused, and are restored from Git plus a
+   checkpoint; never rely on sandbox disk as the only copy.
+10. Track C code lives under `cloud` names (`lib/cloud/`, `runner/`,
+    `queries/cloud.ts`); "workspace" in other paths means the app shell.
+
+## Kriya Harness (track H)
+
+A downloadable agent app built on DeepSeek Harness that signs in to the
+person's Kriya account. Server parts here (`/api/harness/v1`, `lib/harness/`),
+client in the `kriya-harness` repository. Planned in `docs/kriya-harness/`;
+progress in the root `status.md` (`HP-1`, `H0`–`H12`); the three-track plan
+in `docs/program/C_H_R_PROGRAM.md`. Start from
+`docs/kriya-harness/AGENT_MASTER_PROMPT.md`. Voice rules 2, 3, 6, 7 and 12,
+track-A rules 1–12, operator rules 1–9, track-N rules 1–9 and track-C rules
+1–10 apply to this track too.
+
+1. Before editing any existing file, read
+   `docs/kriya-harness/CHANGE_IMPACT_AND_SAFETY.md`; all tracks share the
+   coordination board in `status.md`.
+2. Every capability ships behind a `harness.*` switch that defaults off;
+   every plan's harness cap is 0 by default (HT-REG-01).
+3. Identity on the harness API comes only from `authenticateDevice` in
+   `lib/auth.ts`; device tokens and codes are stored only as sha256; no
+   device endpoint approves devices, answers approvals, confirms memory or
+   reads another person's data.
+4. The gateway accepts only the plan's tier aliases, reserves spend in SQL
+   before forwarding, and records every request in `kriya.harness_usage`;
+   `lib/agent/metering.ts` and `kriya.charges` are unchanged.
+5. DeepSeek Harness is a pinned dependency composed through its documented
+   seams, never forked or edited; product name "Kriya Harness", "built on
+   DeepSeek Harness" only as attribution; the harness is a beta while DSH
+   calls itself an unaudited developer preview.
+6. The harness API never runs agent tools or connectors on the web server;
+   memory written from a device is unconfirmed.
+
+## Rooms (track R)
+
+People and their own agents working together in a room. Planned in
+`docs/rooms/`; progress in the root `status.md` (`RP-1`, `R0`–`R10`); the
+three-track plan in `docs/program/C_H_R_PROGRAM.md`. Start from
+`docs/rooms/AGENT_MASTER_PROMPT.md`. Voice rules 2, 3, 6, 7 and 12, track-A
+rules 1–12, operator rules 1–9, track-N rules 1–9 and track-C rules 1–10
+apply to this track too.
+
+1. Before editing any existing file, read
+   `docs/rooms/CHANGE_IMPACT_AND_SAFETY.md`; all tracks share the
+   coordination board in `status.md`.
+2. Every capability ships behind a `rooms.*` switch that defaults off
+   (RT-REG-01).
+3. Room data is readable only by active members through the membership
+   policies of `kriya.room_*`; every other table stays owner-only.
+4. An agent acts only in its owner's account, in its private bridge thread;
+   only its owner approves its actions; others' spend on it is capped in
+   SQL.
+5. A reply that touched the owner's private content reaches the room only
+   through the owner's "Share in room"; room content is untrusted to every
+   agent (`ROOM_CONTEXT` marker, memory unconfirmed).
+6. Proof cards come only from episode `done` items; model text is never
+   proof; agent-to-agent turns stay within the conductor's budget.
+7. Realtime pings carry no content; notifications are in-app only.

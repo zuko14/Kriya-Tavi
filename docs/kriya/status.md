@@ -1,8 +1,12 @@
 # Status: what's done, what's verified, what's left
 
-Branch `kriya-saas`. "Verified" means checked by an automated test or a
-command run during development. "Unverified" means written but never run
-against the real service, because no credentials were available.
+Branch `main` (this page was first written on the earlier `kriya-saas`
+branch). "Verified" means checked by an automated test or a command run
+during development. "Unverified" means written but never run against the
+real service, because no credentials were available. Progress of the later
+tracks (voice, A, O, N, C, H, R) is kept in the root `status.md`; Stage D
+below was corrected on 2026-10-31 (CP-1, `docs/cloud-execution/REPOSITORY_AUDIT.md`
+§5); other rows are as first written.
 
 ## Stage A — SaaS foundation
 
@@ -39,10 +43,11 @@ against the real service, because no credentials were available.
 
 | Criterion | Status |
 | --- | --- |
-| Browser tasks through an isolated provider | **Not started.** Deliberately disabled rather than faked |
-| Reusable skills | **Not started** |
-| Persistent memory | Done (inspect, edit, delete, source marked) |
-| Policy-based approval for sensitive actions | Mechanism in place (side-effect classification, no-retry rule); no consequential tools exist yet, so no approval UI |
+| Browser tasks through an isolated provider | Built in track A (A4): `kriya-browser` private service with an egress guard and page-derived risk classes, behind `agents.browser` (off) plus plan browser minutes; tested on fixture sites only; capacity on Render unmeasured (AB-08) |
+| Reusable skills | Built behind switches: replay skills (A9, `agents.skills`), the skill library (`agents.skillLibrary`), skills v2 (`next.skillsV2`), Skill Studio (`next.skillStudio`); all off by default |
+| Persistent memory | Done (inspect, edit, delete, source marked); memory v2 behind `agents.memoryV2` |
+| Policy-based approval for sensitive actions | Risk classes R0–R5 in `lib/agent/policy.ts`; R2–R4 tools wait for the person's approval of the exact call; approval cards and the Inbox built (A3, behind `agents.inbox`) |
+| Shell, file system and code workspaces | Not built; designed as track C (`docs/cloud-execution/`, an isolated provider sandbox per workspace) |
 | Evidence for consequential operations | Every tool call is recorded with inputs (redacted), outcome and timing |
 | Worker failures and retries tested | Verified (recovery, fallback after provider failure, deadline) |
 

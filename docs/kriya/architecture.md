@@ -154,16 +154,23 @@ subscription, else the default (Free).
 
 ## Execution capabilities
 
-Hosted agents today have web research, memory and squad delegation. the original local app's
-shell, desktop, file and vault tools ran in Docker on the user's own computer;
-they don't exist in the hosted product, because a Render service can't safely
-run per-user containers and those tools were never designed for tenants.
+Hosted agents have web research, memory and squad delegation, plus the
+capabilities later tracks added behind switches (connected accounts, files,
+schedules, the agent browser, MCP apps; see the root `status.md`). The
+original local app's shell, desktop, file and vault tools ran in Docker on
+the user's own computer; they don't exist in the hosted product, because a
+Render service can't safely run per-user containers and those tools were
+never designed for tenants.
 
-The planned browser provider (Stage D) is a separate service with one
-short-lived Chromium context per task, no access to the database or
-secrets, an egress policy, and per-tool approval for consequential actions
-(payments, messages, uploads). `workstation/` keeps the original local app's isolated desktop
-image as a starting point. Tools that change the outside world are marked in
+The agent browser (track A, phase A4) is built: `kriya-browser`, a private
+Render service (`browser/`) with short-lived Chromium sessions per task
+(3 per instance, 15 minutes each by default), no database access and no
+secret but its own, an egress guard (`browser/egress.ts`), and risk classes
+decided from the page (`lib/agent/policy.ts`); it is off unless
+`agents.browser` is on and the plan has browser minutes, and has been tested
+on fixture sites only. Shell, file-system and code-workspace tools are
+designed as track C (`docs/cloud-execution/`): one isolated provider sandbox
+per workspace, never a Render service. Tools that change the outside world are marked in
 `SIDE_EFFECT_TOOLS`; the queue never retries a task that ran one.
 
 ## Where things are

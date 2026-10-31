@@ -8,6 +8,12 @@ Canonical progress and coordination file for two tracks:
 | Agent platform, track A (role teams that act, remember, work in the background and prove what they did) | A0–A12 (section "Agent platform (track A)" at the end) | `docs/agent-platform/` | `docs/agent-platform/AGENT_MASTER_PROMPT.md` |
 | Operator, track O (jobs with a definition of done, standing grants the person approves, code verdicts, check-ins, playbooks) | P-1, O0–O10 (section "Operator (track O)" at the end) | `docs/operator/` | `docs/operator/AGENT_MASTER_PROMPT.md` |
 | Next platform, track N (verified delivery for every task, late re-checks, reliable reads, owner-reviewed MCP apps, skills and memory in Indian languages, cost per delivered task) | NP-1, N0–N13 (section "Next platform (track N)" at the end) | `docs/next-platform/` | `docs/next-platform/AGENT_MASTER_PROMPT.md` |
+| Cloud execution, track C (cloud code workspaces inside the existing product: one isolated sandbox per workspace, `workspace_*` tools, checkpoints, draft pull requests, compute metering) | CP-1, C0–C11 (section "Cloud execution (track C)" at the end) | `docs/cloud-execution/` | `docs/cloud-execution/AGENT_MASTER_PROMPT.md` |
+| Kriya Harness, track H (a downloadable agent app built on DeepSeek Harness that signs in to the Kriya account: Kriya model gateway and allowance, phone approvals, session mirror, skills and memory, laptop ↔ cloud handoff) | HP-1, H0–H12 (section "Kriya Harness (track H)" at the end) | `docs/kriya-harness/` | `docs/kriya-harness/AGENT_MASTER_PROMPT.md` |
+| Rooms, track R (people and their own agents working together: agents act only in their owners' accounts, proof cards computed by code, independent verification, disclosure gate) | RP-1, R0–R10 (section "Rooms (track R)" at the end) | `docs/rooms/` | `docs/rooms/AGENT_MASTER_PROMPT.md` |
+
+Tracks C, H and R share one program plan (order, shared files, cross-track
+decisions PX-…): `docs/program/C_H_R_PROGRAM.md`.
 
 All tracks share the Coordination board below; phase ids tell them apart
 (`3` is voice, `A3` is track A, `O3` is track O). The SaaS platform's own
@@ -8168,3 +8174,346 @@ build with `.env.verify` exported → compiled, route list printed, exit 0.
 Open: migration not applied to staging or production; nothing committed.
 Next exact action: owner decides on commit; then apply
 `20270103000000_skill_studio.sql` on staging and repeat this check there.
+
+# Cloud execution (track C)
+
+Gives Kriya agents a cloud code workspace **inside the existing product**:
+a person assigns an engineering task from web or phone, the agent works in
+an isolated sandbox (inspect, edit, run tests), the laptop can be closed,
+and the result comes back as evidence and, after the person's approval, a
+draft pull request. Built on the existing queue, `runTask`, model gateway,
+approvals, Inbox, metering and UI; DeepSeek Harness is used as a source of
+ported algorithms, not as a runtime. Blueprint: `docs/cloud-execution/`.
+Agents start from `docs/cloud-execution/AGENT_MASTER_PROMPT.md`. Every
+capability is behind a `cloud.*` switch that defaults off (CT-REG-01).
+
+## Track C documents
+
+| Document | What it decides |
+| --- | --- |
+| `docs/cloud-execution/REPOSITORY_AUDIT.md` | Baseline on `508bb6a`, task lifecycle, the A4 browser precedent, feature truth table, boundaries, findings CF-01…CF-13 |
+| `docs/cloud-execution/DSH_COMPONENT_MAP.md` | DeepSeek Harness at `ce7073d` (MIT): 20-row reuse/adapt/keep/defer/reject matrix, ports P1–P8, provenance rules |
+| `docs/cloud-execution/DECISIONS.md` | CD-01…CD-25 in ADR format (all **Proposed**; owner-gated ones marked) |
+| `docs/cloud-execution/ARCHITECTURE.md` | Components, module boundaries, end-to-end sequences, interruptions, the lines `runTask` gains, capacity, failure modes |
+| `docs/cloud-execution/PROVIDERS_AND_COST.md` | Must-haves M1–M10, candidates (Render options, Workflows, E2B, Daytona, Fly) with dated sources, bake-off method, cost model, open research CRG-01…09 |
+| `docs/cloud-execution/DATA_MODEL_AND_STATE_MACHINES.md` | `workspaces`, `workspace_sessions`, `plans.workspace_minutes`, `open_workspace_session`, transitions, RLS, retention, rollback, CT-DB tests |
+| `docs/cloud-execution/TOOLS_AND_CONTRACTS.md` | `WorkspaceProvider`, the runner protocol, the ten tools and policy rows, `TaskWorkspace`, import/publish functions, the janitor |
+| `docs/cloud-execution/SECURITY_AND_THREATS.md` | Trust boundaries, invariants, threats CS-1…22, isolation suite CT-ISO, counsel CQ-1/2, readiness gates CR-1…8 |
+| `docs/cloud-execution/UX_SPEC.md` | Workspace strip, tool cards, publish approval card, copy rules, owner page, browser checks |
+| `docs/cloud-execution/TEST_STRATEGY.md` | Fixtures and test ids CT-… |
+| `docs/cloud-execution/EVALUATION_PLAN.md` | Metrics M1–M11, workloads W1–W3, bake-off thresholds, laptop-off proof |
+| `docs/cloud-execution/CHANGE_IMPACT_AND_SAFETY.md` | **Read before editing any existing file**: protected files, allowed change per file and phase with its regression test, cross-track check, stop conditions |
+| `docs/cloud-execution/IMPLEMENTATION_PLAN.md` | Phases, lanes, files held, exit checks, rollout, rollback |
+| `docs/cloud-execution/OPERATIONS_RUNBOOK.md` | Image build, switching on, rotations, cost runaway, outages, deletion on request, drills |
+| `docs/cloud-execution/REAUDIT.md` | Forensic re-audit: checks run, findings R-01…R-12 and their resolution, compatibility with every existing workflow, brief traceability |
+| `docs/cloud-execution/AGENT_MASTER_PROMPT.md` | The prompt for implementing agents |
+
+## Track C overview
+
+| Phase | Name | Status | Depends on | Decisions needed |
+| --- | --- | --- | --- | --- |
+| C0 | Blueprint and decisions | COMPLETE (2026-10-31: 16 documents written and re-audited; CD-01…CD-27 approved by the owner, owner-gated ones by id, see "Track C owner approvals") | — | — |
+| CP-1 | Baseline re-check; docs truth (CF-01, CF-02) | COMPLETE (2026-10-31: Test Files 185 passed | 3 skipped (188); Tests 2289 passed | 42 skipped (2331); exit 0; CF-01 and CF-02 corrected) | C0 | CD-25 |
+| C1 | Data model (one migration `20270201000000`) | NOT_STARTED | CP-1 | CD-14, CD-15 |
+| C2 | Runner service, protocol, image, DSH ports | NOT_STARTED | CP-1 | CD-03, CD-05, CD-12, CD-21, CD-22 |
+| C3 | Provider boundary, `local` provider, `TaskWorkspace` | NOT_STARTED | C1, C2 | CD-04, CD-05, CD-07, CD-09, CD-16 |
+| C4 | Tools in the runner loop | NOT_STARTED | C3 | CD-11, CD-17, CD-19, CD-20, CD-23 |
+| C5 | Import and publish | NOT_STARTED | C4 | CD-09, CD-10 |
+| C6 | Checkpoints, restore, janitor | NOT_STARTED | C4 | CD-04, CD-13, CD-16 |
+| C7 | UI, usage, owner pages, plan field | NOT_STARTED | C4 (C5 for the publish card) | CD-14, CD-18 |
+| C8 | Provider adapters and bake-off (paid runs owner-gated) | NOT_STARTED | C3; owner accounts | CD-06, CD-07, CD-12 |
+| C9 | Security and isolation readiness | NOT_STARTED | C5, C6, C8 | — |
+| C10 | Staging vertical slice, laptop off | NOT_STARTED | C7, C9, staging | CD-24 |
+| C11 | Controlled pilot | NOT_STARTED | C10, CQ-1/CQ-2 | new decision for public copy |
+
+Parallel lanes (IMPLEMENTATION_PLAN §2): after CP-1, **C1 and C2**; after
+C3, **C4 and the C8 adapters** (fixtures only); after C4, **C5, C6 and C7**.
+
+## Track C coordination rules
+
+The Coordination board at the top of this file is shared by every track.
+Track N's rules 1, 2, 5 and 6 apply unchanged (claim before work, hot spots
+one holder at a time, never fix another track's failing test, re-read
+before every write). Track C's own:
+
+1. One migration writer at a time across all tracks; track C timestamps
+   `202702DDhhmmss`, claimed on the board, sorting last when claimed.
+2. `lib/connectors/github.ts` only in C5, after the owner approves CD-09
+   and CD-10 by id under "Track C owner approvals".
+3. No paid provider sandbox, real repository or model run without the
+   owner's go-ahead in that session (C8, C9, C10).
+
+## Track C blockers
+
+| # | Blocker | Blocks | Needed from |
+| --- | --- | --- | --- |
+| CB-01 | ~~Owner approval of CD-01…CD-25~~ Resolved 2026-10-31 ("Approve all" covers CD-01…CD-27, see "Track C owner approvals") | CP-1+ | Owner |
+| CB-02 | Provider accounts for the bake-off (E2B, Daytona) and approval of the paid runs | C8 runs | Owner |
+| CB-03 | Docker on a verification machine for the runner image (same as track O OB-06) | C2 image build, C7 browser check | Owner |
+| CB-04 | A test GitHub repository the owner controls, and the GitHub App installed on it (track A AB-06) | C5 live check, C10 | Owner |
+| CB-05 | Staging on real services (voice B2 / A AB-02 / O OB-01 / N NB-08) | C9, C10 | Owner |
+| CB-06 | Counsel CQ-1 (code at a foreign sandbox provider under DPDP), CQ-2 (consent wording) | C11 | Owner + counsel |
+| CB-07 | `.env.example` additions (`KRIYA_WORKSPACE_SECRET`, provider key) by the owner (voice B9) | C3, C8 | Owner |
+
+## Phase C0 — Blueprint and decisions
+
+**Status:** COMPLETE (2026-10-31): documents done and re-audited; every decision approved ("Track C owner approvals"); `npm run format:check` passes (it ignores `*.md`, so it doesn't check these documents; tables were checked by script instead).
+
+- **Done (2026-10-31, Claude Code / Opus 5.5, `main` in place,
+  uncommitted):** the 16 documents in `docs/cloud-execution/`; this
+  section; the track row at the top of this file; a "Cloud execution
+  (track C)" section in `AGENTS.md`. No application code, test, migration,
+  dependency, setting, environment variable, account or deployment touched.
+  The brief `kriya_tavi_cloud_excecution.md` was left as it was (untracked).
+- **How the design was checked:** every claim about existing code was read
+  in the code at `508bb6a` (file list in REPOSITORY_AUDIT §8); DeepSeek
+  Harness read from a read-only shallow clone at `ce7073d` (nothing
+  installed or run); AI SDK 7.0.137 docs and the `SandboxSession` type from
+  `node_modules`; provider facts from their own pages on 2026-10-31 (dated
+  and sourced in PROVIDERS_AND_COST §7; third-party claims marked). Then a
+  forensic re-audit (REAUDIT.md): ids, paths, settings and tool names
+  cross-checked by script; every SQL construct matched to an applied
+  migration; the existing tests that pin the tool tables read (CF-12); 12
+  findings fixed (R-01…R-12), among them the code-path collision with the
+  app-shell "workspace" (CF-13), a skills-v2 directory that would have
+  broken NT-SKL-04 (CF-11/CF-12), and a runner that couldn't have switched
+  users (R-02).
+- **Baseline check (2026-10-31, before any document was written):**
+  `env -u OPENROUTER_API_KEY npm run check` → typecheck pass; lint 0
+  errors, 6 warnings (existing: `tests/operator/golden/harness.ts`, counted
+  three times because eslint also walks `.claude/worktrees/*`, CF-09);
+  format pass; Test Files 185 passed | 3 skipped (188); Tests 2289 passed |
+  42 skipped (2331); exit 0.
+- **Exit:** (1) documents consistent (REAUDIT.md); (2) `npm run
+  format:check` passes; (3) owner marks each CD Approved or Changed under
+  "Track C owner approvals" (owner-gated ones by id).
+- **Next exact action:** decisions approved 2026-10-31. Wave 0: CP-1
+  (one `npm run check` baseline that also serves HP-1 and RP-1, plus the
+  CF-01/CF-02 doc corrections); then wave 1: C1 and C2 in parallel
+  (`docs/program/C_H_R_PROGRAM.md` §3).
+
+## Phase CP-1 — Baseline re-check and docs truth (also HP-1, RP-1)
+
+**Status:** COMPLETE (2026-10-31).
+
+- **Session (2026-10-31, Claude Code / Opus 5.5, `main` in place at `508bb6a`,
+  uncommitted):** wave 0 of `docs/program/C_H_R_PROGRAM.md`. Preflight:
+  `git status --short` showed only this session's documentation changes
+  (`AGENTS.md`, `status.md`, `docs/cloud-execution/`, `docs/kriya-harness/`,
+  `docs/program/`, `docs/rooms/`) and the untracked brief; branch `main`;
+  board empty, claimed for this session.
+- **Command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck pass;
+  lint 0 errors, 6 warnings (the existing pair in
+  `tests/operator/golden/harness.ts`, counted three times via
+  `.claude/worktrees/*`, CF-09); format pass; Test Files 185 passed | 3 skipped (188); Tests 2289 passed | 42 skipped (2331); exit 0. Equal to the
+  baseline, so CP-1, HP-1 and RP-1 exit checks ("counts ≥ the baseline") hold.
+- **Docs truth (CF-01, CF-02), the CP-1 row of CHANGE_IMPACT only:**
+  `docs/kriya/status.md`: branch line (now `main`, pointer to the root
+  `status.md`) and Stage D rows (browser built in A4 behind `agents.browser`,
+  skills behind their switches, approvals and Inbox built, code workspaces
+  designed as track C); other rows untouched. `docs/kriya/architecture.md`
+  "Execution capabilities": the agent browser as built (A4), no `workstation/`
+  directory, code workspaces pointed at track C. `README.md` unchanged (CF-03:
+  only after C10).
+- **Not run:** `npm run build` (reads the live project's settings; nothing
+  under `app/` changed).
+- **Next exact action:** wave 1: C1 (data model, migration
+  `20270201000000`) and C2 (runner, new files only) in parallel, each
+  started from `docs/cloud-execution/AGENT_MASTER_PROMPT.md`.
+
+## Track C owner approvals
+
+The owner answered "Approve all" in chat on 2026-10-31 (session with Claude Code / Opus 5.5) to the question "Approve the decisions of tracks C, H and R as proposed?".
+
+- **Approved:** CD-01 through CD-27, as written in `docs/cloud-execution/DECISIONS.md` on 2026-10-31.
+- **Owner-gated, approved by id:** CD-06 (isolation floor; paid provider), CD-07 (bake-off; provider accounts and paid runs still need a go-ahead in the session that runs them, track C rule 3), CD-09 (new secret `KRIYA_WORKSPACE_SECRET`; additive `lib/connectors/github.ts`), CD-10 (`workspace_publish`; protected connector file), CD-11 (workspace tool classes, incl. `workspace_run` R1), CD-12 (egress policy), CD-14 (metering in `resource_usage`, `charges` unchanged), CD-22 (`NOTICE.md`).
+- **Program decision approved:** PX-03 (one combined change to the protected `app/api/events/route.ts` and notifier for harness approvals and room events, each behind its track's switch).
+- **Not covered by this approval** (each still needs the owner in the session that does it): spending money, creating accounts or repositories, deploys, production migrations, pushes and commits (voice rule 3, operator rule 6).
+
+### Track C update (2026-10-31, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+Tracks H and R were designed on top of track C. Added CD-26 (the runner
+protocol is the shared execution-world contract, H10) and CD-27 (the
+checkpoint format is the laptop ↔ cloud handoff format, H8); the pure
+`lib/cloud/paths.ts` and its CT-IMP-03 exception (PX-02); cross-track
+re-audit in `docs/cloud-execution/REAUDIT.md` §7. No other track C decision
+changed. Next exact action unchanged (owner reviews DECISIONS.md).
+
+# Program: tracks C, H, R
+
+One plan for cloud execution (C), the Kriya Harness (H) and Rooms (R):
+`docs/program/C_H_R_PROGRAM.md` (how they connect, cross-track decisions
+PX-01…PX-10, implementation waves for parallel agents, the order in which
+shared files are held, the cross-track re-audit). Owner-gated decisions
+across all three: CD-06, CD-07, CD-09, CD-10, CD-11, CD-12, CD-14, CD-22;
+HD-02, HD-03, HD-05, HD-06, HD-07, HD-12, HD-14; RD-02, RD-03, RD-10, RD-16;
+PX-03.
+
+# Kriya Harness (track H)
+
+A downloadable agent app (`@kriya-ai/harness`, command `kriya`) built on
+DeepSeek Harness's published packages as a `kriya` profile with seven Kriya
+plugins; it signs in to the person's Kriya account and uses Kriya's model
+gateway and allowance, phone approvals, session mirror, skills and memory,
+and hands work to and from cloud workspaces (track C). Beta while DSH calls
+itself an unaudited developer preview. Server parts here, client in the
+`kriya-harness` repository. Every capability is behind a `harness.*` switch
+that defaults off (HT-REG-01). Agents start from
+`docs/kriya-harness/AGENT_MASTER_PROMPT.md`.
+
+## Track H documents
+
+| Document | What it decides |
+| --- | --- |
+| `docs/kriya-harness/REPOSITORY_AUDIT.md` | Facts in this repository and in DSH that the harness depends on; findings HF-01…HF-08 (incl. the proxy origin check and DSH's safety status) |
+| `docs/kriya-harness/VISION_AND_SCENARIOS.md` | "One agent, every surface, with proof"; dated competitor facts (RG-9); scenarios S01–S18 across C, H, R; research gaps HQ-01…05 |
+| `docs/kriya-harness/DECISIONS.md` | HD-01…HD-19 (all **Proposed**; owner-gated marked) |
+| `docs/kriya-harness/DSH_DISTRIBUTION.md` | Package layout, commands, the seven plugins on DSH seams, what users get from DSH, versions, license, brand |
+| `docs/kriya-harness/ARCHITECTURE.md` | Components, sign-in, model call, phone approval, handoff and pull, boundaries, scale |
+| `docs/kriya-harness/API_AND_CONTRACTS.md` | `/api/harness/v1` routes and contracts |
+| `docs/kriya-harness/DATA_MODEL_AND_STATE_MACHINES.md` | `harness_*` tables, plan cap, spend reservation in SQL, RLS, tests |
+| `docs/kriya-harness/SECURITY_AND_THREATS.md` | Boundaries, invariants, HS-1…14, counsel, gates HG-1…7 |
+| `docs/kriya-harness/COST_AND_METERING.md` | Ledger, controls, web-service cost, unknowns |
+| `docs/kriya-harness/UX_SPEC.md` | Connect page, Devices, Inbox approvals, mirror, command-line copy |
+| `docs/kriya-harness/TEST_STRATEGY.md` | Test ids HT-… |
+| `docs/kriya-harness/CHANGE_IMPACT_AND_SAFETY.md` | **Read before editing any existing file** |
+| `docs/kriya-harness/IMPLEMENTATION_PLAN.md` | Phases H0–H12, lanes, rollout, rollback |
+| `docs/kriya-harness/REAUDIT.md` | Forensic re-audit, findings H-01…H-11 |
+| `docs/kriya-harness/AGENT_MASTER_PROMPT.md` | The prompt for implementing agents |
+
+## Track H overview
+
+| Phase | Name | Status | Depends on |
+| --- | --- | --- | --- |
+| H0 | Blueprint and decisions | COMPLETE (2026-10-31: documents written and re-audited; HD-01…HD-19 approved, owner-gated by id, see "Track H owner approvals") | — |
+| HP-1 | Baseline re-check | COMPLETE (2026-10-31, with CP-1: Test Files 185 passed | 3 skipped (188); Tests 2289 passed | 42 skipped (2331); exit 0) | H0 |
+| H1 | Data model (`20270301000000`) | NOT_STARTED | HP-1, C1 |
+| H2 | Device identity, connect page, Devices | NOT_STARTED | H1 |
+| H3 | Gateway and ledger | NOT_STARTED | H2 |
+| H4 | Client alpha (`kriya-harness` repository) | NOT_STARTED | H3, repository, npm scope |
+| H5 | Approvals from the phone | NOT_STARTED | H4 |
+| H6 | Session mirror | NOT_STARTED | H4 |
+| H7 | Skills and memory | NOT_STARTED | H4 |
+| H8 | Handoff and pull | NOT_STARTED | H4, C5, C6 |
+| H9 | Security, scale, release readiness | NOT_STARTED | H5–H8 |
+| H10 | Your machine as an execution world | NOT_STARTED | H9, C3, a decision record |
+| H11 | ACP for editors | NOT_STARTED | H4 |
+| H12 | Controlled pilot | NOT_STARTED | H9 |
+
+## Track H blockers
+
+| # | Blocker | Blocks | Needed from |
+| --- | --- | --- | --- |
+| HB-01 | ~~Owner approval of HD-01…HD-19 and PX-03~~ Resolved 2026-10-31 ("Approve all", see "Track H owner approvals") | HP-1+ | Owner |
+| HB-02 | The `kriya-harness` repository and the npm scope (HQ-03) | H4 | Owner |
+| HB-03 | Owner applies the invariant 3 wording (HD-05) | H2 | Owner |
+| HB-04 | Staging on real services (same as CB-05) | H3 capacity test, H9 | Owner |
+| HB-05 | Counsel HQ-C1 (distribution terms) | Public beta | Owner + counsel |
+
+## Phase H0 — Blueprint and decisions
+
+**Status:** COMPLETE (2026-10-31): documents done and re-audited; every decision approved ("Track H owner approvals").
+
+- **Done (2026-10-31, Claude Code / Opus 5.5, `main` in place,
+  uncommitted):** the 15 documents in `docs/kriya-harness/`, this section,
+  the track row at the top, a "Kriya Harness (track H)" section in
+  `AGENTS.md`. No code, test, migration, dependency, setting or account
+  touched.
+- **How it was checked:** DSH read in the pinned clone (`ce7073d`) and on
+  npm (`@deepseek-ai/dsh` `0.2.1-rc.5`); this repository's code for every
+  server claim; OpenAI and Claude help pages read on 2026-10-31 (two OpenAI
+  pages through the built-in browser, since the fetcher got 403); forensic
+  re-audit with 11 findings fixed (`REAUDIT.md`), among them the proxy origin
+  check that would have refused every harness request (HF-07).
+- **Next exact action:** decisions approved 2026-10-31. HP-1 runs with
+  wave 0 (`docs/program/C_H_R_PROGRAM.md` §3); H1 follows C1's migration.
+
+## Track H owner approvals
+
+The owner answered "Approve all" in chat on 2026-10-31 (session with Claude Code / Opus 5.5) to the question "Approve the decisions of tracks C, H and R as proposed?".
+
+- **Approved:** HD-01 through HD-19, as written in `docs/kriya-harness/DECISIONS.md` on 2026-10-31.
+- **Owner-gated, approved by id:** HD-02 (built on DeepSeek Harness as pinned dependencies; brand attribution), HD-03 (client in its own `kriya-harness` repository), HD-05 (device identity; `authenticateDevice` in the protected `lib/auth.ts`; the invariant 3 wording, which the owner applies to AGENTS.md at H2 start, HB-03), HD-06 (public gateway on `kriya-web` with the platform key), HD-07 (`harness_usage` ledger counted in the allowance; monthly cap), HD-12 (direction for the device world; its new Render service gets its own decision record at H10), HD-14 (npm distribution).
+- **Program decision approved:** PX-03 (see "Track C owner approvals").
+- **Still needed before H4:** the `kriya-harness` repository and the npm scope (HB-02, HQ-03); counsel HQ-C1 before a public beta (HB-05).
+
+# Rooms (track R)
+
+Conversations where people and their own agents work together: an agent
+acts only in its owner's account (its tools, approvals, memory and spend),
+private content leaves only through the owner's "Share in room", results
+carry proof cards computed by code, and another member's agent can verify
+them independently. Every capability is behind a `rooms.*` switch that
+defaults off (RT-REG-01). Agents start from `docs/rooms/AGENT_MASTER_PROMPT.md`.
+
+## Track R documents
+
+| Document | What it decides |
+| --- | --- |
+| `docs/rooms/REPOSITORY_AUDIT.md` | Facts rooms depend on; Supabase Realtime facts; findings RF-01…05 |
+| `docs/rooms/VISION_AND_SCENARIOS.md` | The idea, four safety rules, scenarios RS01–RS10 |
+| `docs/rooms/DECISIONS.md` | RD-01…RD-20 (all **Proposed**; owner-gated marked) |
+| `docs/rooms/ARCHITECTURE.md` | Components, a mention end to end, `runTask` lines, capacity |
+| `docs/rooms/CONVERSATION_PROTOCOL.md` | Message kinds, mentions and invocation, the bridge message, proof cards, independent verification, re-checks, the conductor |
+| `docs/rooms/DATA_MODEL_AND_STATE_MACHINES.md` | Tables, membership functions, seq, `join_room`, `check_room_invocation`, RLS, guarded Realtime policy, goals and notes, tests |
+| `docs/rooms/REALTIME.md` | Supabase Realtime Broadcast design, alternatives rejected, owner setup, capacity |
+| `docs/rooms/SECURITY_PRIVACY_AND_SAFETY.md` | Invariants, RS-1…15, counsel RQ-1…5, gates RC-1…6 |
+| `docs/rooms/UX_SPEC.md` | Where rooms appear, room page, proof cards, disclosure, browser checks |
+| `docs/rooms/TEST_STRATEGY.md` | Test ids RT-… |
+| `docs/rooms/CHANGE_IMPACT_AND_SAFETY.md` | **Read before editing any existing file** |
+| `docs/rooms/IMPLEMENTATION_PLAN.md` | Phases R0–R10, lanes, rollout, rollback |
+| `docs/rooms/REAUDIT.md` | Forensic re-audit, findings R-01…R-09 |
+| `docs/rooms/AGENT_MASTER_PROMPT.md` | The prompt for implementing agents |
+
+## Track R overview
+
+| Phase | Name | Status | Depends on |
+| --- | --- | --- | --- |
+| R0 | Blueprint and decisions | COMPLETE (2026-10-31: documents written and re-audited; RD-01…RD-20 approved, owner-gated by id, see "Track R owner approvals") | — |
+| RP-1 | Baseline re-check | COMPLETE (2026-10-31, with CP-1: Test Files 185 passed | 3 skipped (188); Tests 2289 passed | 42 skipped (2331); exit 0) | R0 |
+| R1 | Data model (`20270401000000`) | NOT_STARTED | RP-1, H1 |
+| R2 | Room core | NOT_STARTED | R1 |
+| R3 | Room UI, realtime, polling | NOT_STARTED | R2 |
+| R4 | Agents in rooms | NOT_STARTED | R3, C5 (agent hot spots released) |
+| R5 | Proof cards, independent verification, re-check relay | NOT_STARTED | R4 |
+| R6 | Conductor | NOT_STARTED | R5 |
+| R7 | Room goals | NOT_STARTED | R5 |
+| R8 | Room notes | NOT_STARTED | R4 |
+| R9 | Safety, moderation, scale readiness | NOT_STARTED | R6 |
+| R10 | Controlled pilot | NOT_STARTED | R9, RQ-1, RQ-2 |
+
+## Track R blockers
+
+| # | Blocker | Blocks | Needed from |
+| --- | --- | --- | --- |
+| RB-01 | ~~Owner approval of RD-01…RD-20 and PX-03~~ Resolved 2026-10-31 ("Approve all", see "Track R owner approvals") | RP-1+ | Owner |
+| RB-02 | Owner applies the invariant 1 sentence (RD-02) | R1 | Owner |
+| RB-03 | Supabase Realtime "Allow public access" off on staging, and plan sizing (REALTIME §4) | R3 staging checks | Owner |
+| RB-04 | Two test accounts on staging (CB-05) | R3–R5 checks | Owner |
+| RB-05 | Counsel RQ-1, RQ-2 | R10 | Owner + counsel |
+
+## Phase R0 — Blueprint and decisions
+
+**Status:** COMPLETE (2026-10-31): documents done and re-audited; every decision approved ("Track R owner approvals").
+
+- **Done (2026-10-31, Claude Code / Opus 5.5, `main` in place,
+  uncommitted):** the 14 documents in `docs/rooms/`, this section, the track
+  row at the top, a "Rooms (track R)" section in `AGENTS.md`. No code, test,
+  migration, dependency, setting or account touched.
+- **How it was checked:** this repository's code for every claim (RLS
+  shapes, queue entry points, `untrustedSeen`, episodes, citation checks,
+  proxy, bottom nav); Supabase Realtime docs read on 2026-10-31; forensic
+  re-audit with 9 findings fixed (`REAUDIT.md`), among them that model
+  messages carry no metadata, so room content is marked by a text marker
+  (R-02).
+- **Next exact action:** decisions approved 2026-10-31. RP-1 runs with
+  wave 0 (`docs/program/C_H_R_PROGRAM.md` §3); R1 follows H1's migration.
+
+## Track R owner approvals
+
+The owner answered "Approve all" in chat on 2026-10-31 (session with Claude Code / Opus 5.5) to the question "Approve the decisions of tracks C, H and R as proposed?".
+
+- **Approved:** RD-01 through RD-20, as written in `docs/rooms/DECISIONS.md` on 2026-10-31.
+- **Owner-gated, approved by id:** RD-02 (membership-based access; the invariant 1 sentence, which the owner applies to AGENTS.md at R1 start, RB-02), RD-03 (additive `enqueueRoomTurn` in the protected `lib/agent/queue.ts`), RD-10 (Supabase Realtime private channels; the dashboard setting and plan sizing stay owner actions, RB-03), RD-16 (in-app notifications; notifier events through PX-03).
+- **Program decision approved:** PX-03 (see "Track C owner approvals").
+- **Still needed before R10:** counsel RQ-1, RQ-2 (RB-05).
