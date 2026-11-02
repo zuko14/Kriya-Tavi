@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm"
 
 import { privileged } from "@/db"
 import { platformSettings } from "@/db/schema"
+import { log } from "@/lib/log"
 
 // Platform configuration. Every setting is defined once here with its
 // environment variable and default. The owner can override a setting from
@@ -753,17 +754,46 @@ export function isSettingKey(key: string): key is SettingKey {
 }
 
 const CACHE_MS = 15_000
+// An expired copy still answers this long while a refresh fails (a busy
+// pool), instead of failing every page; after a Save there's no copy
+const STALE_MS = 5 * 60_000
 const globalForSettings = globalThis as unknown as {
   __kriyaSettings?: { at: number; values: Map<string, string> }
+  __kriyaSettingsLoad?: Promise<Map<string, string>>
+  // Bumped by every Save, so a load that started before it can't cache
+  __kriyaSettingsGen?: number
 }
 
 async function stored() {
   const cache = globalForSettings.__kriyaSettings
   if (cache && Date.now() - cache.at < CACHE_MS) return cache.values
-  const rows = await privileged.select().from(platformSettings)
-  const values = new Map(rows.map((row) => [row.key, row.value]))
-  globalForSettings.__kriyaSettings = { at: Date.now(), values }
-  return values
+  // One query however many getSetting calls miss at once: a page asks for
+  // a dozen settings in parallel, and each query would hold a connection
+  const gen = globalForSettings.__kriyaSettingsGen ?? 0
+  const load = (globalForSettings.__kriyaSettingsLoad ??= privileged
+    .select()
+    .from(platformSettings)
+    .then((rows) => {
+      const values = new Map(rows.map((row) => [row.key, row.value]))
+      if ((globalForSettings.__kriyaSettingsGen ?? 0) === gen)
+        globalForSettings.__kriyaSettings = { at: Date.now(), values }
+      return values
+    })
+    .finally(() => {
+      if (globalForSettings.__kriyaSettingsLoad === load)
+        globalForSettings.__kriyaSettingsLoad = undefined
+    }))
+  try {
+    return await load
+  } catch (error) {
+    if (cache && Date.now() - cache.at < STALE_MS) {
+      log.warn("settings refresh failed; using the last copy", {
+        error: error instanceof Error ? error.message : String(error),
+      })
+      return cache.values
+    }
+    throw error
+  }
 }
 
 function envValue(key: SettingKey) {
@@ -825,6 +855,8 @@ export async function setSetting(
       })
   }
   globalForSettings.__kriyaSettings = undefined
+  globalForSettings.__kriyaSettingsLoad = undefined
+  globalForSettings.__kriyaSettingsGen = (globalForSettings.__kriyaSettingsGen ?? 0) + 1
 }
 
 export async function getMaxSteps() {

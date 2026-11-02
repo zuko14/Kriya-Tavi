@@ -18,9 +18,25 @@ export type Tx = Parameters<Parameters<DB["transaction"]>[0]>[0]
 // Either a connection or a transaction
 export type Q = DB | Tx
 
+// Supabase's session pooler (port 5432 on *.pooler.supabase.com) allows
+// only its pool size in clients across every service, and the pools here
+// add up past it (render.yaml); DATABASE_URL must be the transaction pooler
+export function sessionPooler(url: string) {
+  try {
+    const parsed = new URL(url)
+    return parsed.hostname.endsWith(".pooler.supabase.com") && parsed.port === "5432"
+  } catch {
+    return false
+  }
+}
+
 function open(): DB {
   const url = process.env.DATABASE_URL
   if (!url) throw new Error("DATABASE_URL is not set. See docs/kriya/deployment.md.")
+  if (sessionPooler(url))
+    console.warn(
+      "DATABASE_URL uses Supabase's session pooler (port 5432), which caps clients across all services. Use the transaction pooler (port 6543); see docs/kriya/deployment.md."
+    )
   const client = postgres(url, {
     // Supabase's transaction pooler (port 6543) doesn't keep prepared statements
     prepare: false,
