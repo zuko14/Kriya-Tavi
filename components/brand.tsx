@@ -1,3 +1,4 @@
+import { useId } from "react"
 import Image from "next/image"
 
 import { cn } from "@/lib/utils"
@@ -13,20 +14,23 @@ const K_PATHS = [
 const LEAF = "M33.5 36.5c4.6-3.6 10-4.8 15.5-3.8-4.4 4-9.8 5.3-15.5 3.8z"
 
 export function LogoMark({ className }: { className?: string }) {
+  // Unique per instance: url(#…) resolves to the first element with the id,
+  // and the first copy may sit in a hidden sidebar, which blanks the tile
+  const id = `tavi${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`
   return (
     <svg viewBox="0 0 64 64" aria-hidden className={cn("size-6 shrink-0", className)}>
       <defs>
-        <linearGradient id="tavi-tile" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={`${id}-tile`} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#2A6466" />
           <stop offset="1" stopColor="#10292B" />
         </linearGradient>
-        <linearGradient id="tavi-sheen" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={`${id}-sheen`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#FFFFFF" stopOpacity="0.28" />
           <stop offset="0.5" stopColor="#FFFFFF" stopOpacity="0" />
         </linearGradient>
       </defs>
-      <rect width="64" height="64" rx="18" fill="url(#tavi-tile)" />
-      <rect width="64" height="64" rx="18" fill="url(#tavi-sheen)" />
+      <rect width="64" height="64" rx="18" fill={`url(#${id}-tile)`} />
+      <rect width="64" height="64" rx="18" fill={`url(#${id}-sheen)`} />
       <rect
         x="0.5"
         y="0.5"

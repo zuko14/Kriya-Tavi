@@ -60,6 +60,10 @@ export function problems(env: Env, fileNames: string[]) {
         "OPENROUTER_API_KEY is set without the local stub in OPENROUTER_BASE_URL (would spend money)."
       )
   }
+  // C8: a sandbox provider key starts paid compute (track C rule 3)
+  for (const name of ["E2B_API_KEY", "DAYTONA_API_KEY"])
+    if (has(env[name]) && env.KRIYA_VERIFY_PAID !== "1")
+      found.push(`${name} is set: paid sandboxes need KRIYA_VERIFY_PAID=1.`)
   // OF-17: Next.js fills any name left undefined from .env and .env.local
   for (const name of [...new Set(fileNames)].sort())
     if (env[name] === undefined)

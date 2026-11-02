@@ -43,7 +43,7 @@ export function MobileNav() {
         >
           <MenuIcon className="size-5" />
         </button>
-        <Link href="/home" className="flex items-center gap-2">
+        <Link href="/home" className="flex min-h-11 items-center gap-2">
           <LogoMark className="size-7" />
           <Wordmark className="text-[15px]" />
         </Link>

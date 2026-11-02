@@ -178,11 +178,18 @@ describe("migrations", () => {
         )
       ).rows.length
     expect(await added()).toBe(12)
-    // Rollbacks run newest first: track N (N1) uses check_transition();
-    // crews (O11) reference jobs; operator jobs
+    // Rollbacks run newest first: track R (R9, R7, R1), track H (H10, H1), track C (C1) and track N
+    // (N1) use check_transition(); crews (O11) reference jobs; operator jobs
     // (O2) reference goals and use check_transition(), as do policy versions
     // (A12), radar (A13), ledger (A7), files (A5), skills (A9) and login
     // profiles (A6); obligations reference goals
+    await pg.exec(read("rollback", "20270401000200_room_moderation.down.sql"))
+    await pg.exec(read("rollback", "20270401000100_room_goals_notes.down.sql"))
+    await pg.exec(read("rollback", "20270401000000_rooms.down.sql"))
+    await pg.exec(read("rollback", "20270301000200_harness_open_cap.down.sql"))
+    await pg.exec(read("rollback", "20270301000100_harness_device_provider.down.sql"))
+    await pg.exec(read("rollback", "20270301000000_harness.down.sql"))
+    await pg.exec(read("rollback", "20270201000000_cloud_workspaces.down.sql"))
     await pg.exec(read("rollback", "20270101000300_mcp_connections.down.sql"))
     await pg.exec(read("rollback", "20270101000000_next_platform.down.sql"))
     await pg.exec(read("rollback", "20261201000100_operator_crews.down.sql"))
@@ -211,6 +218,13 @@ describe("migrations", () => {
     await pg.exec(read("migrations", "20261201000100_operator_crews.sql"))
     await pg.exec(read("migrations", "20270101000000_next_platform.sql"))
     await pg.exec(read("migrations", "20270101000300_mcp_connections.sql"))
+    await pg.exec(read("migrations", "20270201000000_cloud_workspaces.sql"))
+    await pg.exec(read("migrations", "20270301000000_harness.sql"))
+    await pg.exec(read("migrations", "20270301000100_harness_device_provider.sql"))
+    await pg.exec(read("migrations", "20270301000200_harness_open_cap.sql"))
+    await pg.exec(read("migrations", "20270401000000_rooms.sql"))
+    await pg.exec(read("migrations", "20270401000100_room_goals_notes.sql"))
+    await pg.exec(read("migrations", "20270401000200_room_moderation.sql"))
   })
 
   it("rolls the A8 providers and undo columns back and applies them again", async () => {
@@ -847,5 +861,557 @@ describe("migrations", () => {
        where n.nspname = 'kriya' and c.relkind = 'r' and not c.relrowsecurity`
     )
     expect(rls).toEqual([])
+  })
+
+  it("CT-DB-06 rolls cloud workspaces back with data in them and applies them again", async () => {
+    const read = (dir: string, file: string) =>
+      fs.readFileSync(path.join(process.cwd(), "supabase", dir, file), "utf8")
+    const pg = await createTestDb()
+    await pg.exec(
+      "create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key); insert into supabase_migrations.schema_migrations values ('20270201000000')"
+    )
+    // Everything about kriya's shape that the migration touches, in text
+    const shape = async () =>
+      (
+        await pg.query<{ line: string }>(
+          `select concat_ws(' ', table_name, column_name, data_type, column_default, is_nullable) as line
+             from information_schema.columns where table_schema = 'kriya'
+           union all select conrelid::regclass || ' ' || conname || ' ' || pg_get_constraintdef(oid)
+             from pg_constraint where connamespace = 'kriya'::regnamespace
+           union all select indexdef from pg_indexes where schemaname = 'kriya'
+           union all select polrelid::regclass || ' ' || polname from pg_policy
+           union all select tgrelid::regclass || ' ' || tgname from pg_trigger
+             where not tgisinternal and tgrelid::regclass::text like 'kriya.%'
+           union all select p.oid::regprocedure::text from pg_proc p
+             where p.pronamespace = 'kriya'::regnamespace
+           union all select entity || ' ' || from_status || ' ' || to_status
+             from kriya.allowed_transitions
+           order by 1`
+        )
+      ).rows.map((r) => r.line)
+    const added = async () =>
+      (
+        await pg.query(
+          `select relname from pg_class where relname in ('workspaces', 'workspace_sessions')
+           union all select column_name from information_schema.columns
+             where table_schema = 'kriya' and table_name = 'plans' and column_name = 'workspace_minutes'
+           union all select proname from pg_proc where proname = 'open_workspace_session'
+           union all select entity from kriya.allowed_transitions where entity = 'workspace'`
+        )
+      ).rows.length
+    // 2 tables, 1 column, 1 function, 12 transitions
+    expect(await added()).toBe(16)
+    const before = await shape()
+
+    const user = "00000000-0000-0000-0000-0000000000ae"
+    await pg.query("insert into auth.users (id) values ($1)", [user])
+    await pg.query(
+      "insert into kriya.agents (id, user_id, name, role, glyph) values ('a1', $1, 'L', 'r', 'g')",
+      [user]
+    )
+    await pg.query(
+      "insert into kriya.threads (id, user_id, agent_id) values ('t1', $1, 'a1')",
+      [user]
+    )
+    const { rows: tasks } = await pg.query<{ id: string }>(
+      `insert into kriya.tasks (user_id, thread_id, input, plan_id, tier, deadline_at, step_budget, cost_budget_micro_usd)
+       values ($1, 't1', '{}', 'free', 'budget', now() + interval '1 hour', 10, 1000) returning id`,
+      [user]
+    )
+    await pg.query("update kriya.plans set workspace_minutes = 60 where id = 'free'")
+    const { rows: ws } = await pg.query<{ id: string }>(
+      `insert into kriya.workspaces (user_id, thread_id, provider, image, size)
+       values ($1, 't1', 'local', 'kriya-runner', '2c-4g') returning id`,
+      [user]
+    )
+    await pg.query(
+      "select kriya.open_workspace_session(gen_random_uuid(), $1, $2, 'local', 3)",
+      [tasks[0].id, ws[0].id]
+    )
+    await pg.query(
+      `insert into kriya.resource_usage (request_key, user_id, task_id, kind, quantity) values
+        ('ws:1', $1, $2, 'workspace_seconds', 60),
+        ('ws-ckpt:1', $1, $2, 'workspace_storage_bytes', 1024),
+        ('br:1', $1, $2, 'browser_seconds', 30)`,
+      [user, tasks[0].id]
+    )
+
+    // Tracks R (R1) and H (H1) sort after it and are rolled back first, newest first
+    await pg.exec(read("rollback", "20270401000200_room_moderation.down.sql"))
+    await pg.exec(read("rollback", "20270401000100_room_goals_notes.down.sql"))
+    await pg.exec(read("rollback", "20270401000000_rooms.down.sql"))
+    await pg.exec(read("rollback", "20270301000200_harness_open_cap.down.sql"))
+    await pg.exec(read("rollback", "20270301000100_harness_device_provider.down.sql"))
+    await pg.exec(read("rollback", "20270301000000_harness.down.sql"))
+    await pg.exec(read("rollback", "20270201000000_cloud_workspaces.down.sql"))
+    expect(await added()).toBe(0)
+    const { rows: version } = await pg.query(
+      "select 1 from supabase_migrations.schema_migrations where version = '20270201000000'"
+    )
+    expect(version).toEqual([])
+    // Other usage stays; the old kind check is back
+    const { rows: usage } = await pg.query("select request_key from kriya.resource_usage")
+    expect(usage).toEqual([{ request_key: "br:1" }])
+    await expect(
+      pg.query(
+        "insert into kriya.resource_usage (request_key, kind, quantity) values ('ws:2', 'workspace_seconds', 1)"
+      )
+    ).rejects.toThrow(/resource_usage_kind_check/)
+
+    await pg.exec(read("migrations", "20270201000000_cloud_workspaces.sql"))
+    await pg.exec(read("migrations", "20270301000000_harness.sql"))
+    await pg.exec(read("migrations", "20270301000100_harness_device_provider.sql"))
+    await pg.exec(read("migrations", "20270301000200_harness_open_cap.sql"))
+    await pg.exec(read("migrations", "20270401000000_rooms.sql"))
+    await pg.exec(read("migrations", "20270401000100_room_goals_notes.sql"))
+    await pg.exec(read("migrations", "20270401000200_room_moderation.sql"))
+    expect(await added()).toBe(16)
+    expect(await shape()).toEqual(before)
+  })
+
+  it("HT-DB-06 rolls the harness tables back with data in them and applies them again", async () => {
+    const read = (dir: string, file: string) =>
+      fs.readFileSync(path.join(process.cwd(), "supabase", dir, file), "utf8")
+    const pg = await createTestDb()
+    await pg.exec(
+      "create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key); insert into supabase_migrations.schema_migrations values ('20270301000000')"
+    )
+    const shape = async () =>
+      (
+        await pg.query<{ line: string }>(
+          `select concat_ws(' ', table_name, column_name, data_type, column_default, is_nullable) as line
+             from information_schema.columns where table_schema = 'kriya'
+           union all select conrelid::regclass || ' ' || conname || ' ' || pg_get_constraintdef(oid)
+             from pg_constraint where connamespace = 'kriya'::regnamespace
+           union all select indexdef from pg_indexes where schemaname = 'kriya'
+           union all select polrelid::regclass || ' ' || polname from pg_policy
+           union all select tgrelid::regclass || ' ' || tgname from pg_trigger
+             where not tgisinternal and tgrelid::regclass::text like 'kriya.%'
+           union all select p.oid::regprocedure::text from pg_proc p
+             where p.pronamespace = 'kriya'::regnamespace
+           union all select entity || ' ' || from_status || ' ' || to_status
+             from kriya.allowed_transitions
+           order by 1`
+        )
+      ).rows.map((r) => r.line)
+    const added = async () =>
+      (
+        await pg.query(
+          `select relname from pg_class where relname in ('harness_devices', 'harness_device_codes',
+             'harness_usage', 'harness_approval_requests', 'harness_sessions')
+           union all select column_name from information_schema.columns
+             where table_schema = 'kriya' and table_name = 'plans' and column_name = 'harness_monthly_micro_inr'
+           union all select proname from pg_proc where proname = 'reserve_harness_spend'
+           union all select entity from kriya.allowed_transitions where entity = 'harness_approval'`
+        )
+      ).rows.length
+    // 5 tables, 1 column, 1 function, 4 transitions
+    expect(await added()).toBe(11)
+    const before = await shape()
+
+    const user = "00000000-0000-0000-0000-0000000000af"
+    await pg.query("insert into auth.users (id) values ($1)", [user])
+    await pg.query(
+      "insert into kriya.agents (id, user_id, name, role, glyph) values ('a1', $1, 'L', 'r', 'g')",
+      [user]
+    )
+    await pg.query(
+      "insert into kriya.threads (id, user_id, agent_id) values ('t1', $1, 'a1')",
+      [user]
+    )
+    const { rows: devices } = await pg.query<{ id: string }>(
+      `insert into kriya.harness_devices (user_id, agent_id, name, platform, token_hash)
+       values ($1, 'a1', 'laptop', 'linux', repeat('a', 64)) returning id`,
+      [user]
+    )
+    const d = devices[0].id
+    await pg.query(
+      `insert into kriya.harness_device_codes (device_code_hash, user_code, device_name, platform, expires_at, device_id)
+       values (repeat('b', 64), 'ABCD2345', 'laptop', 'linux', now(), $1)`,
+      [d]
+    )
+    await pg.query(
+      "update kriya.plans set harness_monthly_micro_inr = 1000 where id = 'free'"
+    )
+    await pg.query(
+      "select kriya.reserve_harness_spend($1, $2, 'r1', 'budget', 'm', 10)",
+      [user, d]
+    )
+    await pg.query(
+      `insert into kriya.harness_approval_requests (user_id, device_id, tool, summary, expires_at)
+       values ($1, $2, 'shell', 'Run tests', now())`,
+      [user, d]
+    )
+    await pg.query(
+      "insert into kriya.harness_sessions (user_id, device_id, thread_id, device_session_id) values ($1, $2, 't1', 's1')",
+      [user, d]
+    )
+
+    // Track R (R1) sorts after it and is rolled back first
+    await pg.exec(read("rollback", "20270401000200_room_moderation.down.sql"))
+    await pg.exec(read("rollback", "20270401000100_room_goals_notes.down.sql"))
+    await pg.exec(read("rollback", "20270401000000_rooms.down.sql"))
+    await pg.exec(read("rollback", "20270301000200_harness_open_cap.down.sql"))
+    await pg.exec(read("rollback", "20270301000100_harness_device_provider.down.sql"))
+    await pg.exec(read("rollback", "20270301000000_harness.down.sql"))
+    expect(await added()).toBe(0)
+    const { rows: version } = await pg.query(
+      "select 1 from supabase_migrations.schema_migrations where version = '20270301000000'"
+    )
+    expect(version).toEqual([])
+    // Everything else stays
+    const { rows: threads } = await pg.query(
+      "select id from kriya.threads where user_id = $1",
+      [user]
+    )
+    expect(threads).toEqual([{ id: "t1" }])
+
+    await pg.exec(read("migrations", "20270301000000_harness.sql"))
+    await pg.exec(read("migrations", "20270301000100_harness_device_provider.sql"))
+    await pg.exec(read("migrations", "20270301000200_harness_open_cap.sql"))
+    await pg.exec(read("migrations", "20270401000000_rooms.sql"))
+    await pg.exec(read("migrations", "20270401000100_room_goals_notes.sql"))
+    await pg.exec(read("migrations", "20270401000200_room_moderation.sql"))
+    expect(await added()).toBe(11)
+    expect(await shape()).toEqual(before)
+  })
+
+  it("RT-DB-08 rolls the rooms back with data in them and applies them again", async () => {
+    const read = (dir: string, file: string) =>
+      fs.readFileSync(path.join(process.cwd(), "supabase", dir, file), "utf8")
+    const pg = await createTestDb()
+    await pg.exec(
+      "create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key); insert into supabase_migrations.schema_migrations values ('20270401000000')"
+    )
+    const shape = async () =>
+      (
+        await pg.query<{ line: string }>(
+          `select concat_ws(' ', table_name, column_name, data_type, column_default, is_nullable) as line
+             from information_schema.columns where table_schema = 'kriya'
+           union all select conrelid::regclass || ' ' || conname || ' ' || pg_get_constraintdef(oid)
+             from pg_constraint where connamespace = 'kriya'::regnamespace
+           union all select indexdef from pg_indexes where schemaname = 'kriya'
+           union all select polrelid::regclass || ' ' || polname from pg_policy
+           union all select tgrelid::regclass || ' ' || tgname from pg_trigger
+             where not tgisinternal and tgrelid::regclass::text like 'kriya.%'
+           union all select p.oid::regprocedure::text from pg_proc p
+             where p.pronamespace = 'kriya'::regnamespace
+           union all select entity || ' ' || from_status || ' ' || to_status
+             from kriya.allowed_transitions
+           order by 1`
+        )
+      ).rows.map((r) => r.line)
+    const added = async () =>
+      (
+        await pg.query(
+          `select relname from pg_class where relname in ('rooms', 'room_members', 'room_invites',
+             'room_agents', 'room_messages', 'room_invocations', 'room_disclosures')
+           union all select proname from pg_proc where proname in ('room_role', 'is_room_member',
+             'rooms_owner_member', 'room_messages_seq', 'room_members_guard', 'join_room',
+             'check_room_invocation')
+           union all select entity from kriya.allowed_transitions where entity = 'room_disclosure'`
+        )
+      ).rows.length
+    // 7 tables, 7 functions, 2 transitions
+    expect(await added()).toBe(16)
+    const before = await shape()
+
+    const user = "00000000-0000-0000-0000-0000000000b0"
+    await pg.query("insert into auth.users (id) values ($1)", [user])
+    await pg.query(
+      "insert into kriya.agents (id, user_id, name, role, glyph) values ('a1', $1, 'L', 'r', 'g')",
+      [user]
+    )
+    await pg.query(
+      "insert into kriya.threads (id, user_id, agent_id) values ('t1', $1, 'a1')",
+      [user]
+    )
+    const { rows: rooms } = await pg.query<{ id: string }>(
+      "insert into kriya.rooms (created_by, title) values ($1, 'Plan') returning id",
+      [user]
+    )
+    const r = rooms[0].id
+    await pg.query(
+      "insert into kriya.room_invites (room_id, created_by, token_hash, max_uses, expires_at) values ($1, $2, repeat('c', 64), 2, now() + interval '1 day')",
+      [r, user]
+    )
+    await pg.query(
+      "insert into kriya.room_agents (room_id, agent_id, owner_id, bridge_thread_id) values ($1, 'a1', $2, 't1')",
+      [r, user]
+    )
+    await pg.query(
+      "insert into kriya.room_messages (room_id, author_kind, user_id, body) values ($1, 'human', $2, 'hi')",
+      [r, user]
+    )
+    await pg.query(
+      "insert into kriya.room_invocations (room_id, agent_id, owner_id, requested_by) values ($1, 'a1', $2, $2)",
+      [r, user]
+    )
+    await pg.query(
+      "insert into kriya.room_disclosures (room_id, owner_id, agent_id, body) values ($1, $2, 'a1', 'x')",
+      [r, user]
+    )
+
+    await pg.exec(read("rollback", "20270401000200_room_moderation.down.sql"))
+    await pg.exec(read("rollback", "20270401000100_room_goals_notes.down.sql"))
+    await pg.exec(read("rollback", "20270401000000_rooms.down.sql"))
+    expect(await added()).toBe(0)
+    const { rows: version } = await pg.query(
+      "select 1 from supabase_migrations.schema_migrations where version = '20270401000000'"
+    )
+    expect(version).toEqual([])
+    // The bridge thread and the agent stay
+    const { rows: threads } = await pg.query(
+      "select id from kriya.threads where user_id = $1",
+      [user]
+    )
+    expect(threads).toEqual([{ id: "t1" }])
+
+    await pg.exec(read("migrations", "20270401000000_rooms.sql"))
+    await pg.exec(read("migrations", "20270401000100_room_goals_notes.sql"))
+    await pg.exec(read("migrations", "20270401000200_room_moderation.sql"))
+    expect(await added()).toBe(16)
+    expect(await shape()).toEqual(before)
+  })
+})
+
+describe("20270401000100_room_goals_notes (track R, R7)", () => {
+  it("rolls goals and notes back with data in them and applies them again", async () => {
+    const read = (dir: string, file: string) =>
+      fs.readFileSync(path.join(process.cwd(), "supabase", dir, file), "utf8")
+    const pg = await createTestDb()
+    await pg.exec(
+      "create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key); insert into supabase_migrations.schema_migrations values ('20270401000100')"
+    )
+    const shape = async () =>
+      (
+        await pg.query<{ line: string }>(
+          `select concat_ws(' ', table_name, column_name, data_type, column_default, is_nullable) as line
+             from information_schema.columns where table_schema = 'kriya'
+           union all select conrelid::regclass || ' ' || conname || ' ' || pg_get_constraintdef(oid)
+             from pg_constraint where connamespace = 'kriya'::regnamespace
+           union all select indexdef from pg_indexes where schemaname = 'kriya'
+           union all select polrelid::regclass || ' ' || polname from pg_policy
+           union all select tgrelid::regclass || ' ' || tgname from pg_trigger
+             where not tgisinternal and tgrelid::regclass::text like 'kriya.%'
+           union all select p.oid::regprocedure::text from pg_proc p
+             where p.pronamespace = 'kriya'::regnamespace
+           union all select entity || ' ' || from_status || ' ' || to_status
+             from kriya.allowed_transitions
+           order by 1`
+        )
+      ).rows.map((r) => r.line)
+    const added = async () =>
+      (
+        await pg.query(
+          `select relname from pg_class where relname in ('room_goals', 'room_goal_items', 'room_notes')
+           union all select proname from pg_proc where proname = 'room_goal_items_guard'
+           union all select entity from kriya.allowed_transitions where entity = 'room_goal'`
+        )
+      ).rows.length
+    // 3 tables, 1 function, 4 transitions
+    expect(await added()).toBe(8)
+    const before = await shape()
+
+    const user = "00000000-0000-0000-0000-0000000000c0"
+    await pg.query("insert into auth.users (id) values ($1)", [user])
+    const { rows: rooms } = await pg.query<{ id: string }>(
+      "insert into kriya.rooms (created_by, title) values ($1, 'Launch') returning id",
+      [user]
+    )
+    const r = rooms[0].id
+    await pg.query(
+      "insert into kriya.room_messages (room_id, author_kind, user_id, body) values ($1, 'human', $2, 'hi')",
+      [r, user]
+    )
+    const { rows: goals } = await pg.query<{ id: string }>(
+      "insert into kriya.room_goals (room_id, title, created_by) values ($1, 'Launch ready', $2) returning id",
+      [r, user]
+    )
+    await pg.query(
+      "insert into kriya.room_goal_items (goal_id, room_id, text, created_by, confirmed_by) values ($1, $2, 'Price sheet', $3, $3)",
+      [goals[0].id, r, user]
+    )
+    await pg.query(
+      "insert into kriya.room_notes (room_id, body, author_kind, user_id) values ($1, 'Venue: Hall B', 'human', $2)",
+      [r, user]
+    )
+
+    await pg.exec(read("rollback", "20270401000200_room_moderation.down.sql"))
+    await pg.exec(read("rollback", "20270401000100_room_goals_notes.down.sql"))
+    expect(await added()).toBe(0)
+    expect(
+      (
+        await pg.query(
+          "select 1 from supabase_migrations.schema_migrations where version = '20270401000100'"
+        )
+      ).rows
+    ).toEqual([])
+    // The room and its messages stay
+    expect(
+      (await pg.query("select body from kriya.room_messages where room_id = $1", [r]))
+        .rows
+    ).toEqual([{ body: "hi" }])
+
+    await pg.exec(read("migrations", "20270401000100_room_goals_notes.sql"))
+    await pg.exec(read("migrations", "20270401000200_room_moderation.sql"))
+    expect(await added()).toBe(8)
+    expect(await shape()).toEqual(before)
+  })
+})
+
+describe("20270401000200_room_moderation (track R, R9)", () => {
+  it("rolls blocks and reports back with data in them and applies them again", async () => {
+    const read = (dir: string, file: string) =>
+      fs.readFileSync(path.join(process.cwd(), "supabase", dir, file), "utf8")
+    const pg = await createTestDb()
+    await pg.exec(
+      "create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key); insert into supabase_migrations.schema_migrations values ('20270401000200')"
+    )
+    const shape = async () =>
+      (
+        await pg.query<{ line: string }>(
+          `select concat_ws(' ', table_name, column_name, data_type, column_default, is_nullable) as line
+             from information_schema.columns where table_schema = 'kriya'
+           union all select conrelid::regclass || ' ' || conname || ' ' || pg_get_constraintdef(oid)
+             from pg_constraint where connamespace = 'kriya'::regnamespace
+           union all select indexdef from pg_indexes where schemaname = 'kriya'
+           union all select polrelid::regclass || ' ' || polname from pg_policy
+           union all select tgrelid::regclass || ' ' || tgname from pg_trigger
+             where not tgisinternal and tgrelid::regclass::text like 'kriya.%'
+           union all select p.oid::regprocedure::text from pg_proc p
+             where p.pronamespace = 'kriya'::regnamespace
+           union all select entity || ' ' || from_status || ' ' || to_status
+             from kriya.allowed_transitions
+           order by 1`
+        )
+      ).rows.map((r) => r.line)
+    const added = async () =>
+      (
+        await pg.query(
+          `select relname from pg_class where relname in ('person_blocks', 'room_reports')
+           union all select proname from pg_proc where proname in ('room_reports_fill', 'invite_blocked')
+           union all select entity from kriya.allowed_transitions where entity = 'room_report'`
+        )
+      ).rows.length
+    // 2 tables, 2 functions, 2 transitions
+    expect(await added()).toBe(6)
+    const before = await shape()
+
+    const user = "00000000-0000-0000-0000-0000000000d0"
+    const other = "00000000-0000-0000-0000-0000000000d1"
+    await pg.query("insert into auth.users (id) values ($1), ($2)", [user, other])
+    const { rows: rooms } = await pg.query<{ id: string }>(
+      "insert into kriya.rooms (created_by, title) values ($1, 'Launch') returning id",
+      [user]
+    )
+    const r = rooms[0].id
+    const { rows: messages } = await pg.query<{ id: string }>(
+      "insert into kriya.room_messages (room_id, author_kind, user_id, body) values ($1, 'human', $2, 'hi') returning id",
+      [r, user]
+    )
+    await pg.query(
+      "insert into kriya.person_blocks (blocker_id, blocked_id) values ($1, $2)",
+      [user, other]
+    )
+    await pg.query(
+      "insert into kriya.room_reports (room_id, message_id, reporter_id, reason) values ($1, $2, $3, 'spam')",
+      [r, messages[0].id, user]
+    )
+
+    await pg.exec(read("rollback", "20270401000200_room_moderation.down.sql"))
+    expect(await added()).toBe(0)
+    expect(
+      (
+        await pg.query(
+          "select 1 from supabase_migrations.schema_migrations where version = '20270401000200'"
+        )
+      ).rows
+    ).toEqual([])
+    // The room and its messages stay
+    expect(
+      (await pg.query("select body from kriya.room_messages where room_id = $1", [r]))
+        .rows
+    ).toEqual([{ body: "hi" }])
+
+    await pg.exec(read("migrations", "20270401000200_room_moderation.sql"))
+    expect(await added()).toBe(6)
+    expect(await shape()).toEqual(before)
+  })
+})
+
+describe("20270301000100_harness_device_provider (track H, H10, PX-06)", () => {
+  it("widens the provider checks to 'device', rolls back and applies again", async () => {
+    const read = (dir: string, file: string) =>
+      fs.readFileSync(path.join(process.cwd(), "supabase", dir, file), "utf8")
+    const pg = await createTestDb()
+    await pg.exec(
+      "create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key); insert into supabase_migrations.schema_migrations values ('20270301000100')"
+    )
+    const checks = async () =>
+      (
+        await pg.query<{ line: string }>(
+          `select conrelid::regclass || ' ' || pg_get_constraintdef(oid) as line
+             from pg_constraint
+            where conname in ('workspaces_provider_check', 'workspace_sessions_provider_check')
+            order by 1`
+        )
+      ).rows.map((r) => r.line)
+    const after = await checks()
+    expect(after).toHaveLength(2)
+    for (const line of after) expect(line).toContain("'device'")
+
+    await pg.exec(read("rollback", "20270301000200_harness_open_cap.down.sql"))
+    await pg.exec(read("rollback", "20270301000100_harness_device_provider.down.sql"))
+    const before = await checks()
+    expect(before).toHaveLength(2)
+    for (const line of before) expect(line).not.toContain("'device'")
+    expect(
+      (
+        await pg.query(
+          "select 1 from supabase_migrations.schema_migrations where version = '20270301000100'"
+        )
+      ).rows
+    ).toEqual([])
+
+    await pg.exec(read("migrations", "20270301000100_harness_device_provider.sql"))
+    await pg.exec(read("migrations", "20270301000200_harness_open_cap.sql"))
+    expect(await checks()).toEqual(after)
+  })
+})
+
+describe("20270301000200_harness_open_cap (track H, re-audit 2026-11-02)", () => {
+  it("adds the open-answers limit to reserve_harness_spend, rolls back and applies again", async () => {
+    const read = (dir: string, file: string) =>
+      fs.readFileSync(path.join(process.cwd(), "supabase", dir, file), "utf8")
+    const pg = await createTestDb()
+    await pg.exec(
+      "create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key); insert into supabase_migrations.schema_migrations values ('20270301000200')"
+    )
+    const body = async () =>
+      (
+        await pg.query<{ src: string }>(
+          "select prosrc as src from pg_proc where proname = 'reserve_harness_spend'"
+        )
+      ).rows.map((r) => r.src)
+    const after = await body()
+    expect(after).toHaveLength(1)
+    expect(after[0]).toContain("harness too many open")
+
+    await pg.exec(read("rollback", "20270301000200_harness_open_cap.down.sql"))
+    const before = await body()
+    expect(before).toHaveLength(1)
+    expect(before[0]).not.toContain("harness too many open")
+    expect(before[0]).toContain("harness cap reached")
+    expect(
+      (
+        await pg.query(
+          "select 1 from supabase_migrations.schema_migrations where version = '20270301000200'"
+        )
+      ).rows
+    ).toEqual([])
+
+    await pg.exec(read("migrations", "20270301000200_harness_open_cap.sql"))
+    expect(await body()).toEqual(after)
   })
 })

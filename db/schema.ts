@@ -106,6 +106,10 @@ export const plans = kriya.table("plans", {
   maxCallSeconds: integer().notNull().default(300),
   maxAttemptsPerCall: integer().notNull().default(2),
   maxVoiceTaskCostMicroInr: micro().notNull().default(0),
+  // Cloud workspaces (track C); 0 means no workspaces on the plan (CD-14)
+  workspaceMinutes: integer().notNull().default(0),
+  // Kriya Harness (track H): monthly harness charges cap; 0 = no harness (HD-07)
+  harnessMonthlyMicroInr: micro().notNull().default(0),
 })
 
 export const SUBSCRIPTION_STATUSES = [
@@ -584,6 +588,9 @@ export const resourceUsage = kriya.table("resource_usage", {
       "web_fetch",
       // Skill Studio designs (next.skillStudio)
       "skill_design",
+      // Cloud workspaces (track C)
+      "workspace_seconds",
+      "workspace_storage_bytes",
     ],
   }).notNull(),
   quantity: micro().notNull(),
@@ -960,8 +967,10 @@ export type TaskInput = {
   messageId: string
   agentId: string
   // "schedule": started by a schedule's run, not by the person (A3);
-  // "crew": a crew part or its join (O11)
-  channel: "web" | "schedule" | "crew"
+  // "crew": a crew part or its join (O11); "room": a request in a room, in
+  // the agent owner's bridge thread (track R, R4)
+  channel: "web" | "schedule" | "crew" | "room"
+  roomId?: string
   scheduleId?: string
   runId?: string
   partId?: string
@@ -1910,6 +1919,382 @@ export const crewParts = kriya.table("crew_parts", {
 
 export type CrewRun = typeof crewRuns.$inferSelect
 export type CrewPart = typeof crewParts.$inferSelect
+
+/* ───────────────────────── cloud workspaces ─────────────────────── */
+
+// Cloud workspaces (track C, migration 20270201000000). Written by the worker
+// (privileged, scoped by user id); the person reads their own rows and may
+// only set closeRequestedAt. Statuses move as kriya.allowed_transitions allows.
+
+export const WORKSPACE_PROVIDERS = ["local", "e2b", "daytona", "device"] as const
+
+export const WORKSPACE_STATUSES = [
+  "new",
+  "starting",
+  "running",
+  "paused",
+  "closing",
+  "closed",
+  "failed",
+] as const
+
+export type WorkspaceChanges = { files: number; added: number; removed: number }
+
+export const workspaces = kriya.table("workspaces", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: uuid().notNull(),
+  threadId: text(),
+  agentId: text(),
+  // owner/name; null = blank workspace
+  repo: text(),
+  baseRef: text(),
+  baseSha: text(),
+  provider: text({ enum: WORKSPACE_PROVIDERS }).notNull(),
+  // The provider's sandbox id; never shown to the person
+  providerRef: text(),
+  image: text().notNull(),
+  size: text().notNull(),
+  network: text({ enum: ["registries", "offline"] })
+    .notNull()
+    .default("registries"),
+  status: text({ enum: WORKSPACE_STATUSES }).notNull().default("new"),
+  generation: integer().notNull().default(0),
+  checkpointPath: text(),
+  checkpointSha256: text(),
+  checkpointBytes: bigint({ mode: "number" }),
+  checkpointAt: at(),
+  checkpointSeq: integer().notNull().default(0),
+  checkpointFailedAt: at(),
+  changes: jsonb().$type<WorkspaceChanges>(),
+  closeRequestedAt: at(),
+  error: text(),
+  lastActiveAt: createdAt(),
+  createdAt: createdAt(),
+  updatedAt: createdAt(),
+  closedAt: at(),
+})
+
+export const WORKSPACE_CLOSE_REASONS = [
+  "end",
+  "canceled",
+  "deadline",
+  "budget",
+  "shutdown",
+  "lease_lost",
+  "orphan",
+  "error",
+  "closed",
+] as const
+
+// One row per running interval of a sandbox; opened by
+// kriya.open_workspace_session (plan minutes, running cap)
+export const workspaceSessions = kriya.table("workspace_sessions", {
+  id: uuid().primaryKey(),
+  workspaceId: uuid().notNull(),
+  userId: uuid().notNull(),
+  taskId: uuid(),
+  provider: text({ enum: WORKSPACE_PROVIDERS }).notNull(),
+  generation: integer().notNull(),
+  status: text({ enum: ["open", "closed", "failed"] })
+    .notNull()
+    .default("open"),
+  openedAt: createdAt(),
+  heartbeatAt: createdAt(),
+  closedAt: at(),
+  seconds: integer(),
+  closeReason: text({ enum: WORKSPACE_CLOSE_REASONS }),
+})
+
+/* ───────────────────────── kriya harness ────────────────────────── */
+
+// Kriya Harness (track H, migration 20270301000000). Device routes write
+// through privileged scoped by the device's user; the person reads their own
+// rows. token_hash and the codes table are never readable by their session.
+
+const HARNESS_PLATFORMS = ["darwin", "linux", "win32"] as const
+
+export const harnessDevices = kriya.table("harness_devices", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: uuid().notNull(),
+  agentId: text(),
+  name: text().notNull(),
+  platform: text({ enum: HARNESS_PLATFORMS }).notNull(),
+  // sha256 of the device token; the token itself is never stored
+  tokenHash: text().notNull(),
+  clientVersion: text(),
+  mirror: text({ enum: ["off", "summary", "full"] })
+    .notNull()
+    .default("off"),
+  createdAt: createdAt(),
+  lastUsedAt: createdAt(),
+  revokedAt: at(),
+})
+
+export const harnessDeviceCodes = kriya.table("harness_device_codes", {
+  deviceCodeHash: text().primaryKey(),
+  userCode: text().notNull(),
+  deviceName: text().notNull(),
+  platform: text({ enum: HARNESS_PLATFORMS }).notNull(),
+  clientVersion: text(),
+  expiresAt: at().notNull(),
+  approvedBy: uuid(),
+  agentId: text(),
+  approvedAt: at(),
+  deniedAt: at(),
+  consumedAt: at(),
+  deviceId: uuid(),
+  lastPolledAt: at(),
+  createdAt: createdAt(),
+})
+
+// One row per gateway request: reported cost, estimate and charge apart
+export const harnessUsage = kriya.table("harness_usage", {
+  id: uuid().primaryKey().defaultRandom(),
+  requestKey: text().notNull(),
+  userId: uuid(),
+  deviceId: uuid(),
+  planId: text(),
+  tier: text({ enum: TIERS }).notNull(),
+  model: text().notNull(),
+  status: text({ enum: ["reserved", "settled", "estimated", "failed"] })
+    .notNull()
+    .default("reserved"),
+  reservedMicroInr: micro().notNull(),
+  inputTokens: integer(),
+  outputTokens: integer(),
+  cachedTokens: integer(),
+  // Null: the provider didn't say; never zero
+  costMicroUsd: micro(),
+  estimatedCostMicroUsd: micro(),
+  chargeMicroInr: micro(),
+  chargeStatus: text({ enum: ["final", "estimated", "unpriced"] }),
+  fxRate: text(),
+  markupBps: integer(),
+  generationId: text(),
+  finishReason: text(),
+  latencyMs: integer(),
+  createdAt: createdAt(),
+  settledAt: at(),
+})
+
+export const harnessApprovalRequests = kriya.table("harness_approval_requests", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: uuid().notNull(),
+  deviceId: uuid().notNull(),
+  sessionRef: text(),
+  tool: text().notNull(),
+  summary: text().notNull(),
+  input: jsonb().$type<Record<string, unknown>>(),
+  cwd: text(),
+  status: text({ enum: ["pending", "approved", "declined", "expired", "canceled"] })
+    .notNull()
+    .default("pending"),
+  createdAt: createdAt(),
+  expiresAt: at().notNull(),
+  answeredAt: at(),
+})
+
+export const harnessSessions = kriya.table("harness_sessions", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: uuid().notNull(),
+  deviceId: uuid().notNull(),
+  threadId: text().notNull(),
+  deviceSessionId: text().notNull(),
+  project: text(),
+  lastSeq: integer().notNull().default(-1),
+  createdAt: createdAt(),
+})
+
+/* ───────────────────────────── rooms ────────────────────────────── */
+
+// Rooms (track R, migration 20270401000000): readable by the room's active
+// members through the membership policies (invariant 1's shared exception);
+// people write as themselves, the server writes agent and system messages,
+// invocations and disclosures after its own checks.
+
+export const rooms = kriya.table("rooms", {
+  id: uuid().primaryKey().defaultRandom(),
+  createdBy: uuid().notNull(),
+  title: text().notNull(),
+  topic: text(),
+  status: text({ enum: ["active", "archived"] })
+    .notNull()
+    .default("active"),
+  lastSeq: micro().notNull().default(0),
+  agentsPausedUntil: at(),
+  createdAt: createdAt(),
+  updatedAt: createdAt(),
+})
+
+export const roomMembers = kriya.table(
+  "room_members",
+  {
+    roomId: uuid().notNull(),
+    userId: uuid().notNull(),
+    role: text({ enum: ["owner", "admin", "member"] })
+      .notNull()
+      .default("member"),
+    joinedAt: createdAt(),
+    leftAt: at(),
+    removedBy: uuid(),
+    lastReadSeq: micro().notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.roomId, t.userId] })]
+)
+
+export const roomInvites = kriya.table("room_invites", {
+  id: uuid().primaryKey().defaultRandom(),
+  roomId: uuid().notNull(),
+  createdBy: uuid().notNull(),
+  // sha256 of the invite token; the token itself is never stored
+  tokenHash: text().notNull(),
+  maxUses: integer().notNull(),
+  uses: integer().notNull().default(0),
+  expiresAt: at().notNull(),
+  revokedAt: at(),
+  createdAt: createdAt(),
+})
+
+export const roomAgents = kriya.table(
+  "room_agents",
+  {
+    roomId: uuid().notNull(),
+    agentId: text().notNull(),
+    ownerId: uuid().notNull(),
+    bridgeThreadId: text().notNull(),
+    invoke: text({ enum: ["owner_only", "members"] })
+      .notNull()
+      .default("owner_only"),
+    dailyCapMicroInr: micro(),
+    allowConnectors: boolean().notNull().default(false),
+    addedAt: createdAt(),
+    removedAt: at(),
+  },
+  (t) => [primaryKey({ columns: [t.roomId, t.agentId] })]
+)
+
+export const roomMessages = kriya.table("room_messages", {
+  id: uuid().primaryKey().defaultRandom(),
+  roomId: uuid().notNull(),
+  // Assigned by the database (kriya.room_messages_seq)
+  seq: micro().notNull(),
+  authorKind: text({ enum: ["human", "agent", "system"] }).notNull(),
+  userId: uuid(),
+  agentId: text(),
+  body: text(),
+  parts: jsonb().notNull().default({}).$type<Record<string, unknown>>(),
+  taskId: uuid(),
+  deletedAt: at(),
+  createdAt: createdAt(),
+})
+
+export const roomInvocations = kriya.table("room_invocations", {
+  id: uuid().primaryKey().defaultRandom(),
+  roomId: uuid().notNull(),
+  agentId: text().notNull(),
+  ownerId: uuid().notNull(),
+  requestedBy: uuid(),
+  messageId: uuid(),
+  chainDepth: integer().notNull().default(0),
+  taskId: uuid(),
+  status: text({ enum: ["queued", "dispatched", "refused", "done", "failed"] })
+    .notNull()
+    .default("queued"),
+  reason: text(),
+  createdAt: createdAt(),
+})
+
+export const roomDisclosures = kriya.table("room_disclosures", {
+  id: uuid().primaryKey().defaultRandom(),
+  roomId: uuid().notNull(),
+  ownerId: uuid().notNull(),
+  agentId: text().notNull(),
+  taskId: uuid(),
+  body: text(),
+  parts: jsonb().notNull().default({}).$type<Record<string, unknown>>(),
+  status: text({ enum: ["pending", "shared", "discarded"] })
+    .notNull()
+    .default("pending"),
+  createdAt: createdAt(),
+  answeredAt: at(),
+})
+
+// Room goals (R7) and notes (R8), migration 20270401000100. A goal's status
+// is computed from its items by lib/rooms/goals.ts; clients can't set it
+export const roomGoals = kriya.table("room_goals", {
+  id: uuid().primaryKey().defaultRandom(),
+  roomId: uuid().notNull(),
+  title: text().notNull(),
+  createdBy: uuid(),
+  status: text({ enum: ["open", "done", "dropped"] })
+    .notNull()
+    .default("open"),
+  createdAt: createdAt(),
+  updatedAt: createdAt(),
+})
+
+export const roomGoalItems = kriya.table("room_goal_items", {
+  id: uuid().primaryKey().defaultRandom(),
+  goalId: uuid().notNull(),
+  roomId: uuid().notNull(),
+  text: text().notNull(),
+  position: integer().notNull().default(0),
+  createdBy: uuid(),
+  // Closed with a verified action on a proof card in the room…
+  proofMessageId: uuid(),
+  proofItem: integer(),
+  // …or by a member's confirmation, without proof
+  confirmedBy: uuid(),
+  // Set by the database from the two above
+  closedAt: at(),
+  createdAt: createdAt(),
+})
+
+export const roomNotes = kriya.table("room_notes", {
+  id: uuid().primaryKey().defaultRandom(),
+  roomId: uuid().notNull(),
+  body: text().notNull(),
+  authorKind: text({ enum: ["human", "agent"] }).notNull(),
+  userId: uuid().notNull(),
+  agentId: text(),
+  confirmedBy: uuid(),
+  confirmedAt: at(),
+  deletedAt: at(),
+  createdAt: createdAt(),
+})
+
+// Block and report (R9), migration 20270401000200. Blocks are the blocker's
+// own; a report's message_* columns are copied by the database
+export const personBlocks = kriya.table(
+  "person_blocks",
+  {
+    blockerId: uuid().notNull(),
+    blockedId: uuid().notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.blockerId, t.blockedId] })]
+)
+
+export const roomReports = kriya.table("room_reports", {
+  id: uuid().primaryKey().defaultRandom(),
+  roomId: uuid().notNull(),
+  messageId: uuid(),
+  reporterId: uuid().notNull(),
+  reason: text({
+    enum: ["spam", "harassment", "unsafe", "private_info", "other"],
+  }).notNull(),
+  note: text(),
+  messageAuthorKind: text({ enum: ["human", "agent", "system"] }),
+  messageUserId: uuid(),
+  messageAgentId: text(),
+  messageBody: text(),
+  status: text({ enum: ["open", "reviewed", "dismissed"] })
+    .notNull()
+    .default("open"),
+  reviewedBy: uuid(),
+  reviewedAt: at(),
+  createdAt: createdAt(),
+})
 
 /* ──────────────────────────── relations ─────────────────────────── */
 

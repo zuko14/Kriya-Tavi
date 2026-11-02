@@ -24,7 +24,10 @@ export function UsageMeter({ status }: { status: SystemStatus }) {
       <div className="flex flex-col gap-4 bg-surface p-5">
         <div className="flex items-center justify-between">
           <span className="label-mono">{plan.name} plan</span>
-          <Link href="/account#plan" className="text-[12px] text-rigel hover:underline">
+          <Link
+            href="/account#plan"
+            className="-my-3 flex min-h-11 items-center text-[12px] text-rigel hover:underline sm:my-0 sm:min-h-0"
+          >
             {plan.id === "free" ? "Upgrade" : "Manage"}
           </Link>
         </div>

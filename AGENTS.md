@@ -8,14 +8,18 @@ Guidance for AI coding agents (and humans) working in this repository.
    `withUser(userId, …)` (`db/index.ts`), so Row Level Security applies. Use
    `privileged` only for bookkeeping that has its own authorization check
    (worker leases, metering, verified webhooks, `requireOwner()`), and always
-   scope it by user id explicitly.
+   scope it by user id explicitly. Room data is the one shared exception: it
+   is readable by the room's active members through the membership policies
+   of `kriya.room_*`; every agent still acts only through `withUser` of its
+   own owner.
 2. **The `kriya` schema is never exposed** through Supabase's Data API. New
    tables go in `kriya`, with RLS enabled and a policy, in a new migration
    under `supabase/migrations/` (never edit an applied one). Add a test to
    `tests/db/`.
 3. **Identity comes from the session only** (`requireUser`, `authenticate`,
-   `requireOwner` in `lib/auth.ts`). Never trust a user id, role, plan or
-   price from the browser.
+   `requireOwner` in `lib/auth.ts`) or, for the Kriya Harness API only, a
+   device token verified by `authenticateDevice` (`lib/auth.ts`). Never
+   trust a user id, role, plan or price from the browser or a device.
 4. **Secrets are environment-only.** Never store one in the database, return
    one from a server action, render one, or log one. `lib/log.ts` redacts,
    but don't rely on it. The exceptions are the OAuth tokens of connected

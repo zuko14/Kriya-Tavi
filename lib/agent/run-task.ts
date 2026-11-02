@@ -72,8 +72,10 @@ import {
   createMcpTools,
   createProposeCallTool,
   createRadarTools,
+  createRoomTools,
   createSkillTools,
   createWebTools,
+  createWorkspaceTools,
   SIDE_EFFECT_TOOLS,
   type Assignment,
   type AssignRunner,
@@ -84,6 +86,8 @@ import {
   type ToolEnv,
 } from "@/lib/agent/tools"
 import { browserProvider, TaskBrowser } from "@/lib/browser/session"
+import { cloudSettings, TaskWorkspace, workspaceProvider } from "@/lib/cloud/session"
+import { withCloudCoding } from "@/lib/cloud/skill"
 import { getSetting } from "@/lib/config"
 import { agentGlyph } from "@/lib/glyph"
 import { BASELINE_POLICY, bundleFor, stampTask, type Policy } from "@/lib/improve"
@@ -102,6 +106,9 @@ import {
 } from "@/lib/memory/maintenance"
 import { alwaysOnNotes, recallNotes } from "@/lib/memory/retrieve"
 import { renderSummary } from "@/lib/memory/summaries"
+import { roomOfTask } from "@/lib/rooms/agents"
+import { requestOf } from "@/lib/rooms/context"
+import { relayToRoom } from "@/lib/rooms/relay"
 import {
   createGatewayModel,
   fallbackModel,
@@ -426,6 +433,15 @@ export async function runTask(task: Task, ctx: WorkerContext) {
   const sheetsOn = (await getSetting("google.sheets")) === "on"
   const undo = (await getSetting("agents.undo")) === "on"
   const skillTools = (await getSetting("agents.skills")) === "on"
+  // Track C: this thread's cloud workspace (cloud.workspaces, the plan's
+  // minutes, a configured provider); off reads nothing else of track C
+  const workspaceAdapter =
+    (await getSetting("cloud.workspaces")) === "on" && (plan?.workspaceMinutes ?? 0) > 0
+      ? await workspaceProvider()
+      : null
+  const workspace = workspaceAdapter
+    ? new TaskWorkspace(workspaceAdapter, task, await cloudSettings())
+    : null
   // Skill library (SKILLS_ENGINE.md): instruction packs for this task; off
   // leaves the prompt exactly as before
   const skillLibrary =
@@ -461,6 +477,9 @@ export async function runTask(task: Task, ctx: WorkerContext) {
       })
     }
   }
+  // CD-20: a workspace turn gets cloud-coding in place of code-assistance
+  if (skillLibrary && workspace)
+    Object.assign(skillLibrary, withCloudCoding(skillLibrary))
   // A7: ledger tools need the switch and a plan with the ledger
   const ledgerTools =
     (await getSetting("agents.ledger")) === "on" && Boolean(plan?.ledgerEnabled)
@@ -530,7 +549,10 @@ export async function runTask(task: Task, ctx: WorkerContext) {
       const row = rowsOf<{ cancel_requested: boolean }>(result)[0]
       if (!row) stop("lease_lost")
       else if (row.cancel_requested) stop("canceled")
-      else await browser?.heartbeat()
+      else {
+        await browser?.heartbeat()
+        await workspace?.heartbeat()
+      }
     } catch (error) {
       log.warn("heartbeat failed", { taskId: task.id, error })
     }
@@ -555,11 +577,32 @@ export async function runTask(task: Task, ctx: WorkerContext) {
   try {
     const context = await loadContext(task, memoryV2, connectorsV2, policy, sheetsOn)
     if (!context) throw new Error("The thread for this task no longer exists.")
-    const { thread, members, notes, memory, history, covered, connected } = context
+    const { thread, members, notes, memory, history, covered } = context
+    // Track R (RD-05, RD-07): a room request's belt and prompt. An agent
+    // since removed from the room keeps the room's limits, without its history
+    const room =
+      task.input.channel === "room"
+        ? ((await roomOfTask(task).catch((error) => {
+            log.error("room read failed", { taskId: task.id, error })
+            return null
+          })) ?? { roomId: null, title: "a room", allowConnectors: false })
+        : null
+    // No connected accounts or apps in a room unless the owner allowed them
+    const roomLocked = room !== null && !room.allowConnectors
+    const connected: Connected = roomLocked
+      ? { google: [], notion: false }
+      : context.connected
+    // The owner's memory is private like their accounts (owner, 2026-11-01):
+    // a locked room task sees none of it
+    if (roomLocked) {
+      notes.clear()
+      for (const [id, held] of memory)
+        memory.set(id, { ...held, profile: [], standing: [], recalled: [] })
+    }
     // N9: each agent's recalled candidates reordered by meaning, outside the
     // person's transaction (one embedding of their message); a failure keeps
     // today's order
-    if (rerankModel && memory.size > 0) {
+    if (rerankModel && memory.size > 0 && !roomLocked) {
       const ask = history.findLast((message) => message.role === "user")
       const entries = [...memory.entries()]
       const lists = await rerankByMeaning(
@@ -573,7 +616,7 @@ export async function runTask(task: Task, ctx: WorkerContext) {
     const first = members.find((member) => member.id === task.input.agentId) ?? members[0]
     if (!first) throw new Error("This thread has no agents left in it.")
     // Apps the person turned on for this agent; a failure means no apps, never a failed task
-    if (mcpOn) {
+    if (mcpOn && !roomLocked) {
       mcp = await loadMcp(task, first.id, {
         maxTools: Number(await getSetting("next.mcpMaxTools")),
         disabled,
@@ -596,6 +639,10 @@ export async function runTask(task: Task, ctx: WorkerContext) {
       ...(voice && { voice: true }),
       ...(mandates && { mandates: true }),
       ...(mcp && { apps: { names: mcp.apps, notes: mcp.notes } }),
+      ...(workspace && {
+        workspace: { line: await workspace.describe().catch(() => null) },
+      }),
+      ...(room && { room: { title: room.title, accounts: !roomLocked } }),
     }
     const env: ToolEnv = {
       current: () => current,
@@ -815,6 +862,13 @@ export async function runTask(task: Task, ctx: WorkerContext) {
       ...memoryTools(env),
       ...(capabilities.web ? createWebTools() : {}),
       ...(browser ? createBrowserTools(browser) : {}),
+      // A repository needs GitHub connected; publishing also cloud.publish
+      ...(workspace
+        ? createWorkspaceTools(workspace, {
+            repos: Boolean(connected.github),
+            publish: (await getSetting("cloud.publish")) === "on",
+          })
+        : {}),
       ...(kitTools ? createKitTools(env, browser) : {}),
       ...createConnectorTools(env, connected, { writes: true }),
       ...(fileTools ? createFileTools(env, connected) : {}),
@@ -830,6 +884,7 @@ export async function runTask(task: Task, ctx: WorkerContext) {
       ...(mandates ? createMandateTools(env, { reports }) : {}),
       ...(crewJob ? createCrewTools(env) : {}),
       ...(mcp ? createMcpTools(mcp) : {}),
+      ...(room?.roomId ? createRoomTools(env, room.roomId) : {}),
       ...(thread.squad ? createAssignTool(runAssignments) : {}),
       ...(thread.squad
         ? createDelegateTool((targetId, handoverBrief) => {
@@ -851,6 +906,13 @@ export async function runTask(task: Task, ctx: WorkerContext) {
     // shortcut: the prompt may still describe a killed tool's ability; pass
     // the list into Capabilities if owners start killing connector tools.
     for (const name of disabled) delete tools[name]
+    // Track R: members' words never change or delete the owner's notes, and
+    // a locked room task can't search them (new notes stay unconfirmed)
+    if (room) {
+      delete tools.memory_update
+      delete tools.memory_forget
+      if (roomLocked) delete tools.memory_search
+    }
     // ND-21: no tool runs without a class (removes nothing today)
     for (const name of unclassifiedTools(Object.keys(tools), mcp?.classes)) {
       delete tools[name]
@@ -877,12 +939,18 @@ export async function runTask(task: Task, ctx: WorkerContext) {
     // no skills, never a failed task.
     // Only the person's words: a crew's join and briefs carry members'
     // reports, and a watcher run appends the page's diff after the person's
-    // prompt (lib/watch.ts watchPrompt), so neither can pick a skill
+    // prompt (lib/watch.ts watchPrompt), so neither can pick a skill; a
+    // room request quotes the room before the request (track R, RT-INV-06)
     const asked = history.findLast((m) => m.role === "user")
     const ask =
       !asked || asked.metadata?.channel === "crew"
         ? ""
-        : textOf(asked).split("The watched page changed:")[0]
+        : asked.metadata?.channel === "room"
+          ? // The raw text: textOf flattens the marker's line breaks
+            requestOf(
+              asked.parts.flatMap((p) => (p.type === "text" ? [p.text] : [])).join("\n")
+            )
+          : textOf(asked).split("The watched page changed:")[0]
     const skillsFor = (agent: Agent) => {
       if (!skillLibrary) return ""
       let resolved = skillsUsed.get(agent.id)
@@ -1015,6 +1083,9 @@ export async function runTask(task: Task, ctx: WorkerContext) {
     await browser
       ?.close()
       .catch((error) => log.error("browser close failed", { taskId: task.id, error }))
+    await workspace
+      ?.close(stopReason)
+      .catch((error) => log.error("workspace close failed", { taskId: task.id, error }))
     await mcp?.close()
   }
 
@@ -1207,6 +1278,14 @@ export async function runTask(task: Task, ctx: WorkerContext) {
     attempt,
     ms: Date.now() - startedAt,
   })
+
+  // Track R (RD-06): a room request's reply, or its approval's continuation,
+  // reaches the room through the disclosure gate; never fails the task
+  if (task.input.channel === "room" || task.idempotencyKey?.startsWith("approval:")) {
+    await relayToRoom(task, reply, outcome.status).catch((error) =>
+      log.error("room relay failed", { taskId: task.id, error })
+    )
+  }
 }
 
 // For the reply's "Used N skills": each skill once, with why it loaded

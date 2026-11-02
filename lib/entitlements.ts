@@ -5,6 +5,7 @@ import {
   agents,
   charges,
   goals,
+  harnessUsage,
   plans,
   schedules,
   subscriptions,
@@ -73,11 +74,28 @@ export async function usageSummary(userId: string) {
     })
     .from(voiceCharges)
     .where(and(eq(voiceCharges.userId, userId), gte(voiceCharges.createdAt, since)))
+  // Kriya Harness requests spend it too (track H, HD-07): charged, or still
+  // reserved while unpriced or open; failed ones don't count
+  const [harness] = await privileged
+    .select({
+      charge: sum(
+        sql`coalesce(${harnessUsage.chargeMicroInr}, ${harnessUsage.reservedMicroInr})`
+      ).mapWith(Number),
+    })
+    .from(harnessUsage)
+    .where(
+      and(
+        eq(harnessUsage.userId, userId),
+        gte(harnessUsage.createdAt, since),
+        sql`${harnessUsage.status} <> 'failed'`
+      )
+    )
   const [today] = await privileged
     .select({ n: count() })
     .from(tasks)
     .where(and(eq(tasks.userId, userId), gte(tasks.createdAt, istStart("day"))))
-  const usedMicroInr = (spent?.charge ?? 0) + (voice?.charge ?? 0)
+  const usedMicroInr =
+    (spent?.charge ?? 0) + (voice?.charge ?? 0) + (harness?.charge ?? 0)
   const allowance = plan.includedUsageMicroInr
   return {
     plan,

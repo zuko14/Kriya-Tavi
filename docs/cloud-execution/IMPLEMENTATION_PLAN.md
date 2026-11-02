@@ -11,8 +11,8 @@ checks, configuration, rollout and rollback. The brief's vertical slice
 | C0 | Blueprint and decisions | — | — | `AGENTS.md`, `status.md` | (1) documents consistent (REAUDIT.md); (2) `npm run format:check` passes; (3) owner marks CD-01…CD-25 under "Track C owner approvals" (owner-gated ones by id) |
 | CP-1 | Baseline re-check; docs truth | C0 | CD-25 | `docs/kriya/status.md`, `docs/kriya/architecture.md` | `npm run check` exit 0, counts ≥ baseline; CF-01, CF-02 rows corrected |
 | C1 | Data model (one migration) | CP-1 | CD-14, CD-15 | `db/schema.ts`, `tests/db/migrations.test.ts`, `lib/config.ts` | CT-DB-01…07 pass; migration down+up on PGlite; `lint.test.ts` zero; settings block parses; CT-REG-01 (settings part) |
-| C2 | Runner service, protocol, image, ports | CP-1 | CD-03, CD-05, CD-12, CD-21, CD-22 | none (new files only; `NOTICE.md` new) | CT-RUN-01…20, CT-IMP-02 pass; image builds locally (`docker build -f runner/Dockerfile .`, owner machine if Docker is missing, OB-06); SBOM produced; port headers and `NOTICE.md` present |
-| C3 | Provider boundary, `local` adapter, client, `TaskWorkspace` | C1, C2 | CD-04, CD-05, CD-07, CD-09, CD-16 | `lib/config.ts` (`SECRETS`), `lib/env.ts` | CT-PRV-01, CT-WS-01…09, CT-IMP-01 pass |
+| C2 | Runner service, protocol, image, ports | CP-1 | CD-03, CD-05, CD-12, CD-21, CD-22 | none (new files only; `NOTICE.md` new) | CT-RUN-01…19, CT-IMP-02 pass; image builds locally (`docker build -f runner/Dockerfile .`, owner machine if Docker is missing, OB-06); SBOM produced; port headers and `NOTICE.md` present |
+| C3 | Provider boundary, `local` adapter, client, `TaskWorkspace` | C1, C2 | CD-04, CD-05, CD-07, CD-09, CD-16 | `lib/config.ts` (`SECRETS`), `lib/env.ts` | CT-PRV-01, CT-WS-01…09, CT-IMP-01, CT-RUN-20 (with `lib/cloud/client.ts`, CF-14) pass |
 | C4 | Tools in the runner loop | C3 | CD-11, CD-17, CD-19, CD-20, CD-23 | `lib/agent/{run-task,tools,policy,capabilities,instructions}.ts` | CT-REG-01, CT-POL-01…03, CT-TOOL-01…08, CT-SKL-01/02 pass; AT-REG-01, OT-REG-01, NT-REG-01, AT-POL-*, OT-CAP-* unchanged and passing |
 | C5 | Import and publish | C4 | CD-09, CD-10 (owner-gated: `lib/connectors/github.ts`) | `lib/connectors/github.ts`, `lib/agent/{policy,capabilities,tools,approvals,run-task}.ts` | CT-PUB-01…06 pass; existing `tests/connectors/*` unchanged |
 | C6 | Checkpoints, restore, janitor | C4 | CD-04, CD-13, CD-16 | `worker/index.ts` | CT-CKP-01…04, CT-JAN-01…05 pass |
@@ -65,7 +65,7 @@ timestamps `202702DDhhmmss`.
 | --- | --- |
 | C1 | CT-DB-01…05 |
 | C2 | CT-RUN-02, -04, -06, -11, -12, -14, -16 |
-| C3 | CT-PRV-01, CT-WS-02, -04, -05, -08, -09 |
+| C3 | CT-PRV-01, CT-WS-02, -04, -05, -08, -09, CT-RUN-20 |
 | C4 | CT-REG-01, CT-POL-01…03, CT-TOOL-07, -08, CT-SKL-01/02 |
 | C5 | CT-PUB-02, -03, -04 |
 | C6 | CT-CKP-03, CT-JAN-01, -03 |

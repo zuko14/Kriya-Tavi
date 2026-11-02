@@ -1,0 +1,10 @@
+{
+  "turns": [
+    {
+      "toolCalls": [
+        { "name": "room_note_add", "input": { "note": "The launch venue is Hall B." } }
+      ]
+    },
+    { "text": "I noted the venue for the room." }
+  ]
+}

@@ -213,6 +213,16 @@ export function PlanForm({ plan }: { plan: Plan }) {
           defaultValue={plan.maxTaskCostMicroUsd / 10_000}
         />
         <NumberField
+          label="Kriya Harness limit ₹ / month"
+          name="harnessMonthlyInr"
+          defaultValue={Number(plan.harnessMonthlyMicroInr) / 1_000_000}
+        />
+        <NumberField
+          label="Cloud minutes / month"
+          name="workspaceMinutes"
+          defaultValue={plan.workspaceMinutes}
+        />
+        <NumberField
           label="Overage cap ₹"
           name="overageCapRupees"
           defaultValue={plan.overageCapMicroInr / 1_000_000}

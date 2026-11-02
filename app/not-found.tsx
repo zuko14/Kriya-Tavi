@@ -9,7 +9,7 @@ export default function NotFound() {
       <div className="relative flex flex-col items-center gap-5 text-center">
         <LogoMark className="size-12" />
         <div className="flex flex-col gap-1.5">
-          <span className="label-mono">{"// 404"}</span>
+          <span className="label-mono">Error 404</span>
           <h1 className="text-xl font-semibold tracking-tight">Nothing out here.</h1>
           <p className="max-w-sm text-[13.5px] text-muted-foreground">
             The agent, squad or thread you&apos;re looking for doesn&apos;t exist — it may

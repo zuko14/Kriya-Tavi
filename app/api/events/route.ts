@@ -1,13 +1,28 @@
-import { and, eq, gt } from "drizzle-orm"
+import { and, eq, gt, isNull, ne, sql } from "drizzle-orm"
 
 import { withUser } from "@/db"
-import { agents, tasks, threads } from "@/db/schema"
+import {
+  agents,
+  harnessApprovalRequests,
+  harnessDevices,
+  roomDisclosures,
+  roomMessages,
+  rooms,
+  tasks,
+  threads,
+} from "@/db/schema"
 import { authenticate } from "@/lib/auth"
+import { getSetting } from "@/lib/config"
 import { joinedGlyph } from "@/lib/glyph"
 import { previewText, type KriyaEvent } from "@/lib/events"
+import { roomAgentsOn } from "@/lib/rooms/agents"
+import { roomsEnabled } from "@/lib/rooms/core"
+import { roomNames } from "@/lib/rooms/names"
 
 // A server-sent event stream of the person's tasks starting and finishing,
-// for notifications. Tasks run in the worker, so this follows the tasks
+// and (PX-03, behind track R's switches) room mentions and replies waiting
+// for Share in room, and (behind harness.api) Kriya Harness approval
+// requests, for notifications. Tasks run in the worker, so this follows the tasks
 // table (through RLS) rather than an in-process event bus.
 
 const POLL_MS = 3_000
@@ -79,7 +94,133 @@ export async function GET(request: Request) {
         })
       }
     }
-    return events
+    return [...events, ...(await roomEvents()), ...(await harnessEvents())]
+  }
+
+  // PX-03 (track H, H5): a device's approval request, naming the tool and
+  // the device, never the input or summary. Through RLS; off = not queried
+  let harnessSince = since
+  const harnessEvents = async (): Promise<KriyaEvent[]> => {
+    if ((await getSetting("harness.api")) !== "on") return []
+    const asked = await withUser(user.id, (tx) =>
+      tx
+        .select({
+          id: harnessApprovalRequests.id,
+          tool: harnessApprovalRequests.tool,
+          createdAt: harnessApprovalRequests.createdAt,
+          deviceId: harnessDevices.id,
+          device: harnessDevices.name,
+        })
+        .from(harnessApprovalRequests)
+        .innerJoin(
+          harnessDevices,
+          eq(harnessDevices.id, harnessApprovalRequests.deviceId)
+        )
+        .where(
+          and(
+            gt(harnessApprovalRequests.createdAt, harnessSince),
+            eq(harnessApprovalRequests.status, "pending")
+          )
+        )
+        .orderBy(harnessApprovalRequests.createdAt)
+        .limit(20)
+    )
+    for (const row of asked)
+      if (row.createdAt > harnessSince) harnessSince = row.createdAt
+    return asked.map((a) => ({
+      type: "harness-approval",
+      threadId: a.id,
+      href: "/inbox",
+      name: a.device,
+      glyph: `harness-${a.deviceId}`,
+      tool: a.tool,
+    }))
+  }
+
+  // PX-03 (track R): mentions of the person in rooms (rooms.enabled) and
+  // agents' replies waiting for their "Share in room" (rooms.agents).
+  // Through RLS, like the tasks above; off = not queried
+  let roomSince = since
+  const roomEvents = async (): Promise<KriyaEvent[]> => {
+    if (!(await roomsEnabled())) return []
+    const shareOn = await roomAgentsOn()
+    const { mentions, held } = await withUser(user.id, async (tx) => ({
+      mentions: await tx
+        .select({
+          roomId: roomMessages.roomId,
+          room: rooms.title,
+          userId: roomMessages.userId,
+          body: roomMessages.body,
+          createdAt: roomMessages.createdAt,
+        })
+        .from(roomMessages)
+        .innerJoin(rooms, eq(rooms.id, roomMessages.roomId))
+        .where(
+          and(
+            gt(roomMessages.createdAt, roomSince),
+            eq(roomMessages.authorKind, "human"),
+            ne(roomMessages.userId, user.id),
+            isNull(roomMessages.deletedAt),
+            sql`${roomMessages.parts} -> 'mentions' @> ${JSON.stringify([{ kind: "person", id: user.id }])}::jsonb`
+          )
+        )
+        .orderBy(roomMessages.createdAt)
+        .limit(20),
+      held: shareOn
+        ? await tx
+            .select({
+              id: roomDisclosures.id,
+              roomId: roomDisclosures.roomId,
+              room: rooms.title,
+              createdAt: roomDisclosures.createdAt,
+              name: agents.name,
+              glyph: agents.glyph,
+              role: agents.role,
+            })
+            .from(roomDisclosures)
+            .innerJoin(rooms, eq(rooms.id, roomDisclosures.roomId))
+            .innerJoin(
+              agents,
+              and(
+                eq(agents.id, roomDisclosures.agentId),
+                eq(agents.userId, roomDisclosures.ownerId)
+              )
+            )
+            .where(
+              and(
+                gt(roomDisclosures.createdAt, roomSince),
+                eq(roomDisclosures.status, "pending")
+              )
+            )
+            .orderBy(roomDisclosures.createdAt)
+            .limit(20)
+        : [],
+    }))
+    for (const row of [...mentions, ...held])
+      if (row.createdAt > roomSince) roomSince = row.createdAt
+    // Writers' display names, only for these rooms' messages (RF-08)
+    const names = await roomNames(
+      mentions.map((m) => ({ userId: m.userId, agentId: null }))
+    )
+    return [
+      ...mentions.map((m): KriyaEvent => ({
+        type: "room-mention",
+        threadId: m.roomId,
+        href: `/rooms/${m.roomId}`,
+        name: names.person(m.userId),
+        glyph: `room-${m.roomId}`,
+        room: m.room,
+        preview: previewText(m.body ?? ""),
+      })),
+      ...held.map((d): KriyaEvent => ({
+        type: "room-disclosure",
+        threadId: d.roomId,
+        href: "/inbox",
+        name: d.name,
+        glyph: joinedGlyph(d.glyph, d.role) ?? "",
+        room: d.room,
+      })),
+    ]
   }
 
   const stream = new ReadableStream<Uint8Array>({

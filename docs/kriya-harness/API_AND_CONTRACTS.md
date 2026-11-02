@@ -56,19 +56,22 @@ code running on the machine with the device token can't approve itself (HS-4).
 
 | Method and path | Request | Response |
 | --- | --- | --- |
-| `POST /sessions` | `{ deviceSessionId ≤ 100, project ≤ 80, title ≤ 80 }` | `{ sessionId, threadId }` (one thread per device session, in the device agent's threads) |
-| `POST /sessions/{id}/turns` | `{ seq: int, text ≤ 64 KB, tools: [{ name ≤ 60, status: "ok"\|"error"\|"declined", ms }] ≤ 100, full?: object }` | 204; duplicate `seq` ignored; `full` accepted only when the device's mirror mode is `full` |
+| `POST /sessions` | `{ deviceSessionId ≤ 100, project ≤ 80, title ≤ 80 }` | 201 (200 when already open) `{ sessionId, threadId, mirror: "summary"\|"full" }` (one thread per device session, in the device agent's threads; `mirror` tells the client whether to send `full`); 409 `no_agent` when the device works as no agent |
+| `POST /sessions/{id}/turns` | `{ seq: int, text ≤ 64 KB, tools: [{ name ≤ 60, status: "ok"\|"error"\|"declined", ms }] ≤ 100, full?: object ≤ 64 KB }` | 204; duplicate `seq` ignored; `full` only in `full` mode, else 403 `mirror_summary_only` |
 
-Requires `harness.mirror` on and the device's mirror setting not `off`.
+Requires `harness.mirror` on and the device's mirror setting not `off`
+(else 404, saying nothing). Each turn is stored as an assistant message
+starting with "Mirrored from Kriya Harness (mode)" (`MIRROR_CONTEXT`), which
+`untrustedSeen` treats as untrusted content (owner decision 2026-11-01, H6).
 
 ## 6. Skills and memory (H7)
 
 | Method and path | Contract |
 | --- | --- |
-| `GET /skills` | `ETag`; `{ skills: [{ id, name, version, description, activation }] }`: the curated catalogue the person's settings allow plus their active Studio skills |
+| `GET /skills` | `ETag` (304 on `If-None-Match`); `{ skills: [{ id, name, version, description, activation: { always, keywords } }] }`: the cloud's catalogue rules with the device's belt (no Kriya tools): `agents.skillLibrary` on; required skills plus the device agent's assigned ones (or its role's defaults); active, not in `skills.disabled`, needing no Kriya tool, with their dependencies; `skills.pins`; v2 with `next.skillsV2`; the person's active Studio skills with `next.skillStudio`. Empty without an agent |
 | `GET /skills/{id}/{version}` | `text/markdown` body of that version (same loaders as the cloud: `readSkill`, `loadSkillV2`, Studio `load`) |
-| `POST /memory/search` | `{ query ≤ 500, limit ≤ 20 }` → notes of the device's agent (`recallNotes` through `withUser`), confirmed notes first |
-| `POST /memory` | `{ content ≤ 2000 }` → `{ id, confirmed: false }`; written with `writeMemory` (`lib/memory/write.ts`) through `withUser`, `source = 'agent'`, `trust = 'unconfirmed'` (the `memories` checks allow only `agent`, `user`, `derived` sources; no device provenance column exists, and none is added); the person confirms in Kriya |
+| `POST /memory/search` | `{ query ≤ 500, limit ≤ 20 }` → `{ notes: [{ id, content, kind, confirmed, shared }] }`: the notes the device's agent sees (its own and shared, `recallNotes` through `withUser`), confirmed notes first; 404 while `agents.memoryV2` is off |
+| `POST /memory` | `{ content ≤ 1000 }` → 201 `{ id, confirmed }` (`confirmed` is false unless the same note already exists confirmed); written with `writeMemory` (`lib/memory/write.ts`) through `withUser` with `untrusted: true`, so `source = 'agent'`, `trust = 'unconfirmed'`; 1 000 is `writeMemory`'s own limit (`AGENT_NOTE_MAX`; this row said 2 000 before H7); sensitive values refused (400) as in the cloud; 409 `no_agent`; the person confirms in Kriya |
 
 ## 7. Handoff and pull (H8)
 
@@ -76,6 +79,23 @@ Requires `harness.mirror` on and the device's mirror setting not `off`.
 | --- | --- |
 | `POST /handoff` | `multipart/form-data`: `meta` JSON `{ repo, baseRef, baseSha, note ≤ 2000, sha256, bytes }` + `patch` file ≤ `cloud.maxCheckpointMb`. Checks: `harness.handoff` and `cloud.workspaces` on; the person has a GitHub connection (`kriya.connections` row, provider `github`); hash and size match. Access to `repo` and to `baseSha` is proven when the cloud workspace imports the tarball (track C, `githubTarball`); a failure is reported in the new thread. Object path from `lib/cloud/paths.ts` (PX-02). → `{ threadId, workspaceId, taskId, url }` |
 | `GET /workspaces/{id}/checkpoint` | The latest checkpoint patch of one of the person's workspaces (`application/octet-stream`, `X-Kriya-Sha256`, `X-Kriya-Base-Sha`) |
+
+As built (H8, 2026-11-01): `POST /handoff` answers 201; 404 while
+`harness.handoff` or `cloud.workspaces` is off or `cloud.provider` is
+`none`; 409 `no_agent` (the device has no agent); 403 `not_connected` (no
+GitHub row) or `plan_not_allowed` (the plan's `workspace_minutes` is 0); 413
+`too_large` (declared `Content-Length` or the part over the limit); 400
+`patch_mismatch` (sha256 or bytes differ); a task that can't start
+(`enqueueTurn`'s `TurnError`) answers its status with `task_refused`, and
+the stored patch, thread and row are removed. Every check runs before
+anything is stored. `bytes: 0` hands off the base commit with no checkpoint.
+The task's message names the repository, branch and commit, asks the agent
+to open the workspace (`workspace_open`), then the person's note. The
+stored patch is metered as `workspace_storage_bytes` like track C's
+checkpoints. `GET /workspaces/{id}/checkpoint` reads the row through the
+person's session (RLS), checks the stored bytes against the row's sha256
+before serving them (else 500), 404 `no_checkpoint` when there is none, and
+404 while `harness.handoff` is off.
 
 ## 8. Contract tests (both repositories)
 

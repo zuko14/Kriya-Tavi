@@ -312,6 +312,19 @@ Both **Proposed**, 2026-10-31.
 - **Residual risk.** DNS-based leakage if the provider resolver is open
   (CS-6, CRG-08); a repository can be opened `offline`.
 - **Tests.** CT-ISO-03…05.
+- **Implementation (C9, 2026-11-01, on the owner's instruction).** In the
+  image, for every provider: at start the root runner installs an iptables
+  and ip6tables chain that lets `kriya` (uid 1000) reach loopback only
+  (Docker's loopback resolver refused, metadata and private ranges refused
+  explicitly, everything else rejected), then serves a CONNECT-only proxy on
+  `127.0.0.1:10001` (`runner/egress.ts`) that allows exactly
+  `registry.npmjs.org`, `pypi.org`, `files.pythonhosted.org`, `crates.io`,
+  `index.crates.io`, `static.crates.io`, `proxy.golang.org`,
+  `sum.golang.org` on port 443, resolves each name itself, refuses any
+  answer `isBlockedAddress` flags and dials the checked address. `offline`:
+  the proxy refuses everything. Commands get `HTTP(S)_PROXY`; the profile
+  reaches the runner in its limits (`network`, default `offline`). Needs
+  CAP_NET_ADMIN in the sandbox; without it the runner doesn't start.
 - **Status.** Proposed, 2026-10-31. Owner approval needed.
 
 ## CD-13 — Checkpoints

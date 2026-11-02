@@ -26,9 +26,13 @@ import {
   type FileMime,
   type Verification,
 } from "@/db/schema"
+import { createWorkspaceTools } from "@/lib/cloud/tools"
 import { lookupFacts } from "@/lib/facts"
 import { checkObligation } from "@/lib/radar/extract"
 import { OBLIGATION_KINDS } from "@/lib/radar/templates"
+import { MIRROR_CONTEXT } from "@/lib/harness/mirror-context"
+import { ROOM_CONTEXT } from "@/lib/rooms/context"
+import { createRoomTools } from "@/lib/rooms/tools"
 import { UNTRUSTED_DIFF } from "@/lib/watch"
 import {
   addEntries,
@@ -138,8 +142,9 @@ import type { McpTask } from "@/lib/mcp/registry"
 // agent holds the turn right now, which changes when a squad delegates, and
 // always within the task owner's own data (withUser: Row Level Security).
 //
-// Hosted Kriya has no shell, desktop, file system or payment tools yet: they
-// arrive with an isolated execution provider (docs/kriya/architecture.md).
+// Hosted Kriya has no desktop or payment tools. Shell and files exist only
+// inside a cloud workspace's sandbox: the workspace_* tools come from
+// lib/cloud behind cloud.workspaces (track C, re-exported below).
 // Connected accounts (Google, Notion) are reached through lib/connectors.ts.
 
 export type ToolEnv = {
@@ -170,6 +175,8 @@ export const SIDE_EFFECT_TOOLS = new Set<string>([
   "drive_share",
   "gmail_send_draft",
   "calendar_delete_event",
+  // Track C (cloud.publish)
+  "workspace_publish",
 ])
 
 // Track N (next.mcp): the owner-pinned app tools lib/mcp/registry.ts built
@@ -1023,6 +1030,12 @@ export const PRIVATE_READ_TOOLS = new Set<string>([
   "ledger_list",
   // Their files' text (A5)
   "file_read",
+  // A cloud workspace's repository and command output (track C, CD-11)
+  "workspace_read",
+  "workspace_run",
+  "workspace_list",
+  "workspace_search",
+  "workspace_changes",
 ])
 
 // Once private content is anywhere in the conversation, a web request could
@@ -1058,8 +1071,16 @@ const UNTRUSTED_READ_TOOLS = new Set<string>([
 export function untrustedSeen(messages: ModelMessage[]) {
   return messages.some(
     (message) =>
-      // A13: a watcher's run carries a changed page's diff in its message
-      messageTexts([message], ["user"]).some((text) => text.includes(UNTRUSTED_DIFF)) ||
+      // A13: a watcher's run carries a changed page's diff in its message;
+      // track R: a room request quotes the room (RD-07)
+      messageTexts([message], ["user"]).some(
+        (text) => text.includes(UNTRUSTED_DIFF) || text.includes(ROOM_CONTEXT)
+      ) ||
+      // Track H (H6): a turn mirrored from a laptop is that agent's words,
+      // possibly carrying what it read (owner decision 2026-11-01)
+      messageTexts([message], ["assistant"]).some((text) =>
+        text.includes(MIRROR_CONTEXT)
+      ) ||
       (Array.isArray(message.content) &&
         message.content.some(
           (part) =>
@@ -1081,7 +1102,10 @@ const strings = (value: unknown): string[] =>
 
 // The words of the conversation by role: what the person wrote, or what
 // tools returned (the sources a quote can be checked against)
-export function messageTexts(messages: ModelMessage[], roles: ("user" | "tool")[]) {
+export function messageTexts(
+  messages: ModelMessage[],
+  roles: ("user" | "tool" | "assistant")[]
+) {
   return messages
     .filter((m) => (roles as string[]).includes(m.role))
     .flatMap((m) =>
@@ -1518,6 +1542,13 @@ export function createLedgerTools(env: ToolEnv) {
 // The in-call tools live apart, in lib/agent/call-tools.ts, so kriya-voice
 // loads none of this file; they are never part of KriyaTools (D-14, F8)
 export { createCallTools } from "@/lib/agent/call-tools"
+
+// Track C (cloud.workspaces): the workspace_* tools, built in lib/cloud on a
+// task's TaskWorkspace; only runTask constructs one
+export { createWorkspaceTools }
+
+// Track R (rooms.agents): room_history, on a room task's belt only
+export { createRoomTools }
 
 // Voice access only (run-task.ts, F5). Drafts a call for the person to
 // review: no approval, no call scheduled. It changes nothing outside Kriya,
@@ -1975,7 +2006,11 @@ export type KriyaTools = Omit<ReturnType<typeof createMemoryTools>, "memory_writ
   // A5, with agents.files on
   Partial<ReturnType<typeof createFileTools>> &
   // G2, with operator.driveShare / operator.gmailSend on
-  Partial<ReturnType<typeof createGoogleV2Tools>>
+  Partial<ReturnType<typeof createGoogleV2Tools>> &
+  // Track C, with cloud.workspaces on
+  Partial<ReturnType<typeof createWorkspaceTools>> &
+  // Track R, in a room task's belt only
+  Partial<ReturnType<typeof createRoomTools>>
 
 type RadarTools = {
   [K in "facts_lookup" | "obligation_add" | "obligation_list"]: NonNullable<
@@ -1998,9 +2033,13 @@ export type KriyaMetadata = {
   policy?: { version: string; hash: string }
   // Skill-library skills the reply loaded, and why (agents.skillLibrary)
   skills?: { id: string; name: string; version: string; reason: string }[]
-  // A user message written by a schedule's run, not by the person (A3), or
-  // by a crew: a part's brief or the join (O11)
-  channel?: "schedule" | "crew"
+  // A user message written by a schedule's run, not by the person (A3), by
+  // a crew: a part's brief or the join (O11), or by a room request in the
+  // agent's bridge thread (track R, R4)
+  channel?: "schedule" | "crew" | "room"
+  roomId?: string
+  // Who asked in the room (the owner or another member)
+  requestedBy?: string
   scheduleId?: string
   runId?: string
   partId?: string

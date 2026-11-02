@@ -29,6 +29,9 @@ services:
       - fromGroup: kriya-shared
       - key: KRIYA_APP_URL
         sync: false
+      # Where `kriya serve` connects (kriya-relay, H10); unset = no device world
+      - key: KRIYA_RELAY_URL
+        sync: false
       # Supabase Postgres through the transaction pooler (port 6543)
       - key: DATABASE_URL
         sync: false
@@ -144,6 +147,21 @@ services:
         sync: false
       - key: SUPABASE_SECRET_KEY
         sync: false
+      # Cloud workspaces (track C): signs each workspace's runner token (32
+      # random bytes, base64) and the sandbox provider's key. Workspaces stay
+      # off until cloud.workspaces, cloud.provider and plan minutes are set
+      - key: KRIYA_WORKSPACE_SECRET
+        sync: false
+      - key: E2B_API_KEY
+        sync: false
+      - key: DAYTONA_API_KEY
+        sync: false
+      # Kriya Harness device world (H10, HD-12; cloud.provider = device):
+      # kriya-relay's https address and the secret it shares with this worker
+      - key: KRIYA_RELAY_URL
+        sync: false
+      - key: KRIYA_RELAY_SECRET
+        sync: false
       # Tasks this worker runs at once; add workers to scale out
       - key: WORKER_CONCURRENCY
         value: "4"
@@ -192,3 +210,27 @@ services:
         sync: false
       - key: DB_POOL_MAX
         value: "4"
+
+  # The Kriya Harness device world (track H, H10, HD-12): people's machines
+  # running `kriya serve` keep an outbound WebSocket here and the worker's
+  # runner requests go through it. No database and no secret but its own;
+  # device tokens are checked by kriya-web. Inert until harness.deviceWorld
+  # is on. A deploy drops the connections; devices reconnect.
+  - type: web
+    name: kriya-relay
+    runtime: node
+    plan: starter
+    region: singapore
+    buildCommand: npm ci
+    startCommand: npx tsx relay/index.ts
+    healthCheckPath: /health
+    envVars:
+      - fromGroup: kriya-shared
+      # The same value as on the worker; at least 32 random characters
+      - key: KRIYA_RELAY_SECRET
+        sync: false
+      # kriya-web's address, where device tokens are checked
+      - key: KRIYA_APP_URL
+        sync: false
+      - key: PORT
+        value: "10002"

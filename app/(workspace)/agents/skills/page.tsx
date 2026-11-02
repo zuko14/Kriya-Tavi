@@ -63,10 +63,11 @@ export default async function SkillStudioPage() {
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
       <div className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
-        <header className="flex flex-col gap-1">
-          <span className="label-mono">{"// skill studio"}</span>
-          <h1 className="text-2xl font-semibold tracking-tight">Skill Studio</h1>
-          <p className="text-[13px] text-muted-foreground">
+        <header className="flex flex-col gap-1.5">
+          <h1 className="font-display text-[30px] leading-none font-normal sm:text-[36px]">
+            Skill Studio
+          </h1>
+          <p className="text-[13.5px] leading-relaxed text-muted-foreground">
             Describe a skill in a few words. Kriya designs it the way an expert would,
             from several angles, then a strict reviewer improves it. You read it, change
             anything, and choose the agents that use it. A skill teaches an agent how to

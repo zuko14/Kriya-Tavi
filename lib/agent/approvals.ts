@@ -72,6 +72,9 @@ export function actionTitle(tool: string, input: Input, tense: "ask" | "done") {
       return `${ask ? "Send" : "Sent"} a saved Gmail draft`
     case "calendar_delete_event":
       return `${ask ? "Delete" : "Deleted"} ${quoted(input?.title)} from your calendar`
+    // Track C: the repository is in the input so the person approves the destination
+    case "workspace_publish":
+      return `${ask ? "Open" : "Opened"} a draft pull request in ${String(input?.repo ?? "")}: “${String(input?.title ?? "").slice(0, 80)}”`
     default: {
       // Track N: mcp_<app>_<tool words> → "Use/Used <tool words> in <app>"
       const mcp = /^mcp_([a-z]+)_(.+)$/.exec(tool)

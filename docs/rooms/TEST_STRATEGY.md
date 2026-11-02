@@ -40,5 +40,6 @@ Baseline as track C (Test Files 185 passed, 3 skipped; Tests 2289 passed,
 | RT-NOTE-02 | Only confirmed notes join the bridge context; nothing is copied into personal memory | same |
 | RT-NOTE-03 | `room_note_add` has `TOOL_CLASSES`, `TOOL_WRITES` (`room_notes+`) and capability rows; no person-only column written | same |
 | RT-RLT-01…04 | REALTIME §5 | `tests/rooms/realtime.test.ts`, staging |
-| RT-MOD-01…03 | Remove, block, report; rate limits | `tests/rooms/moderation.test.ts` |
+| RT-MOD-01 | Remove; rate limits (R2) | `tests/rooms/moderation.test.ts` |
+| RT-MOD-02/03 | Block, report (R9, with their own migration) | same |
 | RT-UI-01…05 | UX_SPEC §5 browser checks | isolated stack |

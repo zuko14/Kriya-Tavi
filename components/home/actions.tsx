@@ -29,7 +29,7 @@ export function NewSquadButton({ disabled }: { disabled?: boolean }) {
       type="button"
       disabled={disabled}
       onClick={() => openSquadDialog()}
-      className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] text-muted-foreground transition-colors hover:border-input hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+      className="inline-flex min-h-11 items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] text-muted-foreground transition-colors hover:border-input hover:text-foreground disabled:pointer-events-none disabled:opacity-40 sm:min-h-0"
     >
       <UsersIcon className="size-3.5" />
       New squad

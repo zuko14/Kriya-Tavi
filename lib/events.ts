@@ -22,6 +22,14 @@ export type KriyaEvent =
       error?: string
       durationMs: number
     })
+  // Track R (PX-03): someone mentioned the person in a room (rooms.enabled);
+  // threadId is the room, name the person who wrote
+  | (Common & { type: "room-mention"; room: string; preview: string })
+  // An agent's reply waits for the person's "Share in room" (rooms.agents)
+  | (Common & { type: "room-disclosure"; room: string })
+  // Track H (PX-03): a Kriya Harness device asks to run a tool (harness.api);
+  // threadId is the request, name the device
+  | (Common & { type: "harness-approval"; tool: string })
 
 // A reply's Markdown as one clean line of text for a notification
 export function previewText(markdown: string, max = 240) {

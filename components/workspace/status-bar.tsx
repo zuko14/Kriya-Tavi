@@ -106,7 +106,7 @@ export function StatusBar() {
       <NotificationsToggle />
       <Cell title={status.ready ? "Models reachable" : "Models unreachable"}>
         <Dot on={status.ready} warn />
-        kriya
+        {status.ready ? "online" : "offline"}
       </Cell>
     </footer>
   )

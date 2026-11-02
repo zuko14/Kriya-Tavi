@@ -7,7 +7,10 @@ import { differenceInCalendarDays } from "date-fns"
 import {
   ActivityIcon,
   HouseIcon,
+  InboxIcon,
+  LaptopIcon,
   ListChecksIcon,
+  MessagesSquareIcon,
   MoonIcon,
   PlusIcon,
   SearchIcon,
@@ -21,11 +24,14 @@ import {
 } from "lucide-react"
 import { useTheme } from "next-themes"
 
+import { inboxBadge } from "@/actions/inbox"
+import { roomsEntry } from "@/actions/rooms"
 import { deleteThread } from "@/actions/threads"
 import { LogoMark, Wordmark } from "@/components/brand"
 import { Confirm } from "@/components/confirm"
 import { Glyph, SquadGlyph } from "@/components/glyph"
 import { useWorkspace } from "@/components/workspace/context"
+import { available, TOOLS } from "@/components/workspace/places"
 import { Kbd } from "@/components/ui/kbd"
 import { toast } from "@/components/ui/toast"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -132,10 +138,24 @@ function bucket(iso: string) {
 }
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
-  const { nav, status, openAgentDialog, openSquadDialog, openPalette } = useWorkspace()
+  const { nav, status, features, badges, openAgentDialog, openSquadDialog, openPalette } =
+    useWorkspace()
   const pathname = usePathname()
   const router = useRouter()
   const { resolvedTheme, setTheme } = useTheme()
+  // Rooms (track R, R3): only with rooms.enabled on; asked again on each page
+  const [rooms, setRooms] = React.useState<{ unread: number } | null>({
+    unread: badges.rooms,
+  })
+  React.useEffect(() => {
+    roomsEntry().then(setRooms, () => {})
+  }, [pathname])
+  // Inbox (A3): the link shows with agents.inbox on; its count on each page
+  const [inbox, setInbox] = React.useState(badges.inbox)
+  React.useEffect(() => {
+    if (features.inbox) inboxBadge().then(setInbox, () => {})
+  }, [pathname, features.inbox])
+  const tools = available(TOOLS, features)
 
   const recent = nav.threads.slice(0, 40)
   // Threads arrive newest first, so each date bucket is one consecutive run
@@ -145,13 +165,24 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     if (groups.at(-1)?.label === label) groups.at(-1)!.threads.push(thread)
     else groups.push({ label, threads: [thread] })
   }
+  // A place is current on its own page and the pages under it, unless a
+  // more specific place owns them (/agents/skills is Skill Studio's)
+  const isCurrent = (href: string): boolean =>
+    pathname === href ||
+    (pathname.startsWith(`${href}/`) &&
+      !tools.some((tool) => tool.href.startsWith(`${href}/`) && isCurrent(tool.href)))
   const navLink = (href: string) =>
     cn(
       "flex h-9 items-center gap-2.5 rounded-md px-2 text-[13px] transition-colors max-md:h-11 max-md:text-[14px]",
-      pathname === href
+      isCurrent(href)
         ? "bg-accent font-medium text-foreground"
         : "text-foreground/80 hover:bg-accent/60 hover:text-foreground"
     )
+  const count = (value: number) => (
+    <span className="ml-auto font-mono text-[10.5px] text-rigel tabular-nums">
+      {value}
+    </span>
+  )
   const ownerOf = (thread: (typeof nav.threads)[number]) =>
     thread.agentId
       ? nav.agents.find((agent) => agent.id === thread.agentId)
@@ -214,10 +245,13 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           <HouseIcon className="size-4" />
           Home
         </Link>
-        <Link href="/agents" onClick={onNavigate} className={navLink("/agents")}>
-          <UsersIcon className="size-4" />
-          Agents
-        </Link>
+        {features.inbox && (
+          <Link href="/inbox" onClick={onNavigate} className={navLink("/inbox")}>
+            <InboxIcon className="size-4" />
+            Inbox
+            {!!inbox && count(inbox)}
+          </Link>
+        )}
         <Link href="/tasks" onClick={onNavigate} className={navLink("/tasks")}>
           <ListChecksIcon className="size-4" />
           Tasks
@@ -228,9 +262,44 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             </span>
           )}
         </Link>
+        <Link href="/agents" onClick={onNavigate} className={navLink("/agents")}>
+          <UsersIcon className="size-4" />
+          Agents
+        </Link>
+        {features.rooms && (
+          <Link href="/rooms" onClick={onNavigate} className={navLink("/rooms")}>
+            <MessagesSquareIcon className="size-4" />
+            Rooms
+            {!!rooms?.unread && count(rooms.unread)}
+          </Link>
+        )}
+        {features.harness && (
+          <Link href="/harness" onClick={onNavigate} className={navLink("/harness")}>
+            <LaptopIcon className="size-4" />
+            Kriya Harness
+          </Link>
+        )}
       </nav>
 
       <div className="min-h-0 flex-1 overflow-y-auto pb-4">
+        {tools.length > 0 && (
+          <Section label="Tools">
+            <nav aria-label="Tools" className="flex flex-col gap-px">
+              {tools.map(({ href, label, icon: Icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={onNavigate}
+                  className={navLink(href)}
+                >
+                  <Icon className="size-4" />
+                  {label}
+                </Link>
+              ))}
+            </nav>
+          </Section>
+        )}
+
         <Section
           label="Agents"
           count={nav.agents.length}

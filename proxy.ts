@@ -29,6 +29,12 @@ const PROTECTED = [
   "/radar",
   // Voice phase 7: phone calls (with the slash, /calls itself but not /callsx)
   "/calls/",
+  // Kriya Harness (HF-08): signing in returns to the device's code
+  "/connect/",
+  // Rooms (R2, RD-11): /rooms and /rooms/join/<token>, so sign-up returns to the invite
+  "/rooms/",
+  // The Kriya Harness page (owner 2026-11-02)
+  "/harness/",
 ]
 // A5: file downloads. /share/ stays public on purpose (K8, AT-SHR-05)
 const PROTECTED_API = [
@@ -38,10 +44,16 @@ const PROTECTED_API = [
   "/api/browser/live/",
   // Voice phase 7: a task's live status
   "/api/voice/tasks/",
+  // Rooms (R2)
+  "/api/rooms/",
 ]
 const AUTH_PAGES = ["/login", "/signup"]
 // Voice status webhooks carry a per-attempt token instead (voice phase 3)
 const WEBHOOKS = ["/api/billing/webhook", "/api/voice/exotel/status/"]
+// Kriya Harness (HF-07): bearer-token routes for a command-line client,
+// which sends no Origin. They read no cookies, so CSRF doesn't apply; each
+// route authenticates the device itself and answers 401
+const TOKEN_API = ["/api/harness/"]
 
 function allowedOrigins(request: NextRequest) {
   const origins = new Set([request.nextUrl.origin])
@@ -61,7 +73,11 @@ export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname
   const method = request.method
 
-  if (!["GET", "HEAD", "OPTIONS"].includes(method) && !startsWithAny(path, WEBHOOKS)) {
+  if (
+    !["GET", "HEAD", "OPTIONS"].includes(method) &&
+    !startsWithAny(path, WEBHOOKS) &&
+    !startsWithAny(path, TOKEN_API)
+  ) {
     const origin = request.headers.get("origin")
     if (!origin || !allowedOrigins(request).has(origin)) {
       return new NextResponse("Cross-site request refused.", { status: 403 })

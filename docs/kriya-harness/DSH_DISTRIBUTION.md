@@ -40,8 +40,8 @@ Node apps").
 | Command | Profile | What the person gets |
 | --- | --- | --- |
 | `kriya login` | `kriya` (auth only) | Device sign-in (HD-05); shows the user code and opens `/connect/device` |
-| `kriya` | `kriya` | DSH's Web UI on `127.0.0.1` with Kriya models, skills, memory tools, phone approvals and the mirror |
-| `kriya run "<job>" [--json]` | `kriya-run` | One job, final answer printed, exit code 0/1 (DSH headless) |
+| `kriya [--mode ask\|auto\|read\|full]` | `kriya` | DSH's Web UI on `127.0.0.1` with Kriya models, skills, memory tools, phone approvals and the mirror (HD-20 modes) |
+| `kriya run [--mode ask\|auto\|read\|plan\|full] "<job>" [--json]` | `kriya-run` | One job, final answer printed, exit code 0/1 (DSH headless) |
 | `kriya acp` | `kriya-acp` | ACP server over stdio for editors (HD-13) |
 | `kriya handoff [note]` | helper (no agent) | HD-11 upload, then prints the Kriya thread link |
 | `kriya pull [workspace]` | helper (no agent) | HD-11 download and apply on a new branch |

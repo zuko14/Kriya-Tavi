@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation"
 
+import { inboxBadge } from "@/actions/inbox"
+import { roomsEntry } from "@/actions/rooms"
 import { AgentDialog } from "@/components/dialogs/agent-dialog"
 import { SquadDialog } from "@/components/dialogs/squad-dialog"
 import { BottomNav } from "@/components/workspace/bottom-nav"
@@ -10,6 +12,7 @@ import { NotificationsProvider } from "@/components/workspace/notifier"
 import { Sidebar } from "@/components/workspace/sidebar"
 import { StatusBar } from "@/components/workspace/status-bar"
 import { requireUser } from "@/lib/auth"
+import { getFeatures } from "@/queries/features"
 import { getNavigation, getSystemStatus } from "@/queries/workspace"
 
 export default async function WorkspaceLayout({
@@ -19,10 +22,23 @@ export default async function WorkspaceLayout({
 }) {
   const user = await requireUser()
   if (!user.profile.onboardedAt) redirect("/onboarding")
-  const [nav, status] = await Promise.all([getNavigation(user.id), getSystemStatus(user)])
+  const [nav, status, features] = await Promise.all([
+    getNavigation(user.id),
+    getSystemStatus(user),
+    getFeatures(user.id),
+  ])
+  const [inbox, rooms] = await Promise.all([
+    features.inbox ? inboxBadge() : null,
+    features.rooms ? roomsEntry() : null,
+  ])
 
   return (
-    <WorkspaceProvider nav={nav} status={status}>
+    <WorkspaceProvider
+      nav={nav}
+      status={status}
+      features={features}
+      badges={{ inbox, rooms: rooms?.unread ?? 0 }}
+    >
       <NotificationsProvider>
         {/* Pinned to the viewport: the page itself never scrolls, only the panes */}
         <div className="aura fixed inset-0 flex flex-col">

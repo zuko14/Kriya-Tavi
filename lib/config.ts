@@ -496,6 +496,254 @@ export const SETTINGS = {
     pattern: /^([1-9]|1[0-9]|20)$/,
     hint: "1 to 20",
   },
+  // Cloud workspaces (track C, docs/cloud-execution, CD-23). Off means
+  // existing agents get the same prompt, tools and approvals (CT-REG-01).
+  // Also needs the plan's workspace minutes and a provider
+  "cloud.workspaces": {
+    env: "KRIYA_CLOUD_WORKSPACES",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Where sandboxes run; local only on the verify stack. none: no workspace
+  "cloud.provider": {
+    env: "KRIYA_CLOUD_PROVIDER",
+    fallback: "none",
+    pattern: /^(none|local|e2b|daytona|device)$/,
+    hint: "none, local, e2b, daytona or device",
+  },
+  // The provider's template id for the runner image
+  "cloud.image": {
+    env: "KRIYA_CLOUD_IMAGE",
+    pattern: /^[A-Za-z0-9._:/@-]{1,200}$/,
+    hint: "The provider's template id, e.g. kriya-runner:1.0",
+  },
+  // CPUs and memory per sandbox, as kriya.workspaces.size
+  "cloud.size": {
+    env: "KRIYA_CLOUD_SIZE",
+    fallback: "2c-4g",
+    pattern: /^[1-8]c-[1-9][0-9]?g$/,
+    hint: "e.g. 2c-4g",
+  },
+  // registries: package registries only (CD-12); offline: no network
+  "cloud.network": {
+    env: "KRIYA_CLOUD_NETWORK",
+    fallback: "registries",
+    pattern: /^(registries|offline)$/,
+    hint: "registries or offline",
+  },
+  // One workspace_run command, at most
+  "cloud.commandTimeoutSeconds": {
+    env: "KRIYA_CLOUD_COMMAND_TIMEOUT_SECONDS",
+    fallback: "600",
+    pattern: /^([1-9]\d{0,2}|1[0-7]\d\d|1800)$/,
+    hint: "1 to 1800",
+  },
+  // Sandboxes running at once across the platform (open_workspace_session)
+  "cloud.maxRunning": {
+    env: "KRIYA_CLOUD_MAX_RUNNING",
+    fallback: "3",
+    pattern: /^([1-9]|[1-9]\d)$/,
+    hint: "1 to 99",
+  },
+  // A paused sandbox is destroyed after this (after a checkpoint)
+  "cloud.pausedHours": {
+    env: "KRIYA_CLOUD_PAUSED_HOURS",
+    fallback: "24",
+    pattern: /^([1-9]|[1-9]\d|1[0-5]\d|16[0-8])$/,
+    hint: "1 to 168",
+  },
+  // An unused workspace is closed after this
+  "cloud.retentionDays": {
+    env: "KRIYA_CLOUD_RETENTION_DAYS",
+    fallback: "14",
+    pattern: /^([1-9]|[1-8]\d|90)$/,
+    hint: "1 to 90",
+  },
+  // A session without a heartbeat for this long is an orphan
+  "cloud.orphanSeconds": {
+    env: "KRIYA_CLOUD_ORPHAN_SECONDS",
+    fallback: "120",
+    pattern: /^([3-9]\d|[1-9]\d{2}|[12]\d{3}|3[0-5]\d\d|3600)$/,
+    hint: "30 to 3600",
+  },
+  // Largest repository archive imported into a workspace
+  "cloud.maxImportMb": {
+    env: "KRIYA_CLOUD_MAX_IMPORT_MB",
+    fallback: "200",
+    pattern: /^([1-9]\d{0,2}|1000)$/,
+    hint: "1 to 1000",
+  },
+  // Largest checkpoint patch stored
+  "cloud.maxCheckpointMb": {
+    env: "KRIYA_CLOUD_MAX_CHECKPOINT_MB",
+    fallback: "50",
+    pattern: /^([1-9]\d{0,2}|1000)$/,
+    hint: "1 to 1000",
+  },
+  // The provider's price for the configured size, in micro-USD per hour,
+  // entered by the owner from the provider's price page. No default: Kriya
+  // never makes up a price; until set, workspace_seconds rows are unpriced
+  "cloud.costMicroUsdPerHour": {
+    env: "KRIYA_CLOUD_COST_MICRO_USD_PER_HOUR",
+    pattern: /^[1-9]\d{0,9}$/,
+    hint: "Integer micro-USD per hour, e.g. 180000 for $0.18",
+  },
+  // workspace_publish: a draft pull request after the person approves the
+  // exact change set (CD-10). Needs cloud.workspaces
+  "cloud.publish": {
+    env: "KRIYA_CLOUD_PUBLISH",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Kriya Harness (track H, docs/kriya-harness, HD-18). Off means every
+  // harness route answers 404 and nothing else changes (HT-REG-01). Each
+  // plan also needs a harness_monthly_micro_inr cap above 0 (HD-07)
+  "harness.api": {
+    env: "KRIYA_HARNESS_API",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // The model gateway for signed-in devices; needs harness.api
+  "harness.gateway": {
+    env: "KRIYA_HARNESS_GATEWAY",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Device sessions mirrored into threads (each device opts in too)
+  "harness.mirror": {
+    env: "KRIYA_HARNESS_MIRROR",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Laptop ↔ cloud workspace handoff; needs cloud.workspaces
+  "harness.handoff": {
+    env: "KRIYA_HARNESS_HANDOFF",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Older clients are refused with an upgrade message
+  "harness.minClientVersion": {
+    env: "KRIYA_HARNESS_MIN_CLIENT_VERSION",
+    fallback: "0.0.0",
+    pattern: /^\d{1,3}\.\d{1,3}\.\d{1,3}$/,
+    hint: "e.g. 0.1.0",
+  },
+  // A device unused this long is signed out
+  "harness.deviceIdleDays": {
+    env: "KRIYA_HARNESS_DEVICE_IDLE_DAYS",
+    fallback: "90",
+    pattern: /^([1-9]|[1-9]\d|[12]\d\d|3[0-5]\d|36[0-5])$/,
+    hint: "1 to 365",
+  },
+  // An unanswered approval from a device expires (the device fails closed)
+  "harness.approvalTtlMinutes": {
+    env: "KRIYA_HARNESS_APPROVAL_TTL_MINUTES",
+    fallback: "30",
+    pattern: /^([1-9]|[1-9]\d|1[01]\d|120)$/,
+    hint: "1 to 120",
+  },
+  // Gateway requests per minute per device
+  "harness.rpm": {
+    env: "KRIYA_HARNESS_RPM",
+    fallback: "60",
+    pattern: /^([1-9]|[1-9]\d|[1-5]\d\d|600)$/,
+    hint: "1 to 600",
+  },
+  // H10, HD-12: a person's own machine (`kriya serve`) as the execution
+  // world of cloud workspaces, through kriya-relay; cloud.provider = device
+  "harness.deviceWorld": {
+    env: "KRIYA_HARNESS_DEVICE_WORLD",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Beta until the owner's gates pass (HD-02: H9's gates, the H12 pilot and
+  // a stable, audited DeepSeek Harness line); "ga" drops the Beta label
+  "harness.releaseStage": {
+    env: "KRIYA_HARNESS_RELEASE_STAGE",
+    fallback: "beta",
+    pattern: /^(beta|ga)$/,
+    hint: "beta or ga (only once the HD-02 gates pass)",
+  },
+  // The install line on the Kriya Harness page. Empty until the client is
+  // published (HQ-03), so the page never offers an install that doesn't exist
+  "harness.installCommand": {
+    env: "KRIYA_HARNESS_INSTALL_COMMAND",
+    pattern: /^(npm|npx|pnpm|brew) [A-Za-z0-9@/._:=+ -]{1,120}$/,
+    hint: "e.g. npm install -g @kriya-ai/harness",
+  },
+  // Rooms (track R, docs/rooms, RD-19). Off means no room page, route or
+  // query exists for anyone and agents are unchanged (RT-REG-01)
+  "rooms.enabled": {
+    env: "KRIYA_ROOMS_ENABLED",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // People's agents in rooms; needs rooms.enabled
+  "rooms.agents": {
+    env: "KRIYA_ROOMS_AGENTS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Supabase Realtime pings for new messages; off → polling only (RD-10).
+  // Off by default (track A rule 2), until the owner turns Realtime's public
+  // access off in Supabase (RB-03)
+  "rooms.realtime": {
+    env: "KRIYA_ROOMS_REALTIME",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // People in one room
+  "rooms.maxHumans": {
+    env: "KRIYA_ROOMS_MAX_HUMANS",
+    fallback: "25",
+    pattern: /^([2-9]|1\d|2[0-5])$/,
+    hint: "2 to 25",
+  },
+  // Agents in one room
+  "rooms.maxAgents": {
+    env: "KRIYA_ROOMS_MAX_AGENTS",
+    fallback: "10",
+    pattern: /^([1-9]|10)$/,
+    hint: "1 to 10",
+  },
+  // Active rooms one person may belong to
+  "rooms.maxPerPerson": {
+    env: "KRIYA_ROOMS_MAX_PER_PERSON",
+    fallback: "20",
+    pattern: /^([1-9]|[1-9]\d|100)$/,
+    hint: "1 to 100",
+  },
+  // Days an invite link works (the table allows at most 7)
+  "rooms.inviteDays": {
+    env: "KRIYA_ROOMS_INVITE_DAYS",
+    fallback: "7",
+    pattern: /^[1-7]$/,
+    hint: "1 to 7",
+  },
+  // Agent-to-agent turns one person's message may set off (the conductor)
+  "rooms.agentTurnBudget": {
+    env: "KRIYA_ROOMS_AGENT_TURN_BUDGET",
+    fallback: "4",
+    pattern: /^([1-9]|10)$/,
+    hint: "1 to 10",
+  },
+  // Recent room messages an agent is given as context
+  "rooms.contextMessages": {
+    env: "KRIYA_ROOMS_CONTEXT_MESSAGES",
+    fallback: "30",
+    pattern: /^([5-9]|[1-9]\d|100)$/,
+    hint: "5 to 100",
+  },
 } satisfies Record<string, SettingDef>
 
 export type SettingKey = keyof typeof SETTINGS
@@ -610,6 +858,14 @@ export const SECRETS = [
   "META_APP_SECRET",
   // Voice (phase 3): HMAC key for recipient number hashes (limits, opt-outs)
   "KRIYA_PHONE_HASH_KEY",
+  // Cloud workspaces (track C, CD-09): signs each workspace's runner token
+  "KRIYA_WORKSPACE_SECRET",
+  // C8: the sandbox providers in the bake-off (CD-07); the one not chosen is
+  // removed when the result is recorded
+  "E2B_API_KEY",
+  "DAYTONA_API_KEY",
+  // H10, HD-12: the worker's key to kriya-relay (32+ random characters)
+  "KRIYA_RELAY_SECRET",
 ] as const
 
 export type SecretName = (typeof SECRETS)[number]

@@ -59,6 +59,9 @@ describe("release invariants", () => {
       NOTION: "Notion",
       GITHUB: "GitHub",
       META: "Meta",
+      // Track C sandbox providers (C8)
+      E2B: "E2B",
+      DAYTONA: "Daytona",
     }
     const names = [
       ...SECRETS,

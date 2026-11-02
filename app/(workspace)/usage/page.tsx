@@ -9,6 +9,8 @@ import { formatInr } from "@/lib/money"
 import { tierName } from "@/lib/tiers"
 import { cn } from "@/lib/utils"
 import { voiceAvailable } from "@/lib/voice/tasks"
+import { harnessSpend } from "@/lib/harness/devices"
+import { getCloudMinutes } from "@/queries/cloud"
 import { getCallUsage } from "@/queries/voice"
 import { getUsage } from "@/queries/workspace"
 
@@ -50,6 +52,11 @@ export default async function Page() {
   const calls = (await voiceAvailable(user.id))
     ? await getCallUsage(user.id, summary.since, summary.plan.maxOutreachCallsPerDay)
     : null
+  // Cloud workspace minutes, only on a plan that includes them (track C)
+  const cloud = summary.plan.workspaceMinutes > 0 ? await getCloudMinutes(user.id) : null
+  // Kriya Harness, only on a plan with a harness limit (track H)
+  const harnessCap = Number(summary.plan.harnessMonthlyMicroInr)
+  const harness = harnessCap > 0 ? await harnessSpend(user.id) : null
 
   // Fill every day of the window so quiet days show as gaps
   const byDay = new Map(usage.daily.map((d) => [d.day, d]))
@@ -68,13 +75,14 @@ export default async function Page() {
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
       <div className="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-8 sm:gap-10 sm:px-6 sm:py-12">
-        <header className="flex flex-col gap-2">
-          <span className="label-mono">{`// last ${usage.days} days`}</span>
-          <h1 className="text-2xl font-semibold tracking-tight">Usage</h1>
+        <header className="flex flex-col gap-1.5">
+          <h1 className="font-display text-[30px] leading-none font-normal sm:text-[36px]">
+            Usage
+          </h1>
           <p className="max-w-2xl text-[13.5px] leading-relaxed text-muted-foreground">
-            Every task is metered: the model calls it made, the tokens they used and what
-            that cost, in rupees. Costs marked <em>est.</em> include an estimate where the
-            model provider didn&apos;t report one.
+            The last {usage.days} days. Every task is metered: the model calls it made,
+            the tokens they used and what that cost, in rupees. Costs marked <em>est.</em>{" "}
+            include an estimate where the model provider didn&apos;t report one.
           </p>
         </header>
 
@@ -123,6 +131,27 @@ export default async function Page() {
               />
             </div>
           </section>
+        )}
+
+        {cloud && (
+          <p className="text-[13px] text-muted-foreground">
+            Cloud workspace minutes this month:{" "}
+            <span className="font-mono text-foreground tabular-nums">
+              {Math.floor(cloud.usedSeconds / 60)} of {cloud.limitMinutes}
+            </span>{" "}
+            (resets on the 1st, India time)
+          </p>
+        )}
+
+        {harness && (
+          <p className="text-[13px] text-muted-foreground">
+            Kriya Harness this month:{" "}
+            <span className="font-mono text-foreground tabular-nums">
+              {formatInr(harness.used)} of {formatInr(harnessCap)}
+            </span>
+            {harness.unpriced > 0 && ` · ${harness.unpriced} not priced yet`} (resets on
+            the 1st, India time)
+          </p>
         )}
 
         <section className="flex flex-col gap-3">

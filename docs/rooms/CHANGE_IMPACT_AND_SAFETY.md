@@ -31,12 +31,13 @@ Everything protected by the other tracks, plus:
 
 | File | Phase | Allowed change | Must stay true | Regression test |
 | --- | --- | --- | --- | --- |
-| `db/schema.ts` | R1, R4, R7 | R1: the seven room tables. R4: `TaskInput.channel` gains `"room"` and optional `roomId`. R7: `roomGoals`, `roomGoalItems`, `roomNotes` (second migration, used by R8 too) | Existing definitions unchanged | Typecheck; AT-REG-01 |
-| `tests/db/migrations.test.ts` | R1, R7 | Down/up cases for track R migrations; older cases roll track R back first | Existing assertions unchanged | Itself |
+| `db/schema.ts` | R1, R4, R7, R9 | R1: the seven room tables. R4: `TaskInput.channel` gains `"room"` and optional `roomId`. R7: `roomGoals`, `roomGoalItems`, `roomNotes` (second migration, used by R8 too). R9: `personBlocks`, `roomReports` (third migration) | Existing definitions unchanged | Typecheck; AT-REG-01 |
+| `tests/db/migrations.test.ts` | R1, R7, R9 | Down/up cases for track R migrations; older cases roll track R back first | Existing assertions unchanged | Itself |
 | `lib/config.ts` | R1 | `rooms.*` block (RD-19) under `// Rooms (track R)` | Existing keys untouched | RT-REG-01 |
 | `app/owner/config/page.tsx` | R1 | `GROUPS` entry "Rooms" (`["rooms."]`) | Existing groups unchanged | RT-UI-05 |
 | `proxy.ts` | R2 | `"/rooms/"` in `PROTECTED` (with the slash, the voice `"/calls/"` precedent: `startsWithAny` then matches `/rooms` and `/rooms/…`, including `/rooms/join/…`, but not `/roomsx`; keeps `?next=`); `"/api/rooms/"` in `PROTECTED_API` (signed-out requests get the JSON 401 like `/api/threads`) | Other paths unchanged; the origin check stays on for every room action and route | RT-ACT-02; existing proxy behaviour |
 | `app/(workspace)/home/page.tsx`, `components/workspace/sidebar.tsx`, `components/workspace/command-palette.tsx` | R3 | A Rooms section / item / entry only with `rooms.enabled` on | Off → identical | RT-REG-01; RT-UI-01 |
+| same files, `queries/features.ts` | UX overhaul (owner 2026-11-02) | The sidebar link and palette entry come from `getFeatures().rooms` (= `roomsEnabled()`) at layout render instead of a client `roomsEntry()` call; the unread count is still `roomsEntry()`. Still only with `rooms.enabled` on | Off → no entry (same as before) | RT-UI-01, RT-REG-01 via `verify-r3-browser.mjs` |
 | `lib/agent/queue.ts` (protected) | R4 | `enqueueRoomTurn` (RD-03) | Existing exports unchanged | `tests/db/queue.test.ts`, `tests/pipeline.test.ts` unchanged; RT-INV-01 |
 | `lib/agent/tools.ts` | R4 | `export { createRoomTools } from "@/lib/rooms/tools"`; `KriyaTools` += `Partial<…>`; `KriyaMetadata.channel` gains `"room"` with `roomId`, `requestedBy`; `untrustedSeen` also matches user texts containing `ROOM_CONTEXT` (imported from `lib/rooms/context.ts`, the `UNTRUSTED_DIFF` pattern) | Existing tools, `FOREIGN`, `PRIVATE_READ_TOOLS`, `SIDE_EFFECT_TOOLS` unchanged | AT-REG-01; `tests/agent/share.test.ts`; RT-AGT-06 |
 | `lib/agent/policy.ts` | R4, R7, R8 | R4: `TOOL_CLASSES.room_history = "R0"`, `TOOL_WRITES.room_history = []`; `PERSON_ONLY_WRITES += "rooms", "room_members", "room_invites", "room_agents", "room_disclosures"`. R7: `PERSON_ONLY_WRITES += "room_goals", "room_goal_items"`. R8: `TOOL_CLASSES.room_note_add = "R1"`, `TOOL_WRITES.room_note_add = ["room_notes+"]`, `PERSON_ONLY_WRITES += "room_notes.confirmed_by"` | No existing value changes | AT-POL-01/02/07, `tests/agent/improve.test.ts` |
@@ -54,8 +55,8 @@ Everything protected by the other tracks, plus:
 `queries/rooms.ts`, `app/(workspace)/rooms/**`, `app/api/rooms/**`,
 `app/owner/rooms/**`, `components/rooms/**`, `components/inbox/room-disclosure.tsx`,
 `tests/rooms/**`, `tests/db/rooms-rls.test.ts`, migrations
-`20270401000000_rooms.sql`, `20270401000100_room_goals_notes.sql` and
-rollbacks, `screenshots/rooms/**`.
+`20270401000000_rooms.sql`, `20270401000100_room_goals_notes.sql`,
+`20270401000200_room_moderation.sql` (R9) and rollbacks, `screenshots/rooms/**`.
 
 **Dependencies:** none (supabase-js and `@supabase/ssr` are already used).
 

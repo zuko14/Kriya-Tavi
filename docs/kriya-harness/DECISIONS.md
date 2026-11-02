@@ -232,7 +232,81 @@ which enqueues a cloud task. **Status.** Proposed, 2026-10-31.
   Needs a relay (Render web service `kriya-relay`, Node `ws`, no database),
   because Next.js route handlers don't hold WebSocket upgrades. Decided with
   measurements at H10 between a relay and HTTPS long-polling.
-- **Status.** Proposed direction, 2026-10-31; a decision record at H10.
+- **Status.** Proposed direction, 2026-10-31; decision record below, H10
+  (2026-11-02).
+
+### HD-12 decision record (H10, 2026-11-02)
+
+- **Context.** A cloud task's workspace tools speak track C's runner
+  protocol (CD-26) to a runner the worker can reach over HTTP. A person's
+  machine is usually behind NAT and can't accept inbound connections, so it
+  must dial out and hold the connection. `kriya-web` is a Next.js app whose
+  route handlers don't hold WebSocket upgrades or connections that last
+  hours, and the worker isn't reachable from the internet.
+- **Options.** (a) HTTPS long-polling through `kriya-web` (the device polls
+  for requests, posts answers): no new service, but every runner call waits
+  for a poll, streamed `exec` output and 200 MB imports need chunking through
+  the database or memory of a stateless web service, and each poll is a
+  route call counted against `harness.rpm`; (b) a dedicated, stateless Node
+  relay with one WebSocket per device.
+- **Decision.** (b). `kriya-relay` (`relay/index.ts`, Render web service,
+  Node `ws`, `npx tsx relay/index.ts`, port 10002) bridges the worker's HTTP
+  runner requests and the device's outbound WebSocket.
+  - **Device side.** `kriya serve [folder]` asks `GET /api/harness/v1/world`
+    (behind `harness.deviceWorld`, default off) for its device id and the
+    relay's address, then connects to `wss://<relay>/v1/device/<deviceId>`
+    with `Authorization: Bearer <device token>` and `X-Kriya-Harness`.
+  - **Device authentication.** The relay has no database: it calls the same
+    `/world` route with the device's token (so `authenticateDevice` checks
+    the sha256, revocation, idle expiry, suspension and the client version),
+    accepts only when the answer names the device id in the path, and checks
+    again every 5 minutes; a revoked device is dropped. One connection per
+    device; a newer one replaces it.
+  - **Worker side.** `GET /v1/devices[/<id>]` (connected?) and
+    `ANY /v1/forward/<deviceId>/<path>`, every call with
+    `X-Kriya-Relay-Secret` (`KRIYA_RELAY_SECRET`, 32+ characters, on the
+    relay and the worker only). The relay turns the request into frames
+    (`kriya-relay/1`: `req`, `body` (base64, ≤ 256 KiB), `end`, `abort`; the
+    device answers `res`, `body`, `end` or `error`) and streams the answer
+    back as it arrives (exec's NDJSON). Only `authorization`, `content-type`,
+    `accept` and `x-kriya-*` cross, never the relay secret. A device that
+    isn't connected or drops mid-request answers 502; no frame for 35
+    minutes answers 504; a worker that gives up sends `abort`.
+  - **Provider.** `DeviceWorkspaceProvider` (`lib/cloud/providers/device.ts`,
+    `cloud.provider = device`, needs `harness.deviceWorld`, `KRIYA_RELAY_URL`
+    and `KRIYA_RELAY_SECRET`) opens a workspace only on an unrevoked device of
+    the task's own person (SQL, scoped by user id), ref
+    `device-<deviceId>-<workspaceId>-<generation>`. Lifecycle goes to the
+    device as `/world/open|pause|destroy|list`; `open` carries the runner
+    token, limits and generation for the device's runner only (CD-09).
+    Offline on resume is an error (the workspace stays paused), a folder the
+    device no longer has is `null` (restore path).
+  - **On the machine.** The device runs the runner protocol over
+    `<folder>/<workspaceId>-<generation>` (a fresh folder per generation, so
+    the runner's empty-folder import never touches the person's own files)
+    and checks the runner token on every call, as in a sandbox.
+- **Security.** Device tokens never reach the relay's logs or storage (held
+  in memory for re-checks only); worker requests need the relay secret;
+  the relay has no database and no other secret. Commands on a device run
+  with the person's own rights and network: there is no sandbox, firewall
+  or registry-only egress (CD-12 does not apply), which `kriya serve` says
+  before it connects; that is the point of the feature and why it is opt-in
+  per machine and behind two switches.
+- **Trade-offs.** One more service to run (Render starter); a relay restart
+  drops every connection (devices reconnect with back-off); a relay is a
+  single instance until a second one shares the device map (not needed for
+  the pilot).
+- **Unknowns.** The relay-vs-long-polling latency and capacity numbers the
+  direction asked for were **not measured** in H10: no staging relay exists.
+  Settled by: deploy `kriya-relay` to staging, run `kriya serve` on one
+  machine, time 100 `health`/`read` calls and one 50 MB import through it,
+  and record the numbers here.
+- **Rollback.** `harness.deviceWorld` off (the route answers 404, the relay
+  refuses every device) and `cloud.provider` back to a vendor; then the
+  rollback of `20270301000100` once no `device` workspace remains.
+- **Tests.** `tests/harness/device-world.test.ts` (HT-DEV-01…05),
+  `tests/cloud/provider.test.ts`, `tests/db/migrations.test.ts`.
+- **Status.** Approved by the owner for H10 (session request, 2026-11-02).
 
 ## HD-13 — ACP for editors
 
@@ -279,3 +353,33 @@ outputs. The `kriya` profile disables DSH telemetry plugins by default.
 Comparisons with other products follow RG-9 (official pages, dated) and
 never say a competitor lacks a feature without that check
 (VISION_AND_SCENARIOS §2). **Status.** Proposed.
+
+## HD-20 — Kriya modes, and the release stage (owner, 2026-11-02)
+
+- **Context.** The owner asked for Kriya's own modes (plan, auto and the
+  rest, as other coding agents offer) while keeping DeepSeek Harness as the
+  engine ("own the experience"), and for Beta to stay until the gates pass,
+  flipped by one switch.
+- **Decision.** Five modes, each one DSH sandbox mode and one DSH approval
+  policy, set by the kriya bundle's `sandbox-policy`, `approval` and
+  `permission` rows from `KRIYA_SANDBOX`, `KRIYA_APPROVAL` and
+  `KRIYA_PRESET`, which only the launcher sets, from `--mode`
+  (`kriya-harness` `src/modes.js`): `ask` (default; workspace-write, ask),
+  `auto` (workspace-write, never), `read` (read-only, never), `plan`
+  (`kriya run` only: read-only, never, the job asked as a plan; the Web UI
+  plans with DSH's own `/plan`), `full` (danger-full-access, never; a
+  warning on every start). DSH's `never` refuses whatever would need
+  approval, so only `full` leaves the folder sandbox. The preset table
+  carries the same names into the Web UI's Permissions control.
+  `DSH_PERMISSION_MODE` is no longer read. DSH's experimental Auto review is
+  not used.
+- **Limits, stated in SAFETY.md.** The sandbox governs file changes only
+  (network and processes aren't limited in any mode) and leaves the
+  platform's temporary areas writable.
+- **Release stage.** `harness.releaseStage` (`beta` default, `ga`) labels
+  the Kriya side; the client's label changes with a client release. HD-02's
+  condition for `ga` stands: H9's gates, the H12 pilot and a stable,
+  audited DSH line.
+- **Evidence.** `kriya-harness` `tests/modes.test.js` on the real pinned
+  DSH (8 tests); HG-6 updated to the new defaults.
+- **Status.** Approved by the owner in chat, 2026-11-02.

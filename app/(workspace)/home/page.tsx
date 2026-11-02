@@ -15,15 +15,21 @@ import { NewAgentCard, TemplateGrid } from "@/components/home/actions"
 import { Ask } from "@/components/home/ask"
 import { UsageMeter } from "@/components/home/usage-meter"
 import { HandAJob } from "@/components/operator/hand-a-job"
+import { NewRoom } from "@/components/rooms/new-room"
+import { RoomList } from "@/components/rooms/room-list"
+import { available, CONNECT, TOOLS, type Place } from "@/components/workspace/places"
 import { requireUser } from "@/lib/auth"
 import { getSetting } from "@/lib/config"
 import { runnable } from "@/lib/operator/playbooks"
+import { roomsEnabled } from "@/lib/rooms/core"
 import { cn } from "@/lib/utils"
 import { voiceAvailable } from "@/lib/voice/tasks"
 import { recentEpisodes } from "@/queries/episodes"
+import { getFeatures } from "@/queries/features"
 import { getGoals } from "@/queries/goals"
 import { inboxCount } from "@/queries/inbox"
 import { playbookChoices, playbookNeeds } from "@/queries/mandates"
+import { listRooms } from "@/queries/rooms"
 import { getNavigation, getSystemStatus } from "@/queries/workspace"
 
 function SectionTitle({ children, href }: { children: React.ReactNode; href?: string }) {
@@ -41,6 +47,34 @@ function SectionTitle({ children, href }: { children: React.ReactNode; href?: st
         </Link>
       )}
     </div>
+  )
+}
+
+function Explore({ places }: { places: Place[] }) {
+  return (
+    <section className="flex flex-col gap-2.5">
+      <SectionTitle>What Kriya can do</SectionTitle>
+      <ul className="grid gap-2 sm:grid-cols-2">
+        {places.map(({ href, label, icon: Icon, blurb }) => (
+          <li key={href}>
+            <Link
+              href={href}
+              className="glass flex h-full min-h-16 items-start gap-3 rounded-2xl px-4 py-3 transition-colors hover:border-rigel/30"
+            >
+              <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-rigel-soft text-rigel">
+                <Icon className="size-4" />
+              </span>
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span className="text-[13.5px] leading-tight font-medium">{label}</span>
+                <span className="text-[12.5px] leading-snug text-muted-foreground">
+                  {blurb}
+                </span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }
 
@@ -74,8 +108,17 @@ export default async function Home() {
       ])
     : [[], null]
   const voice = await voiceAvailable(user.id)
+  // Rooms (track R, R3): the last three, only with rooms.enabled on
+  const rooms = (await roomsEnabled()) ? (await listRooms(user.id)).slice(0, 3) : null
   const firstName = user.profile.displayName?.split(" ")[0]
   const hasAgents = nav.agents.length > 0
+  // "What Kriya can do": every switched-on place that Home doesn't already
+  // show as its own section, so a newcomer sees the whole product at once
+  const explore = available([...TOOLS, ...CONNECT], await getFeatures(user.id)).filter(
+    (place) =>
+      !(place.feature === "rooms" && rooms && hasAgents) &&
+      !(place.feature === "calls" && voice)
+  )
   // India time: the server may run anywhere
   const hour = Number(
     new Intl.DateTimeFormat("en-IN", {
@@ -149,14 +192,34 @@ export default async function Home() {
 
             {callsLink}
 
-            {choices && jobs.length > 0 && (
+            {working.length > 0 && (
               <section className="flex flex-col gap-2.5">
-                <SectionTitle>Hand Kriya a job</SectionTitle>
-                <HandAJob
-                  playbooks={jobs}
-                  agents={choices.agents}
-                  invoices={choices.invoices}
-                />
+                <SectionTitle href="/tasks">Working now</SectionTitle>
+                <ul className="flex flex-col gap-2">
+                  {working.map((thread) => {
+                    const agent = nav.agents.find((a) => a.id === thread.agentId)
+                    const squad = nav.squads.find((s) => s.id === thread.squadId)
+                    return (
+                      <li key={thread.id}>
+                        <Link
+                          href={hrefFor(thread)}
+                          className="glass flex min-h-14 items-center gap-3 rounded-2xl border-rigel/30 px-4 py-2.5"
+                        >
+                          <span className="size-2 shrink-0 animate-pulse-dot rounded-full bg-rigel text-rigel" />
+                          <span className="flex min-w-0 flex-1 flex-col leading-tight">
+                            <span className="truncate text-[13.5px] font-medium">
+                              {thread.title ?? "New thread"}
+                            </span>
+                            <span className="truncate font-mono text-[11px] text-muted-foreground">
+                              {agent?.name ?? squad?.name} is on it
+                            </span>
+                          </span>
+                          <ChevronRightIcon className="size-4 text-faint" />
+                        </Link>
+                      </li>
+                    )
+                  })}
+                </ul>
               </section>
             )}
 
@@ -225,36 +288,18 @@ export default async function Home() {
               </section>
             )}
 
-            {working.length > 0 && (
+            {choices && jobs.length > 0 && (
               <section className="flex flex-col gap-2.5">
-                <SectionTitle href="/tasks">Working now</SectionTitle>
-                <ul className="flex flex-col gap-2">
-                  {working.map((thread) => {
-                    const agent = nav.agents.find((a) => a.id === thread.agentId)
-                    const squad = nav.squads.find((s) => s.id === thread.squadId)
-                    return (
-                      <li key={thread.id}>
-                        <Link
-                          href={hrefFor(thread)}
-                          className="glass flex min-h-14 items-center gap-3 rounded-2xl border-rigel/30 px-4 py-2.5"
-                        >
-                          <span className="size-2 shrink-0 animate-pulse-dot rounded-full bg-rigel text-rigel" />
-                          <span className="flex min-w-0 flex-1 flex-col leading-tight">
-                            <span className="truncate text-[13.5px] font-medium">
-                              {thread.title ?? "New thread"}
-                            </span>
-                            <span className="truncate font-mono text-[11px] text-muted-foreground">
-                              {agent?.name ?? squad?.name} is on it
-                            </span>
-                          </span>
-                          <ChevronRightIcon className="size-4 text-faint" />
-                        </Link>
-                      </li>
-                    )
-                  })}
-                </ul>
+                <SectionTitle>Hand Kriya a job</SectionTitle>
+                <HandAJob
+                  playbooks={jobs}
+                  agents={choices.agents}
+                  invoices={choices.invoices}
+                />
               </section>
             )}
+
+            {explore.length > 0 && <Explore places={explore} />}
 
             <section className="flex flex-col gap-3">
               <SectionTitle href="/agents">Your team</SectionTitle>
@@ -320,6 +365,14 @@ export default async function Home() {
               </div>
             </section>
 
+            {rooms && (
+              <section className="flex flex-col gap-2.5">
+                <SectionTitle href="/rooms">Rooms</SectionTitle>
+                <RoomList rooms={rooms} />
+                <NewRoom className="h-11 self-start" />
+              </section>
+            )}
+
             {recent.length > 0 && (
               <section className="flex flex-col gap-2.5">
                 <SectionTitle>Recent</SectionTitle>
@@ -368,6 +421,7 @@ export default async function Home() {
             </p>
             <TemplateGrid />
             <NewAgentCard />
+            {explore.length > 0 && <Explore places={explore} />}
           </section>
         )}
       </div>

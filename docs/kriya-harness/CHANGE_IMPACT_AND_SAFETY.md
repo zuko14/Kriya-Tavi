@@ -48,10 +48,14 @@ Everything protected by tracks A, O, N, voice and C, plus:
 | `worker/index.ts` | H3 | One statement in the hourly `janitor()`: stale `reserved` harness rows → `estimated` | Other janitor steps unchanged, errors caught | HT-MTR-03 |
 | `queries/inbox.ts`, `actions/inbox.ts` (`inboxBadge`), `app/(workspace)/inbox/page.tsx` | H5 | List and count pending harness approvals only with `harness.api` on | Off → identical lists and badge | HT-APR-01; existing Inbox tests |
 | `app/api/events/route.ts` (protected) | H5 | Only with PX-03 approved: announce new harness approval requests | Existing events unchanged | Existing events tests |
+| `lib/agent/tools.ts` (protected, track A) | H6 (owner-approved 2026-11-01 in chat: "Add a mirror marker") | `untrustedSeen` also matches assistant texts containing `MIRROR_CONTEXT` (imported from the pure `lib/harness/mirror-context.ts`, the `ROOM_CONTEXT` pattern); `messageTexts` accepts the `assistant` role | Existing tools, `FOREIGN`, `PRIVATE_READ_TOOLS`, `SIDE_EFFECT_TOOLS`, `TOOL_APPROVALS` unchanged; stricter only | AT-REG-01; `tests/harness/mirror.test.ts`; existing `untrustedSeen` tests |
+| `proxy.ts` | Harness page (owner 2026-11-02) | `"/harness/"` in `PROTECTED` | `/api/harness/` keeps its bearer check and no origin check | `tests/harness/proxy.test.ts` |
+| `lib/config.ts`, `tests/harness/regression.test.ts` | Harness page (owner 2026-11-02) | `harness.installCommand` (no default; one plain `npm`/`npx`/`pnpm`/`brew` line, nothing chained); `harness.releaseStage` (`beta` default, `ga` only after HD-02's gates; HD-20) | Other `harness.*` keys and defaults unchanged | HT-REG-01 (updated list, pattern cases) |
+| `queries/harness.ts`, `components/workspace/{sidebar,places}.tsx`, `queries/features.ts` | Harness page (owner 2026-11-02) | `harnessHome` (sessions, open workspaces, pending approvals as the person); the sidebar/palette/Home entry from `getFeatures().harness` (= `harness.api`) | Off → no entry, `/harness` 404 | `harness-hub-check` browser run (`status.md`) |
 | `AGENTS.md` | H0, H2 | H0: the track H section; H2: the owner's invariant 3 wording | Other text unchanged | — |
 | `status.md` | every phase | Own section and rows | Others untouched | — |
 
-**New files** (no row needed): `app/api/harness/v1/**`, `app/connect/device/**`,
+**New files** (no row needed): `app/(workspace)/harness/**`, `components/harness/**`, `app/api/harness/v1/**`, `app/connect/device/**`,
 `lib/harness/**`, `actions/harness.ts`, `queries/harness.ts`,
 `components/account/devices.tsx`, `components/inbox/harness-approval.tsx`,
 `scripts/harness-contract.ts`, `docs/kriya-harness/contract.json`,

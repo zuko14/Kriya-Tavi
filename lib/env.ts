@@ -83,6 +83,10 @@ const OPTIONAL: Record<Service, Check[]> = {
       name: "KRIYA_PHONE_HASH_KEY",
       why: "phone calls (voice): hashes numbers for limits and opt-outs",
     },
+    {
+      name: "KRIYA_RELAY_URL",
+      why: "Kriya Harness device world (harness.deviceWorld): kriya-relay's address for devices",
+    },
   ],
   worker: [
     {
@@ -113,6 +117,23 @@ const OPTIONAL: Record<Service, Check[]> = {
       why: "reading uploaded files (kriya-files bucket)",
     },
     { name: "SUPABASE_SECRET_KEY", why: "reading uploaded files (kriya-files bucket)" },
+    {
+      name: "KRIYA_WORKSPACE_SECRET",
+      why: "cloud workspaces (32+ random characters; signs each workspace's runner token)",
+    },
+    { name: "E2B_API_KEY", why: "cloud workspaces on E2B (cloud.provider = e2b)" },
+    {
+      name: "DAYTONA_API_KEY",
+      why: "cloud workspaces on Daytona (cloud.provider = daytona)",
+    },
+    {
+      name: "KRIYA_RELAY_URL",
+      why: "cloud workspaces on people's machines (cloud.provider = device, kriya-relay)",
+    },
+    {
+      name: "KRIYA_RELAY_SECRET",
+      why: "cloud workspaces on people's machines (cloud.provider = device, kriya-relay)",
+    },
   ],
   voice: [],
 }

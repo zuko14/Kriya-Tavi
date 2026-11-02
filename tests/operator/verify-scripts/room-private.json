@@ -1,0 +1,10 @@
+{
+  "turns": [
+    {
+      "toolCalls": [
+        { "name": "ledger_list", "input": { "from": "2026-11-01", "to": "2026-11-30" } }
+      ]
+    },
+    { "text": "From your accounts: nothing is overdue this month." }
+  ]
+}

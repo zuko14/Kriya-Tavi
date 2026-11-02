@@ -98,12 +98,12 @@ measured, not assumed (EVALUATION_PLAN M5).
 | CRG-01 | Does E2B state microVM isolation on its own pages, and how is the guest hardened? | Read E2B security/architecture docs; ask E2B in writing | C8 (M1) |
 | CRG-02 | Which Daytona isolation model applies to our account and tier, and which egress controls are available on it? | Daytona docs for our tier; a test sandbox: `curl` an allowed and a denied domain | C8 (M1, M2) |
 | CRG-03 | Regions and data location for both; latency from Render Singapore | Provider docs; C8 latency probe (EVALUATION_PLAN M3) | C8 (M8, M10) |
-| CRG-04 | Can E2B restrict egress to a domain allow-list, or only on/off? | E2B docs; a test sandbox | C8 (M2) |
+| CRG-04 | Can E2B restrict egress to a domain allow-list, or only on/off? | E2B docs; a test sandbox. **2026-10-31 (C8), from E2B's API spec:** yes, `network.allowOut` takes domains and `denyOut` CIDRs (allowed wins); domain rules also open the DNS servers (8.8.8.8 by default), which bears on CRG-08. Still to confirm in a test sandbox | C8 (M2) |
 | CRG-05 | How long do paused (E2B) / stopped (Daytona) sandboxes persist, and are they billed? | Docs; a paused sandbox checked after 48 h | CD-04 tuning |
 | CRG-06 | Fly Machines prices, Mumbai region, egress control | Fly pricing pages, docs | Only if Fly enters |
 | CRG-07 | Provider session caps across pause/resume (third-party claim: resets on resume) | Provider docs; a 70-minute test across a pause | M9 |
 | CRG-08 | Does the provider's resolver allow arbitrary DNS (exfiltration channel, CS-6)? | Test sandbox: resolve a unique subdomain of a domain we control | CD-12 residual risk |
-| CRG-09 | Can a template start its process as root (the runner, CD-21) while commands run as `kriya`? | Provider template docs; the C8 image smoke test (`id -u` from the runner and from a command) | C8 (M5) |
+| CRG-09 | Can a template start its process as root (the runner, CD-21) while commands run as `kriya`? | Provider template docs; the C8 image smoke test (`id -u` from the runner and from a command). **2026-10-31 (C8):** the adapters start the runner themselves after create (create-time env doesn't reach a snapshotted start command). E2B: envd starts a process as the user named in its Basic auth header (SDK source), so `root` should work. Daytona: the toolbox's `/process/execute` user isn't stated in its API spec; unknown until a test sandbox | C8 (M5) |
 
 ## 7. Sources (read 2026-10-31)
 

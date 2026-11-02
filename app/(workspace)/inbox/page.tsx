@@ -6,6 +6,8 @@ import { ChevronRightIcon } from "lucide-react"
 
 import { Glyph } from "@/components/glyph"
 import { ApprovalButtons, MemoryButtons, SkillButtons } from "@/components/inbox/controls"
+import { HarnessApproval } from "@/components/inbox/harness-approval"
+import { RoomDisclosure } from "@/components/inbox/room-disclosure"
 import { MandateCard } from "@/components/operator/controls"
 import { requireUser } from "@/lib/auth"
 import { getSetting } from "@/lib/config"
@@ -224,7 +226,9 @@ export default async function Page({
     inbox.memories.length +
     inbox.skills.length +
     proposals.length +
-    (jobs?.needs.length ?? 0)
+    (jobs?.needs.length ?? 0) +
+    inbox.disclosures.length +
+    inbox.harnessApprovals.length
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
@@ -323,6 +327,20 @@ export default async function Page({
               <Section title="Approve" count={inbox.approvals.length}>
                 {inbox.approvals.map((item) => (
                   <Approval key={`${item.threadId}:${item.id}`} item={item} />
+                ))}
+              </Section>
+            )}
+            {shown("approve") && (
+              <Section title="From your computer" count={inbox.harnessApprovals.length}>
+                {inbox.harnessApprovals.map((item) => (
+                  <HarnessApproval key={item.id} item={item} />
+                ))}
+              </Section>
+            )}
+            {shown("approve") && (
+              <Section title="Share in room?" count={inbox.disclosures.length}>
+                {inbox.disclosures.map((item) => (
+                  <RoomDisclosure key={item.id} item={item} />
                 ))}
               </Section>
             )}

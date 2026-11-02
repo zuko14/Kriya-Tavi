@@ -13,21 +13,21 @@ import { cn } from "@/lib/utils"
 // where the composer needs the space and the header has a back button.
 export function BottomNav() {
   const pathname = usePathname()
-  const { status } = useWorkspace()
-  // The Inbox tab (A3) shows only while agents.inbox is on (null otherwise);
-  // its count is refreshed on every navigation
-  const [inbox, setInbox] = React.useState<number | null>(null)
+  const { status, features, badges } = useWorkspace()
+  // The Inbox tab (A3) shows only while agents.inbox is on, from the first
+  // paint so the tabs don't shift; its count is refreshed on every navigation
+  const [inbox, setInbox] = React.useState(badges.inbox)
   React.useEffect(() => {
-    inboxBadge().then(setInbox, () => {})
-  }, [pathname])
+    if (features.inbox) inboxBadge().then(setInbox, () => {})
+  }, [pathname, features.inbox])
   if (/^\/(a|s)\/[^/]+\/[^/]+/.test(pathname)) return null
 
   const tabs = [
     { href: "/home", label: "Home", icon: HouseIcon },
     { href: "/agents", label: "Agents", icon: UsersIcon },
-    ...(inbox === null
-      ? []
-      : [{ href: "/inbox", label: "Inbox", icon: InboxIcon, badge: inbox || null }]),
+    ...(features.inbox
+      ? [{ href: "/inbox", label: "Inbox", icon: InboxIcon, badge: inbox || null }]
+      : []),
     {
       href: "/tasks",
       label: "Tasks",

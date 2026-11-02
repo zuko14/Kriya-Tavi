@@ -7,7 +7,16 @@ import { SIDE_EFFECT_TOOLS } from "@/lib/agent/tools"
 // say. `propose_call` has no class and so no entry (OF-12); voice in-call
 // tools run only in kriya-voice and aren't agent tools.
 
-export type System = "kriya" | "web" | "browser" | "google" | "notion" | "github" | "meta"
+export type System =
+  | "kriya"
+  | "web"
+  | "browser"
+  | "google"
+  | "notion"
+  | "github"
+  | "meta"
+  // Track C: a cloud workspace's sandbox
+  | "workspace"
 
 // How a pinned input field must match a grant (DATA_MODEL §2.2)
 export type Pin = "subset" | "equals"
@@ -36,6 +45,7 @@ const kriya: Facts = { system: "kriya" }
 const web: Facts = { system: "web" }
 const browser: Facts = { system: "browser" }
 const google: Facts = { system: "google" }
+const workspace: Facts = { system: "workspace" }
 const readBack = { verification: "api_readback" } as const
 // N4: reads that may be repeated; set per tool, never by default
 const repeatable = { idempotent: true } as const
@@ -127,6 +137,21 @@ const FACTS: Record<string, Facts> = {
   gmail_send_draft: { ...google, ...readBack },
   // Reads back that the event is gone; no pins, so never grantable
   calendar_delete_event: { ...google, ...readBack },
+  // Track C: no pins (never grantable), none repeatable
+  workspace_open: workspace,
+  workspace_run: workspace,
+  workspace_read: workspace,
+  workspace_list: workspace,
+  workspace_search: workspace,
+  workspace_changes: workspace,
+  workspace_write: workspace,
+  workspace_edit: workspace,
+  workspace_patch: workspace,
+  // Reads the draft pull request back
+  workspace_publish: { ...workspace, ...readBack },
+  // Track R: the room's own messages, and its notes
+  room_history: kriya,
+  room_note_add: kriya,
 }
 
 export const CAPABILITIES: Record<string, Capability> = Object.fromEntries(

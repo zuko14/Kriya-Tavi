@@ -3,6 +3,7 @@
 import * as React from "react"
 
 import type { AgentTemplate } from "@/lib/templates"
+import type { Features } from "@/queries/features"
 import type { Navigation, NavAgent, NavSquad, SystemStatus } from "@/queries/workspace"
 
 export { agentTemplates, type AgentTemplate } from "@/lib/templates"
@@ -16,6 +17,9 @@ type DialogState =
 type WorkspaceContextValue = {
   nav: Navigation
   status: SystemStatus
+  features: Features
+  // First-paint counts; the sidebar and tab bar refresh them on each page
+  badges: Badges
   dialog: DialogState
   openAgentDialog: (options?: { agent?: NavAgent; template?: AgentTemplate }) => void
   openSquadDialog: (options?: { squad?: NavSquad }) => void
@@ -24,6 +28,8 @@ type WorkspaceContextValue = {
   mobileNavOpen: boolean
   setMobileNavOpen: (open: boolean) => void
 }
+
+export type Badges = { inbox: number | null; rooms: number }
 
 const WorkspaceContext = React.createContext<WorkspaceContextValue | null>(null)
 
@@ -36,10 +42,14 @@ export function useWorkspace() {
 export function WorkspaceProvider({
   nav,
   status,
+  features,
+  badges,
   children,
 }: {
   nav: Navigation
   status: SystemStatus
+  features: Features
+  badges: Badges
   children: React.ReactNode
 }) {
   const [dialog, setDialog] = React.useState<DialogState>(null)
@@ -49,6 +59,8 @@ export function WorkspaceProvider({
     () => ({
       nav,
       status,
+      features,
+      badges,
       dialog,
       openAgentDialog: (options) => setDialog({ kind: "agent", ...options }),
       openSquadDialog: (options) => setDialog({ kind: "squad", ...options }),
@@ -57,7 +69,7 @@ export function WorkspaceProvider({
       mobileNavOpen,
       setMobileNavOpen,
     }),
-    [nav, status, dialog, mobileNavOpen]
+    [nav, status, features, badges, dialog, mobileNavOpen]
   )
 
   return <WorkspaceContext value={value}>{children}</WorkspaceContext>

@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, gte, inArray, or, sql } from "drizzle-orm"
+import { and, desc, eq, gt, gte, inArray, isNull, or, sql } from "drizzle-orm"
 
 import { withUser } from "@/db"
 import {
@@ -6,8 +6,12 @@ import {
   approvals,
   crewParts,
   crewRuns,
+  harnessApprovalRequests,
+  harnessDevices,
   mandates,
   messages,
+  roomDisclosures,
+  rooms,
   skills,
   tasks,
   threads,
@@ -16,6 +20,7 @@ import { textOf } from "@/lib/agent/messages"
 import { getSetting } from "@/lib/config"
 import { joinedGlyph } from "@/lib/glyph"
 import { crewsOn } from "@/lib/operator/crew-threads"
+import { roomAgentsOn } from "@/lib/rooms/agents"
 import type { KriyaMessage } from "@/lib/agent/tools"
 import { notesToReview } from "@/lib/memory/person"
 import { describeStep, MAX_SKILL_FAILURES } from "@/lib/skills"
@@ -42,6 +47,10 @@ export async function getInbox(userId: string) {
   const jobsOn = (await getSetting("operator.mandates")) === "on"
   // O11: a crew part's approval names its job; off = not queried
   const crews = jobsOn && (await crewsOn())
+  // Track R (R4): replies waiting for "Share in room"; off = not queried
+  const roomsOn = await roomAgentsOn()
+  // Track H (H5): devices' requests waiting for an answer; off = not queried
+  const harnessOn = (await getSetting("harness.api")) === "on"
   return withUser(userId, async (tx) => {
     const waiting = await tx
       .select({
@@ -155,6 +164,67 @@ export async function getInbox(userId: string) {
       ...(jobsOn && { jobs: await inboxJobs(tx) }),
       // G1: active jobs whose thread hit a dead Google connection
       googleStopped: jobsOn ? await jobsNeedGoogle(userId, tx) : [],
+      // RD-06: the person's own (RLS), in rooms they're still in
+      disclosures: roomsOn
+        ? await tx
+            .select({
+              id: roomDisclosures.id,
+              roomId: roomDisclosures.roomId,
+              roomTitle: rooms.title,
+              agentName: agents.name,
+              agentGlyph: agents.glyph,
+              agentRole: agents.role,
+              body: roomDisclosures.body,
+              createdAt: roomDisclosures.createdAt,
+            })
+            .from(roomDisclosures)
+            .innerJoin(rooms, eq(rooms.id, roomDisclosures.roomId))
+            .innerJoin(
+              agents,
+              and(
+                eq(agents.id, roomDisclosures.agentId),
+                eq(agents.userId, roomDisclosures.ownerId)
+              )
+            )
+            .where(eq(roomDisclosures.status, "pending"))
+            .orderBy(desc(roomDisclosures.createdAt))
+            .limit(50)
+            .then((rows) =>
+              rows.map(({ agentRole, ...row }) => ({
+                ...row,
+                agentGlyph: joinedGlyph(row.agentGlyph, agentRole),
+              }))
+            )
+        : [],
+      // HD-08: the person's own (RLS), pending, unexpired, from a signed-in device
+      harnessApprovals: harnessOn
+        ? await tx
+            .select({
+              id: harnessApprovalRequests.id,
+              tool: harnessApprovalRequests.tool,
+              summary: harnessApprovalRequests.summary,
+              input: harnessApprovalRequests.input,
+              cwd: harnessApprovalRequests.cwd,
+              deviceName: harnessDevices.name,
+              createdAt: harnessApprovalRequests.createdAt,
+              expiresAt: harnessApprovalRequests.expiresAt,
+            })
+            .from(harnessApprovalRequests)
+            .innerJoin(
+              harnessDevices,
+              eq(harnessDevices.id, harnessApprovalRequests.deviceId)
+            )
+            .where(
+              and(
+                eq(harnessApprovalRequests.status, "pending"),
+                gt(harnessApprovalRequests.expiresAt, sql`now()`),
+                // A signed-out device can't collect the answer
+                isNull(harnessDevices.revokedAt)
+              )
+            )
+            .orderBy(desc(harnessApprovalRequests.createdAt))
+            .limit(50)
+        : [],
     }
   })
 }
@@ -168,6 +238,8 @@ export async function inboxCount(userId: string) {
     inbox.questions.length +
     inbox.memories.length +
     inbox.skills.length +
-    (inbox.jobs ? inbox.jobs.review.length + inbox.jobs.needs.length : 0)
+    (inbox.jobs ? inbox.jobs.review.length + inbox.jobs.needs.length : 0) +
+    inbox.disclosures.length +
+    inbox.harnessApprovals.length
   )
 }

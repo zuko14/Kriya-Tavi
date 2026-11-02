@@ -50,6 +50,13 @@ export const PROCESSORS = [
       "Place the calls you confirm, and turn speech into text and text into speech during them. Which providers is named here before phone calls go live",
     when: "Only when you use phone calls",
   },
+  // Track C (owner 2026-10-31: a draft entry; counsel CQ-1 still open)
+  {
+    name: "Cloud workspace providers (E2B and Daytona; one is chosen after testing)",
+    purpose:
+      "Run the private Linux workspace, one per workspace, where your agent reads, changes and tests a copy of a repository you open, and the changes made there",
+    when: "Only when you use cloud workspaces",
+  },
   {
     name: "Google, Notion, GitHub and Meta (Instagram)",
     purpose: "Only the accounts you connect, for the actions you ask for",

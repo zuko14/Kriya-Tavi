@@ -5,19 +5,19 @@ import { useRouter } from "next/navigation"
 import {
   ActivityIcon,
   HomeIcon,
+  InboxIcon,
   ListChecksIcon,
   MessageSquareIcon,
   MoonIcon,
-  PhoneIcon,
   PlusIcon,
   SettingsIcon,
   UsersIcon,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 
-import { voiceEntry } from "@/actions/voice"
 import { Glyph, SquadGlyph } from "@/components/glyph"
 import { useWorkspace } from "@/components/workspace/context"
+import { available, CONNECT, TOOLS } from "@/components/workspace/places"
 import {
   Command,
   CommandDialog,
@@ -31,15 +31,19 @@ import {
 
 export function CommandPalette() {
   const router = useRouter()
-  const { nav, dialog, openPalette, closeDialog, openAgentDialog, openSquadDialog } =
-    useWorkspace()
+  const {
+    nav,
+    features,
+    dialog,
+    openPalette,
+    closeDialog,
+    openAgentDialog,
+    openSquadDialog,
+  } = useWorkspace()
   const { resolvedTheme, setTheme } = useTheme()
   const open = dialog?.kind === "palette"
-  // Voice phase 7: "Phone calls" only with voice access (asked when opened)
-  const [voice, setVoice] = React.useState(false)
-  React.useEffect(() => {
-    if (open) voiceEntry().then(setVoice, () => {})
-  }, [open])
+  // Rooms (R3), Phone calls (voice phase 7) and the rest: only when on
+  const places = [...available(CONNECT, features), ...available(TOOLS, features)]
 
   React.useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -149,6 +153,15 @@ export function CommandPalette() {
               <HomeIcon />
               Home
             </CommandItem>
+            {features.inbox && (
+              <CommandItem
+                value="inbox approve approvals waiting questions"
+                onSelect={() => go("/inbox")}
+              >
+                <InboxIcon />
+                Inbox
+              </CommandItem>
+            )}
             <CommandItem value="agents team squads manage" onSelect={() => go("/agents")}>
               <UsersIcon />
               Agents
@@ -160,12 +173,16 @@ export function CommandPalette() {
               <ListChecksIcon />
               Tasks
             </CommandItem>
-            {voice && (
-              <CommandItem value="phone calls call tavi" onSelect={() => go("/calls")}>
-                <PhoneIcon />
-                Phone calls
+            {places.map(({ href, label, icon: Icon, blurb }) => (
+              <CommandItem
+                key={href}
+                value={`${label} ${blurb}`}
+                onSelect={() => go(href)}
+              >
+                <Icon />
+                {label}
               </CommandItem>
-            )}
+            ))}
             <CommandItem value="usage cost rupees spend" onSelect={() => go("/usage")}>
               <ActivityIcon />
               Usage

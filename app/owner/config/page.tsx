@@ -54,6 +54,24 @@ const GROUPS: { title: string; description: string; prefix: string[] }[] = [
       "Track N switches: delivery status, apps, memory and skills. Each is off until set to on. A switch whose dependency is off says so beside it.",
     prefix: ["next."],
   },
+  {
+    title: "Cloud workspaces",
+    description:
+      "Track C. Off until cloud.workspaces is on, a provider is set and a plan has workspace minutes. The hourly price comes from the provider's price page; until it's set, compute is unpriced.",
+    prefix: ["cloud."],
+  },
+  {
+    title: "Kriya Harness",
+    description:
+      "Track H. Off until harness.api is on; the gateway also needs a plan with a harness limit. Devices older than the minimum client version are asked to update.",
+    prefix: ["harness."],
+  },
+  {
+    title: "Rooms",
+    description:
+      "Track R. Off until rooms.enabled is on; agents in rooms also need rooms.agents. Realtime needs the owner's Supabase setting (public access off) and falls back to polling.",
+    prefix: ["rooms."],
+  },
   { title: "Other", description: "", prefix: ["firecrawl.", "support."] },
 ]
 

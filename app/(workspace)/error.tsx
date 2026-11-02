@@ -21,7 +21,7 @@ export default function WorkspaceError({
       <div className="flex max-w-md flex-col items-center gap-4 text-center">
         <TriangleAlertIcon className="size-6 text-betelgeuse" />
         <div className="flex flex-col gap-1.5">
-          <span className="label-mono">{"// something went wrong"}</span>
+          <span className="label-mono">Something went wrong</span>
           <h1 className="text-lg font-semibold">Something broke on this screen.</h1>
           <p className="font-mono text-[12px] break-words text-muted-foreground">
             {/* Production hides server error details; the reference finds it in the logs */}

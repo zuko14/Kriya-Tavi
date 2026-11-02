@@ -51,7 +51,7 @@ export function VoicePriceForm() {
           className="h-9 text-[12.5px]"
         />
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Input
           name="price"
           placeholder="0.45"

@@ -8,6 +8,8 @@ import { taskEvents, tasks, workers, type Task } from "@/db/schema"
 import { expireApprovals } from "@/lib/agent/approvals"
 import { crossCheckEpisode, episodesToCheck, modelJudge } from "@/lib/agent/crosscheck"
 import { runTask } from "@/lib/agent/run-task"
+import { workspaceJanitor } from "@/lib/cloud/janitor"
+import { expireReservations } from "@/lib/harness/metering"
 import { getSetting } from "@/lib/config"
 import { checkEnvironment } from "@/lib/env"
 import { log } from "@/lib/log"
@@ -15,6 +17,8 @@ import { claimFile, extractFile, modelReader } from "@/lib/extract"
 import { runFactJob } from "@/lib/facts"
 import { guardCanary } from "@/lib/improve"
 import { recheckDeliveries } from "@/lib/delivery/recheck"
+import { roomAgentsOn } from "@/lib/rooms/agents"
+import { roomRecheckRelay } from "@/lib/rooms/recheck"
 import { checkDrift } from "@/lib/mcp/drift"
 import { reviewCrews } from "@/lib/operator/crews"
 import { reviewMandates } from "@/lib/operator/loop"
@@ -152,6 +156,11 @@ async function janitor() {
   // Voice: charges, transcript retention, improvement signals. Runs whether
   // or not the voice loop does, since finished calls still need them
   await voiceHousekeeping()
+  // Kriya Harness (H3): abandoned gateway reservations, estimated at their
+  // reserved amount for reconciliation (never zero)
+  await expireReservations()
+    .then((n) => n > 0 && log.info("harness reservations estimated", { count: n }))
+    .catch((error) => log.error("harness reservation expiry failed", { error }))
 }
 
 // Reading uploads (A5): one file at a time, its own loop and timer like the
@@ -312,6 +321,16 @@ async function schedulerLoop() {
     } catch (error) {
       log.error("delivery re-check step failed", { error })
     }
+    // R5 (RD-09): a room line when a late re-check of a room card's run
+    // records a status; needs rooms.agents and next.recheck, in its own try
+    try {
+      if ((await getSetting("next.recheck")) === "on" && (await roomAgentsOn())) {
+        const relayed = await roomRecheckRelay()
+        if (relayed.posted > 0) log.info("room re-checks relayed", relayed)
+      }
+    } catch (error) {
+      log.error("room re-check relay failed", { error })
+    }
     // N7: once a day per app, look at whether a pinned tool changed (ND-07);
     // reads the app's tool list only, in its own try
     try {
@@ -321,6 +340,15 @@ async function schedulerLoop() {
       }
     } catch (error) {
       log.error("app drift step failed", { error })
+    }
+    // C6: orphaned, idle and closed cloud workspaces (CD-16). With the switch
+    // off it still runs while any workspace is open, so compute stops
+    try {
+      const swept = await workspaceJanitor()
+      if (swept && Object.values(swept).some((n) => n > 0))
+        log.info("workspaces swept", swept)
+    } catch (error) {
+      log.error("workspace janitor failed", { error })
     }
     await sleep(SCHEDULER_POLL_MS)
   }

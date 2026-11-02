@@ -13,14 +13,21 @@ import {
   ChevronRightIcon,
   ClipboardListIcon,
   CircleSlashIcon,
+  CodeXmlIcon,
   CornerDownRightIcon,
   EraserIcon,
+  FileDiffIcon,
+  FilePenIcon,
+  FileSearchIcon,
   FileTextIcon,
+  FolderTreeIcon,
   GitBranchIcon,
+  GitPullRequestDraftIcon,
   GlobeIcon,
   ListChecksIcon,
   MailIcon,
   MailPlusIcon,
+  MessagesSquareIcon,
   NotebookTextIcon,
   PhoneIcon,
   PlayIcon,
@@ -30,6 +37,7 @@ import {
   SheetIcon,
   SplitIcon,
   TargetIcon,
+  TerminalIcon,
   WrenchIcon,
   XIcon,
   type LucideIcon,
@@ -52,6 +60,8 @@ type Meta = {
   icon: LucideIcon
   label: string
   summary?: (input: Record<string, unknown>) => string
+  // What came back, after the summary (track C's workspace cards)
+  outcome?: (output: Record<string, unknown>) => string
 }
 
 const str = (value: unknown) => (typeof value === "string" ? value : "")
@@ -228,6 +238,96 @@ const META: Record<string, Meta> = {
     label: "hand parts to the crew",
     summary: (i) => (Array.isArray(i.parts) ? `${i.parts.length} parts` : ""),
   },
+  // Track C: the thread's cloud workspace (UX_SPEC §3)
+  workspace_open: {
+    icon: CodeXmlIcon,
+    label: "open workspace",
+    summary: (i) => str(i.repo) || "blank project",
+    outcome: (o) =>
+      o.restored
+        ? "restored from the last save"
+        : str(o.ref) && str(o.baseSha)
+          ? `at ${str(o.ref)} (${str(o.baseSha).slice(0, 7)})`
+          : "",
+  },
+  workspace_run: {
+    icon: TerminalIcon,
+    label: "run",
+    summary: (i) => `$ ${str(i.command)}`,
+    outcome: (o) => runOutcome(o),
+  },
+  workspace_read: {
+    icon: FileTextIcon,
+    label: "read",
+    summary: (i) =>
+      `${str(i.path)}${i.startLine ? ` (lines ${i.startLine}–${i.endLine ?? "…"})` : ""}`,
+  },
+  workspace_list: {
+    icon: FolderTreeIcon,
+    label: "list files",
+    summary: (i) => str(i.path),
+  },
+  workspace_search: {
+    icon: FileSearchIcon,
+    label: "search files",
+    summary: (i) => str(i.pattern),
+    outcome: (o) =>
+      Array.isArray(o.matches)
+        ? `${o.matches.length}${o.truncated ? "+" : ""} ${o.matches.length === 1 ? "match" : "matches"}`
+        : "",
+  },
+  workspace_write: { icon: FilePenIcon, label: "write", summary: (i) => str(i.path) },
+  workspace_edit: { icon: FilePenIcon, label: "edit", summary: (i) => str(i.path) },
+  workspace_patch: {
+    icon: FileDiffIcon,
+    label: "patch",
+    outcome: (o) => (Array.isArray(o.files) ? filesChanged(o.files.length) : ""),
+  },
+  workspace_changes: {
+    icon: FileDiffIcon,
+    label: "changes",
+    outcome: (o) => {
+      if (!Array.isArray(o.files)) return ""
+      const files = o.files as { added?: number; removed?: number }[]
+      const added = files.reduce((n, f) => n + (f.added ?? 0), 0)
+      const removed = files.reduce((n, f) => n + (f.removed ?? 0), 0)
+      return `${filesChanged(files.length)}, +${added} −${removed}`
+    },
+  },
+  workspace_publish: {
+    icon: GitPullRequestDraftIcon,
+    label: "draft pull request",
+    summary: (i) => str(i.title),
+  },
+  // Track R: a note for the room, unconfirmed until a member confirms it
+  room_note_add: {
+    icon: NotebookTextIcon,
+    label: "note for the room",
+    summary: (i) => str(i.note),
+    outcome: (o) =>
+      o.saved === true ? "waiting for a member to confirm" : str(o.message),
+  },
+  // Track R: a room request reading more of its room
+  room_history: {
+    icon: MessagesSquareIcon,
+    label: "read the room",
+    outcome: (o) =>
+      Array.isArray(o.messages)
+        ? `${o.messages.length} ${o.messages.length === 1 ? "message" : "messages"}`
+        : "",
+  },
+}
+
+const filesChanged = (n: number) => `${n} ${n === 1 ? "file" : "files"} changed`
+
+// "✓ exit 0 · 14 s": a test result is told only from the exit code
+function runOutcome(o: Record<string, unknown>) {
+  if (o.status === "running" || typeof o.durationMs !== "number") return ""
+  const ms = o.durationMs
+  const took = `${(ms / 1000).toFixed(ms < 10_000 ? 1 : 0)} s`
+  if (o.timedOut) return `✗ timed out · ${took}`
+  if (typeof o.exitCode !== "number") return `✗ stopped · ${took}`
+  return `${o.exitCode === 0 ? "✓" : "✗"} exit ${o.exitCode} · ${took}`
 }
 
 const ref = (i: Record<string, unknown>) =>
@@ -280,10 +380,17 @@ const A8_ROWS: Record<string, (i: Record<string, unknown>) => [string, string][]
     ["Starts", str(i.start)],
     ["Guests", list(i.attendees) || "None"],
   ],
+  workspace_publish: (i) => [
+    ["Repository", str(i.repo)],
+    ["New branch", str(i.branch)],
+    ["Title", str(i.title)],
+    ["Changes", "Exactly the files listed in the last workspace changes"],
+  ],
 }
 const A8_TEXT: Record<string, (i: Record<string, unknown>) => string> = {
   github_comment: (i) => str(i.body),
   github_create_issue: (i) => str(i.body),
+  workspace_publish: (i) => str(i.body),
   github_open_pr: (i) =>
     Array.isArray(i.files)
       ? i.files.map((f) => `── ${str(f?.path)}\n${str(f?.content)}`).join("\n\n")
@@ -318,6 +425,8 @@ const A8_NOTES: Record<string, string> = {
     "Sends the draft exactly as saved in your Gmail, as you. A sent email can't be taken back.",
   calendar_delete_event:
     "Deletes this event from your Google Calendar. Guests aren't emailed, but it disappears from their calendars too. It can't be undone.",
+  workspace_publish:
+    "Kriya will create this branch and a draft pull request on GitHub as you. Nothing is merged.",
 }
 
 export function toolName(part: ToolPart) {
@@ -358,6 +467,10 @@ function Details({ part }: { part: ToolPart }) {
         </Pre>
       </div>
     )
+  }
+
+  if (name.startsWith("workspace_")) {
+    return <WorkspaceDetails name={name} input={input} output={output} />
   }
 
   switch (name) {
@@ -460,6 +573,203 @@ function Details({ part }: { part: ToolPart }) {
           {output && <Pre>{JSON.stringify(output, null, 2)}</Pre>}
         </div>
       )
+  }
+}
+
+// A diff or file text, each line marked by its +/− prefix as well as colour
+function DiffPre({ text }: { text: string }) {
+  return (
+    <Pre>
+      {text.split("\n").map((line, index) => (
+        <span
+          key={index}
+          className={cn(
+            "block",
+            /^\+(?!\+\+)/.test(line) && "bg-ok/10 text-ok",
+            /^-(?!--)/.test(line) && "bg-destructive/10 text-destructive"
+          )}
+        >
+          {line || " "}
+        </span>
+      ))}
+    </Pre>
+  )
+}
+
+const firstLines = (text: string, n = 40) => {
+  const lines = text.split("\n")
+  return lines.length > n
+    ? `${lines.slice(0, n).join("\n")}\n… ${lines.length - n} more lines`
+    : text
+}
+
+// Track C's workspace cards (UX_SPEC §3). Output is plain text in a <pre>,
+// never HTML; the untrusted-content notice for the model isn't shown
+export function WorkspaceDetails({
+  name,
+  input,
+  output,
+}: {
+  name: string
+  input: Record<string, unknown>
+  output: Record<string, unknown> | null
+}) {
+  if (output && typeof output.error === "string") {
+    return <p className="text-[13px] text-destructive">{output.error}</p>
+  }
+  switch (name) {
+    case "workspace_open":
+      return output ? (
+        <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[13px]">
+          <dt className="text-muted-foreground">Project</dt>
+          <dd className="min-w-0 break-words">{str(output.repo) || "Blank project"}</dd>
+          {str(output.ref) && (
+            <>
+              <dt className="text-muted-foreground">Branch</dt>
+              <dd>{str(output.ref)}</dd>
+            </>
+          )}
+          {str(output.baseSha) && (
+            <>
+              <dt className="text-muted-foreground">Base commit</dt>
+              <dd className="font-mono text-[12px]">
+                {str(output.baseSha).slice(0, 12)}
+              </dd>
+            </>
+          )}
+          <dt className="text-muted-foreground">State</dt>
+          <dd>
+            {output.restored
+              ? "Restored from the last save"
+              : output.status === "running"
+                ? "Ready"
+                : str(output.status)}
+          </dd>
+        </dl>
+      ) : null
+    case "workspace_run": {
+      if (!output) return <Pre>$ {str(input.command)}</Pre>
+      if (output.status === "running") {
+        return (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[12px] text-muted-foreground">
+              Running… latest output
+            </span>
+            <Pre>{str(output.tail) || " "}</Pre>
+          </div>
+        )
+      }
+      return (
+        <div className="flex flex-col gap-1.5">
+          <Pre>$ {str(input.command)}</Pre>
+          {str(output.stdout) && <Pre>{str(output.stdout)}</Pre>}
+          {str(output.stderr) && (
+            <Pre className="text-betelgeuse">{str(output.stderr)}</Pre>
+          )}
+          <span className="text-[12px] text-muted-foreground">
+            {output.truncated ? "Long output: its start and end are shown. " : ""}
+            Full log saved in the workspace.
+          </span>
+        </div>
+      )
+    }
+    case "workspace_read":
+      return output && typeof output.text === "string" ? (
+        <Pre>{firstLines(output.text)}</Pre>
+      ) : output ? (
+        <p className="text-[13px]">
+          A binary file ({String(output.bytes ?? "?")} bytes).
+        </p>
+      ) : null
+    case "workspace_write":
+      return (
+        <div className="flex flex-col gap-1.5">
+          {output && (
+            <span className="text-[12px] text-muted-foreground">
+              {output.created ? "Created" : "Replaced"} {str(input.path)}
+            </span>
+          )}
+          <DiffPre text={firstLines(str(input.content)).replace(/^/gm, "+")} />
+        </div>
+      )
+    case "workspace_edit":
+      return (
+        <DiffPre
+          text={`${str(input.oldText).replace(/^/gm, "-")}\n${str(input.newText).replace(/^/gm, "+")}`}
+        />
+      )
+    case "workspace_patch":
+      return <DiffPre text={str(input.patch)} />
+    case "workspace_search":
+      return Array.isArray(output?.matches) ? (
+        <Pre>
+          {(output.matches as { path: string; line: number; text: string }[])
+            .map((m) => `${m.path}:${m.line}  ${m.text}`)
+            .join("\n") || "No matches"}
+        </Pre>
+      ) : null
+    case "workspace_list":
+      return Array.isArray(output?.entries) ? (
+        <Pre>
+          {(output.entries as { path: string; type: string }[])
+            .map((e) => (e.type === "dir" ? `${e.path}/` : e.path))
+            .join("\n") || "Empty"}
+        </Pre>
+      ) : null
+    case "workspace_changes":
+      return Array.isArray(output?.files) ? (
+        <div className="flex flex-col gap-1.5">
+          <ul className="flex flex-col gap-0.5 font-mono text-[12px]">
+            {(
+              output.files as {
+                path: string
+                status: string
+                added: number
+                removed: number
+              }[]
+            ).map((f) => (
+              <li key={f.path} className="flex min-w-0 gap-2">
+                <span className="min-w-0 truncate">{f.path}</span>
+                <span className="ml-auto shrink-0 text-ok">+{f.added}</span>
+                <span className="shrink-0 text-destructive">−{f.removed}</span>
+              </li>
+            ))}
+          </ul>
+          {str(output.diff) && (
+            <Collapsible>
+              <CollapsibleTrigger className="min-h-11 text-[12.5px] text-rigel hover:underline sm:min-h-8">
+                Show the diff
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <DiffPre text={str(output.diff)} />
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+        </div>
+      ) : null
+    case "workspace_publish": {
+      const href = output && safeHref(str(output.url))
+      return href ? (
+        <div className="flex flex-col gap-1">
+          <a
+            href={href}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="text-[13px] font-medium break-all text-rigel hover:underline"
+          >
+            Draft pull request #{String(output.number)} in {str(output.repo)} ↗
+          </a>
+          <span className="text-[12px] text-muted-foreground">
+            {(output.verification as { status?: string } | undefined)?.status ===
+            "verified"
+              ? "Checked on GitHub: the draft pull request is open."
+              : "Not confirmed on GitHub yet."}
+          </span>
+        </div>
+      ) : null
+    }
+    default:
+      return null
   }
 }
 
@@ -679,15 +989,26 @@ export function ToolCall({
   const declined =
     part.state === "output-denied" ||
     (part.state === "approval-responded" && part.approval.approved === false)
+  // A streaming tool's interim output (workspace_run) is still running
+  const preliminary =
+    part.state === "output-available" &&
+    (part as { preliminary?: boolean }).preliminary === true
   const pending =
     part.state === "input-streaming" ||
     part.state === "input-available" ||
-    (part.state === "approval-responded" && !declined)
+    (part.state === "approval-responded" && !declined) ||
+    preliminary
   // A call still pending after its task ended was cut off by a stop or a failure
   const running = pending && live
   const interrupted = pending && !live
   const failed = part.state === "output-error"
-  const summary = meta.summary?.((part.input ?? {}) as Record<string, unknown>) ?? ""
+  const outcome =
+    part.state === "output-available" && !preliminary && meta.outcome
+      ? meta.outcome((part.output ?? {}) as Record<string, unknown>)
+      : ""
+  const summary = [meta.summary?.((part.input ?? {}) as Record<string, unknown>), outcome]
+    .filter(Boolean)
+    .join(" · ")
   // A drafted call's summary lands in this thread when it's over (voice D-23);
   // mounted beside the card, which is collapsed by default
   const callHref =

@@ -158,6 +158,17 @@ is missing or points at localhost; the error lists names, never values.
 | `KRIYA_INFRA_MONTHLY_INR`, `KRIYA_PAYMENT_FEE_BPS` | ✓ | | | | Contribution estimate only |
 | `WORKER_CONCURRENCY` | | ✓ | | | Tasks per worker (default 4) |
 | `DB_POOL_MAX` | ✓ | ✓ | | | Connections per process |
+| `KRIYA_WORKSPACE_SECRET` | | ✓ | ✓ | for cloud workspaces | Track C: 32 random bytes, base64. Signs each workspace's runner token; rotating it makes running sandboxes unreachable until restored from their checkpoints (`docs/cloud-execution/OPERATIONS_RUNBOOK.md`) |
+| `E2B_API_KEY` / `DAYTONA_API_KEY` | | ✓ | ✓ | for cloud workspaces | Track C: the key of the provider named by `cloud.provider`. Both exist only for the bake-off (CD-07); the one not chosen is removed |
+
+Cloud workspaces (track C) also need the runner image registered at the
+provider, with its name in `cloud.image`: build it from the repository root
+(`docker build -f runner/Dockerfile -t kriya-runner:<version> .`), then
+register it as an E2B template or a Daytona snapshot under that name. Kriya
+starts the runner itself after creating each sandbox, so the template's own
+start command must not start it. Then set `cloud.provider`, a plan's
+workspace minutes and `cloud.workspaces = on` in `/owner/config`, on staging
+first.
 
 Model ids, the FX rate, finance assumptions and the support email can also be
 changed in `/owner/config` without a redeploy; saved values win over the

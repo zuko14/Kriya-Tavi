@@ -70,7 +70,7 @@ CT-DB-01…07 as listed in DATA_MODEL_AND_STATE_MACHINES §9
 | CT-RUN-17 | Checkpoint over `maxCheckpointMb` refused with a clear reason |
 | CT-RUN-18 | `files` returns contents for the current `changeSetId` and refuses a stale one |
 | CT-RUN-19 | `health` answers without a token and returns no workspace data |
-| CT-RUN-20 | Type-level: the client satisfies the `Experimental_SandboxSession` subset (CD-05) |
+| CT-RUN-20 | Type-level: the client satisfies the `Experimental_SandboxSession` subset (CD-05). Written in C3 with `lib/cloud/client.ts` (owner, 2026-10-31, CF-14), e.g. `tests/cloud/client.test.ts` |
 
 ### Providers (C3, C8)
 

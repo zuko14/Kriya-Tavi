@@ -404,6 +404,61 @@ export async function enqueuePart({
   )
 }
 
+// A request in a room to one of the person's agents (track R, R4, RD-03,
+// owner-approved): a user message written by lib/rooms/context.ts in the
+// agent's bridge thread, through the same prepare() checks as any turn and
+// charged to the person. The invocation keys the task, so a retry is the
+// same task; a busy thread answers 409 like any turn (RD-08).
+export async function enqueueRoomTurn({
+  userId,
+  threadId,
+  agentId,
+  prompt,
+  invocationId,
+  roomId,
+  requestedBy,
+}: {
+  userId: string
+  threadId: string
+  agentId: string
+  prompt: string
+  invocationId: string
+  roomId: string
+  requestedBy: string
+}) {
+  const prepared = await prepare(userId, threadId, agentId)
+  const { first } = prepared
+  const message: KriyaMessage = {
+    id: `room-${invocationId}`,
+    role: "user",
+    parts: [{ type: "text", text: prompt }],
+    metadata: { channel: "room", roomId, requestedBy },
+  }
+  const key = `room:${invocationId}`
+  const input: TaskInput = {
+    messageId: message.id,
+    agentId: first.id,
+    channel: "room",
+    roomId,
+  }
+
+  return insertTask(userId, key, () =>
+    privileged.transaction(async (tx) => {
+      await holdDailyLimit(tx, userId, prepared.plan)
+      await saveMessage(tx, userId, threadId, message)
+      await tx
+        .update(threads)
+        .set({ preview: prompt.slice(0, 140), activeAt: new Date() })
+        .where(and(eq(threads.id, threadId), eq(threads.userId, userId)))
+      const [task] = await tx
+        .insert(tasks)
+        .values({ ...taskRow(userId, threadId, prepared, message.id, key), input })
+        .returning()
+      return task
+    })
+  )
+}
+
 // The person's answer to a tool call waiting for approval (a calendar event,
 // a Gmail draft). Checked against the saved message, never taken from the
 // browser: the approval must exist, be pending, and be in the person's own

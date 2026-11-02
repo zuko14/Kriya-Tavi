@@ -11,6 +11,8 @@ import {
   WalletIcon,
   BookCheckIcon,
   BriefcaseIcon,
+  CodeXmlIcon,
+  MessagesSquareIcon,
   FlaskConicalIcon,
   PackageCheckIcon,
   PlugIcon,
@@ -34,6 +36,10 @@ const NAV = [
   { href: "/owner/delivery", label: "Delivery", icon: PackageCheckIcon },
   // N7: the MCP registry, pinned tools and drift review
   { href: "/owner/apps", label: "Apps", icon: PlugIcon },
+  // C7: cloud workspaces, running and metered
+  { href: "/owner/cloud", label: "Cloud", icon: CodeXmlIcon },
+  // R9: room reports and the numbers to watch for scale
+  { href: "/owner/rooms", label: "Rooms", icon: MessagesSquareIcon },
   { href: "/owner/audit", label: "Audit", icon: ScrollTextIcon },
 ]
 

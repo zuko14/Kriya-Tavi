@@ -8214,15 +8214,15 @@ capability is behind a `cloud.*` switch that defaults off (CT-REG-01).
 | --- | --- | --- | --- | --- |
 | C0 | Blueprint and decisions | COMPLETE (2026-10-31: 16 documents written and re-audited; CD-01…CD-27 approved by the owner, owner-gated ones by id, see "Track C owner approvals") | — | — |
 | CP-1 | Baseline re-check; docs truth (CF-01, CF-02) | COMPLETE (2026-10-31: Test Files 185 passed | 3 skipped (188); Tests 2289 passed | 42 skipped (2331); exit 0; CF-01 and CF-02 corrected) | C0 | CD-25 |
-| C1 | Data model (one migration `20270201000000`) | NOT_STARTED | CP-1 | CD-14, CD-15 |
-| C2 | Runner service, protocol, image, DSH ports | NOT_STARTED | CP-1 | CD-03, CD-05, CD-12, CD-21, CD-22 |
-| C3 | Provider boundary, `local` provider, `TaskWorkspace` | NOT_STARTED | C1, C2 | CD-04, CD-05, CD-07, CD-09, CD-16 |
-| C4 | Tools in the runner loop | NOT_STARTED | C3 | CD-11, CD-17, CD-19, CD-20, CD-23 |
-| C5 | Import and publish | NOT_STARTED | C4 | CD-09, CD-10 |
-| C6 | Checkpoints, restore, janitor | NOT_STARTED | C4 | CD-04, CD-13, CD-16 |
-| C7 | UI, usage, owner pages, plan field | NOT_STARTED | C4 (C5 for the publish card) | CD-14, CD-18 |
-| C8 | Provider adapters and bake-off (paid runs owner-gated) | NOT_STARTED | C3; owner accounts | CD-06, CD-07, CD-12 |
-| C9 | Security and isolation readiness | NOT_STARTED | C5, C6, C8 | — |
+| C1 | Data model (one migration `20270201000000`) | COMPLETE (2026-10-31: CT-DB-01…07 and CT-REG-01 settings part pass; Tests 2320 passed, 42 skipped; exit 0) | CP-1 | CD-14, CD-15 |
+| C2 | Runner service, protocol, image, DSH ports | COMPLETE (2026-10-31: CT-RUN-01…19, CT-IMP-02 pass; image built and smoke-tested; SBOM produced; CT-RUN-20 moved to C3) | CP-1 | CD-03, CD-05, CD-12, CD-21, CD-22 |
+| C3 | Provider boundary, `local` provider, `TaskWorkspace` | COMPLETE (2026-10-31: CT-PRV-01, CT-WS-01…09, CT-IMP-01, CT-RUN-20 pass; Tests 2356 passed, 42 skipped; exit 0) | C1, C2 | CD-04, CD-05, CD-07, CD-09, CD-16 |
+| C4 | Tools in the runner loop | COMPLETE (2026-10-31: CT-REG-01, CT-POL-01…03, CT-TOOL-01…08, CT-SKL-01/02 pass; AT-REG-01, OT-REG-01, NT-REG-01 unchanged; Tests 2382 passed, 42 skipped; exit 0) | C3 | CD-11, CD-17, CD-19, CD-20, CD-23 |
+| C5 | Import and publish | COMPLETE (2026-10-31: CT-PUB-01…06 pass; tests/connectors unchanged; Tests 2396 passed, 42 skipped; exit 0) | C4 | CD-09, CD-10 |
+| C6 | Checkpoints, restore, janitor | COMPLETE (2026-10-31: CT-CKP-01…04, CT-JAN-01…05 and the pre-publish checkpoint pass; Tests 2406 passed, 42 skipped; exit 0) | C4 | CD-04, CD-13, CD-16 |
+| C7 | UI, usage, owner pages, plan field | COMPLETE (2026-10-31: CT-UI-01…04, CT-MTR-01…03 pass; browser check on the local stack, 57 screenshots; build exit 0; Tests 2417 passed, 42 skipped; exit 0) | C4 (C5 for the publish card) | CD-14, CD-18 |
+| C8 | Provider adapters and bake-off (paid runs owner-gated) | IN_PROGRESS (2026-10-31: e2b and daytona adapters built; CT-PRV-02…06 pass on fixtures from the published API descriptions; recorded responses and the bake-off wait for CB-02; Tests 2431 passed, 42 skipped; exit 0) | C3; owner accounts | CD-06, CD-07, CD-12 |
+| C9 | Security and isolation readiness | IN_PROGRESS (2026-11-01: CR-1 and CR-5 satisfied; CF-16 and CF-17 resolved in the image (CD-12 firewall and registry proxy, per-command process cap): 14 isolation probes pass on the real image in Docker, CT-ISO-01 and -03…-08 plus fail-closed; 6 recovery drills; Tests 2731 passed, 55 skipped; exit 0. Left: CR-2 on the chosen provider (CB-02; CT-ISO-02 and the VM boundary need it; CF-19 NET_ADMIN), CR-3/CR-7 and the staging drills (CB-05)) | C5, C6, C8 | — |
 | C10 | Staging vertical slice, laptop off | NOT_STARTED | C7, C9, staging | CD-24 |
 | C11 | Controlled pilot | NOT_STARTED | C10, CQ-1/CQ-2 | new decision for public copy |
 
@@ -8249,7 +8249,7 @@ before every write). Track C's own:
 | --- | --- | --- | --- |
 | CB-01 | ~~Owner approval of CD-01…CD-25~~ Resolved 2026-10-31 ("Approve all" covers CD-01…CD-27, see "Track C owner approvals") | CP-1+ | Owner |
 | CB-02 | Provider accounts for the bake-off (E2B, Daytona) and approval of the paid runs | C8 runs | Owner |
-| CB-03 | Docker on a verification machine for the runner image (same as track O OB-06) | C2 image build, C7 browser check | Owner |
+| CB-03 | Docker on a verification machine for the runner image (same as track O OB-06). C2 part done 2026-10-31: Docker Desktop on the owner's Mac built the image (arm64) | C7 browser check | Owner |
 | CB-04 | A test GitHub repository the owner controls, and the GitHub App installed on it (track A AB-06) | C5 live check, C10 | Owner |
 | CB-05 | Staging on real services (voice B2 / A AB-02 / O OB-01 / N NB-08) | C9, C10 | Owner |
 | CB-06 | Counsel CQ-1 (code at a foreign sandbox provider under DPDP), CQ-2 (consent wording) | C11 | Owner + counsel |
@@ -8321,6 +8321,1299 @@ before every write). Track C's own:
   `20270201000000`) and C2 (runner, new files only) in parallel, each
   started from `docs/cloud-execution/AGENT_MASTER_PROMPT.md`.
 
+## Phase C1 — Data model (migration `20270201000000`)
+
+**Status:** COMPLETE (2026-10-31).
+
+### Session plan (2026-10-31 11:54 IST, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Preflight:** `git status --short` clean at `9a51a12`; branch `main`;
+  board empty before this claim; CD-14 and CD-15 approved (owner-gated
+  CD-14 by id) under "Track C owner approvals"; timestamp `20270201000000`
+  sorts after the last migration `20270103000000_skill_studio.sql`.
+  Baseline `npm run check` result recorded under "Session result".
+- **Create:** `supabase/migrations/20270201000000_cloud_workspaces.sql`
+  and `supabase/rollback/20270201000000_cloud_workspaces.down.sql`
+  (DATA_MODEL §1–§6, §8); `tests/db/cloud-rls.test.ts` (CT-DB-01…05);
+  `tests/cloud/regression.test.ts` (CT-REG-01, settings part only; C4 adds
+  the `runTask` part).
+- **Change (CHANGE_IMPACT §3 C1 rows only):** `db/schema.ts`: `workspaces`,
+  `workspaceSessions`, `plans.workspaceMinutes`, two `resourceUsage` kinds.
+  `tests/db/migrations.test.ts`: a CT-DB-06 down/up case; the goals case
+  (the only one whose rollback drops what track C depends on:
+  `check_transition()`) rolls track C back first. `lib/config.ts`: the
+  `cloud.*` block of CD-23.
+- **Tests first:** CT-DB-01…06 and CT-REG-01 (settings) written and seen
+  failing before the migration and settings exist; CT-DB-07 is the
+  existing `tests/db/lint.test.ts`.
+- **Risks:** older rollback cases that drop `check_transition()` or
+  `resource_usage` (checked: only the goals case drops something the new
+  trigger depends on; memory v2's `resource_usage` drop has no dependency
+  from track C objects). Trigger names follow the code's
+  `<table>_touch`/`<table>_transition` convention rather than the doc's
+  shorthand `touch`.
+- **Questions for the owner:** none.
+
+### Session result (2026-10-31, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Status:** COMPLETE. Nothing committed, pushed or deployed; no live
+  database, model, provider or GitHub call; every run used PGlite.
+- **Baseline (preflight):** my first preflight run overlapped my first
+  edits, so I stopped it and re-ran `env -u OPENROUTER_API_KEY npm run
+  check` on a clean `git archive HEAD` copy (node_modules linked) → typecheck
+  pass; lint 0 errors, 2 warnings (`tests/operator/golden/harness.ts`; the
+  copy has no `.claude/worktrees`, CF-09); format pass; Test Files 185
+  passed | 3 skipped (188); Tests 2288 passed | 43 skipped (2331); exit 0.
+  One more test skips in the exported copy than in CP-1's run (2289 | 42) on
+  the same code; not identified, an environment difference of the copy (the
+  final run below in the real checkout matches CP-1 plus the new tests).
+- **Created:** `supabase/migrations/20270201000000_cloud_workspaces.sql`
+  (DATA_MODEL §1–§6: `kriya.workspaces`, `kriya.workspace_sessions`,
+  `plans.workspace_minutes` default 0, `resource_usage` kinds
+  `workspace_seconds` and `workspace_storage_bytes`, the twelve `workspace`
+  transitions, `kriya.open_workspace_session` pinned and revoked from client
+  roles, RLS with `read_own` and `close_own`, and the column grant on
+  `close_requested_at` only); `supabase/rollback/20270201000000_cloud_workspaces.down.sql`
+  (DATA_MODEL §8 plus the `schema_migrations` row, as every rollback does);
+  `tests/db/cloud-rls.test.ts` (CT-DB-01…05, 26 tests);
+  `tests/cloud/regression.test.ts` (CT-REG-01 settings part, 4 tests).
+- **Changed (CHANGE_IMPACT §3 C1 rows only):** `db/schema.ts`
+  (`plans.workspaceMinutes`, two `resourceUsage` kinds, a "cloud
+  workspaces" section with `workspaces`, `workspaceSessions` and their enum
+  lists; existing definitions untouched); `lib/config.ts` (the 14 `cloud.*`
+  settings of CD-23 after `operator.maxActive`; both switches `off`,
+  provider `none`, `cloud.image` and `cloud.costMicroUsdPerHour` without a
+  default, the price never zero); `tests/db/migrations.test.ts` (new case
+  CT-DB-06: down then up with data in it, the old kind check back, schema
+  fingerprint identical; the goals case rolls track C back first because
+  `goals_schedules.down.sql` drops `check_transition()`, and re-applies it
+  last; no existing assertion changed).
+- **Tests seen failing first:** all 31 new tests failed (no settings, no
+  tables) before the migration and settings existed, then passed.
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (the existing pair in
+  `tests/operator/golden/harness.ts`, three times via `.claude/worktrees/*`,
+  CF-09); format pass; Test Files 187 passed | 3 skipped (190); Tests 2320
+  passed | 42 skipped (2362); exit 0. That is CP-1's 2289 | 42 plus the 31
+  new tests; every existing test passes unchanged.
+- **Exit checks:** [x] CT-DB-01…05 pass. [x] CT-DB-06 down + up on PGlite
+  (schema fingerprint identical; older migration cases pass). [x] CT-DB-07
+  `tests/db/lint.test.ts` at zero. [x] Settings block parses (every default
+  passes its own pattern). [x] CT-REG-01 settings part (`cloud.workspaces`,
+  `cloud.publish` off; provider `none`; no price). `tests/agent/regression.test.ts`
+  unchanged and passing.
+- **Unknown, with its verification step:** PGlite is one connection, so
+  CT-DB-04's "two concurrent calls" run one after the other there; the test
+  proves the count check, not that `pg_advisory_xact_lock` serializes two
+  real workers. Verify on the local Supabase stack (`.env.verify`, two
+  `psql` sessions each calling `open_workspace_session` with one slot left
+  inside an open transaction) in C3 or C9.
+- **Deviations:** trigger names follow the code's `<table>_touch` /
+  `<table>_transition` convention (`workspaces_touch`,
+  `workspaces_transition`) instead of DATA_MODEL §1's shorthand `touch`;
+  behaviour identical. No other deviation; no new CF finding.
+- **Not run:** `npm run build` (reads the live project's settings; no
+  `app/` change); `npm run db:migrate` (no production migration without the
+  owner).
+- **Next exact action:** wave 1's other half, C2 (runner, new files only:
+  `runner/**`, `NOTICE.md`, `tests/cloud/runner.test.ts`), from
+  `docs/cloud-execution/AGENT_MASTER_PROMPT.md` with `<PHASE>` = `C2`.
+  With C1 done, track H's H1 migration may follow (C1 → H1 on
+  `db/schema.ts`, `tests/db/migrations.test.ts`, `lib/config.ts`); C3
+  starts once C2 is COMPLETE.
+
+### Re-verification (2026-11-01 18:45 IST, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Why:** the owner forced `C1` through `docs/program/RESUME_PROMPT.md`.
+  C1 was already COMPLETE, and C2–C7, H and R build on its tables, so
+  re-implementing it would only have put existing work at risk. This
+  session re-ran C1's exit checks on the current tree instead. **No file
+  changed except this section;** no board claim held (status.md only).
+- **Preflight:** branch `main` at `9a51a12`; 108 uncommitted/untracked
+  paths, all from earlier recorded sessions (tracks C, H, R), left as they
+  were; board empty. The C1 files are still there: the migration and its
+  rollback (unchanged since 2026-10-31 11:58), `tests/db/cloud-rls.test.ts`;
+  `db/schema.ts`, `lib/config.ts`, `tests/db/migrations.test.ts` and
+  `tests/cloud/regression.test.ts` have since been changed by later phases
+  as their CHANGE_IMPACT rows allow.
+- **Targeted run:** `env -u OPENROUTER_API_KEY npx vitest run
+  tests/db/cloud-rls.test.ts tests/cloud/regression.test.ts
+  tests/db/migrations.test.ts tests/db/lint.test.ts
+  tests/agent/regression.test.ts` → Test Files 5 passed (5); Tests 69
+  passed (69). Verbose: CT-DB-01…05 (26 tests), CT-DB-06 ("rolls cloud
+  workspaces back with data in them and applies them again"), CT-REG-01
+  settings part (4) and C4's `runTask` part (2) all ✓.
+- **Full command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (the existing pair in
+  `tests/operator/golden/harness.ts`, three times via `.claude/worktrees/*`,
+  CF-09); format pass; Test Files 227 passed | 3 skipped (230); Tests 2651
+  passed | 42 skipped (2693); exit 0.
+- **Exit checks still hold:** [x] CT-DB-01…05. [x] CT-DB-06 down + up on
+  PGlite. [x] CT-DB-07 `lint.test.ts` zero. [x] settings block parses.
+  [x] CT-REG-01 settings part. Status stays COMPLETE.
+- **Still unknown:** CT-DB-04's real concurrency on `pg_advisory_xact_lock`
+  (PGlite is one connection); verification step unchanged (two `psql`
+  sessions on the `.env.verify` stack, C3 or C9).
+- **Next exact action:** nothing left in C1. Track C's next phase is C8's
+  recorded responses and bake-off, blocked on CB-02 (owner: E2B and
+  Daytona accounts plus approval of the paid runs); C9 waits on C8. Without
+  CB-02, run `docs/program/RESUME_PROMPT.md` with `NEXT` to pick an
+  unblocked phase in track H or R.
+
+## Phase C2 — Runner service, protocol, image, DSH ports
+
+**Status:** COMPLETE (2026-10-31).
+
+### Session plan (2026-10-31 12:22 IST, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Preflight:** `git status --short` shows only C1's uncommitted files
+  from this same session; branch `main`; board holds no other claim;
+  CD-03, CD-05, CD-12, CD-21, CD-22 approved (CD-12, CD-22 by id). Latest
+  `env -u OPENROUTER_API_KEY npm run check` on this tree (end of C1): exit
+  0, Tests 2320 passed, 42 skipped. No migration.
+- **Machine:** Docker CLI present but its daemon isn't running; `syft`
+  missing; no `rg` binary on `PATH` for child processes; `git` 2.54, `bash`,
+  Node 24.22 present.
+- **Create (new files only, IMPLEMENTATION_PLAN §2 lane):**
+  `runner/{index,protocol,paths,exec,files,patch,search,changes,import,git}.ts`,
+  `runner/Dockerfile`, `NOTICE.md`, `tests/cloud/runner.test.ts`
+  (CT-RUN-01…19), `tests/cloud/imports.test.ts` (CT-IMP-02),
+  `tests/cloud/tar.ts` (a test-only tar writer), `tests/fixtures/cloud/repo/`.
+- **Change:** no existing file.
+- **Tests first:** CT-RUN-01…19 and CT-IMP-02 written and seen failing first.
+- **Risks / decisions to record:** (1) the DeepSeek Harness source isn't on
+  this machine and downloading it needs the owner's go-ahead, so P1–P4,
+  P6–P8 are written from the behaviour in DSH_COMPONENT_MAP §3 and carry
+  the attribution header anyway; a line-by-line comparison with upstream
+  stays open. (2) CT-RUN-20 tests `lib/cloud/client.ts`, which is C3's file
+  (ARCHITECTURE §1, IMPLEMENTATION_PLAN C3) while the C2 lane is
+  `runner/**` only: recorded as a doc conflict for the owner. (3) The
+  image build and SBOM need the Docker daemon (CB-03).
+- **Questions for the owner:** where CT-RUN-20 belongs (C2 or C3);
+  go-ahead to download the pinned DSH commit read-only for the port review;
+  Docker daemon for the image build.
+
+### Session result (2026-10-31, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Status:** IN_PROGRESS. The runner is written and its tests pass; three
+  exit checks are open (below). Nothing committed, pushed, built or
+  deployed; no network call, model, provider sandbox or GitHub call.
+- **Created:** `runner/index.ts` (HTTP server: constant-time bearer check on
+  every route but `/v1/health`, body caps, zod-strict bodies, the image
+  entry point that reads and then deletes `KRIYA_RUNNER_TOKEN` and
+  `KRIYA_RUNNER_LIMITS`), `runner/protocol.ts` (limits, request schemas,
+  response types), `runner/paths.ts` (paths kept inside `/workspace`,
+  `.kriya/` read-only), `runner/exec.ts` (P1, P2, P6), `runner/git.ts`
+  (git as the workspace user with no global config and no hooks; snapshot
+  index), `runner/files.ts` (read, write, edit, patch I/O; P4),
+  `runner/patch.ts` (P3, pure), `runner/search.ts` (P7, and `list`),
+  `runner/changes.ts` (changes, files, checkpoint, restore; P8),
+  `runner/import.ts` (gzip tar import, everything checked before anything
+  is written), `runner/Dockerfile` (CD-21), `NOTICE.md` (CD-22),
+  `tests/cloud/runner.test.ts` (CT-RUN-01…19), `tests/cloud/imports.test.ts`
+  (CT-IMP-02), `tests/cloud/tar.ts` (a test-only tar writer),
+  `tests/fixtures/cloud/repo/` (five files, one failing test).
+  `docs/cloud-execution/REPOSITORY_AUDIT.md` §7: CF-14, CF-15. No existing
+  code file changed.
+- **Tests first:** both new files failed (no `runner/`) before any runner
+  code existed. Then a sanity check that the tests can fail: with the P4
+  check removed and the kill sent to the process instead of its group, 4
+  tests failed (CT-RUN-04, -05, -06, -08); restored, all pass. That run
+  left two `sleep 1000` processes on this machine; they were killed and
+  `pgrep` confirmed none remain.
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (the existing pair in
+  `tests/operator/golden/harness.ts`, three times via `.claude/worktrees/*`,
+  CF-09); format pass; Test Files 189 passed | 3 skipped (192); Tests 2340
+  passed | 42 skipped (2382); exit 0 (C1's 2320 plus 20 new tests).
+- **Exit checks:** [x] CT-RUN-01…19 pass. [ ] CT-RUN-20: not written, CF-14
+  (it tests C3's `lib/cloud/client.ts`). [x] CT-IMP-02 passes. [ ] Image
+  builds locally: not run; the Docker daemon isn't running here, and the
+  build downloads the Debian image, Node and npm packages, which needs the
+  owner's go-ahead (CB-03). [ ] SBOM: not produced (`syft` missing; the
+  command is in the Dockerfile header). [x] Port headers in every adapted
+  file and `NOTICE.md` with the pinned SHA.
+- **Not verified:** (1) the DeepSeek Harness source wasn't on this machine,
+  so P1–P4 and P6–P8 follow DSH_COMPONENT_MAP §3's description of upstream
+  behaviour, not a reading of the upstream code. The files carry the
+  attribution header anyway. A line-by-line comparison, and checking
+  `NOTICE.md`'s MIT text against upstream `LICENSE`, need a read-only clone
+  of `ce7073d` (a download, owner go-ahead). (2) The search time cap and
+  the constant-time token comparison are in code but not exercised by a
+  test. (3) The user switch (`runAs`, uid 1000) and every `chown` path run
+  only on the image (CT-ISO-07).
+- **Deviations from the documents, each deliberate:** (1) search and list
+  use `git grep` / `git ls-files` instead of `rg`. The workspace is always
+  a repository, so `.gitignore` is honoured. There's no `rg` binary for child
+  processes on this machine, and the tests run everywhere git does. `ripgrep`
+  stays in the image for commands. (2) `changeSetId` hashes (path, status,
+  mode, git blob id) rather than a separate content sha256. Same
+  properties, and `/v1/files` reads the exact blobs the id was computed
+  from. (3) The exec `end` event also carries `stdout`, `stderr` (whole, or
+  head + marker + tail) and `timedOut`, so the client needn't rebuild
+  output. (4) Whatever a command leaves running in its process group is
+  stopped when the command exits (one-shot commands, CD-17). (5) The import
+  file cap is 50 000 (no number was given). (6) The egress proxy and the
+  `browser/egress.ts` copy aren't in C2. CD-12's fallback comes with the
+  provider work (C8/C9); the Dockerfile copies only `runner/`. (7) A
+  blank workspace gets an empty base commit the first time anything needs
+  git.
+- **New findings:** CF-14 (CT-RUN-20 belongs with C3's client) and CF-15
+  (the root runner writes into a `kriya`-owned tree; a symlink race could
+  let a command make root write outside `/workspace` inside the VM; fix
+  before C9), both in REPOSITORY_AUDIT §7.
+- **Next exact action:** superseded by the owner decision below.
+
+### Owner decision (2026-10-31, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- The owner answered "Yes, move to C3" to "Move CT-RUN-20 to C3 so C2
+  waits only on the image build?". CF-14 resolved: CT-RUN-20 is now a C3
+  exit check written with `lib/cloud/client.ts`
+  (`docs/cloud-execution/IMPLEMENTATION_PLAN.md` §1 C2 and C3 rows and §3,
+  `TEST_STRATEGY.md` CT-RUN-20 row, `REPOSITORY_AUDIT.md` CF-14). Docs only;
+  no code or test changed, so the last `npm run check` (exit 0, Tests 2340
+  passed, 42 skipped) still stands.
+- **C2's open exit checks are now only:** the image build and the SBOM.
+- **Next exact action:** the owner starts the Docker daemon and approves the
+  build's downloads (the Debian base image, Node from nodejs.org, `zod` and
+  `tsx` from npm) and installs `syft`; then run
+  `docker build -f runner/Dockerfile -t kriya-runner:dev .` and
+  `syft kriya-runner:dev -o spdx-json > kriya-runner-dev.spdx.json`, record
+  the real output here, and set C2 COMPLETE if both pass. Separately, and
+  not blocking C2: approve a read-only clone of DSH `ce7073d` for the port
+  comparison, and fix CF-15 before C9. C3 starts once C2 is COMPLETE (it
+  also needs the owner's `.env.example` row, CB-07).
+
+### Image build (2026-10-31 13:14 IST, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Owner go-ahead:** "Start and continue", answering "Will you start
+  Docker and approve the image build's downloads?". Docker Desktop was
+  started with `open -a Docker`; daemon 29.9.2, linux/aarch64.
+- **Build:** `docker build --progress=plain -f runner/Dockerfile -t kriya-runner:dev .`
+  → exit 0. Base `debian:trixie-slim@sha256:f6b08b09a057…`; Node printed
+  `v24.20.0`; `zod@4.6.7` and `tsx@4.23.15` installed; image
+  `sha256:d8d301cacfb9…`, arm64, 997 716 510 bytes unpacked. Only an arm64
+  image was built here; the providers' amd64 build is part of template
+  registration (C8).
+- **Smoke test on the image** (a local container bound to 127.0.0.1, a
+  random token, removed afterwards; a scratch script, not a repository
+  test): no token → 401; import of the fixture → 200, 5 files, a base
+  commit; commands run as uid 1000 / gid 1000 `kriya` with
+  `HOME=/home/kriya`; the runner processes run as uid 0; imported files,
+  `.git` and files created through `/v1/write` (and their new folders) are
+  owned by `kriya:kriya`; `.kriya` and `.kriya/logs` are `root:root` and
+  `kriya` gets "Permission denied" writing there; no `KRIYA_RUNNER*`
+  variable in a command's environment; `kriya` gets "denied" reading
+  `/proc/<pid>/environ` of every runner process; `npm test` in the fixture
+  shows its one failing test; changes, checkpoint (sha and counts headers)
+  and search answer; a 2 s timeout kills a backgrounded `sleep 600`
+  (`timedOut: true`, grandchild gone). This is the first run of the
+  `runAs`/`chown` paths (part of CT-ISO-07, which stays a C9 check).
+- **Observed, recorded:** (1) the token stays in the startup environment
+  of the runner's process chain (`tini` → `npm exec` → `sh` → `tsx` →
+  `node`) as seen by root; `delete process.env` only keeps it from
+  children. Only root can read it, so the uid split is what protects it,
+  as CD-21 intends. Starting `node_modules/.bin/tsx` directly instead of
+  `npx` would shorten the chain (optional). (2) `procps` (`ps`, `pgrep`)
+  isn't in the image; commands that need it fail (optional to add).
+  (3) CF-15 wasn't exercised (no race attempted).
+- **SBOM: not produced.** Running `anchore/syft:latest` against a
+  `docker save` archive (no Docker socket, `--network none`) was refused by
+  this session's permission check; no other route (for example installing
+  `syft` with Homebrew) was tried. The archive was deleted.
+- **Exit checks now:** [x] CT-RUN-01…19; [x] CT-IMP-02; [x] image builds
+  locally; [ ] SBOM; [x] port headers and `NOTICE.md`. C2 stays
+  IN_PROGRESS on the SBOM alone.
+- **Next exact action:** the owner chooses how syft runs (e.g.
+  `brew install syft`, or allowing a pinned `anchore/syft` image), then:
+  `syft kriya-runner:dev -o spdx-json > kriya-runner-dev.spdx.json`; record
+  the syft version, the file's sha256 and its package count here, keep the
+  file with the image version, and set C2 COMPLETE.
+
+### SBOM and close (2026-10-31, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Owner go-ahead:** "brew install syft". `brew install syft` → syft
+  1.55.0 (Homebrew bottle, build date 2026-10-19).
+- **Command:** `syft docker:kriya-runner:dev -o spdx-json=kriya-runner-dev.spdx.json -q`
+  → exit 0; SPDX-2.3; 7 534 567 bytes; sha256
+  `8c85ccbc010a5087d2c81bbf7b6ee3ae3fb17917c0a9ac8dda7ea9c3f1020bbe`;
+  332 packages (181 deb, 149 npm, 1 generic, 1 oci). Among them: node
+  24.20.0, git 1:2.47.3-0+deb13u1, ripgrep 14.1.1-1+b4, python3 3.13.5-1,
+  tini 0.19.0-3+b8, openssl 3.5.7-1~deb13u3, zod 4.6.7, tsx 4.23.15. The
+  file was sent to the owner from this session's scratch directory (not
+  committed); it belongs with the image version when the template is
+  registered (C8). No vulnerability scan was run.
+- **Exit checks (IMPLEMENTATION_PLAN §1, C2 row as amended by CF-14):**
+  [x] CT-RUN-01…19 pass; [x] CT-IMP-02 passes; [x] image builds locally;
+  [x] SBOM produced; [x] port headers and `NOTICE.md` present. **C2
+  COMPLETE.** No code changed after the last `npm run check` (exit 0, Test
+  Files 189 passed | 3 skipped, Tests 2340 passed | 42 skipped); only
+  `status.md` and track C docs changed since.
+- **Still open, outside C2's exit checks:** (1) comparing the ported code
+  and `NOTICE.md`'s MIT text with DSH `ce7073d` (needs a read-only clone,
+  owner go-ahead); (2) CF-15, the root runner's writes into the
+  `kriya`-owned tree, to fix before C9; (3) optional: start `tsx` without
+  `npx`, add `procps`.
+- **Next exact action:** wave 2. C3 (provider boundary, `local` provider,
+  `lib/cloud/client.ts` with CT-RUN-20, `TaskWorkspace`) from
+  `docs/cloud-execution/AGENT_MASTER_PROMPT.md` with `<PHASE>` = `C3`, after
+  the owner adds `KRIYA_WORKSPACE_SECRET` to `.env.example` (CB-07, voice
+  B9). Track H's H1 migration may run in parallel (it follows C1).
+
+## Phase C3 — Provider boundary, `local` provider, client, `TaskWorkspace`
+
+**Status:** COMPLETE (2026-10-31).
+
+### Session plan (2026-10-31 13:23 IST, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Preflight:** `git status --short` shows only C1 and C2's uncommitted
+  files from this session; branch `main`; board empty before this claim;
+  C1 and C2 COMPLETE; CD-04, CD-05, CD-07, CD-09, CD-16 approved (CD-07,
+  CD-09 by id). Last `npm run check` (end of C2, no code changed since):
+  exit 0, Tests 2340 passed, 42 skipped. No migration. CB-07: no test reads
+  `.env.example`; the owner still adds the `KRIYA_WORKSPACE_SECRET` row
+  there (voice B9), this session doesn't touch it.
+- **Create:** `lib/cloud/provider.ts` (`WorkspaceProvider`, `WorkspaceSpec`,
+  `RepoSource`), `lib/cloud/providers/local.ts` (runner as a child process),
+  `lib/cloud/client.ts` (runner client, AI SDK-compatible surface),
+  `lib/cloud/token.ts` (`runnerToken`), `lib/cloud/paths.ts` (checkpoint
+  object names, pure), `lib/cloud/checkpoint.ts` (upload and download only;
+  retention stays C6), `lib/cloud/session.ts` (`TaskWorkspace`,
+  `workspaceProvider`, `cloudSettings`), `tests/cloud/session.test.ts`
+  (CT-WS-01…09), `tests/cloud/provider.test.ts` (CT-PRV-01 and a local
+  provider round trip), `tests/cloud/client.test.ts` (CT-RUN-20),
+  `tests/cloud/fake-provider.ts`.
+- **Change:** `lib/config.ts` `SECRETS` += `KRIYA_WORKSPACE_SECRET`;
+  `lib/env.ts` worker optional row `KRIYA_WORKSPACE_SECRET` ("cloud
+  workspaces"); `tests/cloud/imports.test.ts` += CT-IMP-01;
+  `runner/index.ts` entry point reads optional `KRIYA_RUNNER_ROOT`, `_HOME`,
+  `_PATH`, `_HOST` (image defaults unchanged) and `PORT=0`, and prints the
+  bound port, so the `local` provider can run it outside the image.
+- **Tests first:** CT-PRV-01, CT-WS-01…09, CT-IMP-01, CT-RUN-20 seen failing
+  before the code.
+- **Seams (recorded):** `TaskWorkspace` takes a `RepoSource` with
+  `githubTarball`'s signature (C5 passes the real one; tests a fixture) and
+  the file store; C4 wires it into `runTask`.
+- **Questions for the owner:** none.
+
+### Session result (2026-10-31, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Status:** COMPLETE. Nothing committed, pushed or deployed; no network
+  call, model, provider sandbox, GitHub call or live database. Every run
+  used PGlite, the in-process runner or the `local` provider's child
+  process on this machine.
+- **Created:** `lib/cloud/provider.ts` (`WorkspaceProvider`,
+  `WorkspaceSpec`, `Opened`, `WorkspaceProviderError`, `RepoSource`),
+  `lib/cloud/providers/local.ts` (the runner as a child process,
+  `node --import tsx runner/index.ts`, with only its token, limits and paths
+  in its environment; refuses unless `KRIYA_WORKSPACE_LOCAL=1` and
+  `DATABASE_URL` is `127.0.0.1`/`localhost`), `lib/cloud/client.ts`
+  (`RunnerClient`: every runner route, NDJSON exec streaming, refusals as
+  `RunnerRequestError` with the runner's status and sentence, and the AI
+  SDK surface `run`, `readTextFile`, `writeTextFile`, `readBinaryFile`,
+  `writeBinaryFile`, `description`), `lib/cloud/token.ts` (`runnerToken`,
+  HMAC-SHA256 of `workspaceId:generation`), `lib/cloud/paths.ts`
+  (`checkpointPath`, pure), `lib/cloud/session.ts` (`TaskWorkspace`,
+  `workspaceProvider`, `setWorkspaceProviderForTests`, `cloudSettings`),
+  `tests/cloud/session.test.ts` (CT-WS-01…09), `tests/cloud/provider.test.ts`
+  (CT-PRV-01 and a real `local` round trip: create, pause, resume, destroy),
+  `tests/cloud/client.test.ts` (CT-RUN-20 and the client against the real
+  runner), `tests/cloud/fake-provider.ts`.
+- **Changed:** `lib/config.ts` `SECRETS` += `KRIYA_WORKSPACE_SECRET`
+  (CHANGE_IMPACT §3 C3 row); `lib/env.ts` optional worker row
+  `KRIYA_WORKSPACE_SECRET` (C3 row; no new required variable);
+  `tests/cloud/imports.test.ts` += CT-IMP-01; track C's own C2 files:
+  `runner/index.ts` entry point reads optional `KRIYA_RUNNER_ROOT`,
+  `KRIYA_RUNNER_HOME`, `KRIYA_RUNNER_PATH`, `KRIYA_RUNNER_HOST` (image
+  defaults unchanged), accepts `PORT=0` and logs the bound port;
+  `runner/protocol.ts` and `runner/files.ts`: read and write take
+  `encoding: "base64"` (binary files, for the AI SDK surface). C2's tests
+  still pass unchanged.
+- **Tests first:** the four new files failed (no `lib/cloud`) before any
+  code. Fixes made while running them were all in the tests: a second task
+  in a thread needs the first finished (`tasks_one_active_per_thread`),
+  PGlite returns `bigint` as numbers, and CT-WS-07's provider log covers
+  both tasks (generations 1 and 2). Sanity check that the tests can fail:
+  without the `user_id` filter on the workspace lookup, and with a failed
+  resume always marked `failed`, CT-WS-08 and CT-WS-06 failed; restored,
+  all pass. No runner process or local workspace directory was left behind.
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (the existing pair in
+  `tests/operator/golden/harness.ts`, three times via `.claude/worktrees/*`,
+  CF-09); format pass; Test Files 192 passed | 3 skipped (195); Tests 2356
+  passed | 42 skipped (2398); exit 0 (C2's 2340 plus 16 new tests).
+- **Exit checks:** [x] CT-PRV-01. [x] CT-WS-01…09. [x] CT-IMP-01.
+  [x] CT-RUN-20 (moved here by the owner, CF-14).
+- **Deviations and choices, recorded:** (1) `RepoSource.tarball` takes
+  `ref: string | null` (null = the default branch) where TOOLS_AND_CONTRACTS
+  §5 writes `ref: string`; C5's `githubTarball` follows this. (2) The
+  checkpoint upload and download live in `session.ts`; ARCHITECTURE §2's
+  `lib/cloud/checkpoint.ts` and deleting older checkpoints come with C6.
+  (3) A new checkpoint is taken when the patch's sha256 differs from the
+  last one (no extra column for the change set id). (4) A repository
+  workspace that failed with nothing to restore is left as it is, and
+  `workspace_open` creates a new row (the unique index ignores `failed`).
+  (5) A workspace left `running` by a crashed worker goes `running → paused
+  → starting` on the next task. (6) The sandbox auto-stop and the heartbeat
+  extension are 600 s. (7) `client.run` reports a killed command as exit
+  124 (timeout) or 137.
+- **Not verified here:** the `local` provider on the real verify stack
+  (`.env.verify` exported, `verify:guard`), which the C7 browser check
+  needs anyway. The `kriya-runner:dev` image built in C2 predates this
+  session's runner changes: rebuild it before template registration (C8).
+- **Still open, outside C3:** the `.env.example` row for
+  `KRIYA_WORKSPACE_SECRET` (owner, CB-07); CF-15 before C9; the DSH port
+  comparison.
+- **Next exact action:** wave 3. C4 (the `workspace_*` tools on the belt:
+  `lib/agent/{run-task,tools,policy,capabilities,instructions}.ts`, CT-REG-01's
+  `runTask` part, CT-POL-01…03, CT-TOOL-01…08, CT-SKL-01/02) from
+  `docs/cloud-execution/AGENT_MASTER_PROMPT.md` with `<PHASE>` = `C4`. It
+  holds the agent hot spots, so check the board first; track H's H2 and
+  track R's R1 can run beside it on disjoint files.
+
+## Phase C4 — Tools in the runner loop
+
+**Status:** COMPLETE (2026-10-31).
+
+### Session plan (2026-10-31 13:45 IST, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Preflight:** `git status --short` shows only C1–C3's uncommitted files
+  from this session; branch `main`; board empty before this claim; C3
+  COMPLETE; CD-11 (owner-gated, by id), CD-17, CD-19, CD-20, CD-23
+  approved. Last `npm run check` (end of C3, no code since): exit 0, Tests
+  2356 passed, 42 skipped. Cross-track check: CHANGE_IMPACT §5 (track C)
+  and the A, O, N, voice rows for the five agent files read; no other
+  claim on them.
+- **Create:** `lib/cloud/tools.ts` (`createWorkspaceTools`: the nine
+  non-publish tools of TOOLS_AND_CONTRACTS §3; P5 repeat note; `FOREIGN` on
+  workspace content), `lib/cloud/skill.ts` (`cloud-coding` manifest and
+  text, `withCloudCoding`), `tests/cloud/policy.test.ts` (CT-POL-01…03),
+  `tests/cloud/tools.test.ts` (CT-TOOL-01…04, -06), `tests/cloud/agent.test.ts`
+  (CT-TOOL-05, -07, -08 and the `runTask` part of CT-REG-01 through the
+  scripted model), `tests/cloud/skill.test.ts` (CT-SKL-01/02).
+- **Change (CHANGE_IMPACT §3 C4 rows only):** `policy.ts`: `TOOL_CLASSES`
+  and `TOOL_WRITES` rows for the nine tools, `PERSON_ONLY_WRITES +=
+  "workspaces.close_requested_at"`. `capabilities.ts`: `System` gains
+  `"workspace"`, nine `FACTS` rows. `tools.ts`: re-export
+  `createWorkspaceTools`, `PRIVATE_READ_TOOLS` += the five read tools,
+  `KriyaTools` += a `Partial`, the comment at the top. `instructions.ts`:
+  `Capabilities.workspace?` and a `WORKSPACE_LINE` only when set.
+  `run-task.ts`: the `cloud.workspaces` read and `TaskWorkspace` with the
+  other settings, the heartbeat line, `capabilities.workspace`, one belt
+  line, the `cloud-coding` injection after Skill Studio's block, `close` in
+  `finally`. `tests/cloud/imports.test.ts` += CT-IMP-03.
+- **Tests first:** all of the above seen failing before the code;
+  AT-REG-01, OT-REG-01, NT-REG-01, AT-POL-*, OT-CAP-* must stay unchanged and
+  passing.
+- **Scope note:** `workspace_publish` is C5. In C4 `workspace_open` with a
+  repository answers that importing from GitHub isn't available yet (no
+  `RepoSource` until C5's `githubTarball`).
+- **Questions for the owner:** none.
+
+### Session result (2026-10-31, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Status:** COMPLETE. Nothing committed, pushed or deployed; no network
+  call, real model, provider sandbox, GitHub call or live database.
+- **Created:** `lib/cloud/tools.ts` (`createWorkspaceTools(workspace, {
+  repos })`: `workspace_open`, `_run` (a generator streaming the output's
+  tail; the model gets 4 000 characters of each stream's start and end plus
+  the log path), `_read`, `_list`, `_search`, `_write`, `_edit`, `_patch`,
+  `_changes` (also writes the strip's counts); P5's note on the third
+  identical command in a row; `FOREIGN` on every output; refusals returned
+  as `{ error }`), `lib/cloud/skill.ts` (`CLOUD_CODING` manifest and text,
+  `withCloudCoding`), `tests/cloud/policy.test.ts` (CT-POL-01…03),
+  `tests/cloud/tools.test.ts` (CT-TOOL-01…04, -06), `tests/cloud/agent.test.ts`
+  (CT-TOOL-05, -07, -08, CT-SKL-01 through `runTask` and the scripted
+  model), `tests/cloud/skill.test.ts` (CT-SKL-02), `tests/cloud/db.ts`,
+  `tests/cloud/agent-mocks.ts`, `tests/cloud/agent-seen.ts`.
+- **Changed (CHANGE_IMPACT §3 C4 rows; `git diff --stat lib/agent/`: 5
+  files, 137 insertions, 5 deletions):** `policy.ts`: nine `TOOL_CLASSES`
+  rows (CD-11), their `TOOL_WRITES`, `PERSON_ONLY_WRITES +=
+  "workspaces.close_requested_at"`; no existing value changed.
+  `capabilities.ts`: `System` gains `"workspace"`, nine `FACTS` rows (no
+  pins, none repeatable; `GRANTABLE` still the four). `tools.ts`:
+  `createWorkspaceTools` imported and re-exported, `PRIVATE_READ_TOOLS` +=
+  the five read tools, `KriyaTools` += a `Partial`, the header comment.
+  `instructions.ts`: `Capabilities.workspace?` and the workspace line, only
+  when set and only for the lead (`writes`). `run-task.ts`: the
+  `cloud.workspaces` read and `TaskWorkspace` with the other settings, the
+  `cloud-coding` injection after Skill Studio's block, the heartbeat line,
+  `capabilities.workspace`, one belt line, `close(stopReason)` in
+  `finally`. Track C's own: `lib/cloud/session.ts` (`noteChanges`,
+  `commandTimeoutSeconds`), `tests/cloud/regression.test.ts` (the `runTask`
+  part of CT-REG-01), `tests/cloud/imports.test.ts` (+ CT-IMP-03).
+- **Tests first:** the new files failed before the code (missing modules,
+  CT-POL rows). The `runTask` part of CT-REG-01 passed before the wiring,
+  as a regression guard should. While running them: a mock import cycle
+  (`ai`'s mock importing a module that imports `ai`) hung the first run; it
+  was stopped and fixed with a module without imports (`agent-seen.ts`).
+  Two tool tests called `workspace_run` before `workspace_open` (the tool
+  rightly refused); the tests now open first. Sanity check that the tests
+  can fail: ignoring the switch in `runTask` and dropping the lead-only gate
+  on the prompt line failed four tests (both CT-REG-01 cases, CT-TOOL-08,
+  CT-SKL-01); restored, all pass.
+- **Neighbours:** `npx vitest run tests/agent tests/operator/capabilities.test.ts
+  tests/next/regression.test.ts tests/next/skills-v2.test.ts` → Test Files
+  61 passed, Tests 677 passed | 2 skipped (AT-REG-01 snapshots, AT-POL-01/02/07,
+  OT-CAP, NT-REG-01, NT-SKL-04 unchanged).
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (the existing pair in
+  `tests/operator/golden/harness.ts`, three times via `.claude/worktrees/*`,
+  CF-09; a seventh, an unused variable in `lib/cloud/tools.ts`, was fixed
+  and the check run again); format pass; Test Files 196 passed | 3 skipped
+  (199); Tests 2382 passed | 42 skipped (2424); exit 0 (C3's 2356 plus 26).
+- **Exit checks:** [x] CT-REG-01 (settings and `runTask`). [x] CT-POL-01…03.
+  [x] CT-TOOL-01…08. [x] CT-SKL-01/02. [x] AT-REG-01, OT-REG-01, NT-REG-01,
+  AT-POL-*, OT-CAP-* unchanged and passing.
+- **Deviations and choices, recorded:** (1) `createWorkspaceTools(workspace,
+  { repos })` rather than `(env, workspace, { publish })`: the tools need the
+  workspace and whether GitHub import is possible (`repos`, false in C4);
+  C5 adds `publish`. (2) The prompt line sits after the existing "No
+  computer…" line and says it is the exception to it; the existing line is
+  untouched. (3) The line gives the project, base, changed files and state,
+  without "paused 2 hours ago" (no clock in the prompt). (4) `cloud-coding`
+  is `required` with roles `*` and code keywords, gated on `workspace_run`,
+  so an agent that pinned `code-assistance` gets it on workspace turns (CD-20's
+  impact line); it is never in a catalogue without a workspace. (5)
+  `TOOL_WRITES` also list what a failed start writes
+  (`workspace_sessions.status:failed`, `resource_usage+`) and
+  `workspaces.base_sha` / `last_active_at`, beyond DATA_MODEL §6, so the
+  declaration matches the code. (6) Every workspace output carries
+  `FOREIGN`, writes too. (7) `workspace_changes` gives the model the files
+  and the diff cut to its start and end.
+- **Not run:** `npm run build` (reads the live project's settings); a
+  browser check (no screen changed; tool cards are C7).
+- **Next exact action:** wave 4. C5 (import and publish) needs the owner's
+  go-ahead at its start for the protected `lib/connectors/github.ts`
+  (CD-09, CD-10 approved by id; track C rule 2), then
+  `docs/cloud-execution/AGENT_MASTER_PROMPT.md` with `<PHASE>` = `C5`. C6
+  (checkpoints, restore, janitor; holds `worker/index.ts`) and C7 (UI) can
+  run beside it once claimed; C7's browser check needs the verify stack.
+
+## Phase C5 — Import and publish
+
+**Status:** COMPLETE (2026-10-31).
+
+### Session plan (2026-10-31 14:28 IST, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Owner go-ahead for the protected file (track C rule 2):** the owner
+  answered "Yes, start C5" in this session to "Start C5 (needs your OK to
+  edit lib/connectors/github.ts)?". CD-09 and CD-10 were already approved
+  by id. The change is additive only: `githubTarball`, `githubCommitTree`,
+  `githubOpenDraftPr`; existing functions and `REPO`/`BRANCH`/`FILE_PATH`
+  unchanged.
+- **Preflight:** `git status --short` shows only C1–C4's uncommitted files
+  from this session; branch `main`; board empty before this claim; C4
+  COMPLETE. Last `npm run check` (end of C4, no code since): exit 0, Tests
+  2382 passed, 42 skipped.
+- **Create:** `lib/cloud/publish.ts` (`publishChanges`: repo pinned to the
+  workspace, change set re-checked, then tree commit and draft PR),
+  `tests/cloud/github-fixtures.ts` (fixture fetch that answers GitHub and
+  passes the in-process runner through), `tests/cloud/github.test.ts` (the
+  three connector functions), `tests/cloud/publish.test.ts` (CT-PUB-01…05
+  and import through `githubTarball`).
+- **Change:** `lib/connectors/github.ts` (the three functions);
+  `policy.ts` (`workspace_publish` R4 class and writes); `capabilities.ts`
+  (its `FACTS` row with `api_readback`); `tools.ts` (`SIDE_EFFECT_TOOLS +=
+  "workspace_publish"`); `approvals.ts` (one `actionTitle` case);
+  `run-task.ts` (the belt line passes `repos` and `publish`); track C's own
+  `lib/cloud/{tools,session,provider}.ts` (the publish tool,
+  `githubTarball` as the default source, the resolved base branch kept,
+  `changeSetId` shown to the model), and `tests/cloud/{policy,agent}.test.ts`
+  (publish rows; CT-PUB-06 through `runTask`).
+- **Tests first:** CT-PUB-01…06 and the connector tests seen failing before
+  the code; existing `tests/connectors/*` unchanged.
+- **Unknowns to record:** whether `providerFetch` follows GitHub's tarball
+  redirect and drops the `Authorization` header on the other host, and
+  whether its 30 s timeout cuts large downloads. Fixtures can't show either;
+  checked once on the owner's test repository (CB-04).
+- **Questions for the owner:** none.
+
+### Session result (2026-10-31, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Status:** COMPLETE. Nothing committed, pushed or deployed; no real
+  GitHub call (every GitHub request answered by fixtures), no model,
+  provider sandbox or live database.
+- **`lib/connectors/github.ts` (protected; owner go-ahead above):** 199
+  insertions, 0 deletions. `githubTarball(userId, repo, ref | null)`
+  (resolves the default branch and the commit, downloads
+  `/tarball/<sha>`, and if fetch hands back the redirect, follows it to a
+  `github.com` host over https without the token; returns `{ sha, ref,
+  body, bytes }`), `githubCommitTree` (limits of 300 files, 5 MB a file, 50
+  MB in all, safe paths, a `kriya/` branch that isn't the base or the
+  default branch, all checked before any request; then blobs, one tree on
+  the base commit's tree with deletions as `sha: null`, one commit, and a
+  new ref by `POST /git/refs` only, so an existing branch is never moved),
+  `githubOpenDraftPr` (`draft: true`, read back: open, draft, head at the
+  new commit, base). Existing functions and `REPO`/`BRANCH`/`FILE_PATH`
+  unchanged.
+- **Created:** `lib/cloud/publish.ts` (`publishChanges`: repository pinned
+  to the workspace's, the change set re-read and compared, files from the
+  runner's `/v1/files`, then the two connector calls),
+  `tests/cloud/github-fixtures.ts`, `tests/cloud/github.test.ts` (7 tests),
+  `tests/cloud/publish.test.ts` (CT-PUB-01, -02, -04, -05 and the blank
+  workspace / switch case).
+- **Changed:** `policy.ts` (`workspace_publish: "R4"`, its writes),
+  `capabilities.ts` (`FACTS` row with `api_readback`), `tools.ts`
+  (`SIDE_EFFECT_TOOLS += "workspace_publish"`), `approvals.ts` (one
+  `actionTitle` case naming the repository and title), `run-task.ts` (the
+  belt line passes `repos: Boolean(connected.github)` and `publish:
+  cloud.publish === "on"`); track C's own `lib/cloud/tools.ts` (the publish
+  tool, only with both flags; `changeSetId` now in `workspace_changes`'s
+  model output, which C4 had left out and the model needs to publish),
+  `lib/cloud/session.ts` (`githubTarball` as the default source, the
+  resolved branch kept as `base_ref`, `target()`, `userId`),
+  `lib/cloud/provider.ts` (`RepoSource` may return `ref`),
+  `tests/cloud/policy.test.ts` (publish rows), `tests/cloud/agent.test.ts`
+  (CT-PUB-06). `git diff --stat lib/agent lib/connectors` (C4 + C5
+  together): 7 files, 353 insertions, 5 deletions.
+- **Tests first:** all new tests failed before the code. Sanity check that
+  they can fail: without the repository pin, CT-PUB-04 failed. Without the
+  change-set comparison in `publishChanges`, CT-PUB-02 still passed,
+  because the runner's `/v1/files` also refuses a stale change set (409,
+  mapped to the same refusal): two independent layers, either one keeps
+  publishing exact. Restored, all pass.
+- **Neighbours:** `npx vitest run tests/agent tests/connectors
+  tests/operator/capabilities.test.ts tests/next/regression.test.ts
+  tests/next/skills-v2.test.ts` → Test Files 68 passed, Tests 731 passed |
+  2 skipped (existing `tests/connectors/*` unchanged; AT-POL-01 "exactly the
+  R3/R4 tools" holds with publish added).
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (the existing pair in
+  `tests/operator/golden/harness.ts`, three times via `.claude/worktrees/*`,
+  CF-09); format pass; Test Files 198 passed | 3 skipped (201); Tests 2396
+  passed | 42 skipped (2438); exit 0 (C4's 2382 plus 14).
+- **Exit checks:** [x] CT-PUB-01 (fixtures: tree commit on the base, new
+  `kriya/` branch, draft PR, read-back verified). [x] CT-PUB-02. [x]
+  CT-PUB-03 (existing branch, outside `kriya/`, default branch; no PATCH or
+  DELETE ever sent). [x] CT-PUB-04. [x] CT-PUB-05. [x] CT-PUB-06 (through
+  `runTask`: approval first, one publish, `side_effect = true`, and
+  `recover_tasks` fails that task instead of rerunning it). [x] Existing
+  `tests/connectors/*` unchanged and passing.
+- **Unknowns, with their verification step (CB-04, CR-3):** (1) whether
+  `providerFetch` (fetch with redirects followed) drops the `Authorization`
+  header when GitHub redirects the tarball to its download host; the
+  fixtures exercise only the not-followed path, where the code follows
+  without the token. (2) Whether `providerFetch`'s 30 s timeout cuts a large
+  download (a `shortcut:` comment marks it). Both are checked once on the
+  owner's test repository with the GitHub App installed; record the result
+  here.
+- **Not done here, by plan:** a checkpoint right before publishing (CD-13)
+  comes with C6's checkpoint work; the approval card's file list is C7.
+- **Not run:** `npm run build` (live settings); a browser check (no screen
+  changed).
+- **Next exact action:** wave 4 continues. C6 (checkpoints, restore,
+  janitor; holds `worker/index.ts`; adds the pre-publish checkpoint) and C7
+  (UI, usage, owner page; its browser check needs the verify stack with
+  `.env.verify`) from `docs/cloud-execution/AGENT_MASTER_PROMPT.md`. The
+  live GitHub checks above wait for CB-04 (a test repository the owner
+  controls, with the GitHub App installed).
+
+## Phase C6 — Checkpoints, restore, janitor
+
+**Status:** COMPLETE (2026-10-31).
+
+### Session plan (2026-10-31 16:09 IST, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Preflight:** `git status --short` shows only C1–C5's uncommitted files
+  from earlier sessions today; branch `main`; board empty before this claim;
+  C4 COMPLETE (C5 too); CD-04, CD-13, CD-16 approved. Last `npm run check`
+  (end of C5, no code since): exit 0, Tests 2396 passed, 42 skipped; re-run
+  at the end. No migration in this phase.
+- **Already in place from C3:** `TaskWorkspace.close` checkpoints changed
+  trees and pauses; `rebuild` restores from the checkpoint (CT-WS-04, -07).
+- **Create:** `lib/cloud/checkpoint.ts` (`saveCheckpoint`: upload to
+  `workspaces/<user>/<ws>/<gen>-<seq>.patch`, the storage usage row, and
+  deletes the checkpoint before the previous one; `deleteCheckpoints`), used
+  by `TaskWorkspace` and the janitor. `lib/cloud/janitor.ts`
+  (`workspaceJanitor`: orphans, close requests, paused past `pausedHours`,
+  retention, failed-upload retries, provider reconcile, deleted accounts'
+  storage). `tests/cloud/checkpoint.test.ts` (CT-CKP-01…04),
+  `tests/cloud/janitor.test.ts` (CT-JAN-01…05).
+- **Change:** `worker/index.ts` (one `try` block in `schedulerLoop`,
+  CHANGE_IMPACT §3 C6 row). Track C's own `lib/cloud/session.ts` (uses
+  `saveCheckpoint`; `checkpointNow()` for publish) and `lib/cloud/publish.ts`
+  (a checkpoint right before GitHub is asked, CD-13).
+- **Design choices:** (1) The janitor locks a workspace by inserting its own
+  `workspace_sessions` row (`task_id` null). The unique open-session index
+  keeps it and a task from working on one workspace at once. Its seconds are
+  metered like any session. (2) Before destroying a paused sandbox, the
+  janitor resumes it briefly and checkpoints it, because a `shutdown` or
+  `lease_lost` pause leaves changes that haven't been checkpointed (CS-14).
+  A failed checkpoint sets `checkpoint_failed_at`, and the sandbox is kept.
+  (3) Old checkpoints are deleted by name (`<g>-<seq-2>` for every
+  generation up to the current one), so this needs no storage listing.
+  `lib/files.ts` isn't in CHANGE_IMPACT §3, so no `list()` is added there.
+  The deleted-accounts sweep reads object names from `storage.objects`
+  through `privileged` and deletes through the `FileStore`. If that table
+  can't be read, the sweep logs and skips; check it on staging (CB-05).
+- **Tests first:** CT-CKP-03, CT-JAN-01, CT-JAN-03 seen failing first, then
+  the rest.
+- **Questions for the owner:** none blocking.
+
+### Session result (2026-10-31, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Status:** COMPLETE. Nothing committed, pushed or deployed; no provider
+  sandbox, GitHub call, model or live database (PGlite, the fake provider
+  with the in-process runner, an in-memory store, GitHub fixtures).
+- **Created:** `lib/cloud/checkpoint.ts` (`saveCheckpoint`,
+  `deleteCheckpoints`), `lib/cloud/janitor.ts` (`workspaceJanitor`,
+  `janitorSettings`), `tests/cloud/checkpoint.test.ts` (CT-CKP-01…04),
+  `tests/cloud/janitor.test.ts` (CT-JAN-01…05).
+- **Changed:** `worker/index.ts` (CHANGE_IMPACT §3 C6 row: one import, one
+  `try` block at the end of `schedulerLoop`; 10 insertions, 0 deletions;
+  other steps untouched). Track C's own: `lib/cloud/session.ts` (checkpoint
+  code moved to `saveCheckpoint`; exports `healthy`, `workspaceSpec`,
+  `closeWorkspaceSession`, which now closes only an open session so nothing
+  is metered twice; new `checkpointNow()`), `lib/cloud/publish.ts`
+  (`checkpointNow()` after the change set is re-checked and before any
+  GitHub request), `tests/cloud/publish.test.ts` (the CD-13 case),
+  `tests/cloud/imports.test.ts` (CT-IMP-01 also allows `BUCKET` from
+  `@/lib/files`: the sweep names the bucket; still no other export).
+- **Janitor, per run (30 s, the scheduler cadence):** (1) a stale open
+  session is checkpointed if its runner answers, paused, closed as `orphan`
+  and metered to its last heartbeat; a workspace left `starting` goes to
+  `paused` (with a sandbox) or `failed`, and its sandbox is never destroyed.
+  (2) A close request, retention passed, or a `closing` left from an earlier
+  run: sandbox destroyed, latest two checkpoints deleted, `closed`. (3)
+  Paused past `pausedHours`: resumed, checkpointed, then destroyed. A failed
+  upload is retried every 10 minutes, and the sandbox stays while it fails.
+  (4) Every 10 minutes: the provider's sandboxes that have no open row
+  (`starting` rows are protected) are destroyed. (5) Checkpoint objects
+  with no open workspace are deleted. Steps (2) and (3) hold the
+  workspace's one open session while they work, so a task waits ("in use
+  by another task").
+- **Tests first:** both new files failed before the code (missing module).
+  The tests can fail: destroying despite a failed checkpoint failed
+  CT-CKP-03; no pruning failed CT-CKP-01; no session lock failed CT-JAN-02;
+  no `checkpointNow` in publish failed the CD-13 case. Each was restored and
+  everything passes.
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (the existing pair in
+  `tests/operator/golden/harness.ts`, three times via `.claude/worktrees/*`,
+  CF-09); format pass (after `prettier --write` on the new files); Test Files
+  200 passed | 3 skipped (203); Tests 2406 passed | 42 skipped (2448); exit 0
+  (C5's 2396 plus 10).
+- **Exit checks:** [x] CT-CKP-01. [x] CT-CKP-02 (through the janitor:
+  destroyed after `pausedHours`, the next task rebuilds a text file, a binary
+  file and a deletion). [x] CT-CKP-03. [x] CT-CKP-04 (no `signedUrl` or
+  `uploadUrl` call; every object under `workspaces/<user_id>/`). [x]
+  CT-JAN-01…05. [x] Pre-publish checkpoint (CD-13), left over from C5.
+- **Deviations and choices, recorded:** (1) The janitor's housekeeping
+  sessions (`task_id` null) are metered as `workspace_seconds` under the
+  person, so they count toward the plan's minutes. They are seconds of real
+  compute on that person's workspace. If the owner prefers the platform to
+  absorb them, the change is in `release()` in `janitor.ts`. (2) A failed
+  pre-publish checkpoint doesn't stop the approved publish. It sets
+  `checkpoint_failed_at`, so the sandbox is kept. (3) A workspace orphaned
+  while `starting` is kept as `paused`, never destroyed. If the worker died
+  during a fresh import, the next task may resume a half-imported tree.
+  The model sees the missing files, and closing the workspace fixes it.
+  Rare; checked in the C9 drills. (4) CT-JAN-05 is read as "the janitor
+  keeps running with the switch off while any workspace is open". It does
+  not pause a sandbox an active task is still using; that task's own end
+  pauses it.
+- **Unknowns, with their verification step:** (1) whether the worker's
+  `privileged` role can read `storage.objects` on Supabase (step 5 logs and
+  skips if not): check on staging (CB-05). (2) Whether Supabase Storage's
+  `remove` treats missing names as success (pruning deletes names that may
+  not exist): check on staging. If it doesn't, pruning only logs a warning.
+- **Not run:** `npm run build` (live settings); a browser check (no screen
+  changed).
+- **Next exact action:** C7 (UI, usage, owner pages, plan field) from
+  `docs/cloud-execution/AGENT_MASTER_PROMPT.md` with `<PHASE>` = `C7`. Its
+  browser check needs the isolated verify stack (`.env.verify`, `npm run
+  verify:guard`, local Supabase, Docker: CB-03). C9 waits for C8's chosen
+  provider.
+
+## Phase C7 — UI, usage, owner pages, plan field
+
+**Status:** COMPLETE (2026-10-31).
+
+### Session plan (2026-10-31 16:22 IST, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Preflight:** C4 and C5 COMPLETE (the publish card can be built); C6
+  finished in this session (`npm run check` exit 0, Tests 2406 passed, 42
+  skipped). Board: only this claim. CD-14, CD-18 approved. No migration.
+- **Create:** `queries/cloud.ts` (the thread's workspace for the strip,
+  this month's minutes, the owner's overview; RLS reads through `withUser`,
+  owner reads through `privileged`), `actions/cloud.ts` (`closeWorkspace`:
+  sets `close_requested_at` under `withUser`, the person's only write),
+  `components/thread/cloud-strip.tsx`, `app/owner/cloud/page.tsx`,
+  `tests/cloud/ui.test.ts` (CT-UI-01…04 as server-rendered markup),
+  `tests/cloud/metering.test.ts` (CT-MTR-01…03).
+- **Change (CHANGE_IMPACT §3 C7 rows only):** `thread-page.tsx` (read the
+  workspace, render the strip before the thread view; no workspace →
+  identical markup); `tool-call.tsx` (`META` entries and `Details` cases for
+  `workspace_*`, the publish approval rows and note, an optional
+  output-based summary; a preliminary output counts as still running);
+  `activity.tsx` (labels); `usage/page.tsx` (minutes section only when the
+  plan has minutes); `owner/config/page.tsx` (`GROUPS` "Cloud workspaces");
+  `owner/nav.tsx` ("Cloud"); `owner/forms.tsx` and `actions/owner.ts`
+  (`workspaceMinutes`, `int(0, 100_000)`).
+- **Tests first:** CT-MTR-02, then the CT-UI render tests.
+- **Browser check (UX_SPEC §6):** on the local Supabase stack with
+  `.env.verify` and `verify:guard`. Docker Desktop was started for it. If
+  the stack can't come up here, the phase stays IN_PROGRESS with that as
+  the next action.
+- **Questions for the owner:** none blocking.
+
+### Session result (2026-10-31, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Status:** COMPLETE. Nothing committed, pushed or deployed; no provider,
+  GitHub call or model. The browser check ran only on the isolated local
+  stack (`.env.verify` exported, `verify:guard` OK before every step).
+- **Created:** `queries/cloud.ts` (`getCloudMinutes`, `getThreadWorkspace`,
+  `getCloudOverview`), `actions/cloud.ts` (`closeWorkspace`),
+  `components/thread/cloud-strip.tsx`, `app/owner/cloud/page.tsx`,
+  `tests/cloud/ui.test.ts` (CT-UI-01…04), `tests/cloud/metering.test.ts`
+  (CT-MTR-01…03), `scripts/verify-c7-browser.mjs` (the browser check, same
+  pattern as `verify-u3-browser.mjs`).
+- **Changed (CHANGE_IMPACT §3 C7 rows only):** `components/thread/thread-page.tsx`
+  (the strip before the thread view; no workspace → the same element as
+  before), `components/thread/tool-call.tsx` (`META` rows and an optional
+  `outcome` used only by workspace rows; `WorkspaceDetails`; the publish
+  approval rows, body and note; a preliminary output counts as still
+  running, which applies only to streaming tools, today `workspace_run`),
+  `components/workbench/activity.tsx` (20 label rows),
+  `app/(workspace)/usage/page.tsx` (one line, only when the plan has
+  minutes), `app/owner/config/page.tsx` (`GROUPS` "Cloud workspaces"),
+  `components/owner/nav.tsx` ("Cloud"), `components/owner/forms.tsx` and
+  `actions/owner.ts` (`workspaceMinutes`, `int(0, 100_000)`).
+- **Tests first:** `metering.test.ts` failed before `queries/cloud.ts`
+  existed. Its first green run exposed a real bug: inside the per-workspace
+  minutes subquery, Drizzle printed `${workspaces.id}` unqualified, so it
+  matched the session's own id and every row showed 0. Fixed with an
+  explicit `"workspaces"."id"`. Mutation check: without the preliminary
+  handling, the "running command" UI test fails.
+- **Browser check (UX_SPEC §6), `screenshots/cloud-execution/C7/`
+  (git-ignored, `README.md` and `results.json` there):** 56 shots (14
+  screens × 360/1280 × light/dark) plus one end-to-end close. Data seeded
+  on the local stack only, for local test user Asha: free plan
+  `workspace_minutes = 300`, four threads with workspaces (paused, running,
+  failed, close requested) and one transcript with every workspace card and
+  a publish approval. Console errors 0 and failed requests 0 on every shot.
+  Horizontal scroll and 44 px targets pass on every C7 surface. Existing
+  exceptions, none added by C7: the shared Confirm dialog's buttons (32 px
+  at 360), the mobile nav's brand link, and `/owner/config`'s Model
+  registry table and settings form (recorded earlier by track N). End to
+  end: dialog → Close workspace → strip says "Closing…", and
+  `close_requested_at` is set on the row. A thread with no workspace shows
+  no strip; its cards are unchanged. One fix came from looking at the
+  images: the owner page showed 2 KB as "0.0 MB" and said "1 sessions".
+- **Build:** `npm run build` with `.env.verify` exported, guard OK → exit 0
+  (`/owner/cloud` dynamic). The dev server was stopped first.
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (existing, CF-09); format pass; Test Files
+  202 passed | 3 skipped (205); Tests 2417 passed | 42 skipped (2459); exit 0
+  (C6's 2406 plus 11).
+- **Exit checks:** [x] CT-UI-01…04. [x] CT-MTR-01…03. [x] Browser check
+  with screenshots. [x] `npm run build` with `.env.verify`.
+- **Deviations, recorded:** (1) The strip sits above the thread header,
+  because `thread-view.tsx` isn't in CHANGE_IMPACT §3. (2) The strip shows
+  file and line counts, not a per-file list: `workspaces.changes` holds
+  counts only (C1). The per-file list is in the `workspace_changes` card.
+  (3) "Restored from the last save" appears on the `workspace_open` card,
+  not the strip: there is no restored column. (4) The approval card can't
+  list the files, because a card sees only its own call's input. It says
+  the change is exactly the files in the last workspace changes (the
+  publish is refused otherwise, CT-PUB-02), and that card sits just above
+  it. (5) The strip is rendered on the server; it updates on navigation or
+  refresh, not live. (6) The "busy" copy is unchanged (CT-WS-02 pins it).
+  (7) The U3 script's local password no longer signs in, so the C7 script
+  uses a one-time local magic link through the local admin key from
+  `.env.verify`. No password is used or stored.
+- **Not done:** a real Android phone and TalkBack (owner, after staging);
+  live data in the strip and owner page (needs C8's provider and C10's
+  staging).
+- **Local stack left running** (`supabase stop` if the owner wants it
+  stopped); seeded rows are local test data only.
+- **Next exact action:** wave 5. C8 (provider adapters for e2b and daytona
+  on recorded responses, CT-PRV-02…06; `scripts/verify-guard.ts`,
+  `render.yaml`, `SECRETS` rows) from
+  `docs/cloud-execution/AGENT_MASTER_PROMPT.md` with `<PHASE>` = `C8`. Its
+  bake-off and paid runs wait for CB-02 (provider accounts and the owner's
+  go-ahead in that session), and C9 waits for C8's chosen provider. If C8
+  can't start, track H's H1 (migration `20270301000000`) is now unblocked
+  (C1 COMPLETE).
+
+## Phase C8 — Provider adapters and bake-off
+
+**Status:** IN_PROGRESS (2026-10-31).
+
+### Session plan (2026-10-31 17:15 IST, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Preflight:** C3 COMPLETE (C4–C7 too); board empty before this claim;
+  CD-06, CD-07, CD-12 approved by id. Last `npm run check` (end of C7): exit
+  0, Tests 2417 passed, 42 skipped. No migration.
+- **What can be done without the owner:** the two adapters, their tests,
+  the guard, env, blueprint and deployment rows, and the must-haves read
+  from documentation. **What can't:** recorded responses from real
+  accounts and the paid bake-off (CB-02, track C rule 3). So this session
+  ends IN_PROGRESS.
+- **Sources read today (official):** E2B's OpenAPI spec
+  (`e2b-dev/infra` `spec/openapi.yml`, `packages/envd/spec`), E2B's JS SDK
+  source (`e2b-dev/E2B`, envd auth and host format) and E2B docs (public
+  URL, restricting public access); Daytona's OpenAPI
+  (`daytona.io/docs/openapi.json`), its toolbox OpenAPI
+  (`daytona.io/docs/toolbox-openapi.json`) and its preview docs. Daytona's
+  GitHub repository is archived and empty, so its docs are the source.
+- **Design from those sources:**
+  - **E2B:** create a sandbox from the template (`POST /v2/sandboxes`) with
+    metadata tags and the network policy. Then start the runner as root
+    through envd `process.Process/Start` (Connect, JSON), with its token in
+    that process's environment only, and disconnect (E2B documents that
+    the process keeps running). Create-time `envVars` don't reach a start
+    command baked into the template snapshot, which is why the adapter
+    starts the runner itself. The runner URL is
+    `https://10000-<id>.<domain>`, and public traffic is off, so every
+    runner call also carries `e2b-traffic-access-token`. Pause keeps memory,
+    so the runner survives; resume goes through `connect`.
+  - **Daytona:** create from the snapshot with labels, `domainAllowList`
+    or `networkBlockAll`, and auto-stop. Start the runner through the
+    toolbox `/process/execute`, with `envs` rather than the command text,
+    because Daytona keeps session command history. The runner URL is a
+    **signed** preview URL for port 10000 only: the standard preview token
+    is sandbox-wide and also opens the toolbox. Stop and start restart the
+    runner.
+- **Create:** `lib/cloud/providers/{http,e2b,daytona}.ts`,
+  `tests/cloud/providers.test.ts` (CT-PRV-02…06 against fixtures built
+  from the documented shapes, marked as not recorded).
+- **Change:** `lib/cloud/provider.ts` (`Opened.headers`,
+  `REGISTRY_HOSTS`), `lib/cloud/client.ts` (extra headers),
+  `lib/cloud/session.ts` and `lib/cloud/janitor.ts` (adapter selection,
+  passing headers), `lib/config.ts` `SECRETS` (`E2B_API_KEY`,
+  `DAYTONA_API_KEY`), `lib/env.ts` (optional worker rows),
+  `scripts/verify-guard.ts` and its test (the provider keys refused unless
+  `KRIYA_VERIFY_PAID=1`), `render.yaml` (worker `KRIYA_WORKSPACE_SECRET`
+  and both keys, `sync: false`), `docs/kriya/deployment.md` (names and the
+  image and template steps).
+- **Deviation to record:** CHANGE_IMPACT §3 says "the chosen provider's
+  key". Both keys are added because the bake-off needs both on staging;
+  the loser's rows are removed when CD-07's result is recorded.
+- **Questions for the owner:** CB-02 (accounts and the go-ahead for the
+  paid bake-off).
+
+### Session result (2026-10-31, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Status:** IN_PROGRESS (the code part is done; recorded responses, the
+  documented must-have check against live pages and the paid bake-off wait
+  for CB-02). Nothing committed, pushed or deployed. No provider account,
+  key or paid call: the adapters were exercised only against fixtures.
+- **Owner approval in this session:** the owner chose "Add draft entry"
+  when asked whether to add E2B and Daytona to the privacy notice
+  (`lib/legal.ts`, still "Draft, pending legal review") and to the
+  readiness test's service list. Registering the provider keys had tripped
+  the release invariant that every configured outside service is named.
+- **Created:** `lib/cloud/providers/http.ts` (shared HTTP: up to two
+  retries on transport errors for idempotent calls only, plain messages,
+  logs with the operation and status code only), `lib/cloud/providers/e2b.ts`,
+  `lib/cloud/providers/daytona.ts`, `tests/cloud/providers.test.ts`
+  (CT-PRV-02…06, 12 tests).
+- **Changed:** `lib/cloud/provider.ts` (`Opened.headers`, `REGISTRY_HOSTS`,
+  `runnerEnvironment`), `lib/cloud/client.ts` (proxy headers sent beside the
+  bearer token), `lib/cloud/session.ts` (`workspaceProvider()` builds the
+  e2b or daytona adapter from its key, the runner secret and the
+  `KRIYA_APP_URL` host used as the `kriya_env` tag; passes proxy headers),
+  `lib/cloud/janitor.ts` (passes proxy headers), `lib/config.ts` `SECRETS`
+  (`E2B_API_KEY`, `DAYTONA_API_KEY`), `lib/env.ts` (two optional worker
+  rows), `scripts/verify-guard.ts` and `tests/operator/verify-guard.test.ts`
+  (either key refused unless `KRIYA_VERIFY_PAID=1`), `render.yaml`
+  (`kriya-worker`: `KRIYA_WORKSPACE_SECRET` and both keys, `sync: false`),
+  `docs/kriya/deployment.md` (names, image build and template registration),
+  `tests/cloud/provider.test.ts` (vendor selection cases), `lib/legal.ts`
+  and `tests/readiness/readiness.test.ts` (approved above),
+  `docs/cloud-execution/PROVIDERS_AND_COST.md` (CRG-04, CRG-09 findings).
+- **Design facts the sources settled:**
+  - **Both providers enforce a domain allow-list natively** (E2B
+    `network.allowOut` with domains plus `denyOut 0.0.0.0/0`; Daytona
+    `domainAllowList`), so CD-12's fallback egress proxy in the image isn't
+    needed for either.
+  - **A vendor sandbox's create-time env can't carry the token:** E2B's
+    doesn't reach a start command baked into the snapshot, and Daytona's is
+    stored and returned by its API. So each adapter starts the runner
+    itself: E2B through envd `process.Process/Start` as root, then
+    disconnects (E2B documents that the process keeps running); Daytona
+    through the toolbox `/process/execute`, with the token in `envs`.
+  - **Daytona's standard preview token is sandbox-wide** and also opens the
+    toolbox (runs commands). The adapter never asks for it; the runner URL
+    is a signed preview URL for port 10000 only, expiring after 3 hours and
+    re-issued on every resume.
+  - **E2B public traffic is turned off**, and every runner call carries the
+    sandbox's `e2b-traffic-access-token` beside the runner's own bearer
+    token.
+- **Tests first:** `providers.test.ts` failed before the adapters existed.
+  On the first run four E2B tests hung: my code awaited `body.cancel()`,
+  and the test double's cloned responses make that wait for the other
+  branch. Both cancels are now fire-and-forget, which needs no waiting in
+  production either. The tests can fail: putting the token into E2B's
+  create body failed CT-PRV-02, and letting create retry failed CT-PRV-04.
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (existing, CF-09); format pass; Test Files
+  203 passed | 3 skipped (206); Tests 2431 passed | 42 skipped (2473); exit 0
+  (C7's 2417 plus 14).
+- **Exit checks:** [~] CT-PRV-02…06 pass on fixtures built from the
+  published API descriptions, **not on recorded responses** (needs CB-02).
+  [~] Must-haves from documentation: from the API specs read today, M2,
+  M4 and M7 for both, and M3 for E2B; M1, M6, M8, M9 and M10 were not
+  re-read on the vendors' pages today (PROVIDERS_AND_COST §2 holds the
+  earlier reading), and M5 for Daytona is unknown (CRG-09). [ ] Bake-off
+  (EVALUATION_PLAN §3–4). [ ] Chosen provider recorded.
+- **Unknowns, each settled on the first owner-approved test sandbox:**
+  (1) E2B: that the envd Start stream can be dropped right after the start
+  event in this plain-fetch form (the SDK's documented `disconnect`
+  behaviour), and whether the envd port needs the traffic token when public
+  traffic is off (the SDK sends only `X-Access-Token` there). (2) Daytona:
+  the toolbox process user (CRG-09), that `last-activity` resets the
+  auto-stop timer, that `sh -c … setsid … &` returns at once from
+  `/process/execute`, and whether `domainAllowList` alone blocks everything
+  else (CRG-02, tier limits). (3) Both: which template or snapshot sizes
+  match `cloud.size` (E2B sets CPU and memory on the template, not per
+  create).
+- **Deviation:** both keys are registered (CHANGE_IMPACT says "the chosen
+  provider's key"), because the bake-off needs both on staging. The other
+  key's rows and its privacy line are removed when CD-07's result is
+  recorded.
+- **Next exact action:** the owner provides CB-02 (an E2B and a Daytona
+  account, each key set only on staging or in `.env.verify` with
+  `KRIYA_VERIFY_PAID=1`, the template or snapshot built from
+  `runner/Dockerfile` and registered, and the go-ahead for paid runs in that
+  session). Then: (1) one test sandbox per provider to settle the unknowns
+  above and record real responses into `tests/cloud/providers.test.ts`;
+  (2) re-read the price and limit pages (PROVIDERS_AND_COST §3 step 1);
+  (3) run EVALUATION_PLAN §3 and record the result as CD-07's. Until then,
+  C9 can't start (it needs C8's chosen provider). Track H's H1 is
+  unblocked meanwhile.
+
+## Phase C9 — Security and isolation readiness
+
+**Status:** IN_PROGRESS (2026-11-01). What runs without a provider account or staging passed. Left: CR-2 (CT-ISO-01…08 on the chosen provider, CB-02), CD-12 egress enforcement (CF-16), process limits (CF-17), CR-3 and CR-7 and the staging rows of the runbook drills (CB-05).
+
+### Session result (2026-11-01, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Preconditions:** C5, C6 COMPLETE; C8 adapters built (its recorded runs
+  wait for CB-02). Board empty before the claim. Baseline `npm run
+  typecheck` exit 0. Nothing committed; no provider, staging or live
+  database touched (PGlite, the in-process runner, local Docker).
+- **Created:** `tests/cloud/recovery.test.ts` (6 drills),
+  `tests/cloud/isolation.test.ts` (8 probes, target-selected),
+  `tests/cloud/docker-provider.ts` (the real runner image as a
+  `WorkspaceProvider` on local Docker, tests only),
+  `screenshots/cloud-execution/C9/isolation-docker.json` (the recorded
+  probe results).
+- **Changed (track C's own files):** `lib/cloud/publish.ts` and
+  `lib/cloud/session.ts` `checkpointNow()` (pre-publish refusal, below);
+  `lib/cloud/session.ts` (`tokenAccepted`, and `start()` checks a resumed
+  sandbox's token) and `lib/cloud/janitor.ts` (`reach` treats a refused
+  token as gone): the rotation fix below; `tests/cloud/publish.test.ts`
+  (its helper now always passes an in-memory store: without one every
+  publish is now refused, correctly); `docs/cloud-execution/OPERATIONS_RUNBOOK.md`
+  §3, §5, §7, §9 rewritten with exact steps, SQL checks and the drills.
+- **Owner decision applied:** C6 recorded, as its choice (2), that "a
+  failed pre-publish checkpoint doesn't stop the approved publish". The
+  owner's C9 instruction reverses it: "`workspace_publish` refuses to push
+  to GitHub if the pre-publish checkpoint fails (CD-13)". `checkpointNow()`
+  now returns whether it saved, and `publishChanges` throws before any
+  GitHub call when it didn't ("The workspace couldn't be saved before
+  publishing, so nothing was sent to GitHub…"). The workspace stays marked
+  (`checkpoint_failed_at`) and its sandbox kept; the same approved change
+  set publishes once storage is back.
+- **Bug found and fixed (CS-19):** runbook §3 said that
+  after a `KRIYA_WORKSPACE_SECRET` rotation "TaskWorkspace treats that as
+  gone and restores". It didn't: `/v1/health` takes no token, so a resumed
+  sandbox passed the health check and then answered every call
+  `unauthorized`; the janitor's checkpoint attempt got the same 401, set
+  `checkpoint_failed_at`, and kept the sandbox, retried forever (CT-WS-09
+  only tested how the token is derived). Now a resumed sandbox's token is
+  checked with one authenticated `list` (only a 401 counts as refused): the
+  task rebuilds at generation + 1 from Git and the checkpoint, and the
+  janitor clears the `provider_ref` so its reconcile destroys the old
+  sandbox. The two "Runbook §3" drills fail without the fix (checked by
+  disabling it) and pass with it.
+- **Recovery drills (CR-5), `npx vitest run tests/cloud/recovery.test.ts`
+  → 6 passed:**
+  1. Worker dies mid-command: the runner stops the command when its
+     caller's connection drops (`late.txt` never written); another attempt
+     can't open the workspace while the dead session is open; the janitor
+     closes it once as `orphan`, checkpoints (seq 2) and pauses; a second
+     sweep finds and meters nothing; the retried attempt resumes the same
+     sandbox and generation with every file; one `create` in all.
+  2. Sandbox lost with the worker: the retry rebuilds at generation + 1
+     from the checkpoint; a client with the previous generation's token
+     gets 401.
+  3. Sandbox destroyed mid-task: the running `workspace_run` and later
+     calls return `error` (never an exit code); the end sets
+     `checkpoint_failed_at` and pauses; the janitor clears the lost
+     `provider_ref`; the next task restores the last checkpoint and work
+     after it is gone (CS-14, as designed).
+  4. Storage down before a publish: refused with the message above; zero
+     GitHub calls; workspace `running`, `checkpoint_seq 0`, marked; the
+     change set id unchanged; storage back → published once (one
+     `POST …/pulls`), mark cleared, checkpoint seq 1.
+  5. and 6. Rotation: a resume after it, and the janitor after it.
+  Mutation check: removing the publish refusal fails drill 4.
+- **Isolation probes (CR-2 local part):**
+  - `npm run check` (no target): CT-ISO-08 on the local provider passes;
+    the other 7 skip (they need isolation that the local provider doesn't
+    have).
+  - `KRIYA_ISO_TARGET=docker` on the real image (`runner/Dockerfile`
+    built from a folder holding only `runner/`: `kriya-runner:c9`,
+    998 MB, exit 0) → **6 passed, 2 skipped**: CT-ISO-01 (commands run as
+    `kriya`/1000, no `sudo`; the runner token absent from the command's
+    environment and from every readable `/proc/*/environ`; `cat
+    /proc/1/environ` → Permission denied; 6 root processes, none with
+    readable `fd`, `environ` or `mem`; only `root` and `kriya` processes
+    visible); CT-ISO-07 (`kill -9 1` → Operation not permitted; SIGKILL and
+    SIGSTOP refused for all 6 root processes; the runner still healthy with
+    the same token); CT-ISO-08 (after `destroy`: `resume` null, not listed,
+    the old client refused; destroy idempotent). No container left behind.
+  - CT-ISO-03/04 **recorded, not passed** (no target enforces CD-12 yet):
+    metadata, `fd00:ec2::254` and RFC 1918 probes timed out or were
+    refused, but from the bare container the host's local Supabase API
+    (`host.docker.internal:54321`, HTTP 404) and Postgres (`:54322`,
+    connection made) **were reachable**. The image enforces no egress.
+  - CT-ISO-02, -05, -06 need a provider's network and limits: provider
+    target only.
+  - Two probe bugs found and fixed before recording: the image has no
+    `ps`, so the first version listed nothing and its kill loop
+    tried no process (a false pass); probes now walk `/proc` and assert
+    they tried at least one root process. And "empty reply" (a connection
+    made) now counts as reached; only resolve, connect or timeout failures
+    count as blocked.
+- **Findings:**
+  - **CF-16 (blocks CR-2):** *Resolved in the image the same day (follow-up
+    result below).* CD-12's egress policy is enforced nowhere yet.
+    The image has neither the egress proxy nor the firewall CD-12
+    describes, and no provider has been chosen. Either the chosen
+    provider's domain allow-list (bake-off, CB-02) or the in-image proxy
+    plus firewall must exist, then CT-ISO-03/04/05 run with
+    `KRIYA_ISO_EGRESS=enforced`.
+  - **CF-17 (CS-9):** *Resolved in the image the same day (follow-up result
+    below).* SECURITY_AND_THREATS says the image sets `ulimit -u`
+    and a cgroup pids limit; nothing in `runner/` does. To be set in the
+    provider's sandbox config or the image before CT-ISO-06.
+  - **CF-18 (minor):** the image has no `procps`; nothing in Kriya needs it.
+- **Gates:**
+
+| Gate | Result | Evidence |
+| --- | --- | --- |
+| CR-1 | **Satisfied** | CT-REG-01 (`tests/cloud/regression.test.ts`: settings ship off; `runTask` with the cloud switches off) passes inside the whole suite: Test Files 233 passed, 3 skipped; Tests 2716 passed, 49 skipped; exit 0 |
+| CR-2 | Part | CT-ISO-01, -07, -08 on the real image (Docker); CT-ISO-08 on the local provider. On the chosen provider: CB-02, and CF-16/CF-17 first |
+| CR-3 | Open | CT-PUB-01…06 pass on fixtures; on a test repository the owner controls: CB-05 |
+| CR-5 | **Satisfied (automated)** | The 6 drills above; the staging repetition is in runbook §9 for C10 |
+| CR-7 | Open | Staging (CB-05) |
+
+- **Final commands:** `npx vitest run tests/cloud/recovery.test.ts
+  tests/cloud/isolation.test.ts` → 2 files; Tests 7 passed, 7 skipped.
+  `KRIYA_ISO_TARGET=docker … tests/cloud/isolation.test.ts` → Tests 6
+  passed, 2 skipped. `npx vitest run tests/cloud` → 19 files; 121 passed,
+  7 skipped. `env -u OPENROUTER_API_KEY npm run check` → typecheck pass;
+  lint 0 errors, 6 warnings (CF-09, unchanged); format pass; Test Files
+  233 passed | 3 skipped (236); Tests 2716 passed | 49 skipped (2765);
+  exit 0.
+- **Next exact action:** owner: CB-02 (provider accounts) to run the
+  bake-off and `KRIYA_ISO_TARGET=provider`; decide CF-16 (provider
+  allow-list or in-image proxy) and CF-17 before CR-2. Then C10 on staging
+  (CB-05) with the runbook §9 staging rows.
+
+### Session result: CD-12 egress and process limits in the image (2026-11-01, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Asked by the owner** (chat, 2026-11-01, after the C9 result): implement
+  CD-12's in-image egress proxy and firewall and the process limits, to
+  resolve CF-16 and CF-17. The owner chose "Build in-image proxy" over
+  waiting for the provider bake-off. Not claimed on the board separately
+  (same session, same files as C9, board otherwise empty).
+- **Created:** `runner/egress.ts` (`firewallRules`, `applyFirewall`,
+  `startRegistryProxy`; imports only `isBlockedAddress`/`isBlockedHost`
+  from `browser/egress.ts`, as CT-IMP-02 allows),
+  `tests/cloud/egress.test.ts` (15).
+- **Changed:** `runner/Dockerfile` (`iptables`, `procps`, `util-linux`;
+  `COPY browser/egress.ts`; `/etc/security/limits.d/kriya.conf` with
+  `kriya hard nproc 512` / `kriya soft nproc 256`); `runner/index.ts`
+  (as root: firewall, then proxy, before the server listens; a failure stops
+  the runner); `runner/exec.ts` (`HTTP_PROXY`, `HTTPS_PROXY`, `http_proxy`,
+  `https_proxy`, `NO_PROXY` for loopback when the proxy runs; every command
+  started as `kriya` runs under `prlimit --nproc=256:512`, `commandFor`);
+  `runner/paths.ts` (`proxyUrl`); `runner/protocol.ts` (limits gain
+  `network`, default `offline`); `lib/cloud/session.ts` (`workspaceSpec`
+  passes the row's `network` in the limits, so every provider's
+  `runnerEnvironment` carries it with no adapter change);
+  `tests/cloud/docker-provider.ts` (`--cap-add NET_ADMIN`, `--pids-limit
+  2048`, `hostAddress`, a no-capability variant); `tests/cloud/isolation.test.ts`
+  (egress asserted, CT-ISO-05/06 and fail-closed added);
+  `docs/cloud-execution/DECISIONS.md` (CD-12 implementation note),
+  `SECURITY_AND_THREATS.md` (CS-9 wording), `OPERATIONS_RUNBOOK.md` (§1
+  NET_ADMIN and provider checks, §9).
+- **Two deviations from the instruction, both stricter, recorded:**
+  1. The firewall lets `kriya` reach **loopback only**, not "everything
+     but metadata and private ranges". `HTTP_PROXY` is advisory: with only
+     those rejects, `curl --noproxy '*' https://example.com` would get out
+     and CT-ISO-05 couldn't pass. CD-12 itself says the firewall lets only
+     the proxy connect out. Metadata and RFC 1918 are still rejected
+     explicitly ahead of the final reject, and Docker's loopback resolver
+     (127.0.0.11) too, so commands have no DNS of their own.
+  2. `/etc/security/limits.d` is applied only by PAM at login; the runner
+     starts commands with a uid switch, so that file alone limits nothing.
+     It's there as asked; the enforced cap is `prlimit` on each command, and
+     the sandbox's pids limit is the outer bound.
+  Also: `index.crates.io` (cargo's default sparse index) and
+  `sum.golang.org` (Go's checksum database) are on the allow-list beside the
+  six named hosts; only port 443; CONNECT only (plain HTTP gets 403).
+- **Image:** rebuilt as `kriya-runner:c9` from a context holding only
+  `runner/` and `browser/egress.ts` (exit 0). Without `NET_ADMIN` the runner
+  exits 1 with `iptables -F KRIYA_EGRESS: … Permission denied` (fail
+  closed).
+- **Isolation probes, `KRIYA_ISO_TARGET=docker` → Tests 14 passed** (report
+  `screenshots/cloud-execution/C9/isolation-docker.json`):
+  - CT-ISO-01 (4): as before.
+  - CT-ISO-03: metadata (169.254.169.254, fd00:ec2::254) and private
+    addresses: direct → `exit 7 … after 0 ms` (firewall REJECT); through
+    the proxy → `CONNECT tunnel failed, response 403`.
+  - CT-ISO-04: `host.docker.internal` doesn't resolve for `kriya`; by IP
+    (192.168.65.254, which reached the local Supabase API and Postgres
+    from the earlier image) ports 6796, 54321, 54322 → `exit 7 … after 0
+    ms`; through the proxy → 403.
+  - CT-ISO-05: `https://registry.npmjs.org/is-number` and
+    `https://pypi.org/simple/pip/` → 200 through the proxy; `npm view
+    is-number name` → `is-number`; `https://example.com/` → 403 via the
+    proxy, unresolvable around it; `1.1.1.1:443` around it → `exit 7 …
+    after 0 ms`; plain HTTP → 403. Offline workspace: the registry → 403,
+    around → unresolvable.
+  - CT-ISO-06: `ulimit -Su; ulimit -Hu` → `256`, `512`; a fork bomb hit
+    the cap ("Resource temporarily unavailable"), was stopped at its 10 s
+    timeout, 1 `kriya` process left after, runner healthy; a CPU loop
+    stopped at 3 s. Disk fill not run here (Docker Desktop's disk is the
+    host's): provider target.
+  - Fail-closed: no `NET_ADMIN` → never healthy, not running.
+  - CT-ISO-07, CT-ISO-08: as before. No container left behind.
+  - A probe gap caught on the way: the first CT-ISO-04/05 run passed with
+    refusals that came from DNS (commands have no resolver), not the
+    firewall; IP-literal probes were added so the firewall is what's
+    tested (both show `exit 7` at 0 ms). One edit had silently not applied
+    (a missing assertion); found by reading the report, fixed, rerun.
+- **Findings:**
+  - **CF-16 resolved in the image:** CD-12 is enforced by the image on any
+    provider that grants CAP_NET_ADMIN.
+  - **CF-17 resolved in the image:** per-command process cap; the pids limit
+    stays the provider's (runbook §1 step 4).
+  - **CF-19 (new, verify at the bake-off, CB-02):** whether E2B and Daytona
+    give the sandbox's root CAP_NET_ADMIN with iptables (nf_tables) working.
+    If one doesn't, its sandboxes never start (fail closed), and it is out
+    unless it offers an equivalent domain allow-list.
+- **Gates now:** CR-1 satisfied; CR-5 satisfied (automated); **CR-2: the
+  image's part satisfied** (CT-ISO-01, -03…-08 on the real image); **not
+  yet satisfied as defined** ("on the chosen provider"): CT-ISO-02 (another
+  tenant's runner over the provider network), the VM boundary itself, disk
+  fill, and CF-19 need `KRIYA_ISO_TARGET=provider` after CB-02.
+- **Final commands:** `npx vitest run tests/cloud/egress.test.ts` → 15
+  passed. `KRIYA_ISO_TARGET=docker … tests/cloud/isolation.test.ts` → 14
+  passed. `env -u OPENROUTER_API_KEY npm run check` → typecheck pass; lint 0
+  errors, 6 warnings (CF-09, unchanged); format pass; Test Files 234 passed
+  | 3 skipped (237); Tests 2731 passed | 55 skipped (2786); exit 0.
+- **Next exact action:** owner: CB-02 (provider accounts); then the
+  bake-off checks CF-19, registers the rebuilt image, and runs
+  `KRIYA_ISO_TARGET=provider` for CR-2. Then C10 on staging (CB-05).
+
 ## Track C owner approvals
 
 The owner answered "Approve all" in chat on 2026-10-31 (session with Claude Code / Opus 5.5) to the question "Approve the decisions of tracks C, H and R as proposed?".
@@ -8387,17 +9680,17 @@ that defaults off (HT-REG-01). Agents start from
 | --- | --- | --- | --- |
 | H0 | Blueprint and decisions | COMPLETE (2026-10-31: documents written and re-audited; HD-01…HD-19 approved, owner-gated by id, see "Track H owner approvals") | — |
 | HP-1 | Baseline re-check | COMPLETE (2026-10-31, with CP-1: Test Files 185 passed | 3 skipped (188); Tests 2289 passed | 42 skipped (2331); exit 0) | H0 |
-| H1 | Data model (`20270301000000`) | NOT_STARTED | HP-1, C1 |
-| H2 | Device identity, connect page, Devices | NOT_STARTED | H1 |
-| H3 | Gateway and ledger | NOT_STARTED | H2 |
-| H4 | Client alpha (`kriya-harness` repository) | NOT_STARTED | H3, repository, npm scope |
-| H5 | Approvals from the phone | NOT_STARTED | H4 |
-| H6 | Session mirror | NOT_STARTED | H4 |
-| H7 | Skills and memory | NOT_STARTED | H4 |
-| H8 | Handoff and pull | NOT_STARTED | H4, C5, C6 |
-| H9 | Security, scale, release readiness | NOT_STARTED | H5–H8 |
-| H10 | Your machine as an execution world | NOT_STARTED | H9, C3, a decision record |
-| H11 | ACP for editors | NOT_STARTED | H4 |
+| H1 | Data model (`20270301000000`) | COMPLETE (2026-10-31: HT-DB-01…07 and HT-REG-01 settings part pass; Tests 2443 passed, 42 skipped; exit 0) | HP-1, C1 |
+| H2 | Device identity, connect page, Devices | COMPLETE (2026-10-31: HT-AUTH-01…08, HT-API-01/02/08/10 pass; browser check on the local stack, 36 screenshots; build exit 0; Tests 2461 passed, 42 skipped; exit 0) | H1 |
+| H3 | Gateway and ledger | IN_PROGRESS (2026-10-31: HT-GW-01…08, -10 and HT-MTR-01…06 pass; browser check done; build exit 0; Tests 2475 passed, 42 skipped; exit 0. Left: HT-GW-09 capacity on staging, owner) | H2 |
+| H4 | Client alpha (`kriya-harness` repository) | IN_PROGRESS (2026-11-01: private repository `zuko14/kriya-harness` created; client built on DSH 0.2.1-rc.5, uncommitted; client `npm run check` 30/30, exit 0; `kriya run` and `kriya doctor` pass against the fake gateway with the real DSH; dumps recorded. Left: owner-run staging session (CB-05); license decision HF-09 blocks a release; npm scope) | H3, repository, npm scope |
+| H5 | Approvals from the phone | COMPLETE (2026-11-01: server HT-APR-01…03, PX-03 event, Inbox browser check (9 screenshots), build exit 0, Tests 2669 passed, 42 skipped, exit 0; client answerer in `kriya-harness`: 12 new tests incl. 2 on the real pinned DSH, client check 50/50, exit 0. Built on H4's code before H4's staging run, which stays open under H4) | H4 |
+| H6 | Session mirror | COMPLETE (2026-11-01: HT-MIR-01/02 and the owner-approved `untrustedSeen` marker pass; client mirror plugin with an offline queue, 9 new client tests incl. 3 on the real pinned DSH, client check 59/59; browser check on the P-3 stack driven by the real client, 9 screenshots; build exit 0; Tests 2680 passed, 42 skipped; exit 0. Built on H4's code before H4's staging run) | H4 |
+| H7 | Skills and memory | COMPLETE (2026-11-01: HT-API-07 and the catalogue rules pass (10 server tests); client skill source and memory tools, 7 new client tests incl. 1 on the real pinned DSH, client check 66/66; end-to-end check on the P-3 stack with the real client, 4 screenshots; build exit 0; Tests 2690 passed, 42 skipped; exit 0. Built on H4's code before H4's staging run) | H4 |
+| H8 | Handoff and pull | IN_PROGRESS (2026-11-01: HT-HND-01…03 pass (19 server tests, incl. the worker's real `TaskWorkspace` restoring the handed-off patch); client `kriya handoff` / `kriya pull`, 8 new client tests, client check 74/74; end-to-end on the P-3 stack with the real client: PASS; build exit 0; Tests 2709 passed, 42 skipped; exit 0. Left: the staging exit check (handoff → cloud workspace restored with a real GitHub import, CB-05)) | H4, C5, C6 |
+| H9 | Security, scale, release readiness | IN_PROGRESS (2026-11-01: HG-1, HG-4, HG-6 satisfied; HG-5 satisfied but for provenance (no publish workflow until the npm scope, HB-02); HF-09 decided and recorded; client release gate green in CI for the first time; client check 88/88; Tests 2709 passed, 42 skipped; exit 0. Left: HG-2's concurrency and HG-3 on staging (CB-05), HG-7 counsel (HQ-C1)) | H5–H8 |
+| H10 | Your machine as an execution world | COMPLETE (2026-11-02: HD-12 decision record; migration `20270301000100` (provider `device`) with rollback; `kriya-relay` (`relay/index.ts`, render.yaml) and `DeviceWorkspaceProvider`; HT-DEV-01…05 (11 tests) and the provider and migration cases pass; client `kriya serve` on `feat/h10-device-world`, client check 94/94; Tests 2744 passed, 55 skipped; exit 0. Not deployed: relay latency/capacity unmeasured until a staging relay exists) | H9, C3, a decision record |
+| H11 | ACP for editors | IN_PROGRESS (2026-11-01: `kriya acp` (profile `kriya-acp` = dsh-base + dsh-acp-app + the kriya bundle); 6 client ACP tests incl. 4 on the real pinned DSH with a scripted ACP v1 client, client check 83/83; end-to-end on the P-3 stack with the real client: PASS; Tests 2709 passed, 42 skipped; exit 0. Left: one session in a real ACP editor (owner)) | H4 |
 | H12 | Controlled pilot | NOT_STARTED | H9 |
 
 ## Track H blockers
@@ -8405,8 +9698,8 @@ that defaults off (HT-REG-01). Agents start from
 | # | Blocker | Blocks | Needed from |
 | --- | --- | --- | --- |
 | HB-01 | ~~Owner approval of HD-01…HD-19 and PX-03~~ Resolved 2026-10-31 ("Approve all", see "Track H owner approvals") | HP-1+ | Owner |
-| HB-02 | The `kriya-harness` repository and the npm scope (HQ-03) | H4 | Owner |
-| HB-03 | Owner applies the invariant 3 wording (HD-05) | H2 | Owner |
+| HB-02 | The `kriya-harness` repository and the npm scope (HQ-03). Repository done 2026-11-01 (private `zuko14/kriya-harness`, created on the owner's "Yes, create it"); the npm scope `@kriya-ai` still needs the owner's npm login | H4 release | Owner |
+| HB-03 | ~~Owner applies the invariant 3 wording (HD-05)~~ Resolved 2026-10-31: the owner answered "Procced with the recommendation you given" to applying invariant 3 now (and holding invariant 1 for R1); applied to AGENTS.md word for word from HD-05 | H2 | Owner |
 | HB-04 | Staging on real services (same as CB-05) | H3 capacity test, H9 | Owner |
 | HB-05 | Counsel HQ-C1 (distribution terms) | Public beta | Owner + counsel |
 
@@ -8427,6 +9720,1620 @@ that defaults off (HT-REG-01). Agents start from
   check that would have refused every harness request (HF-07).
 - **Next exact action:** decisions approved 2026-10-31. HP-1 runs with
   wave 0 (`docs/program/C_H_R_PROGRAM.md` §3); H1 follows C1's migration.
+
+## Phase H1 — Data model (migration `20270301000000`)
+
+**Status:** COMPLETE (2026-10-31).
+
+### Session plan (2026-10-31 17:40 IST, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Why now:** the owner answered "I approve procced for it" to the choice
+  between providing CB-02 for C8 and starting H1. No provider key exists
+  in any env file, so C8's paid runs can't start. H1 is the unblocked next
+  phase (HP-1 and C1 COMPLETE; HD-07 approved by id, HD-18 approved; HB-03
+  blocks H2, not H1).
+- **Preflight:** board empty before this claim; migration writer: only
+  this session; timestamp `20270301000000` sorts after track C's
+  `20270201000000`. Last `npm run check` (end of C8's session, no code
+  since): exit 0, Tests 2431 passed, 42 skipped.
+- **Create:** `supabase/migrations/20270301000000_harness.sql` and its
+  rollback (DATA_MODEL §1–§5: the five `harness_*` tables,
+  `plans.harness_monthly_micro_inr`, the `harness_approval` transitions and
+  trigger, RLS and column grants, `kriya.reserve_harness_spend`),
+  `tests/db/harness-rls.test.ts` (HT-DB-01…05), `tests/harness/regression.test.ts`
+  (the settings part of HT-REG-01).
+- **Change (track H CHANGE_IMPACT §3 H1 rows only):** `db/schema.ts` (the
+  five tables and `plans.harnessMonthlyMicroInr`), `tests/db/migrations.test.ts`
+  (HT-DB-06: a down/up case; the older rollback chain runs track H's
+  rollback first), `lib/config.ts` (the HD-18 `harness.*` block).
+- **Tests first:** HT-DB-01…05 and HT-REG-01 (settings) seen failing before
+  the migration and settings exist.
+- **Questions for the owner:** none.
+
+### Session result (2026-10-31, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Status:** COMPLETE. Nothing committed, pushed or deployed; no live
+  database (PGlite only; the migration wasn't applied to any project).
+- **Created:** `supabase/migrations/20270301000000_harness.sql` (the five
+  `harness_*` tables, `plans.harness_monthly_micro_inr` default 0, the four
+  `harness_approval` transitions and their trigger, RLS with the column
+  grants of DATA_MODEL §3, `kriya.reserve_harness_spend` with search_path
+  pinned and execute revoked from every client role), its rollback,
+  `tests/db/harness-rls.test.ts` (HT-DB-01…05, 8 tests),
+  `tests/harness/regression.test.ts` (HT-REG-01 settings part, 3 tests).
+- **Changed (track H CHANGE_IMPACT §3 H1 rows only):** `db/schema.ts` (the
+  five tables and `plans.harnessMonthlyMicroInr`; existing definitions
+  unchanged), `lib/config.ts` (the HD-18 `harness.*` block: four switches
+  off, `minClientVersion` 0.0.0, `deviceIdleDays` 90, `approvalTtlMinutes`
+  30, `rpm` 60), `tests/db/migrations.test.ts` (HT-DB-06: a down/up case
+  with data in every harness table; track H's rollback now runs first in
+  the older chains, including track C's CT-DB-06 case).
+- **Beyond DATA_MODEL §1, recorded:** indexes for every new foreign key
+  (`harness_devices (agent_id, user_id)`, `harness_device_codes
+  (approved_by)` and `(device_id)`, `harness_sessions (user_id)`), the
+  advisor class track C also covered. HT-DB-01: the person's session gets
+  "permission denied" on the codes table (no grant at all, with a no-access
+  policy behind it), stronger than the "unreadable" the spec asks for.
+- **Tests first:** all 11 new tests failed before the migration and
+  settings existed. The tests can fail: removing the cap comparison from
+  `reserve_harness_spend` failed both HT-DB-04 cases. The concurrency case
+  runs on PGlite, which serializes the two calls; the advisory lock that
+  makes it hold on Postgres is in the function, as in track C's CT-DB-04.
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (existing, CF-09); format pass; Test Files
+  205 passed | 3 skipped (208); Tests 2443 passed | 42 skipped (2485); exit 0
+  (C8's 2431 plus 12).
+- **Exit checks:** [x] HT-DB-01…05. [x] HT-DB-06 (down and up on PGlite, the
+  shape identical after). [x] HT-DB-07 (`tests/db/lint.test.ts` passes). [x]
+  HT-REG-01 (settings part).
+- **Next exact action:** every next phase now waits on an owner action.
+  (1) H2 (device identity, connect page, Devices) needs HB-03: the owner
+  applies the HD-05 invariant 3 wording to AGENTS.md. Then
+  `docs/kriya-harness/AGENT_MASTER_PROMPT.md` with `<PHASE>` = `H2`.
+  (2) Track R's R1 (migration `20270401000000`) is unblocked by H1 but
+  needs RB-02: the owner applies the RD-02 invariant 1 sentence.
+  (3) C8's bake-off needs CB-02 (provider accounts; the owner's go-ahead
+  for paid runs was given 2026-10-31 and applies once keys exist).
+
+## Phase H2 — Device identity, connect page, Devices
+
+**Status:** COMPLETE (2026-10-31).
+
+### Session plan (2026-10-31 18:07 IST, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Preconditions:** H1 COMPLETE; HD-05 approved by id and its invariant 3
+  wording applied to AGENTS.md this session (HB-03 resolved); HD-15
+  approved. Board: only this claim. No migration.
+- **Create:** `lib/harness/contract.ts` (zod schemas for the H2 routes and
+  the JSON export) and `docs/kriya-harness/contract.json`;
+  `lib/harness/devices.ts` (codes, token issue, revoke, `/me`);
+  `lib/harness/route.ts` (the per-route guard: `harness.api` → 404, version
+  → 426, `authenticateDevice` → 401/403, rate limits → 429, plain errors);
+  routes `app/api/harness/v1/{device/code,device/token,device,me}/route.ts`;
+  `actions/harness.ts` (`approveDevice`, `denyDevice`, `renameDevice`,
+  `revokeDevice`); `queries/harness.ts`; `app/connect/device/page.tsx` and
+  `components/harness/connect-device.tsx`; `components/account/devices.tsx`;
+  tests `tests/harness/{auth,contract,api,proxy}.test.ts`.
+- **Change (track H CHANGE_IMPACT §3 H2 rows only):** `lib/auth.ts`
+  (additive `authenticateDevice`; existing helpers unchanged), `proxy.ts`
+  (`TOKEN_API = ["/api/harness/"]` exempt from the origin check; `"/connect/"`
+  in `PROTECTED`), `app/(workspace)/account/page.tsx` (`<Devices>` only with
+  `harness.api` on), `app/owner/config/page.tsx` (`GROUPS` "Kriya Harness").
+- **Tests first:** HT-AUTH-01…08, HT-API-01, -02, -08, -10.
+- **Browser check:** connect (approve, deny, expired) and Devices (rename,
+  revoke) on the local stack, 360/1280, light/dark.
+- **Questions for the owner:** none.
+
+### Session result (2026-10-31, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Status:** COMPLETE.
+  Nothing committed, pushed or deployed; the live database untouched (the
+  H1 migration applied only to the local verify stack).
+- **Owner step done first:** invariant 3 in AGENTS.md now reads, word for
+  word from HD-05: identity comes from the session or, for the Kriya
+  Harness API only, a device token verified by `authenticateDevice`; never
+  trust a user id, role, plan or price from the browser or a device.
+- **Created:** `lib/harness/contract.ts` (strict zod schemas for the four
+  H2 routes and `contractJson()`), `docs/kriya-harness/contract.json` and
+  `scripts/harness-contract.ts` (regenerates it), `lib/harness/devices.ts`
+  (codes, the one-time token, answering a code, the code view, self-revoke,
+  `/me`), `lib/harness/route.ts` (the guard every route uses),
+  `app/api/harness/v1/{device/code,device/token,device,me}/route.ts`,
+  `actions/harness.ts` (`approveDevice`, `denyDevice`, `renameDevice`,
+  `revokeDevice`), `queries/harness.ts`, `app/connect/device/page.tsx`,
+  `components/harness/connect-device.tsx`, `components/account/devices.tsx`,
+  `tests/harness/{setup.ts,auth,contract,api,proxy}.test.ts` (18 tests),
+  `scripts/verify-h2-browser.mjs`.
+- **Changed (track H CHANGE_IMPACT §3 H2 rows only):** `lib/auth.ts`
+  (protected; additive `authenticateDevice` and its type; the four session
+  helpers unchanged), `proxy.ts` (`TOKEN_API = ["/api/harness/"]` skips the
+  origin check; `"/connect/"` in `PROTECTED`), `app/(workspace)/account/page.tsx`
+  (a Devices section only with `harness.api` on), `app/owner/config/page.tsx`
+  (`GROUPS` "Kriya Harness"), `AGENTS.md` (invariant 3, above).
+- **Behaviour, as built:** device and user codes are random (the user code
+  draws 8 of 32 letters without bias); codes and tokens are stored only as
+  sha256; a token is issued once, after a session approved the code; a
+  device is refused when revoked, idle past `harness.deviceIdleDays`, or its
+  person suspended (403); every route answers 404 with the switch off and
+  426 below `harness.minClientVersion` or without a version; limits: 10
+  codes an hour per address, polling faster than 5 s (429), 10 answers a
+  minute per person on the connect action, `harness.rpm` per device.
+  Approving and denying go through `privileged` on the server-only codes
+  table, authorized by the session (`requireUser`), with the chosen agent
+  checked as the person through `withUser`; renaming and revoking go
+  through `withUser` and the column grants.
+- **Tests first:** all four new test files failed before the code. The
+  tests can fail: letting `authenticateDevice` accept revoked devices failed
+  three tests (HT-AUTH-03, HT-API-01, HT-API-08). A rate-limit failure in my
+  own first run was the per-person connect limit working, since the test
+  reused one person; the helper now uses a new person per sign-in.
+- **Browser check (UX_SPEC §3), `screenshots/kriya-harness/H2/`
+  (git-ignored; README and results.json there):** 36 shots (9 screens ×
+  360/1280 × light/dark) on the local stack with `harness.api` on in the
+  local `platform_settings`. Console errors 0 and failed requests 0 on
+  every shot. End to end: Approve on the connect page, then the client's
+  poll got its token (HTTP 200) four times. The real `proxy.ts` let a
+  `POST` without `Origin` reach `/api/harness/v1/device/code` (HTTP 200,
+  curl). Every under-44 px item is in existing components (account page
+  sections, the shared dialog close and Confirm buttons, `/owner/config`'s
+  form and table, the last also causing its sideways scroll at 360); the
+  connect page and Devices controls are 44 px or more.
+- **Build:** `npm run build` with `.env.verify` exported, guard OK → exit 0
+  (the four routes and `/connect/device` dynamic).
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (existing, CF-09); format pass; Test Files
+  209 passed | 3 skipped (212); Tests 2461 passed | 42 skipped (2503); exit 0
+  (H1's 2443 plus 18). It took 694 s, against about 3 minutes before,
+  because Docker and the local stack were running beside it.
+- **Exit checks:** [x] HT-AUTH-01…08. [x] HT-API-01 (H2 routes; the
+  export compared as data, since Prettier formats the file). [x] HT-API-02.
+  [x] HT-API-08 (H2 routes). [x] HT-API-10. [x] Browser check (connect,
+  Devices).
+- **Deviations:** (1) Approving writes the codes table through
+  `privileged`, not `withUser`: the table has no client grant by design
+  (DATA_MODEL §3), and the session check is the authorization. (2) The
+  mirror mode is shown on each device, not changed (changing it is H6).
+  (3) `/me`'s `harness.enabled` is true only with a cap above 0 **and**
+  `harness.gateway` on.
+- **Local stack left running**, with `harness.api = on` in its
+  `platform_settings` and test devices for local user Asha.
+- **Next exact action:** H3 (gateway and ledger) from
+  `docs/kriya-harness/AGENT_MASTER_PROMPT.md` with `<PHASE>` = `H3`. It
+  needs HD-06 and HD-07 (approved by id) and holds `lib/entitlements.ts`,
+  `actions/owner.ts`, `components/owner/forms.tsx`,
+  `app/(workspace)/usage/page.tsx` and `worker/index.ts`; HT-GW-09 runs on
+  staging (owner, CB-05/HB-04). Its tests use a fake upstream: no real
+  OpenRouter call.
+
+## Phase H3 — Gateway and ledger
+
+**Status:** IN_PROGRESS (2026-10-31).
+
+### Session plan (2026-10-31 20:55 IST, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Why now:** the owner answered "Yes, start H3". H2 COMPLETE; HD-06 and
+  HD-07 approved by id, HD-16 approved. Board: only this claim. No
+  migration (H1's `reserve_harness_spend` and ledger are used as they are).
+- **Create:** `lib/harness/metering.ts` (the upper estimate, the
+  reservation, settling from the final usage chunk, the charge through
+  `lib/money.ts` with the plan's markup and `fx.usdInr`), `lib/harness/gateway.ts`
+  (request rewrite: alias → tier model, `max_tokens` capped, `user` /
+  `provider` / `models` / `route` stripped, `usage.include`; forward to
+  OpenRouter; stream back with only `model` rewritten; one retry on
+  `routing.fallback` after a 5xx), routes `app/api/harness/v1/chat/completions`
+  and `/models`, `tests/harness/{gateway,metering}.test.ts` (HT-GW-01…08,
+  -10, HT-MTR-01…06) against a fake upstream (no real OpenRouter call).
+- **Change (track H CHANGE_IMPACT §3 H3 rows only):** `lib/entitlements.ts`
+  (`usageSummary` adds the period's non-failed harness charges, the voice
+  pattern), `actions/owner.ts` and `components/owner/forms.tsx`
+  (`harnessMonthlyInr`, ₹ stored as micro-INR), `app/(workspace)/usage/page.tsx`
+  (a Kriya Harness line when the plan's cap > 0), `worker/index.ts` (one
+  statement in the hourly `janitor()`: reservations older than 15 minutes →
+  `estimated` at their reserved amount). Track H's own: `lib/harness/contract.ts`
+  (the two routes and the refusal codes) and `contract.json`.
+- **Choices to record:** (1) The code has no per-tier output limit, which
+  HD-16 assumes. The gateway caps `max_tokens` with one named constant for
+  every tier, an open item for the owner. (2) Without `fx.usdInr` or a
+  catalogue price for the tier's model, the reservation can't be computed,
+  so the cap couldn't hold. The gateway refuses (`not_priced`) instead of
+  forwarding unmetered (invariants 6 and 7). (3) The 3-streams-per-person
+  limit counts the person's open reservations in application code. The
+  money cap itself stays in SQL.
+- **Questions for the owner:** the output-token cap per tier (open item
+  above).
+
+### Session result (2026-10-31, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Status:** IN_PROGRESS: every exit check passed except HT-GW-09, the
+  capacity run on staging, which is the owner's (CB-05/HB-04). Nothing committed, pushed or deployed; no
+  real OpenRouter call (every gateway test answers from a fake upstream),
+  no live database.
+- **Created:** `lib/harness/metering.ts` (`MAX_OUTPUT_TOKENS`, the upper
+  estimate, `reserve` through `kriya.reserve_harness_spend`, `readUsage`,
+  `settle`, `settleAborted`, `settleFailed`, `chargeFor`, `openReservations`,
+  `expireReservations`), `lib/harness/gateway.ts` (`chatCompletion` and the
+  line-by-line stream pass-through), `app/api/harness/v1/chat/completions/route.ts`,
+  `app/api/harness/v1/models/route.ts`, `tests/harness/{gateway,metering}.test.ts`
+  (14 tests), `scripts/verify-h3-browser.mjs`.
+- **Changed (track H CHANGE_IMPACT §3 H3 rows only):** `lib/entitlements.ts`
+  (`usageSummary` adds the period's non-failed harness charges, the voice
+  pattern; no new field), `actions/owner.ts` and `components/owner/forms.tsx`
+  (`harnessMonthlyInr`, ₹ stored as micro-INR), `app/(workspace)/usage/page.tsx`
+  (a Kriya Harness line only when the plan's cap > 0), `worker/index.ts` (one
+  statement at the end of the hourly `janitor()`, its errors caught and
+  logged). Track H's own: `lib/harness/contract.ts` (`ChatRequest`,
+  `ModelsResponse`, the gateway's refusal codes, both routes) and
+  `contract.json` regenerated; `tests/harness/setup.ts` (`deviceFor`).
+- **The gateway, as built, in order:** `harness.gateway` (off →
+  `harness_off`); the plan's cap > 0 (`plan_not_allowed`); the body against
+  `ChatRequest`; an allowed tier alias (`tier_not_allowed`); at most 3 open
+  reservations (429); the tier's model, its catalogue price and
+  `fx.usdInr` (missing → `not_priced`, nothing forwarded); `max_tokens`
+  capped; the upper estimate reserved in SQL (`cap_reached`); then the call
+  to OpenRouter with `user` / `provider` / `models` / `route` stripped and
+  `usage.include`; on 429 or 5xx, one try on `routing.fallback`; the answer
+  streamed line by line with only `"model":"<id>"` rewritten to the alias;
+  the final usage chunk settles the row (cost, estimate, charge with the
+  plan's markup and the owner's rate); a stream cut before usage arrives is
+  `estimated` at its reservation; an upstream refusal is `failed` with no
+  charge.
+- **Tests first:** both new files failed before the code. On the first run,
+  the gateway suite failed in setup (`kriya.models` needs a label) and two
+  expectations assumed bigint strings; both were test fixes. The tests can
+  fail: charging an aborted stream ₹0 failed HT-GW-07.
+- **Browser check (UX_SPEC §3), `screenshots/kriya-harness/H3/` (README
+  and results.json there):** 12 shots on the local stack (usage line, owner
+  plan field, the account page beside them; 360/1280; light/dark), with the
+  local free plan's limit set to ₹500 and three seeded ledger rows. The
+  usage line reads "Kriya Harness this month: ₹7.25 of ₹500.00 · 1 not
+  priced yet" (₹4.25 charged plus ₹3.00 reserved and unpriced; the failed
+  row not counted), and the page's "this period" is ₹7.25 too. The plan
+  field shows ₹500, read back from micro-INR. Console errors 0 and failed
+  requests 0; the only sideways scroll is `/owner/config` at 360, which was
+  recorded before.
+- **Build:** `npm run build` with `.env.verify` exported, guard OK → exit 0.
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (existing, CF-09); format pass; Test Files
+  211 passed | 3 skipped (214); Tests 2475 passed | 42 skipped (2517); exit 0
+  (H2's 2461 plus 14).
+- **Exit checks:** [x] HT-GW-01…08. [x] HT-GW-10. [x] HT-MTR-01…06
+  (MTR-04: the usage line equals the ledger; no owner tile was added, since
+  none is in H3's CHANGE_IMPACT rows; MTR-06 is the gateway's
+  `plan_not_allowed` case). [ ] HT-GW-09: capacity on staging (owner;
+  CB-05/HB-04), not run.
+- **Open items for the owner:** (1) the per-tier output cap: one constant,
+  `MAX_OUTPUT_TOKENS` = 16 384, for now; (2) `not_priced` means the owner
+  must enter `fx.usdInr` and the tier models' catalogue prices before the
+  gateway answers; (3) HQ-01 (OpenRouter limits for one key at harness
+  volume) stays open until staging.
+- **Next exact action:** H4 (the client alpha) needs HB-02: the
+  `kriya-harness` repository and the npm scope from the owner. H5, H6 and
+  H7 follow H4. Until then: track R's R1 (needs RB-02, the invariant 1
+  sentence), C8's bake-off (needs CB-02), or HT-GW-09 on staging (needs
+  CB-05).
+
+## Phase H4 — Client alpha (`kriya-harness` repository)
+
+**Status:** IN_PROGRESS (2026-11-01).
+
+### Session plan (2026-11-01, Claude Code / Opus 5.5, new repository, uncommitted)
+
+- **Owner instruction (in chat):** chose "Harness repo (HB-02)", then "Yes,
+  create it" to creating the private repository `zuko14/kriya-harness`.
+  Created with `gh repo create --private` and cloned to `../kriya-harness`
+  (empty, no commits). HB-02's npm part stays open: the scope `@kriya-ai`
+  needs the owner's npm login (this machine isn't signed in to npm); H4
+  publishes nothing, so the package keeps the planned name meanwhile.
+- **Preconditions:** H3's code parts done (HT-GW-09 waits for staging);
+  HD-02, HD-03, HD-04, HD-14, HD-17 approved (owner-gated ones by id).
+  Node v24.22.0 (DSH needs ≥ 24.9). DSH on npm: `latest` = `0.2.1-rc.5`,
+  `alpha` = `0.2.2-alpha.2`; first pin `0.2.1-rc.5` (the newest release
+  candidate; HQ-05).
+- **Build (client repository only; no file in this repository but this
+  one):** `package.json` with exact pins and a lockfile; the `kriya`,
+  `kriya-run` profiles and the `kriya` bundle (DeepSeek-account
+  credentials and models, telemetry and experimental bundles disabled);
+  P-AUTH (device sign-in against `/device/code`, `/device/token`, token
+  stored as credential `kriya.device`); P-GW (config only: Kriya gateway
+  base URL, models `budget`, `balanced`, `escalation`); `bin/kriya`
+  (`login`, `logout`, `doctor`, `run`, default Web UI, `--version` with the
+  "built on DeepSeek Harness" line); `SAFETY.md`, `THIRD_PARTY_NOTICES.md`
+  generated from the lockfile with a license allow-list; tests: contract
+  tests against a copy of `docs/kriya-harness/contract.json`, a local fake
+  Kriya API and gateway, HT-REL-01…03, `kriya doctor` and `kriya run`
+  against the fake gateway, `--dump-config` recorded.
+- **Not in H4:** approvals (H5), mirror (H6), skills and memory (H7),
+  handoff (H8), ACP (H11); the owner-run session against staging (needs
+  CB-05); npm publish (HD-14, owner).
+
+### Session result (2026-11-01, Claude Code / Opus 5.5, `../kriya-harness`, uncommitted)
+
+- **Status:** IN_PROGRESS. The client alpha is built and its CI passes
+  locally; left: the owner-run session against staging (CB-05) and the
+  license decision (HF-09) before any release. Nothing committed or pushed
+  in either repository (the new repository has no commits); nothing
+  published; no real Kriya, model or provider reached; nothing in this
+  repository changed but this file.
+- **Built (in `zuko14/kriya-harness`):** `package.json`
+  (`@kriya-ai/harness` 0.1.0, private, bin `kriya`, Node ≥ 24.9,
+  `@deepseek-ai/dsh` pinned exactly at `0.2.1-rc.5`, dev `ajv` 8.17.1,
+  lockfile; `license` left `UNLICENSED` until the owner picks one);
+  `bundle/cordis.patch.yml` (the "kriya" bundle: `llm-pi-ai` route `kriya`
+  = `openai-completions` at `<Kriya>/api/harness/v1`, `apiKeyEnv:
+  KRIYA_DEVICE_TOKEN`, header `X-Kriya-Harness`, models `balanced`,
+  `budget`, `escalation`; default model `kriya/balanced`; disabled:
+  DeepSeek account, account controller and page, DeepSeek models, DeepSeek
+  web search, OTel and session telemetry, the Web UI's product analytics);
+  `src/` (`api.js` contract client, `login.js` device flow, `store.js`
+  token in `~/.kriya/device.json` 0600 in a 0700 home, `profiles.js` the
+  `kriya` (dsh-base + dsh-web-app + kriya) and `kriya-run` (dsh-base +
+  dsh-headless + kriya) profiles, linked so DSH resolves this package as a
+  bundle and the person's own profile patch is kept, `launch.js` DSH's own
+  launcher with `DSH_HOME=~/.kriya`, `doctor.js`); `bin/kriya.js`
+  (`login`, `logout`, `doctor`, `run`, the Web UI with only `--no-open` and
+  `--port`, `--version` "built on DeepSeek Harness 0.2.1-rc.5", first-run
+  safety notice); `scripts/` (exact pins; `THIRD_PARTY_NOTICES.md` from the
+  lockfile with DSH's MIT notice and a license allow-list; recorded
+  dumps); `expected/kriya.dump.yml`, `expected/kriya-run.dump.yml` (the
+  recorded `--dump-config`); `contract/contract.json` (copy of this
+  repository's `docs/kriya-harness/contract.json`, sha256 recorded in
+  `contract/SOURCE.md`); `tests/` (30 tests on `node:test`, a fake Kriya
+  API and gateway on 127.0.0.1); `README.md`, `SAFETY.md`,
+  `.github/workflows/ci.yml` (Ubuntu and macOS; not run: nothing pushed).
+- **How it was checked (real DSH, fake Kriya):** `kriya run "Say hello"`
+  boots the pinned DSH headless, both its model calls reach the fake
+  gateway with the device token, `X-Kriya-Harness: 0.1.0` and model
+  `balanced`, and the answer prints with exit 0; `kriya doctor` passes
+  signed in (profiles compose, the rows above disabled, account and
+  gateway reachable); `kriya` (Web UI) serves on `127.0.0.1` and answers 401
+  without its session link; login handles pending, denied, expired and the
+  426 upgrade; logout revokes; every request and the fake's every answer
+  validate against `contract.json`.
+- **Final commands (client):** `npm run check` → "pins: every dependency
+  exact and locked"; "notices: current; 21 license problems block a
+  release"; tests 30, pass 30, fail 0; exit 0. `npm run release:check` →
+  exit 1 (HF-09, intended until the owner decides). This repository
+  (unchanged but for this file): `env -u OPENROUTER_API_KEY npm run check`
+  → typecheck pass; lint 0 errors, 6 warnings (CF-09); format pass; Test
+  Files 227 passed | 3 skipped (230); Tests 2651 passed | 42 skipped
+  (2693); exit 0.
+- **Findings:**
+  - **HF-09 (owner + counsel, HQ-C1):** DSH 0.2.1-rc.5 installs packages
+    outside the HD-14/DSH_DISTRIBUTION §6 allow-list: MPL-2.0 (6,
+    `@deepseek-ai/libreoffice-kit*`), LGPL-3.0-or-later (14, `@img/sharp-*`
+    prebuilt image libraries) and Unlicense (1, `fast-sha256`). The release
+    gate refuses them; an exception per package and version goes in
+    `notices-exceptions.json` only on the owner's decision.
+  - **HF-10 (server, track H):** the gateway's refusals are Kriya's
+    `{ error: "<code>", message }`, but DSH's OpenAI-compatible route
+    (pi-ai) reads only OpenAI's `{ error: { message } }`, so the person sees
+    `PI_AI_ERROR: 402 "cap_reached"` and not the sentence. `kriya run` adds
+    the sentence for each contract code (tested); the Web UI still shows
+    the code. Fix: `/chat/completions` refusals in OpenAI's error shape
+    (a contract change in `lib/harness/contract.ts`), needing the owner's
+    go-ahead.
+  - **HF-11:** the tiers' context windows and output caps aren't in the
+    contract (`/models` lists ids only), so DSH uses its fallbacks
+    (262,144 and 32,768 tokens). Settled when the server publishes them.
+  - **Fixed in this session:** stopping `kriya` with SIGTERM left the DSH
+    web server running; SIGTERM and SIGHUP are now passed on (Ctrl-C
+    already reaches DSH), and `tests/web.test.js` checks the port is freed.
+    During that first manual check DSH opened the owner's default browser
+    on the local page once; tests now pass `--no-open`.
+- **Deviation from DSH_DISTRIBUTION §3 (P-AUTH):** the device flow runs in
+  `kriya login`, and the token is kept in the launcher's own 0600 file and
+  given to DSH as the `KRIYA_DEVICE_TOKEN` launch variable that the route's
+  `apiKeyEnv` names, instead of a DSH `authorization` method writing a
+  `credentials-local` record. Reason: DSH's headless profile disables its
+  credential store and reads keys from the launch environment, so one path
+  serves both profiles. DSH removes `*TOKEN*` variables from every agent
+  shell (`dsh-subprocess` `SENSITIVE_ENV_PATTERN`); `tests/env.test.js`
+  fails if that stops being true. Owner may ask for the DSH-store variant.
+- **Not tested:** CI on Linux (the recorded dumps may differ by platform);
+  npm held back install scripts (`node-pty` native build and two others),
+  so DSH's persistent terminals weren't exercised; the Web UI's pages
+  weren't looked at in a browser; DSH approval prompts (H5); any real
+  Kriya (the owner-run staging session).
+- **Exit checks:** [x] HT-REL-01 (pins, lockfile, notices current). [x]
+  HT-REL-02 (the gate fails on disallowed or unknown licenses). [x]
+  HT-REL-03 (each profile's dump equals the record; disabled rows stay
+  disabled; Web UI on loopback). [x] Contract tests. [x] `kriya doctor`.
+  [x] `kriya run` against the fake gateway. [x] Recorded `--dump-config`.
+  [ ] One owner-run session against staging (CB-05).
+- **Next exact action:** owner: (1) decide HF-09 (allow MPL-2.0,
+  LGPL-3.0-or-later and Unlicense with notices, or not); (2) claim the npm
+  scope `@kriya-ai` (HB-02's other half); (3) choose the client's license;
+  (4) ~~say whether the client may be committed and pushed~~ done
+  2026-11-01 on the owner's "Yes, commit and push": commit `a8b677e`
+  pushed to `zuko14/kriya-harness` `main` (33 files, no `node_modules`;
+  CI's `release-gate` job fails by design until HF-09). Then, with
+  staging (CB-05): the owner runs
+  `kriya login --url <staging>` and `kriya run "…"` once and records it
+  here, and H4 is COMPLETE. H5, H6 and H7 depend on H4 being COMPLETE;
+  they wait for that run unless the owner says they may start on H4's
+  code before it. HF-10 belongs with them.
+
+### Session 2 (2026-11-01, Claude Code / Opus 5.5, `../kriya-harness`, uncommitted): Kriya-branded Web UI
+
+- **Owner instruction (in chat):** "we are modify everything the ui
+  interface and everything to Kriya … only using every code that from the
+  deepseek harness". This changes UX_SPEC §1's "Kriya adds no UI inside
+  [DSH] in v1"; done through DSH's own seams, so HD-02 (no fork, nothing in
+  DSH edited) holds.
+- **Built:** `plugins/brand/` (`@kriya-ai/harness-brand`, a DSH client
+  plugin: Kriya's mark from `components/brand.tsx` in the sidebar and the
+  conversation hero, "Kriya Harness beta" as the sidebar name, the tab icon,
+  and the tab title, which DSH's `ui-layout` hard-codes as "DeepSeek
+  Harness" and rewrites per session, so the plugin swaps the product name
+  whenever the title changes); the bundle disables `ui-brand-official`,
+  inserts `ui-brand-kriya`, and marks DSH's first-run "Preview Notice"
+  (DSH's own wording about DeepSeek Harness) as seen through its own
+  `welcomeNoticeVersion` field; Kriya's terminal notice and `SAFETY.md`
+  say DSH is an unaudited preview. `src/profiles.js` links the brand
+  package into each profile; `tests/brand.test.js` (3 tests); dumps
+  re-recorded; README.
+- **Browser check (built-in browser, real DSH Web UI on 127.0.0.1:3091
+  against the fake Kriya):** first visit: no dialog, 0 occurrences of
+  "DeepSeek" in the page text, title "Kriya Harness", Kriya icon, Kriya
+  mark in sidebar and hero, model "Kriya balanced"; a chat message
+  answered through the fake gateway, tab "<session> — Kriya Harness"; 0
+  console errors in a fresh tab (errors seen earlier came from an
+  instance stopped while its tab was open); 375 px light mode checked.
+  Instance stopped afterwards.
+- **Known, kept:** the tab shows "DeepSeek Harness" for a moment before
+  the plugin loads (it's in DSH's prebuilt page; changing it would mean
+  editing DSH). DSH's Settings pages still list DSH's own provider
+  catalogue and plugin pages; they work and stay DSH's.
+- **Final command (client):** `npm run check` → pins exact; notices
+  current (21 license problems block a release, HF-09); tests 33, pass 33,
+  fail 0; exit 0.
+- **Licenses (owner question in chat):** DSH itself is MIT: Kriya may
+  modify, rebrand and ship it if DSH's copyright notice and the MIT text
+  stay in `THIRD_PARTY_NOTICES.md` (they do), and DeepSeek's trademark
+  stays out of the product name (it does; "built on DeepSeek Harness"
+  only as attribution). Rebranding doesn't change HF-09, which is about
+  21 other packages DSH installs (MPL-2.0, LGPL-3.0-or-later, Unlicense);
+  still the owner's decision.
+- **Next exact action:** owner: decide HF-09; say whether this change may
+  be committed and pushed (the earlier "Yes, commit and push" covered
+  `a8b677e` only). H4's remaining exit check is unchanged (staging run).
+
+### Session 3 (2026-11-01, Claude Code / Opus 5.5, `../kriya-harness`, uncommitted): crafted Kriya theme
+
+- **Owner instruction (in chat):** the Web UI "should be very attractive
+  and also stunning … should not look like just a vibe coded or any AI
+  edited general ones … very unique and creative … production level end to
+  end".
+- **Design (plugins/brand/DESIGN.md):** Kriya's own palette on all of DSH's
+  colour tokens (paper, sheet and loom surfaces; ink text; teal for action,
+  links, focus and selection; saffron for the thread and the agent at
+  work), Geist for interface and conversation text, Fraunces for the start
+  screen and sidebar name, JetBrains Mono for code. One memorable moment:
+  the start screen stitches Kriya's K in saffron thread (a topstitch just
+  inside each stroke), dyes it in, then asks "What are we working on?" with
+  a plain note on what runs where; it plays once and is removed after.
+- **How (seams only, HD-02 holds):** `ctx.theme.overrideTokens` (DSH's
+  third-party theme layer, light and dark pairs, a person's own font
+  choice still first); the brand slots; plugin-owned styles. Fonts are
+  inlined by `scripts/build-brand.js` into `plugins/brand/client.js`
+  (offline on 127.0.0.1); `npm run check` fails when that file is stale.
+  `@fontsource-variable/{fraunces,geist,jetbrains-mono}` 5.3.0 pinned as
+  dev dependencies (the Kriya app's versions); their OFL-1.1 texts are in
+  `THIRD_PARTY_NOTICES.md`; OFL-1.1 added to the allow-list for fonts only
+  (owner may confirm or reverse).
+- **Browser check (built-in browser, real DSH Web UI against the fake
+  Kriya):** found and fixed in this session: DSH's headline beside the hero
+  (selector one level off), the note clipped at 375 px (DSH's mark box
+  never shrinks), the stitch reading as a coarse outline (now inset and
+  finer), the start screen staying empty for about 2 s (now about 1.2 s),
+  the stitch replaying after a layout change (class removed once sewn), the
+  thread too faint on the cream K in dark mode (own light/dark pair), and
+  light-mode tertiary and saffron text under 4.5:1 (darkened). Final: light
+  and dark at desktop, 375 px both schemes, a conversation, Settings; 0
+  console errors in a fresh tab; title "Kriya Harness"; 0 occurrences of
+  "DeepSeek" on the start screen; Geist and Fraunces loaded, code font
+  wired. Instance stopped.
+- **Guards (tests/brand.test.js, 7 tests):** the built module current and
+  self-contained (no network URL); theme layer, slots and styles registered;
+  start-screen copy; WCAG contrast of every text token on every surface in
+  both schemes (body ≥ 7:1, secondary and action ≥ 4.5:1, captions ≥ 3:1);
+  and the DSH structures the theme relies on (hero slot and title group,
+  the hard-coded product title, sidebar slots, `overrideTokens`, the
+  preview-notice version), so a DSH bump that moves them fails first.
+- **Final command (client):** `npm run check` → pins exact; notices current
+  (21 license problems block a release, HF-09); build-brand current; tests
+  37, pass 37, fail 0; exit 0.
+- **Known, kept:** "DeepSeek Harness" shows in the tab for a moment before
+  the plugin loads, and DSH's Settings still name DSH's own model provider;
+  layout and interactions are DSH's (only colour, type, the brand slots and
+  the start screen change).
+- **Committed and pushed** on the owner's "Yes, commit and push":
+  `c927146` (the theme) to `zuko14/kriya-harness` `main`. CI on the first
+  push (`a8b677e`) had failed in both `check` jobs: `THIRD_PARTY_NOTICES.md`
+  differed by machine because npm installs the 76 platform-limited
+  packages (`os`/`cpu`) only where they run. Fixed in `04532cf` (pushed as
+  the follow-up to the same approval): those packages are listed with
+  their platform and no copied text; a test pins identical output with and
+  without them. Client `npm run check`: tests 38, pass 38; exit 0.
+- **CI:** `04532cf` still failed both `check` jobs: two optional
+  dependencies without `os`/`cpu` (`@emnapi/runtime`,
+  `@img/sharp-wasm32`) are installed on some systems only. Found by
+  reproducing CI (fresh clone, `npm ci`) and listing lockfile packages not
+  installed here; fixed in `df2b1b9` (every optional package listed as
+  "optional" without a copied text; test extended). CI run 41290916802 on
+  `df2b1b9`: `check (ubuntu-latest)` success, `check (macos-latest)`
+  success (so the recorded `--dump-config` files and the real DSH boot
+  tests pass on Linux too); `release-gate` failure, by design (HF-09
+  licenses only).
+- **Next exact action:** owner: confirm OFL-1.1 for fonts; decide HF-09.
+  H4's remaining exit check is unchanged (staging run).
+
+## Phase H5 — Approvals from the phone
+
+**Status:** COMPLETE (2026-11-01): every exit check passed (server and client parts below). Not yet run against staging or a real phone; that comes with H4's owner-run staging session (CB-05) and H9.
+
+### Session plan (2026-11-01 19:05 IST, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Why now:** the owner assigned H5 in this session. H4 is IN_PROGRESS,
+  but only owner items are left there (staging session CB-05, licence
+  HF-09, npm scope); H5's server side needs none of them. HD-08 and PX-03
+  approved ("Track H owner approvals"). Board empty before this claim.
+  Preflight: 108 uncommitted paths from earlier recorded sessions, kept;
+  `npm run typecheck` pass; the full `npm run check` an hour earlier on
+  the same tree: Tests 2651 passed | 42 skipped, exit 0 (C1 re-verification).
+- **Create:** `lib/harness/approvals.ts` (create, read with long-poll,
+  cancel; device writes go through `privileged`, scoped by the device's
+  user id and device id, after `authenticateDevice`: there is no insert
+  policy for sessions), `app/api/harness/v1/approvals/route.ts` (POST),
+  `app/api/harness/v1/approvals/[id]/route.ts` (GET `?wait=0…25`, DELETE),
+  `components/inbox/harness-approval.tsx`, `tests/harness/approvals.test.ts`
+  (HT-APR-01…03, plus HT-API-09 for the new routes).
+- **Change:** `lib/harness/contract.ts` (three schemas, three routes) and
+  `contract.json`; `actions/harness.ts` (`answerHarnessApproval`, session
+  only, `withUser`); `queries/inbox.ts` (pending, unexpired harness
+  approvals with the device name, only with `harness.api` on, counted in
+  `inboxCount` so `inboxBadge` follows without editing `actions/inbox.ts`);
+  `app/(workspace)/inbox/page.tsx` (a section under Approve); PX-03:
+  `app/api/events/route.ts`, `lib/events.ts`, `components/workspace/notifier.tsx`
+  (a `harness-approval` event behind `harness.api`, after track R's part).
+- **Brief vs code (code is the fact):** the table is
+  `kriya.harness_approval_requests` and the column `answered_at` (the brief
+  said `harness_approvals` / `decided_at`); expiry is
+  `harness.approvalTtlMinutes` (default 30, HD-08), not a fixed 10 minutes.
+- **Risks:** an expired row stays `pending` in the table until something
+  reads it (H5 may not touch `worker/index.ts`); every reader treats
+  `expires_at <= now()` as expired, and GET writes `expired`.
+- **Questions for the owner:** none.
+
+### Session result (2026-11-01, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Status:** IN_PROGRESS. The server side and the browser check are
+  done; the exit check "client approval-answerer tests" belongs to the
+  `kriya-harness` repository and wasn't started. Nothing committed, pushed
+  or deployed; no live database (tests on PGlite, the browser check on the
+  local stack behind `verify:guard`), no model or OpenRouter call.
+- **Created:** `lib/harness/approvals.ts` (`createApproval`,
+  `waitForAnswer` with at most 2 long-polls per device, `cancelApproval`;
+  privileged writes after `authenticateDevice`, scoped by the device's
+  person and the device; a pending row past `expires_at` is written
+  `expired` when read), `app/api/harness/v1/approvals/route.ts` (POST →
+  201 `{ id, expiresAt }`), `app/api/harness/v1/approvals/[id]/route.ts`
+  (GET `?wait=0…25`, DELETE → 204; another device's or person's id → 404),
+  `components/inbox/harness-approval.tsx` (tool, summary, exact redacted
+  input, folder, device, countdown, **Approve once** / **Decline**),
+  `tests/harness/approvals.test.ts` (18 tests), `scripts/verify-h5-browser.mjs`,
+  `screenshots/kriya-harness/H5/` (9 shots, README, results.json).
+- **Changed:** `lib/harness/contract.ts` (`ApprovalCreateRequest`,
+  `ApprovalCreateResponse`, `ApprovalStatusResponse`, three routes) and
+  `docs/kriya-harness/contract.json` (regenerated with
+  `npx tsx scripts/harness-contract.ts`); `actions/harness.ts`
+  (`answerHarnessApproval`: `requireUser`, zod, `harness.api`, `withUser`;
+  only pending, unexpired rows; first answer wins); `queries/inbox.ts`
+  (`harnessApprovals`: pending, unexpired, from a device not revoked, only
+  with `harness.api` on; counted in `inboxCount`, so `inboxBadge` follows
+  and `actions/inbox.ts` is unchanged); `app/(workspace)/inbox/page.tsx`
+  (section "From your computer" under Approve); PX-03: `app/api/events/route.ts`
+  (`harness-approval` events behind `harness.api`, through RLS, naming the
+  tool and the device, never the input or summary), `lib/events.ts` (the
+  event type), `components/workspace/notifier.tsx` (its card and
+  lock-screen line); `docs/kriya-harness/REPOSITORY_AUDIT.md` (HF-12 row).
+- **Brief vs code (code is the fact, as planned):** table
+  `harness_approval_requests`, column `answered_at`, expiry from
+  `harness.approvalTtlMinutes` (default 30).
+- **New finding HF-12:** the shared `redactInput` (`lib/agent/approvals.ts`,
+  track A) redacts only keys that *start with* a secret word (`apiToken`
+  passed through in the first test run), and it truncates inputs over
+  4 000 characters *before* redacting, so a secret in a 4–8 KB harness
+  input would have been stored in clear. `lib/harness/approvals.ts` now
+  walks the input first and redacts any value under a key naming a secret,
+  then calls `redactInput`. Both HT-APR-03 redaction tests were run
+  against the code without that walk and failed, then passed with it.
+  `redactInput` itself is unchanged; whether agent approvals need the same
+  fix is the owner's call. Free text (a bash command containing a key) is
+  shown as is: the person must see what will run (HS-7).
+- **Tests first:** the new file failed (modules missing) before any code.
+- **Targeted run:** `npx vitest run tests/harness tests/db/harness-rls.test.ts
+  tests/rooms/events.test.ts tests/agent/queries.test.ts` → Test Files 11
+  passed (11); Tests 69 passed (69).
+- **Browser check (UX_SPEC §3), `screenshots/kriya-harness/H5/`:** local
+  stack (Docker Desktop and `supabase start` started this session; guard
+  OK), `harness.api` and `agents.inbox` set on in the local
+  `platform_settings`, a local test device `verify-laptop` for local user
+  Asha asking through the real `POST /api/harness/v1/approvals`. Inbox
+  cards at 360/1280 × light/dark: `apiToken` shown `[redacted]`, folder
+  and device shown, buttons 44 px at 360 (32 px at 1280, the existing
+  Inbox pattern); clicking **Approve once** while the device long-polled
+  `?wait=20` → `approved` after 1.6 s; **Decline** → `declined`; both
+  cards gone; a request made while on Home showed the notification card
+  ("verify-laptop wants to run bash"), and the device's DELETE → `canceled`.
+  Console errors 0, failed requests 0, no sideways scroll on every shot;
+  the Inbox badge counted the two requests.
+- **Build:** `npm run build` with `.env.verify` exported, guard OK → exit
+  0 (`/api/harness/v1/approvals` and `/approvals/[id]` in the route list).
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (existing, CF-09); format pass (after
+  formatting the new verify script); Test Files 228 passed | 3 skipped
+  (231); Tests 2669 passed | 42 skipped (2711); exit 0 (2651 + 18).
+- **Exit checks:** [x] HT-APR-01. [x] HT-APR-02. [x] HT-APR-03. [x] browser
+  check. [ ] client approval-answerer tests (`kriya-harness`), not started.
+  Also: HT-API-09 for the new routes (they export only POST, GET, DELETE;
+  a device token without a session can't answer).
+- **Deviations:** `lib/events.ts` isn't named in CHANGE_IMPACT §3; it holds
+  the event type that PX-03's route and notifier need (track R added its
+  two types there the same way). The long-poll cap counts per server
+  process (code comment); with more than one `kriya-web` instance it needs
+  a shared counter.
+- **Local stack left running** with `harness.api` and `agents.inbox` on in
+  its `platform_settings` and the test device `verify-laptop` (its
+  approvals answered or canceled).
+- **Next exact action:** in `../kriya-harness`, add the Kriya approvals
+  plugin as a DSH `user-approval` answerer (HD-08): on DSH's approval
+  request, `POST /approvals` (tool, summary, the exact arguments, cwd), show
+  "Waiting for your answer here or in Kriya on your phone.", long-poll
+  `GET /approvals/{id}?wait=25` until answered (`approved` runs the tool
+  once; `declined`, `expired`, `canceled` or an error fail closed), and
+  `DELETE` when the local prompt answers first. Test against
+  `docs/kriya-harness/contract.json` with the client's fake server; then
+  tick the last H5 exit check here.
+
+### Session plan, client part (2026-11-01 19:40 IST, Claude Code / Opus 5.5, `../kriya-harness` `main` in place at `df2b1b9`, uncommitted)
+
+- **Owner instruction:** "Yes, build it" (the client's approval answerer).
+  Client repository clean at `df2b1b9`; this repository unchanged since the
+  server session above except this file.
+- **DSH facts read in the pinned 0.2.1-rc.5 (node_modules, nothing
+  edited):** `dsh-user-approval` dispatches `approval/request` as a cordis
+  waterfall: listeners outermost first, `next()` delegates with the *same*
+  request, a missing or failed answerer is `unavailable` (fail closed);
+  outcomes `allowed-once | rejected | cancelled | unavailable`. The request
+  carries the tool name, reason, `displayReason` and `callId`, **not the
+  arguments** (its README's known limit). `dsh-tools` runs the
+  `tools/pre-execute` waterfall with the call's parsed `arguments` and
+  `callId` just before it asks. DSH's Web UI answers through
+  `ctx.remote.$on("approval/request")` (registered when a browser
+  connects); the headless profile composes the approval service (policy
+  `ask`) with no answerer, so asks fail closed there today. Listeners get
+  the scope carrier as `this` (cordis `dispatch` binds it).
+- **Design (`plugins/approvals`, `@kriya-ai/harness-approvals`, a node
+  plugin added to the "kriya" bundle in both profiles):** a passive
+  `tools/pre-execute` listener remembers each call's arguments by `callId`
+  (bounded, never logged); an `approval/request` listener (prepended, so it
+  is outermost) posts the request to Kriya (tool, reason or a plain
+  summary, the arguments with secret-named keys redacted *before* they
+  leave the machine and capped at 8 KB, the session's working directory,
+  the session id), then re-dispatches a copy of the request through the
+  rest of the chain with its own abort signal and DSH's prompt text plus
+  "Waiting for your answer here or in Kriya on your phone.", and races the
+  two. First decisive answer wins: the phone's `approved` / `declined` →
+  `allowed-once` / `rejected`, and the local prompt is withdrawn; a local
+  answer first → `DELETE` on Kriya. Expired, canceled, signed out or
+  unreachable Kriya counts as no answer from the phone; no answer from
+  either → `unavailable` (fail closed). Headless (`kriya run`) has no local
+  answerer, so it waits for the phone and says so on stderr.
+- **Files (client):** `plugins/approvals/{package.json,index.js}`;
+  `src/profiles.js` (`LINKED` gains the plugin); `bundle/cordis.patch.yml`
+  (one insert row); `contract/contract.json` + `SOURCE.md` (copied again
+  from this repository: the three approval routes); `expected/*.dump.yml`
+  (re-recorded); `tests/fake-kriya.js` (approval routes, answers
+  scripted by the test); `tests/approvals.test.js`; `README.md` (one line).
+- **Tests first:** the answerer against a real cordis `Context` and the
+  fake Kriya (phone approves, phone declines, local first cancels on Kriya,
+  phone first withdraws local, expiry and Kriya down fall back to local,
+  neither → `unavailable`, signed out → untouched, arguments redacted and
+  capped, the request validated against `contract.json`); then, if the
+  sandbox allows it, one real-DSH `kriya run` whose scripted tool call
+  asks for approval and is approved through the fake Kriya.
+- **Not in scope:** HF-10 (gateway error shape), any server change.
+
+### Session result, client part (2026-11-01, Claude Code / Opus 5.5, `../kriya-harness` `main` in place, uncommitted)
+
+- **Status:** the last H5 exit check (client approval-answerer tests)
+  passed, so H5 is COMPLETE. Nothing committed or pushed in either
+  repository; nothing published; no real Kriya, model or provider reached
+  (fake Kriya and fake gateway on 127.0.0.1). In this repository only this
+  file changed.
+- **Created (client):** `plugins/approvals/{package.json,index.js}`
+  (`@kriya-ai/harness-approvals`: the passive `tools/pre-execute`
+  listener remembering up to 200 calls' arguments by call id; the
+  prepended `approval/request` answerer; secret-named keys redacted and the
+  input capped at 8 KB before anything leaves the machine; first decisive
+  answer wins; the loser withdrawn: DSH's prompt through its own abort
+  signal, Kriya's request through `DELETE`; Kriya unreachable, refusing,
+  signed out, expired or canceled = no answer from the phone; neither side
+  = `unavailable`, so DSH refuses), `tests/approvals.test.js` (10 tests on
+  a real cordis `Context` from the pinned DSH), `tests/approvals-run.test.js`
+  (2 tests booting the real DSH 0.2.1-rc.5 headless through `kriya run`).
+- **Changed (client):** `bundle/cordis.patch.yml` (insert row
+  `kriya-approvals`), `src/profiles.js` (`LINKED` gains the plugin),
+  `expected/kriya.dump.yml` and `expected/kriya-run.dump.yml` (re-recorded
+  with `npm run dump-config`: the only difference is the new row in each),
+  `contract/contract.json` (copied again from `docs/kriya-harness/contract.json`)
+  and `contract/SOURCE.md` (sha256 `8df89a41…c8283`),
+  `tests/fake-kriya.js` (approval routes with test-controlled answers and
+  long-polls that wake on an answer; scripted tool-call turns for the
+  gateway), `tests/contract.test.js` (the three approval routes in the
+  list of routes the client calls), `README.md` (one bullet).
+- **The real-DSH check:** the fake gateway's first turn asks for
+  `bash` with `sandbox_permissions: "danger-full-access"` and a
+  justification around a harmless `echo`; DSH's sandbox escalation asks
+  the approval seam; the Kriya plugin is the only answerer in the headless
+  profile; it posted `{ tool: "bash", input.command: "echo …" }` to the
+  fake Kriya and printed "bash needs your OK. Waiting for your answer in
+  Kriya on your phone."; the test answered as the phone. Approved → the
+  echo's output is in the tool result DSH sent back to the model, exit 0;
+  declined → the tool result is a rejection and the output never appears.
+  With the plugin replaced by a no-op, both tests fail (DSH refuses and
+  nothing reaches Kriya), so they test the plugin.
+- **Tests seen failing first:** the unit file failed to load before the
+  plugin existed. A mutation check (no withdrawal, no redaction) made 2 of
+  the 10 fail; restored, 10 of 10. The first real-DSH run failed on my
+  script (DSH's bash tool requires `description`), which the richer failure
+  message added to the test showed; fixed in the test.
+- **Final commands:** client `npm run check` → "pins: every dependency
+  exact and locked"; "notices: current; 21 license problems block a
+  release" (HF-09, unchanged); "build-brand: plugins/brand/client.js
+  current"; tests 50, pass 50, fail 0; exit 0. This repository: no file
+  changed since the server part's `env -u OPENROUTER_API_KEY npm run check`
+  (Test Files 228 passed | 3 skipped (231); Tests 2669 passed | 42 skipped
+  (2711); exit 0) except this Markdown file, which `format:check` doesn't
+  read, so it wasn't run again.
+- **Exit checks (H5, all):** [x] HT-APR-01. [x] HT-APR-02. [x] HT-APR-03.
+  [x] Client approval-answerer tests. [x] Browser check (Inbox, server part).
+- **Known limits, written down:** (1) DSH's request carries no arguments;
+  a call whose `tools/pre-execute` didn't reach the plugin (an outer
+  listener answered first) is sent as `{ arguments: "not shared by this
+  tool" }`. (2) The phone line is added to DSH's prompt through
+  `displayReason.en`: DSH's Web UI shows `displayReason` (read in
+  `dsh-client-ui-approval`), but I didn't look at that prompt in a browser,
+  and a Web UI in another language with its own `displayReason` text shows
+  that text without the line. (3) A pending request survives only while
+  `kriya` runs: if DSH exits mid-question, the request expires on Kriya
+  after `harness.approvalTtlMinutes`. (4) Free-text arguments (a bash
+  command) are sent as they are: the person must see what will run (HS-7).
+- **Not tested:** CI on Linux (nothing pushed); DSH's Web UI prompt in a
+  browser; a real phone against staging (CB-05); Windows.
+- **Next exact action:** owner: say whether the client changes may be
+  committed and pushed to `zuko14/kriya-harness`. Then the next track H
+  phase: H6 (session mirror) or H7 (skills and memory); both depend on H4,
+  whose last exit check is the owner-run staging session (CB-05).
+
+### Verification of the open items (2026-11-01, Claude Code / Opus 5.5, both repositories in place, uncommitted)
+
+The owner asked to "complete what are not verified" from the client part
+above. Every run local: the P-3 stack behind `verify:guard`, fakes or a
+scripted stub upstream, nothing reaching a real Kriya, model or provider.
+
+- **DSH's Web UI prompt, in a browser (was: not looked at):** new
+  `../kriya-harness/scripts/verify-approvals-web.js` (fake Kriya + fake
+  gateway, a throwaway Kriya home, `kriya --no-open`, a local control port
+  that answers as the phone). In the browser pane at 800 px: DSH's own
+  approval card read "Allow this operation with danger-full-access
+  permissions: This check needs the command to run unsandboxed. Waiting
+  for your answer here or in Kriya on your phone." above `echo
+  kriya-approved-web`, with Reject / Allow once. The fake Kriya held the
+  same request (tool `bash`, the exact arguments). Answered "approved" as
+  the phone → DSH's card disappeared and the turn finished; the Bash step
+  shows the command's output `kriya-approved-web` (ran once). A second
+  request answered with **Allow once** in the browser → the fake Kriya's
+  request became `canceled`. Screenshots:
+  `screenshots/kriya-harness/H5/05_dsh-web-prompt-phone-line_800.jpg`,
+  `06_dsh-web-approved-on-phone-ran-once_800.jpg`. First attempt failed in
+  the script, not the plugin: DSH adds context as user messages after the
+  person's, so the marker is now looked for in any user message.
+- **A real phone against staging (was: not run):** staging needs CB-05,
+  still open. Run instead, as the closest local stand-in: new
+  `scripts/verify-h5-chain.mjs` (`setup` / `run` / `restore`). The real
+  client and the pinned DSH (`kriya run`) against the real local Kriya
+  server (:6796: real gateway, real approvals API, local Supabase), a
+  scripted upstream on :6797 (the existing `verify:stub` reads only the
+  last user message, the same DSH difference, so it wasn't used or
+  changed), and the real Inbox at 360 px as local user Asha (Playwright).
+  Local test values written by `setup` and removed by `restore` (checked
+  after: free plan `{budget}` and 0, no `harness.gateway` or `fx.usdInr`
+  row, no stub model row): gateway on, exchange rate 1 and a 1 micro-USD
+  price for the non-existent model `stub/budget` (fixtures, not prices),
+  the local free plan's harness limit ₹500 and the balanced tier.
+  Results (`screenshots/kriya-harness/H5/chain/`, 4 shots and results.json):
+  **Approve once** → `kriya run` exit 0, stderr "kriya: bash needs your
+  OK. Waiting for your answer in Kriya on your phone.", the row `approved`
+  with `answered_at`, the command's output in the tool result DSH sent
+  back, three gateway calls `balanced→stub/budget: settled`. **Decline** →
+  exit 0, row `declined`, the output absent. The Inbox card showed the
+  device name, the summary, the exact JSON arguments and the folder;
+  console errors 0 both times. What this still doesn't cover: a real phone
+  over the internet, Render, real OpenRouter and a staging database (CB-05).
+- **CI on Linux (was: not run, nothing pushed):** run locally in a
+  throwaway `node:24-bookworm` container (Node v24.22.2), the client
+  mounted read-only and copied without `node_modules`: `npm ci`, then
+  `npm run check` → "pins: every dependency exact and locked"; "notices:
+  current; 21 license problems block a release" (HF-09); "build-brand:
+  plugins/brand/client.js current"; tests 50, pass 50, fail 0; exit 0. So
+  the recorded dumps (`expected/*.dump.yml`, made on macOS) equal Linux's,
+  which H4 listed as unknown, and both real-DSH approval runs pass on
+  Linux's sandbox too. GitHub's own CI still hasn't run (nothing pushed).
+- **Windows:** not run: no Windows machine or VM here. Open, with how to
+  settle it: run the client's `npm run check` on a Windows runner (the CI
+  workflow lists Ubuntu and macOS only).
+- **Final commands:** this repository `env -u OPENROUTER_API_KEY npm run
+  check` → typecheck pass; lint 0 errors, 6 warnings (CF-09); format pass;
+  Test Files 228 passed | 3 skipped (231); Tests 2669 passed | 42 skipped
+  (2711); exit 0. New here: `scripts/verify-h5-chain.mjs`,
+  `screenshots/kriya-harness/H5/chain/`, two screenshots in
+  `screenshots/kriya-harness/H5/`. Client: new
+  `scripts/verify-approvals-web.js` (not part of `npm test`).
+- **Still open:** a real phone on staging (CB-05) and Windows.
+- **Committed and pushed (2026-11-01, on the owner's "Yes, commit and
+  push"):** client commit `43433e8` on a new branch `feat/h5-approvals`,
+  pushed to `zuko14/kriya-harness` (13 files; `main` untouched). Its CI
+  run was queued on push (Ubuntu and macOS; the `release-gate` job fails by
+  design until HF-09). This repository's changes are not committed
+  (AGENTS.md: never push to `origin` here).
+- **Pull request:** `zuko14/kriya-harness` #1 (`feat/h5-approvals` →
+  `main`, ready for review). GitHub CI on the push: `check (ubuntu-latest)`
+  success, `check (macos-latest)` success, `release-gate` failure (HF-09,
+  by design).
+- **Next exact action:** owner: review and merge `zuko14/kriya-harness`
+  #1; then H6 or H7 once H4's staging run (CB-05) is done.
+
+## Phase H6 — Session mirror
+
+**Status:** COMPLETE (2026-11-01): every exit check passed. Not yet run against staging (H4's CB-05, then H9).
+
+### Session plan (2026-11-01 20:10 IST, Claude Code / Opus 5.5, `main` in place; client on a new branch)
+
+- **Why now:** the owner merged `zuko14/kriya-harness` #1 (verified:
+  merge commit `697d187` holds exactly the PR's tree; client `main`
+  fast-forwarded) and said "proceed with the next phase". Track C: C8
+  needs CB-02 (owner accounts, paid runs), C9 waits on C8. Track R: R9's
+  open items are staging-only (RB-03/RB-04). Track H: H6 is next in H5's
+  wave; like H5 it is built on H4's code before H4's staging run (CB-05),
+  as the owner had H5 done. HD-09 approved. Board empty before this claim.
+- **Owner decision (2026-11-01, in chat):** asked how to handle mirror
+  turns reaching the cloud agent as its own trusted history if the person
+  chats in a mirror thread, the owner chose "Add a mirror marker": every
+  mirror turn carries `MIRROR_CONTEXT`, and `untrustedSeen` also matches
+  assistant texts containing it (one additive check in the protected
+  `lib/agent/tools.ts`, the track R `ROOM_CONTEXT` precedent; row added to
+  CHANGE_IMPACT §3 this session). Regression test with it.
+- **Server (create):** `lib/harness/mirror-context.ts` (pure: the marker
+  and the label "Mirrored from Kriya Harness (summary|full)"),
+  `lib/harness/mirror.ts` (open a session: one thread per device session in
+  the device agent's threads, titled "<device> · <project>"; append a turn:
+  an assistant message with the label, the text, a compact tool line and,
+  only in `full` mode, the tool details; idempotent by `seq` through a
+  deterministic message id), routes `POST /sessions` and
+  `POST /sessions/{id}/turns`, `tests/harness/mirror.test.ts` (HT-MIR-01/02,
+  the marker in `untrustedSeen`, the mirror mode action).
+- **Server (change, track H files):** `lib/harness/contract.ts` (+
+  `contract.json`): the two routes; the session response also names the
+  device's mode (`summary`/`full`) so the client sends `full` only when
+  allowed; refusals `no_agent`, `mirror_summary_only`.
+  `actions/harness.ts`: `setDeviceMirror` (withUser; column grant).
+  `queries/harness.ts` + `components/account/devices.tsx`: the Off /
+  Summaries / Full choice, only with `harness.mirror` on.
+- **Client (`../kriya-harness`, branch `feat/h6-mirror`):** `plugins/mirror`
+  (P-SYNC): watches DSH's committed `session/event` feed (`turn/start`,
+  `tool/call`, `tool/result`, `assistant/message`, `turn/end`), sends one
+  summary per turn; an offline queue on disk (0600 in the Kriya home)
+  retried in order; 404 (mirror off) stops that session quietly; never
+  file contents or command output unless the mode is `full`.
+- **Tests first; browser check:** the mirror thread and the Devices choice
+  at 360/1280, light/dark on the P-3 stack, driven by the real client.
+- **Questions for the owner:** none beyond the decision above.
+
+### Session result (2026-11-01, Claude Code / Opus 5.5, `main` in place; client `feat/h6-mirror`, uncommitted)
+
+- **Status:** COMPLETE. Nothing committed or pushed in either repository;
+  no live database, real model or provider (PGlite; fake Kriya; the P-3
+  stack behind `verify:guard` with a scripted stub upstream).
+- **Server, created:** `lib/harness/mirror-context.ts` (`MIRROR_CONTEXT`,
+  `mirrorLabel`), `lib/harness/mirror.ts` (`openSession`: one thread per
+  device session in the device agent's threads, titled "<device> ·
+  <project>", threads and messages written through `withUser`, the
+  `harness_sessions` row privileged and scoped; a race of two opens keeps
+  one thread; `appendTurn`: label + text + `toolLine` + full details in
+  fences longer than any backtick run inside; message id
+  `mirror-<session>-<seq>` with `on conflict do nothing`, so a seq is stored
+  once; `last_seq` = greatest), routes `app/api/harness/v1/sessions/route.ts`
+  and `sessions/[id]/turns/route.ts`, `tests/harness/mirror.test.ts` (11),
+  `scripts/verify-h6-browser.mjs`, `screenshots/kriya-harness/H6/` (9 shots,
+  results.json).
+- **Server, changed:** `lib/agent/tools.ts` (the owner-approved additive
+  check: `untrustedSeen` also matches assistant texts containing
+  `MIRROR_CONTEXT`; `messageTexts` accepts `assistant`);
+  `lib/harness/contract.ts` + `contract.json` (`SessionCreateRequest`,
+  `SessionCreateResponse` with `mirror`, `TurnRequest`, refusals `no_agent`
+  and `mirror_summary_only`, the two routes); `actions/harness.ts`
+  (`setDeviceMirror`); `queries/harness.ts` (`mirrorAvailable`);
+  `components/account/devices.tsx` (Off / Summaries / Full radio group, the
+  model picker's pattern, only with `harness.mirror` on);
+  `docs/kriya-harness/API_AND_CONTRACTS.md` §5 and
+  `CHANGE_IMPACT_AND_SAFETY.md` (the `lib/agent/tools.ts` row).
+- **Client (`../kriya-harness`, branch `feat/h6-mirror` from `697d187`):**
+  `plugins/mirror/{package.json,index.js}` (watches DSH's committed
+  `session/event` feed; one summary per turn: answer text, each tool's
+  name, status (`declined` when DSH's text says "the user rejected tool" or
+  "… escalating") and time; the person's first message as the title (DSH's
+  own context messages skipped by `source.kind`); `full` only when Kriya's
+  session answer says `full`, and dropped from the disk queue once Kriya
+  said `summary`; queue `mirror-queue.json` 0600 in the Kriya home, in
+  order, capped at 500, backoff to 60 s; 400 skipped; 404/401/409/426 drop
+  that session); `src/api.js` (`deviceFromEnv`, now shared with the
+  approvals plugin); `src/profiles.js`, `bundle/cordis.patch.yml` (insert
+  row `kriya-mirror`), `expected/*.dump.yml` (one new row each),
+  `src/launch.js` (sentences for the two new codes, required by an existing
+  test), `contract/` (copied again, sha256 `058b219c…19ff7`),
+  `tests/fake-kriya.js` (mirror routes, mode and outage),
+  `tests/contract.test.js`, `tests/mirror.test.js` (6),
+  `tests/mirror-run.test.js` (3 on the real DSH), `README.md`.
+- **Tests first and mutation checks:** the server file failed (routes
+  missing) before the code; with the `untrustedSeen` check neutralised, the
+  marker test fails. The client file failed to load before the plugin;
+  sending `full` in summary mode, or not reading the queue back after a
+  restart, each fail a test.
+- **Real DSH (client):** `kriya run` with a scripted `echo` → the turn
+  arrives with title "Check the mirror", the answer and `bash ok` before
+  `kriya run` exits; `full` mode adds the command and its output; mirror
+  off → one session request, nothing else.
+- **Browser check (UX_SPEC §3), P-3 stack:** `setup` wrote local test
+  values (harness.mirror and harness.gateway on, exchange rate 1, a 1
+  micro-USD fixture price for the non-existent `stub/budget`, the free
+  plan's harness limit and balanced tier) and `restore` removed them
+  (checked after). The real client ran `kriya run` on the pinned DSH
+  against the local server: thread "verify-mirror-laptop · kriya-demo-…"
+  in agent Lekha's threads, one assistant message "*Mirrored from Kriya
+  Harness (summary)*", the answer, `bash ✓`; `last_seq` 1. Thread at
+  360/1280 × light/dark, and Account → Devices with the choice
+  (Summaries checked; 44 px at 360, 32 px at 1280, the existing pattern);
+  clicking **Full** stored `full`. Console errors 0, failed requests 0, no
+  sideways scroll on every shot. Docker had stopped during the session;
+  restarted (local only), data intact.
+- **Final commands:** `env -u OPENROUTER_API_KEY npm run check` →
+  typecheck pass; lint 0 errors, 6 warnings (CF-09); format pass; Test
+  Files 229 passed | 3 skipped (232); Tests 2680 passed | 42 skipped
+  (2722); exit 0 (2669 + 11). `npm run build` with `.env.verify`, guard OK
+  → exit 0. Client `npm run check` → pins exact; notices current (21 HF-09
+  problems block a release, unchanged); brand current; tests 59, pass 59;
+  exit 0.
+- **Exit checks:** [x] HT-MIR-01. [x] HT-MIR-02. [x] Client sync tests
+  (offline queue). [x] Browser check. Also the owner's marker decision
+  with its regression test.
+- **Known limits:** a session whose mirror was off when it started isn't
+  picked up if the person turns the mirror on mid-session (the next
+  session is); typing in a mirror thread starts an ordinary task for the
+  device's agent, now with the mirror text treated as untrusted; mirror
+  text is retained like other threads (HD-09). HQ-C2 (counsel, `full`
+  mirror under DPDP) is still open.
+- **Committed and pushed (2026-11-01, on the owner's "Yes, commit and
+  PR"):** client commit `4e2d4a1` on `feat/h6-mirror`, pull request
+  `zuko14/kriya-harness` #2 into `main`. This repository's changes are not
+  committed (AGENTS.md: never push to `origin` here).
+- **Next exact action:** owner: review and merge `zuko14/kriya-harness`
+  #2. Next track H phase:
+  H7 (skills and memory), like H5 and H6 on H4's code unless the owner
+  waits for CB-05; H8 also needs C5/C6 (complete).
+
+## Phase H7 — Skills and memory
+
+**Status:** COMPLETE (2026-11-01): every exit check passed. Not yet run against staging (H4's CB-05, then H9).
+
+### Session plan (2026-11-01 20:50 IST, Claude Code / Opus 5.5, `main` in place; client on a new branch)
+
+- **Why now:** the owner merged `zuko14/kriya-harness` #2 (verified:
+  merge commit `3b12318` holds exactly the PR's tree; PR CI: macOS and
+  Ubuntu pass, `release-gate` fails by design, HF-09) and said "proceed
+  with the next phase end to end". H7 is the last of H5's wave; C8/C9 and
+  R9's open items still need the owner (CB-02, staging). HD-10 approved.
+  Like H5 and H6, built on H4's code before H4's staging run. Board empty
+  before this claim. No existing server file changes (IMPLEMENTATION_PLAN:
+  "none"); `lib/memory/*` and the skill libraries are called as they are.
+- **Server (create):** `lib/harness/skills.ts` (the device agent's
+  catalogue by the cloud's rules with the device's belt, which has no
+  Kriya tools: `agents.skillLibrary` on; required skills plus the agent's
+  assigned ones or its role's defaults; active, not in `skills.disabled`,
+  needing no Kriya tool, dependencies included; `skills.pins`;
+  `next.skillsV2` → `CATALOG_V2` and `loadSkillV2`; `next.skillStudio` →
+  the person's active Studio skills; bodies through the same loaders),
+  `lib/harness/memory.ts` (`recallNotes` and `writeMemory` through
+  `withUser`, only with `agents.memoryV2` on; saves are always
+  unconfirmed: `untrusted: true`), routes `GET /skills` (ETag, 304),
+  `GET /skills/{id}/{version}` (text/markdown), `POST /memory/search`,
+  `POST /memory`; `tests/harness/skills-memory.test.ts` (HT-API-07 and the
+  catalogue rules).
+- **Server (change, track H file):** `lib/harness/contract.ts` (+
+  `contract.json`): the four routes. Note saves are capped at 1 000
+  characters, `writeMemory`'s own limit (`AGENT_NOTE_MAX`), not the 2 000
+  in API_AND_CONTRACTS §6 (the code is the fact; doc corrected).
+- **Client (`../kriya-harness`, branch `feat/h7-skills-memory`):**
+  `plugins/kriya-tools` registers a DSH skill provider (`ctx.skills`,
+  ranked below local skills so the person's own win) and two tools
+  `kriya_memory_search` and `kriya_memory_save` (`ctx.tools`, DSH's
+  `defineTool`); tests with the fake Kriya and on the real pinned DSH.
+- **Tests first; browser check:** a note saved from the laptop appears
+  under Inbox → Memories to review (unconfirmed), 360/1280, light/dark.
+- **Questions for the owner:** none.
+
+### Session result (2026-11-01, Claude Code / Opus 5.5, `main` in place; client `feat/h7-skills-memory`, uncommitted)
+
+- **Status:** COMPLETE. Nothing committed or pushed in either repository;
+  no live database, real model or provider (PGlite; fake Kriya; the P-3
+  stack behind `verify:guard` with a scripted stub upstream).
+- **Server, created:** `lib/harness/skills.ts` (`deviceSkills`: the
+  cloud's rules with the device's belt, which has no Kriya tools; loaders
+  `readSkill` / `loadSkillV2` / Studio `personalCatalog().load`; `etagOf`),
+  `lib/harness/memory.ts` (`searchNotes` via `recallNotes`, confirmed
+  first; `saveNote` via `writeMemory` with `untrusted: true`, refusing
+  sensitive values with the cloud's own `sensitiveKind` before writing),
+  routes `skills/route.ts` (ETag, 304), `skills/[id]/[version]/route.ts`
+  (text/markdown; a skill or version not in the device's list is 404),
+  `memory/search/route.ts`, `memory/route.ts` (201; 409 `no_agent`; 404
+  while `agents.memoryV2` is off), `tests/harness/skills-memory.test.ts`
+  (10), `scripts/verify-h7-browser.mjs`, `screenshots/kriya-harness/H7/`
+  (4 shots, results.json).
+- **Server, changed:** `lib/harness/contract.ts` + `contract.json`
+  (`SkillsResponse`, `MemorySearch*`, `MemorySave*`, four routes);
+  `docs/kriya-harness/API_AND_CONTRACTS.md` §6 (the rules as built; note
+  saves are 1 000 characters, `writeMemory`'s `AGENT_NOTE_MAX`, where the
+  row said 2 000). No existing application file changed.
+- **Client (`../kriya-harness`, branch `feat/h7-skills-memory` from
+  `3b12318`):** `plugins/kriya-tools/{package.json,index.js}`
+  (`@kriya-ai/harness-tools`: `kriyaSkills()` provider for `ctx.skills`,
+  rank 100 so the person's local skills win a name, list cached a minute
+  then rechecked with its ETag, bodies fetched once per version, the last
+  list kept (incomplete) while Kriya is down; `kriya_memory_search` and
+  `kriya_memory_save` built with DSH's `defineTool`); `src/api.js` (`raw`
+  and `headers` options for the ETag check and the markdown body);
+  `src/profiles.js`, `bundle/cordis.patch.yml` (insert row `kriya-tools`),
+  `expected/*.dump.yml` (one row each), `contract/` (copied again),
+  `tests/fake-kriya.js` (skills with ETag, bodies, notes, saves),
+  `tests/contract.test.js`, `tests/kriya-tools.test.js` (6),
+  `tests/kriya-tools-run.test.js` (1 on the real DSH), `README.md`.
+- **Tests first and mutation checks:** both new files failed to load
+  before the code. Saving notes trusted, or dropping the device-belt
+  filter, fails 3 server tests; dropping the ETag recheck fails a client
+  test. The settings leak between tests (harnessEnv sets only the keys it
+  is given) was fixed in the test, as were two fixtures (Studio bodies
+  ≥ 200 characters and `approved_at`; memory ids are app-made).
+- **Real DSH (client):** `kriya run` with a scripted model: the note
+  saved, the search result in the model's tool results, and DSH's own
+  `skill` tool loading the Kriya skill through the provider
+  (`<skill_content name="task-planning">…`), its body fetched once. First
+  run failed in the script: DSH's title request (no tools) used a turn;
+  the step now counts tool results.
+- **End-to-end check, P-3 stack:** `setup` wrote local test values
+  (`agents.memoryV2`, `agents.skillLibrary`, `harness.gateway` on, exchange
+  rate 1, a 1 micro-USD fixture price for the non-existent `stub/budget`,
+  the free plan's harness limit and balanced tier); `restore` removed them
+  and the test note (checked). The real client on the pinned DSH against
+  the local server: the note saved for agent Lekha, `unconfirmed`, source
+  `agent`; the search result reached the model; the curated
+  `verification-before-completion` loaded from Kriya's own loader (1 160
+  characters). Inbox → Memories to review showed it with Confirm / Delete
+  at 360/1280 × light/dark; console errors 0, failed requests 0, no
+  sideways scroll. Docker Desktop quit twice during the session and was
+  restarted (local only); data intact.
+- **Final commands:** `env -u OPENROUTER_API_KEY npm run check` →
+  typecheck pass; lint 0 errors, 6 warnings (CF-09); format pass; Test
+  Files 230 passed | 3 skipped (233); Tests 2690 passed | 42 skipped
+  (2732); exit 0 (2680 + 10). `npm run build` with `.env.verify`, guard OK
+  → exit 0. Client `npm run check` → pins exact; notices current (21 HF-09
+  problems block a release, unchanged); brand current; tests 66, pass 66;
+  exit 0.
+- **Exit checks:** [x] HT-API-07 (unconfirmed saves; search only the
+  device agent's and shared notes). [x] Client tests. Also the catalogue
+  rules, the ETag, and the end-to-end check.
+- **Known limits:** curated skills that need Kriya's cloud tools (Gmail,
+  calendar, browser, ledger…) aren't offered on a laptop by design; notes
+  saved from a laptop show the Inbox's existing label "saved while reading
+  outside content".
+- **Committed and pushed (2026-11-01, on the owner's "Yes, commit and
+  PR"):** client commit `0ec06ce` on `feat/h7-skills-memory`, pull request
+  `zuko14/kriya-harness` #3 into `main`. This repository's changes are not
+  committed (AGENTS.md: never push to `origin` here).
+- **Next exact action:** owner: review and merge `zuko14/kriya-harness`
+  #3. Then track H's
+  next phase is H8 (handoff and pull; C5 and C6 are complete), or H11
+  (ACP); H9 waits for H8 and staging.
+
+## Phase H8 — Handoff and pull
+
+**Status:** IN_PROGRESS (2026-11-01): every check that can run without staging passed. Left: IMPLEMENTATION_PLAN's staging exit check (a handoff restored in a real cloud workspace from a real GitHub import), which needs CB-05.
+
+### Session plan (2026-11-01, Claude Code / Opus 5.5, `main` in place; client on a new branch)
+
+- **Why now:** the owner asked for H8 end to end. Preconditions: H4–H7
+  done (H4's staging run still open), C5 and C6 COMPLETE, HD-11 approved
+  ("Approve all", 2026-10-31). Board empty before this claim. Baseline
+  `npm run typecheck` exit 0.
+- **Allowed files:** all new (`app/api/harness/v1/**`, `lib/harness/**`,
+  `tests/harness/**`, `scripts/`, `contract.json`) plus the track H rows
+  for `lib/harness/contract.ts` and `status.md`. `lib/agent/queue.ts` is
+  called as it is (`enqueueTurn`); `lib/cloud` only through the pure
+  `lib/cloud/paths.ts` (PX-02, CT-IMP-03). No migration.
+- **Questions for the owner:** none.
+
+### Session result (2026-11-01, Claude Code / Opus 5.5, `main` in place; client `feat/h8-handoff-pull`)
+
+- **Status:** IN_PROGRESS (staging exit check left). Nothing committed or
+  pushed in this repository; no live database, real model, provider or
+  GitHub call (PGlite; fake Kriya; the P-3 stack behind `verify:guard`).
+- **Server, created:** `lib/harness/handoff.ts` (`handoffProvider`: both
+  switches on and a provider other than `none`; `checkHandoff`: the
+  device's agent, a GitHub `kriya.connections` row (id only, privileged,
+  scoped by the person), plan `workspace_minutes` > 0, size, then sha256
+  and bytes, all before storage; `handoff`: the patch written to
+  `checkpointPath(user, ws, 0, 1)`, a thread of the device's agent through
+  `withUser`, the `workspaces` row (status `new`, no sandbox, checkpoint
+  seq 1, image/size/network from the `cloud.*` settings), `enqueueTurn`
+  with a message naming repo, branch and commit and asking for
+  `workspace_open`, then the person's note; `workspace_storage_bytes`
+  metered as track C does; anything half-made is removed on failure;
+  `latestCheckpoint`: the row read through RLS, the stored bytes checked
+  against its sha256), routes `app/api/harness/v1/handoff/route.ts`
+  (multipart; a declared `Content-Length` over the limit is refused before
+  the body is read) and `app/api/harness/v1/workspaces/[id]/checkpoint/route.ts`,
+  `tests/harness/handoff.test.ts` (19), `scripts/verify-h8-handoff.mjs`,
+  `screenshots/kriya-harness/H8/results.json`.
+- **Server, changed:** `lib/harness/contract.ts` + `contract.json`
+  (`HandoffMeta`, `HandoffResponse`, two routes, error codes
+  `not_connected`, `too_large`, `patch_mismatch`, `no_checkpoint`,
+  `task_refused`); `docs/kriya-harness/API_AND_CONTRACTS.md` §7 (the rules
+  as built). No existing application file changed.
+- **How the worker restores it (no change to track C):** the row has a
+  checkpoint and no `provider_ref`, so the first `workspace_open` in the
+  new thread makes `TaskWorkspace` create a sandbox (generation 1), import
+  `repo` at `base_sha` with `githubTarball` and restore `0-1.patch` after
+  checking its sha256. A failed import (no access, commit gone) is reported
+  in the thread by track C's existing errors.
+- **Client (`../kriya-harness`, branch `feat/h8-handoff-pull` from
+  `6807607`):** `plugins/kriya-handoff/{package.json,index.js}`
+  (`prepareHandoff`: a git repository, a branch (not detached), a GitHub
+  `origin`, HEAD on a remote branch (`git branch -r --contains`, HD-11's
+  "push your branch first"), note ≤ 2 000; the patch is track C's format,
+  `git diff --cached --binary --no-renames HEAD` over a throwaway index
+  with every file added, so untracked and binary files come along,
+  ignored ones don't, and the person's index is untouched; `handoff`:
+  multipart upload; `pull`: refuses a dirty tree or an existing branch,
+  checks the download's sha256 and that the base commit is in the clone,
+  creates `kriya/pull-<id>` at the base and `git apply --binary`; a patch
+  that doesn't apply returns the person to their branch and deletes the
+  new one); `bin/kriya.js` (`kriya handoff [note]`, `kriya pull [id]`,
+  defaulting to the last handoff from this machine); `src/api.js`
+  (FormData bodies go as multipart); `src/launch.js` (plain sentences for
+  the five new codes); `contract/` (copied again, new sha256);
+  `tests/fake-kriya.js` (handoff and checkpoint routes);
+  `tests/handoff.test.js` (8).
+- **End-to-end check, P-3 stack (`node scripts/verify-h8-handoff.mjs
+  setup|run|restore`):** the real client in a git repository whose origin
+  names github.com (a local bare repository underneath) ran `kriya
+  handoff` against the local server: exit 0, 549 bytes; the row had
+  `provider local`, `status new`, `checkpoint_seq 1`, the expected path
+  `workspaces/<user>/<workspace>/0-1.patch`, the stored object's sha256
+  equal to the row's, the base commit equal to the clone's HEAD, one
+  `queued` task in a thread of agent Lekha. `kriya pull` in a second clone:
+  exit 0, branch `kriya/pull-<id>` at the base, `math.js`, `notes.md` and
+  a binary file byte-identical to the laptop's. **PASS.** The first run
+  answered 500: the local stack had no Storage bucket (O5's note: no
+  migration creates `kriya-files`); `setup` now creates the private bucket
+  when missing, and it stays, as O5's did. No worker ran: `run` added a
+  heartbeat row for the check so `enqueueTurn` accepted the task;
+  `restore` canceled the task and removed the stored patch, row, thread,
+  device, heartbeat row and settings. A second `setup` had overwritten the
+  saved originals, so the settings, the free plan's minutes (0) and the
+  placeholder GitHub row were put back by hand to the values read before
+  the check (verified), and `setup` now refuses to run twice. No UI changed
+  in H8, so no screenshots.
+- **Final commands:** `env -u OPENROUTER_API_KEY npm run check` →
+  typecheck pass; lint 0 errors, 6 warnings (CF-09, unchanged); format
+  pass; Test Files 231 passed | 3 skipped (234); Tests 2709 passed | 42
+  skipped (2751); exit 0 (2690 + 19). `npm run build` with `.env.verify`,
+  guard OK → exit 0. Client `npm run check` → pins exact; notices current
+  (21 HF-09 problems block a release, unchanged); brand current; tests 74,
+  pass 74; exit 0.
+- **Exit checks:** [x] HT-HND-01 (workspace with checkpoint 0-1 and one
+  queued task; the worker's real `TaskWorkspace` imports at `baseSha` and
+  restores the exact patch). [x] HT-HND-02 (switches off or no provider →
+  404; no GitHub → 403; no agent → 409; no plan minutes → 403; a task that
+  can't start → `task_refused` with nothing left behind; base commit not on
+  GitHub → refused by the client before upload). [x] HT-HND-03 (sha256 or
+  size mismatch → 400, over the limit → 413, both before storage; pull
+  returns the latest checkpoint's exact bytes and headers, refuses a stored
+  object that no longer matches, and someone else's workspace is 404).
+  [ ] Staging: a handoff restored in a real cloud workspace from a real
+  GitHub import (CB-05).
+- **Known limits:** the device's `kriya_handoff` tool in the agent's belt
+  (HD-10's table) isn't built; handoff is the person's command only, since
+  a tool would need an approval step. `cloud.maxCheckpointMb` isn't known
+  to the client, so an oversized patch is refused by the server (413) after
+  the upload starts. PX-05's `agents.connectors` isn't checked at handoff;
+  without it the import fails in the thread.
+- **Committed and pushed (client only, as the owner asked):** commit
+  `c1d4640` on `feat/h8-handoff-pull` (also `README.md`: the two commands
+  and the plugin), pull request `zuko14/kriya-harness` #4 into `main`;
+  client check after the README change: 74/74, exit 0. This repository's
+  changes are not committed (AGENTS.md: never push to `origin` here).
+- **Next exact action:** owner: review and merge `zuko14/kriya-harness`
+  #4. Then H8's staging check with CB-05 (and H4's), or H11 (ACP).
+
+## Phase H9 — Security, scale, release readiness
+
+**Status:** IN_PROGRESS (2026-11-01): the gates that can be met off staging are met. Left: HG-2's 20-stream cap test and HG-3 capacity on staging (CB-05); HG-5's provenance with the first publish (npm scope, HB-02); HG-7 counsel (HQ-C1) before any public download.
+
+### Session result (2026-11-01, Claude Code / Opus 5.5; client `feat/h9-release-readiness`)
+
+- **Preconditions:** H5–H8 and H11 built (H4, H8 and H11 keep their
+  owner-run checks open); `zuko14/kriya-harness` #5 merged (`6b110de`,
+  checked). The H9 claim went on the board after the client work began
+  (no other row was on the board). Nothing committed in this repository;
+  no live service touched.
+- **HF-09 decided (owner, chat, 2026-11-01):** the owner's request to make
+  the release gate clean ("Review the 21 notice/license warnings reported
+  by `npm run check`." and "Update `generate-notices.js` /
+  `THIRD_PARTY_NOTICES.md` so the release-gate CI check runs cleanly.") is
+  recorded as HF-09's decision in the client's `notices-exceptions.json`:
+  21 exceptions, each for an exact package, version and license, with the
+  reason: MPL-2.0 `@deepseek-ai/libreoffice-kit*` 0.1.5 ×6 (DSH's Office
+  conversion), LGPL-3.0-or-later libvips in `@img/sharp-*` (1.3.4 / 0.35.5)
+  ×14 (image attachments; unmodified, dynamically loaded) and Unlicense
+  `fast-sha256` 1.3.0 ×1 (public-domain dedication, via standardwebhooks).
+  A new version, a changed license or a stale exception fails the gate.
+  Counsel HQ-C1 still gates public download (HG-7). **Confirmed by the
+  owner** in chat the same day ("Yes, keep it"); the confirmation is in the
+  record too (client commit on the same PR).
+- **Client (`../kriya-harness`, branch `feat/h9-release-readiness` from
+  `6b110de`, commit `4a117f7`, PR `zuko14/kriya-harness` #6):**
+  `notices-exceptions.json`; `scripts/notices.js` (exceptions need the
+  decision, the exact license and an installed package; listed with the
+  decision in `THIRD_PARTY_NOTICES.md`); `package.json` (`npm run sbom`:
+  CycloneDX from the lockfile, dev tools omitted); `.github/workflows/ci.yml`
+  (release-gate uploads `sbom.cdx.json`); `SAFETY.md` (rewritten, below);
+  `plugins/mirror/index.js` (review fix, below); `tests/release.test.js`
+  (+4), `tests/mirror.test.js` (+1); `README.md`; `.gitignore`.
+- **HG-6 review findings:** (1) **fixed:** the mirror's Full mode sent tool
+  arguments unredacted; arguments with secret-looking names are now hidden
+  with the approvals plugin's `hideSecrets` before they leave the machine
+  (test). Full mode's output text (≤ 4 KB per tool) is still not redacted;
+  SAFETY.md says so and recommends Summary in projects with secrets. (2)
+  **documented, not changed:** `DSH_PERMISSION_MODE` from the person's
+  environment overrides the `workspace-write` / `ask` defaults (DSH's
+  behaviour; Kriya passes the environment through). (3) **documented:**
+  `kriya handoff` uploads untracked files that aren't git-ignored, so a
+  stray `.env` would go too.
+- **Gates:**
+
+| Gate | Result | Evidence |
+| --- | --- | --- |
+| HG-1 | **Satisfied** | `tests/harness/regression.test.ts` (HT-REG-01: the `harness.*` block ships off with HD-18's defaults, each default passes its check; 3 tests) pass; the whole suite passes with every switch at its default: Tests 2709 passed, 42 skipped, exit 0 |
+| HG-2 | Part | HT-AUTH-*, HT-GW-*, HT-MTR-* pass in the suite; the cap under 20 concurrent streams needs staging (CB-05) |
+| HG-3 | Open | HT-GW-09 capacity on the staging web instance (CB-05) |
+| HG-4 | **Satisfied** | `tests/harness/contract.test.ts` (4) pass, incl. "contract.json is the export of contract.ts"; `docs/kriya-harness/contract.json` and the client's `contract/contract.json` byte-identical (`cmp`), sha256 `9fce0dc0…a3403`, also after regenerating; client contract tests pass in its 88 |
+| HG-5 | **Satisfied but for provenance** | Exact pins (`check:pins`); notices current and every license allowed or decided (`npm run release:check` exit 0; CI `release-gate` **pass** on #6, its first green run); SBOM (`npm run sbom`, CycloneDX 1.5, uploaded by CI). Provenance (`npm publish --provenance`) comes with a publish workflow once the npm scope exists (HB-02); the package is still `private` |
+| HG-6 | **Satisfied** | Review of the Kriya plugins and the pinned DSH defaults (above); `SAFETY.md` written; first-run notice shown (`tests/cli.test.js`); a test ties SAFETY.md's stated defaults to the three composed profiles |
+| HG-7 | Open | Counsel HQ-C1 (HB-05) |
+
+- **Final commands:** `env -u OPENROUTER_API_KEY npm run check` →
+  typecheck pass; lint 0 errors, 6 warnings (CF-09, unchanged); format
+  pass; Test Files 231 passed | 3 skipped (234); Tests 2709 passed | 42
+  skipped (2751); exit 0. `npx vitest run tests/harness/regression.test.ts
+  tests/harness/contract.test.ts` → 2 files, 7 tests passed. Client `npm
+  run check` → pins exact; notices current, every license allowed; brand
+  current; tests 88, pass 88; exit 0. `npm run release:check` → exit 0. PR
+  #6 CI: check (ubuntu-latest) pass, check (macos-latest) pass,
+  release-gate pass.
+- **Next exact action:** owner: review and merge `zuko14/kriya-harness`
+  #6 (HF-09 confirmed). Then staging (CB-05) for HG-2/HG-3 and the
+  open owner-run checks of H4, H8 and H11; counsel for HG-7; the npm scope
+  for publishing with provenance.
+
+## Phase H10 — Your machine as an execution world
+
+**Status:** COMPLETE (2026-11-02). Every exit check that runs here passed;
+the relay is not deployed anywhere (no staging relay yet), so its latency
+and capacity are unmeasured (HD-12 "Unknowns").
+
+### Session result (2026-11-02, Claude Code / Opus 5.5; client `feat/h10-device-world`)
+
+- **Request:** the owner's H10 prompt (2026-11-02), stating H0–H9 and H11
+  complete and HD-12 and CD-26 approved. Recorded discrepancy: this file
+  still shows H9 and H11 as IN_PROGRESS (staging, counsel and real-editor
+  checks); H10 went ahead on the owner's statement, and those rows are
+  unchanged. Nothing committed in this repository; no live database, real
+  model, provider, deploy or device sign-in on production.
+- **Preflight:** `git status --short` → 121 entries of others' uncommitted
+  work, preserved. `npm run typecheck` → pass (baseline).
+- **Decision:** HD-12 decision record in `docs/kriya-harness/DECISIONS.md`
+  (context, relay vs long-polling, device auth through the web app, frames
+  `kriya-relay/1`, provider rules, security, rollback, unknowns).
+- **Files (this repository):** new: `relay/index.ts` (kriya-relay),
+  `lib/cloud/providers/device.ts`, `app/api/harness/v1/world/route.ts`,
+  `supabase/migrations/20270301000100_harness_device_provider.sql`,
+  `supabase/rollback/20270301000100_harness_device_provider.down.sql`
+  (refuses while a `device` workspace or session exists),
+  `tests/harness/device-world.test.ts`, `tests/harness/device-bridge.ts`.
+  Changed: `db/schema.ts` (`WORKSPACE_PROVIDERS` + `device`),
+  `lib/config.ts` (`cloud.provider` accepts `device`; `harness.deviceWorld`
+  default off; secret `KRIYA_RELAY_SECRET`), `lib/env.ts`
+  (`KRIYA_RELAY_URL`, `KRIYA_RELAY_SECRET`), `lib/cloud/provider.ts` (name
+  union), `lib/cloud/session.ts` (`workspaceProvider()` builds the device
+  provider only with `harness.deviceWorld` on, the relay URL and a 32+
+  character secret), `lib/cloud/client.ts` (runner paths are joined to the
+  base URL instead of resolved, so a runner behind `/v1/forward/<device>`
+  keeps its prefix; identical for every existing origin-only URL),
+  `lib/harness/contract.ts` + `docs/kriya-harness/contract.json`
+  (`GET /world`), `render.yaml` (service `kriya-relay`: web, node,
+  starter, `npm ci`, `npx tsx relay/index.ts`, `/health`, `PORT` 10002,
+  `KRIYA_RELAY_SECRET`, `KRIYA_APP_URL`; worker gets `KRIYA_RELAY_URL` and
+  `KRIYA_RELAY_SECRET`, web gets `KRIYA_RELAY_URL`),
+  `tests/db/migrations.test.ts` (own down/up case; the three chain cases
+  roll H10 back before H1 and re-apply it after),
+  `tests/cloud/provider.test.ts` (device case), `tests/harness/
+  regression.test.ts` (HT-REG-01 lists `harness.deviceWorld`, off).
+- **Deviations from the request, and why:** (1) there is no
+  `kriya.harness_tokens`; device tokens live as sha256 in
+  `kriya.harness_devices`, and the relay (no database, HD-12) checks them by
+  calling the new `GET /api/harness/v1/world` with the device's token, so
+  `authenticateDevice` applies unchanged; it re-checks every 5 minutes and
+  drops revoked devices. (2) `resume` on an offline device throws (the
+  session leaves the workspace paused) instead of returning null, which
+  would rebuild a new generation and lose nothing but time; null is for a
+  workspace the device no longer has. (3) The laptop runs track C's own
+  runner, bundled into the client (`src/runner.bundle.js`, esbuild of
+  `runner/index.ts`), so the device speaks exactly the runner protocol
+  (CD-26) instead of a re-implementation. (4) Each workspace generation
+  gets its own fresh subfolder of the served folder; the runner's
+  empty-folder import never touches the person's files. (5) Change-impact
+  tables don't list `lib/cloud/session.ts`, `lib/cloud/client.ts`,
+  `lib/cloud/provider.ts`, `render.yaml` or `lib/env.ts` for H10; changed
+  because the owner's H10 request names them (session, provider, render)
+  or they are needed for it (client URL join, env lists).
+- **Tests:** `npx vitest run tests/harness/device-world.test.ts
+  tests/db/migrations.test.ts tests/cloud/provider.test.ts` → Test Files 3
+  passed (3); Tests 43 passed (43). HT-DEV-01 migration and refusing
+  rollback; -02 `/world` on/off/bad token; -03 handshake: valid token,
+  bad token, another device's token, non-uuid id and a revoked device
+  refused, a device revoked while connected dropped; -04 relay secret
+  required, health/write/read/streamed exec through the relay to the real
+  runner, runner bearer still checked, 502 when offline or dropped
+  mid-command; -05 provider create on the person's own connected device
+  only, plain refusal when none, another person's device never used,
+  resume/offline/reconnect, idempotent pause/destroy, null after destroy.
+- **End-to-end (scratch script, nothing kept):** the client's real
+  `serve()` with Node 24's built-in WebSocket → the real relay (verify
+  stubbed) → the bundled runner: connected, token seen by the relay,
+  `open` 200, health generation 1, exec output and exit 0, a 3 MiB write
+  chunked through. PASS.
+- **Final commands:** `env -u OPENROUTER_API_KEY npm run check` →
+  typecheck pass; lint 0 errors, 6 warnings (CF-09, unchanged); format
+  pass; Test Files 235 passed | 3 skipped (238); Tests 2744 passed | 55
+  skipped (2799); exit 0. Client `npm run check` → pins exact; notices
+  current; brand current; tests 94, pass 94; exit 0.
+- **Client (`../kriya-harness`, branch `feat/h10-device-world` from
+  `origin/main` `62a8872`):** `src/world.js` (`createWorld`, `serve`,
+  back-off reconnect, stops on sign-out (4001) or replacement (4000)),
+  `src/runner.bundle.js` (generated; rebuild command in its first line),
+  `bin/kriya.js` (`kriya serve [folder]`, a no-sandbox notice first; macOS
+  and Linux only), `tests/world.test.js` (6), `tests/fake-kriya.js`
+  (`GET /world`), `contract/contract.json` + `contract/SOURCE.md` (new
+  copy and hash), `tests/contract.test.js`, `README.md`, `SAFETY.md`.
+- **Known limits:** commands on a device run as the person with full
+  network (no CD-12 egress); `RunnerClient.description` still tells the
+  model "a Linux cloud workspace … package registries only", which is
+  wrong for a device world; one relay instance holds every connection;
+  a device that is offline at `destroy` keeps that workspace's subfolder.
+- **Next exact action:** owner: review and merge the client PR; deploy
+  `kriya-relay` to staging with `KRIYA_RELAY_SECRET` and `KRIYA_APP_URL`,
+  set `KRIYA_RELAY_URL` on web and worker, turn `harness.deviceWorld` on
+  there, run `kriya serve` on one machine and record HD-12's latency and
+  capacity numbers; then a follow-up for the device-world description the
+  model sees.
+
+## Re-audit 2026-11-02 — tracks C, H and R (forensic pass, fixes in place)
+
+**Request:** the owner's forensic re-audit of everything since `9a51a12`
+(both repositories), fixing bugs in place; no commits, stashes or resets.
+Nothing was committed in either repository; no live database, real model,
+provider, deploy or real device.
+
+### Findings and fixes
+
+| # | Track | Severity | Finding | Fix | Test |
+| --- | --- | --- | --- | --- | --- |
+| RA-1 | H | High (invariant 7) | The gateway's 3-open-answers limit was checked in code before the SQL reservation, outside its lock: parallel requests could pass it | New migration `20270301000200_harness_open_cap.sql` (+ rollback): `reserve_harness_spend` counts open reservations under the same per-person advisory lock as the monthly cap; `openReservations` / `MAX_OPEN` removed; gateway maps it to 429 `rate_limited` | HT-GW-11 (SQL refuses a 4th), HT-GW-05 still passes, migration down/up case |
+| RA-2 | H | High (cap overrun) | `n`, `plugins` and `web_search_options` passed through to OpenRouter: cost the reservation never estimated (n× output, paid web search) | Added to `STRIPPED` in `lib/harness/gateway.ts` | HT-GW-11 |
+| RA-3 | H | Medium | An unreadable non-stream answer threw after the reservation: left `reserved` 15 min (holding a stream slot) | Parsed with a catch; estimated at once; 502 `upstream_unavailable` | HT-GW-11 |
+| RA-4 | H | Medium | A stream that broke mid-way (upstream error or device gone) never settled | `pull()` catches the read error, settles (estimated), then errors the stream | HT-GW-11 |
+| RA-5 | C | Medium | `saveCheckpoint` stored the runner's patch and recorded its `x-kriya-sha256` header without hashing the bytes; a damaged patch counted as saved and failed only at restore | Bytes hashed and compared before any write; mismatch = failed checkpoint (sandbox kept; publish refused) | CT-CKP-05 |
+| RA-6 | R | Medium | `markVerified` read-modify-wrote `parts.proof.verifiedBy` without a lock: concurrent verifiers lost updates (reproduced: 3 at once kept only 1) | Transaction with `SELECT … FOR UPDATE` on the card row | RT-PRF-03 concurrent case |
+| RA-7 | H (H10) | High (availability) | `kriya-relay`: no `error` listener on the raw socket during the async token check; a client reset raised an unhandled `ECONNRESET` (process exit, every machine dropped); a throwing check was an unhandled rejection that left the socket hanging; no cap on checks in flight | Error listener until upgrade; `.catch` → 401; at most 200 checks in flight (503 beyond) | HT-DEV-06 |
+| RA-8 | H (H10) | High (availability) | `webVerifier` returned null on network errors, 429 and 5xx: a kriya-web deploy or outage looked like "every token revoked" and the 5-minute re-check would drop every machine | Throws on unreachable/429/5xx; only 4xx refusals return null; re-checks keep a connection on a throw, new connections are refused | HT-DEV-07 (2) |
+| RA-9 | H (H10) | Low | `DeviceWorkspaceProvider.list()` used 30 s per machine: one hung machine stalled the janitor's reconcile | 10 s per machine, a failure skips it | covered by HT-DEV-05 |
+| RA-10 | H client | Medium | `kriya serve`: a network error during the reconnect re-check was fatal (exits on a Wi-Fi drop or a kriya-web deploy); each back-off wait left an abort listener behind | Only `ServeError` (signed out, switched off) stops it; the listener is removed after each wait | client `tests/world.test.js` (retry case, 12 retries, no leak warning) |
+
+### Checked and intact (no change)
+
+- **C:** firewall rules fail closed (loopback only, Docker resolver, metadata
+  and RFC 1918 / CGNAT / ULA / link-local rejected, both families); the
+  CONNECT proxy resolves names itself, refuses any blocked answer and dials
+  the checked address; offline refuses everything; commands as uid 1000
+  with supplementary groups dropped and `prlimit --nproc=256:512`; process
+  groups killed at timeout; `workspace_publish` checks the change set, needs
+  a stored checkpoint first, creates only a new `kriya/` ref (POST, refuses
+  an existing branch) and a draft PR; a refused token rebuilds from the
+  checkpoint and the janitor's reconcile destroys older generations.
+- **H:** monthly cap under a per-person advisory lock; approvals
+  first-answer-wins by conditional updates on both sides (device and the
+  person's `withUser` action); every mirrored turn carries `MIRROR_CONTEXT`
+  (`untrustedSeen`); device notes are written `unconfirmed` after the
+  sensitive-value check; relay has no database import; telemetry off
+  (`DSH_TELEMETRY_DISABLED=1`, `otel` rows disabled).
+- **R:** every `kriya.room_*` table has RLS through `is_room_member` /
+  `room_role` (security definer, `search_path = ''`); realtime receive
+  policy is membership-gated and clients have no broadcast insert; owner
+  can't be removed or demoted (guard trigger); people post only `human`
+  messages with server-built parts; proof cards render only on agent
+  messages and come from episode `done` items.
+- **Not bugs (spec says otherwise):** the conductor limits chain *depth*
+  (RD-12), and fan-out is bounded by one request per agent (`busy`); blocks
+  are per person (RD-18: the blocker sees the blocked person's messages
+  collapsed), not bidirectional; gateway refusals use the contract's
+  `{error, message}` shape, not OpenAI's (recorded shortcut in the client's
+  `REFUSALS`).
+- **Type safety:** no `any`, `@ts-ignore` or `@ts-expect-error` in the 200
+  touched TypeScript files; every new `setInterval` is cleared.
+
+### Files
+
+Monorepo: new `supabase/migrations/20270301000200_harness_open_cap.sql`,
+`supabase/rollback/20270301000200_harness_open_cap.down.sql`; changed
+`lib/harness/gateway.ts`, `lib/harness/metering.ts`, `lib/cloud/checkpoint.ts`,
+`lib/rooms/proof.ts`, `relay/index.ts`, `lib/cloud/providers/device.ts`,
+`tests/harness/gateway.test.ts`, `tests/harness/device-world.test.ts`,
+`tests/cloud/checkpoint.test.ts`, `tests/rooms/proof.test.ts`,
+`tests/db/migrations.test.ts` (own case; the three chain cases roll it back
+first and re-apply it). Client (`feat/h10-device-world`, uncommitted):
+`src/world.js`, `tests/world.test.js`.
+
+### Commands and real output
+
+- Baseline: Docker was not running, so `KRIYA_ISO_TARGET=docker` drills
+  failed at setup (12 "no sandbox"); Docker Desktop was started locally.
+- `env -u OPENROUTER_API_KEY npm run check` → typecheck pass; lint 0
+  errors, 6 warnings (CF-09, unchanged); format pass; Test Files 235 passed
+  | 3 skipped (238); Tests 2754 passed | 55 skipped (2809); exit 0.
+- `npx vitest run tests/db/migrations.test.ts` → 27 passed.
+- `KRIYA_ISO_TARGET=docker npx vitest run tests/cloud/isolation.test.ts
+  tests/cloud/recovery.test.ts` → Test Files 2 passed; Tests 20 passed.
+- `npx vitest run tests/harness/device-world.test.ts tests/cloud/provider.test.ts`
+  → 20 passed.
+- Client `npm run check` → pins exact, notices current, brand current; 95
+  tests, 95 pass; exit 0. `npm run release:check` → exit 0. `npm run -s
+  sbom` → CycloneDX 1.5, 626 components.
+
+### Next staging steps (owner)
+
+1. Merge `zuko14/kriya-harness` #7 (H10) after committing the client fix
+   above to it, then #8 (brand audit, retarget to `main`).
+2. Staging database (never production first): `npm run verify:guard`, then
+   `npm run db:migrate -- --status`; apply with `npm run db:migrate`
+   (pending: `20270301000100`, `20270301000200` and any older pending).
+   They sort before the rooms migrations; `db:migrate` applies every
+   pending file, but the Supabase CLI's `db push` would need
+   `--include-all`.
+3. Render: create `kriya-relay` from `render.yaml` with
+   `KRIYA_RELAY_SECRET` (32+ random characters, the same on the worker) and
+   `KRIYA_APP_URL`; set `KRIYA_RELAY_URL` (the relay's https address) on
+   web and worker; check `GET /health`.
+4. Staging switches: `harness.api`, `harness.deviceWorld` on;
+   `cloud.provider = device` only for the pilot window.
+5. One machine: `kriya serve <folder>`; run a cloud task; record HD-12's
+   latency/capacity numbers (100 health/read calls, one 50 MB import).
+6. Rollback: switches off, then the `.down.sql` files newest first
+   (`20270301000200`, then `20270301000100`, which refuses while a `device`
+   workspace exists).
+
+### Not done / not verified
+
+- No staging run of anything above; relay latency and capacity unmeasured.
+- The client fix (RA-10) is uncommitted on `feat/h10-device-world`, as the
+  request required; PR #7 doesn't have it yet.
+- RA-10's no-leak assertion was not shown failing on the old code (the retry
+  part was).
+
+## Phase H11 — ACP for editors
+
+**Status:** IN_PROGRESS (2026-11-01): every check that runs here passed. Left: IMPLEMENTATION_PLAN's "one editor session" in a real ACP editor (Zed, JetBrains…), which needs the owner's editor; here a scripted ACP v1 client stood in for it.
+
+### Session plan (2026-11-01, Claude Code / Opus 5.5; client on a new branch)
+
+- **Why now:** the owner asked for H11 end to end and to merge
+  `zuko14/kriya-harness` #4 if not merged. Preconditions: H4–H8 done
+  (H4's and H8's staging checks open), HD-13 approved ("Approve all").
+  Board empty before this claim. Track H's IMPLEMENTATION_PLAN lists no
+  server change for H11; this repository changes only `status.md` and a
+  new verification script.
+- **Questions for the owner:** none.
+
+### Session result (2026-11-01, Claude Code / Opus 5.5; client `feat/h11-acp`)
+
+- **Status:** IN_PROGRESS (real-editor session left). Nothing committed in
+  this repository; no live database, real model or provider.
+- **Client `main`:** `zuko14/kriya-harness` #4 merged as the owner asked
+  (`a07fdf5`); its macOS and Ubuntu checks passed, `release-gate` failed by
+  design (HF-09), as for #1–#3.
+- **Client (`../kriya-harness`, branch `feat/h11-acp` from `a07fdf5`):**
+  `src/profiles.js` (profile `kriya-acp` = `dsh-base` + `dsh-acp-app` +
+  the kriya bundle); `bundle/cordis.patch.yml` (row `acp`: sessions start
+  on provider `kriya`, model `balanced`, replacing dsh-acp-app's
+  `deepseek-official` / `deepseek-v4-flash`; only `kriya-acp` has the row:
+  the `kriya` and `kriya-run` dumps are byte-identical);
+  `expected/kriya-acp.dump.yml` (recorded); `bin/kriya.js` (`kriya acp`:
+  stdio, the editor's transport; no options but `--help`; everything kriya
+  says goes to stderr so stdout carries only ACP frames; signed out →
+  stderr message, exit 1); `tests/acp.test.js` (6); `README.md`.
+- **As built vs the request:** the gateway variables are the existing
+  `KRIYA_GATEWAY_URL` / `KRIYA_DEVICE_TOKEN` (`src/launch.js`), not
+  `OPENAI_BASE_URL`; the permission defaults come from `dsh-base`
+  (`workspace-write`, approvals `ask`), identical in both profiles (tested);
+  the three DSH plugins (`kriya-approvals`, `kriya-mirror`, `kriya-tools`)
+  load in `kriya-acp`. `kriya-handoff` isn't loaded into the ACP process: it
+  is the person's two commands with no DSH plugin seam (H8).
+- **Real DSH, scripted ACP v1 client (newline-delimited JSON-RPC):**
+  `initialize` → protocol 1, agent `deepseek-harness-acp`, no auth methods;
+  `session/new` → current model `["kriya","balanced"]`, choices only Kriya's
+  three tiers; a prompt ran `kriya_memory_save` and answered through the
+  fake gateway (every model call `balanced`, the device token as bearer,
+  never in a model request); stdin EOF → exit 0; every stdout line a
+  frame. Approvals: a `bash` permission answered in the editor runs once
+  and Kriya's phone request is then `canceled`; answered on the phone while
+  the editor waits, it runs.
+- **End-to-end check, P-3 stack (`node scripts/verify-h11-acp.mjs
+  setup|run|restore`, H7's local test values):** the real `kriya acp`
+  against the local server: initialize protocol 1; session model
+  `kriya/balanced`; `stopReason end_turn`; the reply "Hello from the local
+  Kriya gateway over ACP." came from the scripted stub on :6797 through the
+  gateway (one `harness_usage` row: tier `balanced`, model `stub/budget`,
+  `settled`); exit 0; stdout frames only. **PASS.** Results in
+  `screenshots/kriya-harness/H11/results.json` (no UI, no screenshots).
+  `restore` put back the original values (verified: only `harness.api` on,
+  the free plan `budget` with a 0 cap, no stub model, no device). Docker
+  Desktop had stopped and was restarted (local only).
+- **Final commands:** `env -u OPENROUTER_API_KEY npm run check` →
+  typecheck pass; lint 0 errors, 6 warnings (CF-09, unchanged); format
+  pass; Test Files 231 passed | 3 skipped (234); Tests 2709 passed | 42
+  skipped (2751); exit 0 (unchanged: no server code in H11). Client `npm
+  run check` → pins exact; notices current (21 HF-09 problems block a
+  release, unchanged); brand current; tests 83, pass 83; exit 0 (74 + 6
+  ACP + 3 profile checks now covering `kriya-acp`).
+- **Committed and pushed (client only, as the owner asked):** commit
+  `49bb155` on `feat/h11-acp`, pull request `zuko14/kriya-harness` #5 into
+  `main`. This repository's changes are not committed.
+- **Exit checks:** [x] Client ACP tests. [ ] One session in a real ACP
+  editor (owner: point the editor's agent command at `kriya acp`).
+- **Note:** one manual `kriya acp --help` during development ran without
+  `KRIYA_HOME`, so it wrote only the first-run notice marker in `~/.kriya`.
+- **Next exact action:** owner: review and merge `zuko14/kriya-harness`
+  #5 and try `kriya acp` in an editor. Then H9 (needs staging, CB-05) or
+  H10 (needs H9, C3 and a decision record).
 
 ## Track H owner approvals
 
@@ -8471,15 +11378,15 @@ defaults off (RT-REG-01). Agents start from `docs/rooms/AGENT_MASTER_PROMPT.md`.
 | --- | --- | --- | --- |
 | R0 | Blueprint and decisions | COMPLETE (2026-10-31: documents written and re-audited; RD-01…RD-20 approved, owner-gated by id, see "Track R owner approvals") | — |
 | RP-1 | Baseline re-check | COMPLETE (2026-10-31, with CP-1: Test Files 185 passed | 3 skipped (188); Tests 2289 passed | 42 skipped (2331); exit 0) | R0 |
-| R1 | Data model (`20270401000000`) | NOT_STARTED | RP-1, H1 |
-| R2 | Room core | NOT_STARTED | R1 |
-| R3 | Room UI, realtime, polling | NOT_STARTED | R2 |
-| R4 | Agents in rooms | NOT_STARTED | R3, C5 (agent hot spots released) |
-| R5 | Proof cards, independent verification, re-check relay | NOT_STARTED | R4 |
-| R6 | Conductor | NOT_STARTED | R5 |
-| R7 | Room goals | NOT_STARTED | R5 |
-| R8 | Room notes | NOT_STARTED | R4 |
-| R9 | Safety, moderation, scale readiness | NOT_STARTED | R6 |
+| R1 | Data model (`20270401000000`) | COMPLETE (2026-10-31: RT-DB-01…08 and RT-REG-01 settings part pass; Tests 2487 passed, 42 skipped; exit 0) | RP-1, H1 |
+| R2 | Room core | COMPLETE (2026-10-31: RT-ACT-01/02, RT-MOD-01 and the rate limits pass; Tests 2511 passed, 42 skipped; exit 0; block/report moved to R9 by the owner; SQL and browser check on the P-3 stack, `screenshots/rooms/R2/`) | R1 |
+| R3 | Room UI, realtime, polling | COMPLETE (2026-10-31: RT-RLT-01/02/04, RT-UI-01…03 pass; RF-06 built (browser Realtime join behind `rooms.realtime`, off) and checked on the local Realtime server; Tests 2534 passed, 42 skipped; exit 0; two-account browser check on the P-3 stack, `screenshots/rooms/R3/`) | R2 |
+| R4 | Agents in rooms | COMPLETE (2026-11-01: RT-INV-01…06, RT-AGT-01…06 and RT-REG-01 (R4 part) pass; AT-REG-01, OT-REG-01, NT-REG-01, CT-REG-01 unchanged; Tests 2577 passed, 42 skipped; exit 0; browser check on the P-3 stack with the worker and stub model, 14/14 checks, `screenshots/rooms/R4/`) | R3, C5 (agent hot spots released) |
+| R5 | Proof cards, independent verification, re-check relay | COMPLETE (2026-11-01: RT-PRF-01…04 pass; Tests 2599 passed, 42 skipped; exit 0; browser check on the P-3 stack, 8/8, `screenshots/rooms/R5/`; R4's open items closed the same session) | R4 |
+| R6 | Conductor | COMPLETE (2026-11-01: RT-CND-01…04 pass; Tests 2612 passed, 42 skipped; exit 0; browser check on the P-3 stack, stop 7/7 and chain 4/4, `screenshots/rooms/R6/`; R4 and R5 checks re-run 14/14 and 8/8) | R5 |
+| R7 | Room goals | COMPLETE (2026-11-01: RT-GOAL-01…03 pass; migration `20270401000100` (goals and R8's notes table) down/up on PGlite and applied on the local stack; Tests 2625 passed, 42 skipped; exit 0; browser check on the P-3 stack 9/9, `screenshots/rooms/R7/`) | R5 |
+| R8 | Room notes | COMPLETE (2026-11-01: RT-NOTE-01…03 pass; Tests 2635 passed, 42 skipped; exit 0; browser check on the P-3 stack 7/7, `screenshots/rooms/R8/`) | R4 |
+| R9 | Safety, moderation, scale readiness (now also block and report, RT-MOD-02/03, with their own migration) | IN_PROGRESS (2026-11-01: block and report built with migration `20270401000200` and rollback; RT-MOD-02/03 pass; `/owner/rooms` with reports and scale numbers; RC-1, RC-2, RC-5 met; Tests 2651 passed, 42 skipped; exit 0; browser check on the P-3 stack 10/10, `screenshots/rooms/R9/`. Open, owner only: RT-RLT-03 and RC-3/RC-4 on staging (RB-03, RB-04)) | R6 |
 | R10 | Controlled pilot | NOT_STARTED | R9, RQ-1, RQ-2 |
 
 ## Track R blockers
@@ -8487,7 +11394,7 @@ defaults off (RT-REG-01). Agents start from `docs/rooms/AGENT_MASTER_PROMPT.md`.
 | # | Blocker | Blocks | Needed from |
 | --- | --- | --- | --- |
 | RB-01 | ~~Owner approval of RD-01…RD-20 and PX-03~~ Resolved 2026-10-31 ("Approve all", see "Track R owner approvals") | RP-1+ | Owner |
-| RB-02 | Owner applies the invariant 1 sentence (RD-02) | R1 | Owner |
+| RB-02 | ~~Owner applies the invariant 1 sentence (RD-02)~~ Resolved 2026-10-31: the owner chose "Apply RB-02 for R1"; applied to AGENTS.md invariant 1 word for word from RD-02 | R1 | Owner |
 | RB-03 | Supabase Realtime "Allow public access" off on staging, and plan sizing (REALTIME §4) | R3 staging checks | Owner |
 | RB-04 | Two test accounts on staging (CB-05) | R3–R5 checks | Owner |
 | RB-05 | Counsel RQ-1, RQ-2 | R10 | Owner + counsel |
@@ -8509,6 +11416,1315 @@ defaults off (RT-REG-01). Agents start from `docs/rooms/AGENT_MASTER_PROMPT.md`.
 - **Next exact action:** decisions approved 2026-10-31. RP-1 runs with
   wave 0 (`docs/program/C_H_R_PROGRAM.md` §3); R1 follows H1's migration.
 
+## Phase R1 — Data model (migration `20270401000000`)
+
+**Status:** COMPLETE (2026-10-31).
+
+### Session plan (2026-10-31 21:16 IST, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Owner step done first (RB-02):** invariant 1 in AGENTS.md now adds,
+  word for word from RD-02: room data is the one shared exception, readable
+  by the room's active members through the membership policies of
+  `kriya.room_*`, and every agent still acts only through `withUser` of its
+  own owner.
+- **Preconditions:** RP-1 and H1 COMPLETE (the migration sorts after
+  `20270301000000`); RD-02 and RD-10 approved by id, RD-19 approved. Board:
+  only this claim; one migration writer (this session).
+- **Create:** `supabase/migrations/20270401000000_rooms.sql` and its
+  rollback (DATA_MODEL §1–§7: the membership functions, the seven tables,
+  the seq trigger, `join_room`, `check_room_invocation`, RLS and column
+  grants, the `room_disclosure` transitions, the guarded Realtime policy),
+  `tests/db/rooms-rls.test.ts` (RT-DB-01…07), `tests/rooms/regression.test.ts`
+  (the settings part of RT-REG-01).
+- **Change (track R CHANGE_IMPACT §3 R1 rows only):** `db/schema.ts` (the
+  seven tables), `tests/db/migrations.test.ts` (RT-DB-08: down/up; older
+  chains roll track R back first), `lib/config.ts` (the RD-19 `rooms.*`
+  block), `app/owner/config/page.tsx` (`GROUPS` "Rooms").
+- **Gaps in the spec, resolved the safe way and to be recorded:** (1)
+  DATA_MODEL §4 says the create action inserts the owner's member row, but
+  members are inserted only through `join_room`; an after-insert trigger on
+  `rooms` adds it instead. (2) "Own row" versus "admin" updates on
+  `room_members` can't be told apart by column grants alone; a guard
+  trigger enforces them, and that the owner can't be removed or demoted.
+  (3) `join_room`'s signature lacks the `p_max_humans` its check uses; it
+  is added as a second parameter.
+- **Tests first:** RT-DB-01…07 and RT-REG-01 (settings) seen failing first.
+- **Questions for the owner:** none.
+
+### Session result (2026-10-31, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Status:** COMPLETE. Nothing committed, pushed or deployed; no live
+  database, no Realtime setting touched (the migration wasn't applied
+  to any project).
+- **Created:** `supabase/migrations/20270401000000_rooms.sql` (the seven
+  tables; `room_role` and `is_room_member`; the owner-member trigger, the
+  seq trigger and the member guard; `join_room`; `check_room_invocation`;
+  RLS and column grants; the `room_disclosure` transitions; the guarded
+  Realtime policy), its rollback, `tests/db/rooms-rls.test.ts` (8 tests:
+  RT-DB-01…07, plus a disclosure case), `tests/rooms/regression.test.ts`
+  (RT-REG-01 settings part, 3 tests).
+- **Changed (track R CHANGE_IMPACT §3 R1 rows only):** `AGENTS.md`
+  (invariant 1, the owner's RD-02 sentence, above), `db/schema.ts` (the
+  seven tables), `lib/config.ts` (the RD-19 `rooms.*` block: `enabled` and
+  `agents` and `realtime` off, and the limits), `app/owner/config/page.tsx` (`GROUPS` "Rooms"),
+  `tests/db/migrations.test.ts` (RT-DB-08: a down/up case with data in
+  every room table; track R's rollback now runs first in the older chains,
+  including CT-DB-06 and HT-DB-06).
+- **Deviations from DATA_MODEL, each the safe way:** (1) The owner's member
+  row comes from an after-insert trigger on `rooms`, since members are
+  otherwise inserted only by `join_room`. (2) `rooms`' read policy also
+  lets the creator read their room: an insert's RETURNING is checked before
+  that trigger runs, and the creator is the owner, who can't leave. (3)
+  "Own row" and "admin" changes on `room_members` are enforced by a guard
+  trigger (column grants can't tell them apart): a member changes only
+  their read marker and leaving; an owner or admin removes others as
+  themselves and changes roles; nobody removes, demotes or replaces the
+  owner, and nobody un-leaves except through `join_room`. (4) `join_room`
+  takes `p_max_humans` as a second parameter (its check needs it). (5)
+  `room_invites.token_hash` isn't selectable by people; admins revoke by
+  id. (6) Indexes for every new foreign key, beyond the spec. (7)
+  `rooms.realtime` defaults to off, not RD-19's on: the release invariant
+  "every on/off switch ships off" (readiness test, track A rule 2) refused
+  "on", and Realtime should wait for the owner's RB-03 anyway; rooms poll
+  every 10 s until it's on.
+- **Tests first:** both new files failed before the migration and
+  settings existed. On the first run, every case failed on the rooms
+  RETURNING check, fixed by deviation (2). Two expectations were wrong: a
+  plain member's update to another person's row is filtered out by the
+  policy (nothing changes, no error), and token_hash can't be filtered on.
+  The tests can fail: removing the owner protection from the guard failed
+  RT-DB-02.
+- **Not testable on PGlite:** the Realtime policy (no `realtime` schema;
+  created in a guarded block, verified on staging with RB-03). The
+  concurrency cases run serialized on PGlite; the row lock in the seq
+  trigger is what holds on Postgres.
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (existing, CF-09); format pass; Test Files
+  213 passed | 3 skipped (216); Tests 2487 passed | 42 skipped (2529); exit 0
+  (H3's 2475 plus 12). The first run failed one release invariant (a switch
+  shipping on: `rooms.realtime`), fixed by deviation (7).
+- **Exit checks:** [x] RT-DB-01…07. [x] RT-DB-08 (no recursion: every
+  policy goes through the security-definer membership functions;
+  `lint.test.ts` passes; down and up on PGlite with the same shape). [x]
+  RT-REG-01 settings part.
+- **Next exact action:** R2 (room core: create, invite, join, leave,
+  remove, post, read; holds `proxy.ts`) from `docs/rooms/AGENT_MASTER_PROMPT.md`
+  with `<PHASE>` = `R2`. RD-11 and RD-18 approved. Its staging checks need
+  RB-03/RB-04 later; the code and tests don't.
+
+## Phase R2 — Room core (create, invite, join, leave, remove, post, read)
+
+**Status:** COMPLETE (2026-10-31).
+
+### Session plan (2026-10-31, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Preconditions:** R1 COMPLETE; RD-11 and RD-18 approved ("Track R owner
+  approvals"). Board: only this claim; `proxy.ts` is free (H's TOKEN_API and
+  `/connect/` entries are already in, separate list entries).
+- **Create (new files, CHANGE_IMPACT §3 "New files"):** `lib/rooms/core.ts`
+  (the `rooms.enabled` gate, invite token and hash, settings as numbers),
+  `actions/rooms.ts` (createRoom, createInvite, revokeInvite, joinRoom,
+  leaveRoom, removeMember, postMessage, markRead: requireUser, zod,
+  `withUser`, rate limits), `queries/rooms.ts` (listRooms, getRoom,
+  readMessages, listInvites), `tests/rooms/actions.test.ts` (RT-ACT-01/02),
+  `tests/rooms/moderation.test.ts` (RT-MOD server side), `tests/rooms/imports.test.ts`
+  (RT-IMP-01, the `lib/rooms` part), and the R2 part of RT-REG-01 (every
+  action and query refuses with `rooms.enabled` off).
+- **Change (CHANGE_IMPACT §3 R2 row only):** `proxy.ts`: `"/rooms/"` in
+  `PROTECTED`, `"/api/rooms/"` in `PROTECTED_API`.
+- **Limits (RD-11, RD-18) on the server:** messages 30/min per person,
+  invites 20/day per person, joins 10/hour per address; rooms per person
+  `rooms.maxPerPerson` (create and join); people per room `rooms.maxHumans`
+  (in `join_room`); invite expiry `rooms.inviteDays`, uses ≤ 25.
+- **Not in R2, recorded:** block and report (RD-18) need tables that R1's
+  migration doesn't have: they go with R9 (its own migration). Deleting
+  one's own message and archiving are allowed by R1's grants but aren't in
+  R2's list; left for R3 with the UI. No pages or routes (R3).
+- **Questions for the owner:** none.
+
+### Session result (2026-10-31, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Status:** IN_PROGRESS. The room core is done and tested; the exit
+  check "RT-MOD-01…03 (server side)" is only partly met (RT-MOD-01 remove,
+  plus the rate limits). Block (RT-MOD-02) and report (RT-MOD-03) need
+  tables R1's migration doesn't have, and R2 holds no migration
+  (CHANGE_IMPACT §3). Nothing committed, pushed or deployed; no live
+  database, no Realtime setting touched.
+- **Created:** `lib/rooms/core.ts` (the `rooms.enabled` gate, limits as
+  numbers, invite token = 32 random bytes base64url, stored as sha256 hex),
+  `actions/rooms.ts` (createRoom, createInvite, revokeInvite, joinRoom,
+  leaveRoom, removeMember, postMessage, markRead), `queries/rooms.ts`
+  (listRooms, getRoom, readMessages, listInvites), `tests/rooms/setup.ts`,
+  `tests/rooms/actions.test.ts` (RT-ACT-01, RT-ACT-02, RT-REG-01 R2 part),
+  `tests/rooms/moderation.test.ts` (RT-MOD-01, rate limits),
+  `tests/rooms/proxy.test.ts` (the proxy row), `tests/rooms/imports.test.ts`
+  (RT-IMP-01, the `lib/rooms`/actions/queries part).
+- **Changed (CHANGE_IMPACT §3 R2 row only):** `proxy.ts`: `"/rooms/"` in
+  `PROTECTED`, `"/api/rooms/"` in `PROTECTED_API`. Other entries unchanged;
+  the origin check still applies to every room write.
+- **How it works:** every action is requireUser → `rooms.enabled` (off →
+  "Room not found." before any room table is touched) → zod → rate limit →
+  `withUser`; nothing uses `privileged`. Person inserts are written in SQL
+  naming only the granted columns, because Drizzle's insert lists every
+  column and R1's column grants refuse that (found on the first run). Joining
+  goes only through `kriya.join_room(hash, rooms.maxHumans)`; its refusals
+  map to plain messages. `rooms.maxPerPerson` is checked inside the same
+  transaction after the insert or join (an over-limit rolls it back).
+  Removing: the target's role is read first (the owner can't be removed);
+  RLS and the R1 member guard decide the rest. markRead only moves forward
+  and never past `rooms.last_seq`.
+- **Limits:** messages 30/min per person, invites 20/day per person, joins
+  10/hour per address (`lib/rate-limit.ts`, Postgres); invite uses 1–25
+  (default 10), expiry `rooms.inviteDays` from the database's `now()`.
+- **Tests first:** the new files failed before the code existed (proxy: 2
+  failed; the rest failed to import). After the code: the first run failed
+  16 on the column-grant insert (fixed as above); one test then failed
+  because it promoted an admin with a raw superuser update, which leaves
+  `request.jwt.claims` as `''` for the test shim's `auth.uid()`; it now
+  promotes as the owner, the way `rooms-rls.test.ts` does. Mutation check:
+  raising the post limit to 31 and dropping the owner check each failed a
+  test (2 failed), then the file was restored unchanged.
+- **Preflight:** `env -u OPENROUTER_API_KEY npm run check` → Test Files 213
+  passed | 3 skipped (216); Tests 2487 passed | 42 skipped (2529); exit 0.
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (existing, CF-09); format pass; Test Files
+  217 passed | 3 skipped (220); Tests 2511 passed | 42 skipped (2553); exit 0
+  (preflight plus 24). The RT-MOD label in `moderation.test.ts` was then
+  corrected (comment and describe text only); `tests/rooms` re-run: 27
+  passed; prettier passes.
+- **Exit checks:** [x] RT-ACT-01. [x] RT-ACT-02. [x] RT-MOD-01 (remove,
+  server side) and the RD-18 rate limits. [ ] RT-MOD-02 block, RT-MOD-03
+  report: not started (needs a migration, see the question).
+- **Not tested:** no pages or routes exist yet (R3), so no browser check;
+  the rate-limit window across real web instances isn't tested beyond PGlite
+  (it is the existing `kriya.hit_rate_limit`).
+- **Question for the owner:** block and report need two tables (e.g.
+  `kriya.room_blocks`, `kriya.room_reports`). Either (a) move RT-MOD-02/03
+  to R9 (which already lists RD-18 and a reports page) and mark R2 COMPLETE,
+  or (b) allow an R2 migration `20270401000050_room_moderation.sql` now.
+  Recommended: (a). R3 needs only what is done here.
+- **Next exact action:** the owner answers the question. On (a): update
+  `docs/rooms/IMPLEMENTATION_PLAN.md` (R2 exit checks RT-ACT-01/02 and
+  RT-MOD-01; RT-MOD-02/03 move to R9), set R2 COMPLETE here, then start R3 from
+  `docs/rooms/AGENT_MASTER_PROMPT.md` with `<PHASE>` = `R3` (it holds
+  `app/(workspace)/home/page.tsx`, `components/workspace/sidebar.tsx`,
+  `components/workspace/command-palette.tsx`; the room page calls
+  `queries/rooms.ts` and `actions/rooms.ts`; it also adds deleting one's own
+  message and archiving, allowed by R1's grants). On (b): add the migration,
+  its rollback, the RLS tests and the block/report actions before R3.
+
+### Owner decision and browser check (2026-10-31, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Owner decision (in chat):** "Move to r9 and also do the browser
+  check", i.e. option (a). Applied: `docs/rooms/IMPLEMENTATION_PLAN.md`
+  (R2 exit checks are now RT-ACT-01/02, RT-MOD-01 and the RD-18 rate limits;
+  R9 gains RT-MOD-02/03 with their own migration and rollback) and
+  `docs/rooms/TEST_STRATEGY.md` (RT-MOD-01 in R2; RT-MOD-02/03 in R9).
+- **Stack:** P-3 only. Docker Desktop started; `supabase start` (local API
+  :54321, DB :54322, Mailpit :54324); `.env.verify` exported;
+  `npm run verify:guard` → "verify:guard OK: local database, local auth, no
+  live calls, stub model." before every step; `npm run db:migrate` →
+  "applied 20270401000000_rooms.sql" (first time on real Postgres; local
+  only). Web via the `web-verify` launch entry (guard, then `npm run dev`
+  on :6796); stopped afterwards. The local Supabase stack was left running.
+- **Script:** `scripts/verify-r2-browser.mjs` (new; the H3 script's
+  pattern: local users signed in by an admin magic link, no password; a
+  second local user `ravi.r2check@example.com` created on the local stack
+  without a password). R2 has no room page, so it checks the room core's SQL
+  path on real Postgres as the two users the way `withUser` runs it, plus
+  the proxy rows and neighbouring screens in headless Chrome.
+- **Results (`screenshots/rooms/R2/README.md`, `results.json`, 20
+  screenshots):** all 14 checks pass: creator becomes owner;
+  `token_hash` not selectable; a non-member reads nothing; join through the
+  token; seq 1, 2, 3 from the database; posting as someone else refused; a
+  plain member can't create an invite; the owner can't leave; a removed
+  member reads nothing and can't rejoin; the guarded Realtime policy exists
+  on real Postgres (it is skipped on PGlite); signed-out `/api/rooms/…` →
+  401 JSON; signed-out `/rooms/join/<token>` → `/login?next=%2Frooms%2Fjoin%2F<token>`
+  at 360 and 1280, light and dark, with no console errors; signed in, the
+  same link passes the proxy (404: no page until R3; the one console error
+  on those four shots is that 404).
+- **Neighbours:** `/home`, `/account` and `/owner/config` at 360 and 1280,
+  light and dark: 200, no console errors, the Rooms group shows every
+  switch off. **Pre-existing, not R2's:** `/owner/config` scrolls sideways at
+  360 px. The H3 check (before R1 added the Rooms group) recorded the same
+  (`screenshots/kriya-harness/H3/results.json`). The "targets < 44 px" column
+  counts every small link or button on these existing pages (e.g. 24 on
+  `/home` at 1280); R2 changed no screen. Neither was fixed here.
+- **No invite token is in any output** (replaced by `<token>`; the browser
+  invite was single-use, local only).
+- **Commands after the decision:** `npx prettier --check .` → "All matched
+  files use Prettier code style!"; `npx eslint scripts/verify-r2-browser.mjs`
+  → no output (clean). No code under test changed after the final
+  `npm run check` (exit 0, Tests 2511 passed | 42 skipped), only docs, this
+  script and `status.md`.
+- **Exit checks (as amended):** [x] RT-ACT-01. [x] RT-ACT-02. [x] RT-MOD-01
+  and the rate limits. R2 COMPLETE.
+- **Next exact action:** R3 (room UI, realtime, polling) from
+  `docs/rooms/AGENT_MASTER_PROMPT.md` with `<PHASE>` = `R3`. It holds
+  `app/(workspace)/home/page.tsx`, `components/workspace/sidebar.tsx`,
+  `components/workspace/command-palette.tsx` (+ `app/api/events/route.ts`
+  under PX-03); the room page uses `queries/rooms.ts` and `actions/rooms.ts`
+  and adds delete-own-message and archive (R1's grants allow both); the join
+  page goes at `app/(workspace)/rooms/join/[token]`. Its two-account staging
+  check needs RB-03/RB-04; a local two-user check can reuse
+  `scripts/verify-r2-browser.mjs`'s sign-in helper.
+
+## Phase R3 — Room UI, realtime, polling
+
+**Status:** IN_PROGRESS.
+
+### Session plan (2026-10-31, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Preconditions:** R2 COMPLETE; RD-10 (owner-gated, approved by id),
+  RD-15, RD-16 approved. Board: only this claim. PX-03 is approved, but
+  mentions only exist from R4, so `app/api/events/route.ts` isn't touched
+  in R3.
+- **Finding RF-06 (code is the fact):** REALTIME §1 has the browser
+  subscribe with supabase-js, but `lib/supabase.ts` says "The browser never
+  talks to Supabase directly" and keeps the session cookies httpOnly, so a
+  browser client has no session to join a private channel with. R3 ships
+  polling every 10 s (REALTIME's own fallback) plus the server ping
+  (`lib/rooms/realtime.ts`, behind `rooms.realtime`, off), with no browser
+  subscription. The owner decides how the browser should authenticate to
+  Realtime (question below); `rooms.realtime` stays off until then.
+- **Finding RF-07:** the sidebar and palette are client components fed
+  by `getNavigation` and the layout, neither of which may change in R3. They
+  learn about rooms the way the palette learns about phone calls
+  (`voiceEntry`): a server action `roomsEntry()` returning null when
+  `rooms.enabled` is off (no room query), or the unread count.
+- **Finding RF-08:** `kriya.profiles` is owner-only, so a member can't
+  read other members' names. `queries/rooms.ts` reads the room's active
+  members through `withUser` (RLS proves the reader is a member), then their
+  `display_name` only, through `privileged` scoped to exactly those ids
+  (invariant 1: its own authorization check, scoped by user id). No email
+  or other profile field. Null → "Member".
+- **Create (new files):** `app/(workspace)/rooms/page.tsx`,
+  `app/(workspace)/rooms/[roomId]/page.tsx`, `app/(workspace)/rooms/join/[token]/page.tsx`,
+  `app/api/rooms/[roomId]/messages/route.ts` (catch-up by `after`),
+  `components/rooms/*` (new room form, room view with polling, composer,
+  room info with members, invites, leave/archive, join card, message merge),
+  `lib/rooms/realtime.ts`, tests `tests/rooms/realtime.test.ts`
+  (RT-RLT-01, 02, 04) and `tests/rooms/ui.test.ts` (RT-UI-01 markup and
+  RT-REG-01 for the entries).
+- **Change (CHANGE_IMPACT §3 R3 rows only):** Home (a Rooms section, last 3
+  rooms with unread counts and **New room**), sidebar (a Rooms link with the
+  unread count), command palette (Rooms and each room), each only with
+  `rooms.enabled` on. `actions/rooms.ts` and `queries/rooms.ts` (R2's new
+  files) gain deleteMessage, archiveRoom, roomsEntry, member names.
+- **RT-UI ids (TEST_STRATEGY only says "UX_SPEC §5"), defined here:**
+  RT-UI-01 Rooms entries on Home, sidebar and palette only with
+  `rooms.enabled` on; RT-UI-02 create → invite → join → post between two
+  accounts, unread counts; RT-UI-03 leave, remove, archive, delete own
+  message. Browser check on the P-3 stack with two accounts, 360 and 1280,
+  light and dark.
+- **Questions for the owner:** RF-06 (how the browser joins Realtime)
+  after the phase; nothing blocks R3's polling.
+
+### Session result (2026-10-31, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Status:** COMPLETE. Nothing committed, pushed or deployed; no live
+  database; no Realtime setting touched; `rooms.*` still ship off.
+- **Created:** `app/(workspace)/rooms/page.tsx` (list, New room),
+  `app/(workspace)/rooms/[roomId]/page.tsx` (last 100 messages, then
+  polling), `app/(workspace)/rooms/join/[token]/page.tsx` (consent line,
+  Join button; the room's name isn't shown before joining),
+  `app/api/rooms/[roomId]/messages/route.ts` (catch-up by `after`, 401
+  signed out, 404 off, 400 bad cursor), `components/rooms/` (`room-list`,
+  `new-room`, `join-room`, `room-view`, `room-info`, `merge`),
+  `lib/rooms/realtime.ts` (`pingRoom`: realtime-js `httpSend`'s REST shape,
+  `{ seq }` only, behind `rooms.realtime`, failures logged),
+  `tests/rooms/realtime.test.ts` (RT-RLT-01, 02, 04), `tests/rooms/ui.test.ts`
+  (RT-UI-01, member names, delete, archive), `scripts/verify-r3-browser.mjs`.
+- **Changed:** CHANGE_IMPACT §3 R3 rows: `app/(workspace)/home/page.tsx` (a
+  Rooms section: last 3 rooms with unread counts and New room),
+  `components/workspace/sidebar.tsx` (a Rooms link with the unread total),
+  `components/workspace/command-palette.tsx` (a Rooms entry), each only
+  with `rooms.enabled` on. R2's new files: `actions/rooms.ts` (deleteMessage,
+  archiveRoom, roomsEntry; postMessage marks your own message read and
+  pings after the commit), `queries/rooms.ts` (member display names, RF-08;
+  `listInvites` returns only working invites),
+  `tests/rooms/imports.test.ts` (RT-IMP-01 client part).
+- **Findings recorded:** RF-06 (no browser Realtime client: session
+  cookies are httpOnly), RF-07 (sidebar and palette learn about rooms
+  through `roomsEntry()`, the `voiceEntry` pattern), RF-08 (members' names
+  through `privileged`, only for a room's active members, after RLS proved
+  membership; display name only).
+- **Tests first:** both new test files failed before the code existed
+  (imports not found). After the code: all passed; mutation check (dropping
+  the ping, ungating `roomsEntry`) failed 3 tests, then the file was
+  restored unchanged.
+- **Browser check (P-3 stack, `screenshots/rooms/R3/README.md`, 31
+  screenshots):** Docker and `supabase start` (Docker had stopped since R2
+  and was started again); `verify:guard` OK before every step;
+  `db:migrate` → "Database is up to date."; web via `web-verify`, stopped
+  afterwards; Asha (local owner) and Ravi in two browser contexts; Asha turns
+  `rooms.enabled` on in `/owner/config` and clears it at the end. All 19
+  checks pass: Home section, sidebar link and palette entry with rooms on;
+  New room lands in the room; an invite link made and shown once; the join
+  page's consent line; Ravi joins and reads Asha's message under her name; a
+  new message arrives by polling with no reload (9.3–9.4 s); text typed
+  while a message sends survives; "2 new" on the room and the sidebar total
+  +2, cleared on opening; a deleted message's text gone for Ravi; a removed
+  member gets the not-found screen; an archived room takes no messages;
+  with rooms off, `/rooms` is the not-found screen and Home and the sidebar
+  show nothing of rooms; no console errors in the flow. Screens (home,
+  rooms list, room, room info, join, `/account`) at 360 and 1280, light and
+  dark: all 200, no console errors, no sideways scroll. Room-UI targets under
+  44 px: only the existing mobile header logo and the shared dialog's Close
+  button (`components/ui/dialog.tsx`, not changed here).
+- **A bug the browser check found and that is fixed:** the composer cleared
+  the draft only after the post returned, so text typed during a send was
+  wiped (and Send stayed disabled on an empty box). `room-view.tsx` now
+  clears the draft at submit and restores it only on an error with an empty
+  box; the check "text typed while a message is sending isn't wiped" passes.
+  First runs also failed on the script's own assumptions (selectors matching
+  the composer, unread totals from earlier local runs, not-found pages
+  answering 200 because `(workspace)/loading.tsx` streams); each was checked
+  against the page and fixed in the script, not in the app.
+- **Flake seen once:** the first full run failed `tests/cloud/runner.test.ts`
+  CT-RUN-03 (the log file read before it was fully written under full-suite
+  load); it passed 3 of 3 runs alone and in every later full run. Not
+  touched (track C).
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (existing, CF-09); format pass; Test Files
+  219 passed | 3 skipped (222); Tests 2530 passed | 42 skipped (2572); exit 0
+  (R2's 2511 plus 19).
+- **Exit checks:** [x] RT-RLT-01. [x] RT-RLT-02. [x] RT-RLT-04. [x]
+  RT-UI-01, RT-UI-02, RT-UI-03 (unit and browser). [x] Browser check with two
+  accounts (P-3 stack). RT-RLT-03 stays a staging check (R9, RB-03).
+- **Not done or not verified:** no browser Realtime subscription (RF-06);
+  the ping's authorization by the secret key alone (staging); PX-03 notifier
+  mentions (R4 brings mentions); role changes (making admins) have no UI.
+- **Question for the owner (RF-06):** how should the browser join private
+  Realtime channels? (a) a short route that hands the signed-in page its
+  access token for supabase-js (the token becomes readable by page script,
+  which the httpOnly cookies avoid today); (b) stay on 10 s polling and drop
+  the ping until a later decision. Until then `rooms.realtime` stays off.
+- **Next exact action:** R4 (agents in rooms) from
+  `docs/rooms/AGENT_MASTER_PROMPT.md` with `<PHASE>` = `R4`. It holds the
+  agent hot spots (`lib/agent/{queue,tools,policy,capabilities,instructions,run-task}.ts`,
+  `db/schema.ts`, `queries/inbox.ts`, `actions/inbox.ts`, the Inbox page) and
+  needs C5's agent hot spots released (C5 COMPLETE) and `agents.inbox` on in
+  the environment; nothing else on any track may hold `run-task.ts`,
+  `tools.ts` or `policy.ts` at the same time.
+
+### Follow-up: the open items (2026-10-31, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Owner instruction (in chat):** "Do what are not done and verified",
+  taken as: build RF-06 option (a), verify on the local Realtime server what
+  was left for staging, add role changes, and fix the runner flake if it is
+  a real bug. Nothing committed, pushed or deployed; no live database or
+  Supabase project setting touched.
+- **RF-06 built (option (a)):** `app/api/rooms/realtime/route.ts` (new)
+  gives the signed-in page its own session access token (`no-store`, 30/min,
+  404 unless `rooms.enabled` and `rooms.realtime` are on, 401 signed out).
+  `components/rooms/room-view.tsx` joins the private channel `room:<id>` with
+  supabase-js (`accessToken` callback, refetched within 60 s of expiry; the
+  token lives in page memory only), fetches on each `{ seq }` ping, and polls
+  every 10 s only while the channel isn't joined. The room page passes the
+  public URL and publishable key only with `rooms.realtime` on. **The
+  trade-off stays the owner's to accept:** with `rooms.realtime` on, page
+  script can read the person's own access token (the httpOnly cookies keep
+  it from page script today); `kriya` isn't exposed through the Data API,
+  so the token reaches only what RLS gives that person. `rooms.realtime`
+  stays off.
+- **A bug the local Realtime check found and that is fixed:** supabase-js
+  joined before the `accessToken` callback had produced a token, so the
+  first join went in with the publishable key (`iss=supabase-demo` in the
+  Realtime log) and the members-only policy refused it. The page now calls
+  `client.realtime.setAuth()` before subscribing.
+- **Local Realtime check (`scripts/verify-r3-realtime.mjs`, new; the local
+  stack's real Realtime server, standing in for staging until RB-03):** 9 of
+  9 pass: members Asha and Ravi join `room:<id>`; outsider Carol is refused;
+  a ping without the key gets 401; a ping in exactly `pingRoom`'s form (the
+  secret key as `apikey`, no Authorization) gets 202, so **the secret key
+  alone authorizes it** (verified locally; staging repeats it with the
+  hosted key); members receive `{ seq }` only; the outsider and the keyless
+  ping reach nobody; a removed member's fresh join is refused. Observed, as
+  RF-02 predicted: a removed member's already-open connection still got one
+  content-free ping; reads were already refused by RLS.
+- **Roles:** `setMemberRole` in `actions/rooms.ts` (owner or admin makes
+  another member an admin or a member; nobody becomes or changes the owner;
+  RLS and the member guard enforce it) and **Make admin / Make member** in
+  Room info; test in `tests/rooms/ui.test.ts`.
+- **Cross-track fix (track C, `runner/exec.ts`):** the runner sent a
+  command's end event (which names "the full log") before the log file was
+  flushed, so a client reading the log at once could get a partial file;
+  that was the CT-RUN-03 flake. The end event now waits for `log.end()`'s
+  callback. `tests/cloud/runner.test.ts`, `client.test.ts` and `tools.test.ts`
+  passed 5 of 5 runs, and in the full suite. **Track C:** the runner image
+  (C2) needs rebuilding to carry the fix; not done here.
+- **Browser check re-run (`scripts/verify-r3-browser.mjs`, P-3 stack):** 22
+  of 22 pass, the 19 above plus: Make admin turns Ravi into an Admin, Make
+  member turns him back, and with `rooms.realtime` on a message arrives on
+  the ping in 0.1 s (polling took 8.4 s). Each room page fetched its token
+  (4 GETs `/api/rooms/realtime`, 200) and the Realtime log shows no refused
+  join during the run. Screens unchanged from the R3 table (no console
+  errors, no sideways scroll). No invite token in any output.
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (existing, CF-09); format pass; Test Files
+  219 passed | 3 skipped (222); Tests 2534 passed | 42 skipped (2576); exit 0
+  (2530 plus 4: the role test and three for the token route and channel).
+- **Still not done:** PX-03 notifier mentions (mentions exist from R4);
+  the same Realtime checks on staging with the hosted project (RB-03, an
+  owner action); the runner image rebuild (track C).
+- **Next exact action:** unchanged: R4 from `docs/rooms/AGENT_MASTER_PROMPT.md`
+  with `<PHASE>` = `R4`. Before anyone turns `rooms.realtime` on: the owner
+  accepts the token trade-off above and turns Realtime's "Allow public
+  access" off (RB-03).
+
+## Phase R4 — Agents in rooms
+
+**Status:** COMPLETE (2026-11-01).
+
+### Session plan (2026-11-01 07:18 IST, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **How it was picked:** the owner asked for `docs/program/RESUME_PROMPT.md`
+  with the phase set to C1, then "complete the next phase end to end". C1
+  is already COMPLETE (2026-10-31); re-verified this session:
+  `npx vitest run tests/db/cloud-rls.test.ts tests/cloud/regression.test.ts
+  tests/db/lint.test.ts` → 3 files, 36 tests passed. The next eligible
+  phase is R4: R3 and C5 COMPLETE; C8 (CB-02), H3 (staging, HB-04), H4
+  (repository, HB-02) wait on the owner; the board was empty. Wave 6 orders
+  the Inbox files H5 → R4, but H5 can't start before H4 (owner), so R4
+  holds them now and H5 adds its own section after.
+- **Preflight:** `git status --short` shows the uncommitted work of tracks
+  C, H, R from 2026-10-31 (no other session's claim); branch `main` at
+  `9a51a12`; RD-03 (owner-gated, `enqueueRoomTurn`), RD-04…RD-08, RD-17
+  approved under "Track R owner approvals". No migration: R4 uses R1's
+  tables and `check_room_invocation` as they are.
+- **Create:** `lib/rooms/context.ts` (pure: `ROOM_CONTEXT`, the bridge
+  message, the request part), `lib/rooms/invoke.ts` (mentions →
+  `check_room_invocation` → `enqueueRoomTurn` + `room_invocations`, system
+  lines), `lib/rooms/relay.ts` (disclosure gate, post the reply, close the
+  invocation), `lib/rooms/tools.ts` (`room_history`, R0, `FOREIGN`),
+  `components/rooms/room-agents.tsx` (agents sheet),
+  `components/inbox/room-disclosure.tsx`; tests `tests/rooms/invoke.test.ts`
+  (RT-INV-01…06), `tests/rooms/runner.test.ts` (RT-AGT-01…06),
+  `tests/rooms/agents.test.ts` (add/remove/policy, share/discard), and the
+  R4 part of `tests/rooms/regression.test.ts` (RT-REG-01).
+- **Change (CHANGE_IMPACT §3 R4 rows only):** `db/schema.ts`
+  (`TaskInput.channel` + `"room"`, `roomId`); `lib/agent/queue.ts`
+  (additive `enqueueRoomTurn`, the `enqueuePart` pattern); `lib/agent/tools.ts`
+  (re-export `createRoomTools`, `KriyaTools` partial, `KriyaMetadata.channel`
+  + `"room"` with `roomId`, `requestedBy`, `untrustedSeen` + `ROOM_CONTEXT`);
+  `lib/agent/policy.ts` (`room_history` R0, no writes; the five
+  `PERSON_ONLY_WRITES`); `lib/agent/capabilities.ts` (`FACTS.room_history`);
+  `lib/agent/instructions.ts` (`Capabilities.room` and one room block only
+  when set); `lib/agent/run-task.ts` (room belt, `capabilities.room`, the
+  request-only skill `ask`, `relayToRoom` after the task row is final);
+  `queries/inbox.ts` + `app/(workspace)/inbox/page.tsx` (room disclosures
+  with `rooms.agents` on; `actions/inbox.ts`'s badge reads `inboxCount`, so
+  it needs no edit). New-file areas: `actions/rooms.ts`, `queries/rooms.ts`,
+  `components/rooms/*`.
+- **Tests first:** RT-INV-01…06, RT-AGT-01…06 and RT-REG-01 (R4 part)
+  written and seen failing before the code; AT-REG-01, OT-REG-01,
+  NT-REG-01, CT-REG-01 must pass unchanged.
+- **Design points decided in code (no new decision):** the room belt drops
+  connected accounts (`connected` emptied, so the prompt doesn't offer them)
+  and app tools unless `allow_connectors`; the disclosure gate applies the
+  `privateContentSeen` test to the whole bridge thread (an earlier private
+  read stays in the model's context); a reply waiting for the owner's
+  approval posts a system line, and the approval's continuation task is
+  relayed and gets its own `done` invocation row so its charge counts
+  toward the members' cap; an agent whose bridge thread has a pending
+  approval is "busy" (RD-08); invocations whose task already ended (queue
+  expiry, recovery) are closed before each check, so an agent never stays
+  "busy" forever; leaving or being removed takes the person's agents out of
+  the room; with `rooms.agents` off nothing is invoked or relayed.
+- **Risks:** `run-task.ts` is shared by every track: room lines sit inside
+  `channel === "room"` branches plus the relay call; the approval
+  continuation check queries only with `rooms.agents` on.
+- **Not in scope:** proof cards and verification (R5), the conductor and
+  Stop agents (R6), PX-03 notifier mentions, people mentions (stored only
+  when the notifier exists), labels in `components/thread/tool-call.tsx` /
+  `components/workbench/activity.tsx` (not in CHANGE_IMPACT; the raw tool
+  name shows until the owner allows the two lines).
+- **Questions for the owner:** none blocking.
+
+### Session result (2026-11-01, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Status:** COMPLETE. Nothing committed, pushed or deployed; no live
+  database, real model, provider, Supabase project setting or account
+  touched. Tests on PGlite and the scripted model; the browser check on
+  the P-3 stack (`.env.verify`, `npm run verify:guard` OK before every
+  local command) with the stub model.
+- **C1 (asked for first):** already COMPLETE on 2026-10-31; re-run this
+  session: `npx vitest run tests/db/cloud-rls.test.ts
+  tests/cloud/regression.test.ts tests/db/lint.test.ts` → 3 files, 36
+  tests passed. Nothing to change.
+- **Baseline (preflight, before any edit):** `env -u OPENROUTER_API_KEY npm
+  run check` → typecheck pass; lint 0 errors, 6 warnings (existing,
+  CF-09); format pass; Test Files 219 passed | 3 skipped (222); Tests 2540
+  passed | 42 skipped (2582); exit 0.
+- **Created:** `lib/rooms/context.ts` (pure: `ROOM_CONTEXT`, `ROOM_FOREIGN`,
+  `REQUEST_MARKER`, `bridgeMessage`, `requestOf`); `lib/rooms/names.ts`
+  (display names and agent names through `privileged`, only for a room's
+  rows); `lib/rooms/agents.ts` (`roomAgentsOn` = `rooms.enabled` +
+  `rooms.agents` + `agents.inbox` (RF-04), system lines and agent messages
+  with the ping, `roomOfTask`, `removeAgentsOf`); `lib/rooms/invoke.ts`
+  (mentions → owner still a member → close ended invocations → pending
+  approval = busy → `check_room_invocation` → queued invocation →
+  `enqueueRoomTurn` → dispatched + "X is working…"; each refusal a plain
+  system line); `lib/rooms/relay.ts` (disclosure gate over the whole bridge
+  thread, post as the agent, waiting-for-approval line, approval
+  continuations relayed with their own invocation row for the cap, closes
+  the invocation); `lib/rooms/tools.ts` (`room_history`, R0, read as the
+  owner through RLS); `components/rooms/room-agents.tsx` (agents sheet:
+  add, remove, policy, daily cap in whole rupees, connected accounts with a
+  warning; owner-only spend); `components/inbox/room-disclosure.tsx`
+  (Share in room / Discard); tests `tests/rooms/invoke.test.ts`
+  (RT-INV-01…05), `tests/rooms/runner.test.ts` (RT-AGT-01…06, RT-INV-06,
+  the relay), `tests/rooms/agents.test.ts` (add/remove/policy, limits,
+  leaving takes agents along, RD-17); `scripts/verify-r4-browser.mjs`;
+  stub scripts `tests/operator/verify-scripts/room-reply.json` and
+  `room-private.json` (new files in track O's stub directory, used only by
+  the R4 check).
+- **Changed (CHANGE_IMPACT §3 R4 rows):** `db/schema.ts` (`TaskInput.channel`
+  + `"room"`, `roomId`); `lib/agent/queue.ts` (`enqueueRoomTurn` only);
+  `lib/agent/tools.ts` (`createRoomTools` import and re-export,
+  `KriyaTools` partial, `KriyaMetadata.channel` + `"room"`, `roomId`,
+  `requestedBy`; `untrustedSeen` also matches `ROOM_CONTEXT`);
+  `lib/agent/policy.ts` (`room_history` R0 / `[]`; five
+  `PERSON_ONLY_WRITES`); `lib/agent/capabilities.ts` (`FACTS.room_history`);
+  `lib/agent/instructions.ts` (`Capabilities.room`, a `# Room` block only
+  when set); `lib/agent/run-task.ts` (room read only for `channel ===
+  "room"`; connected accounts and apps off unless `allow_connectors`;
+  `room_history`; `capabilities.room`; skills from the raw request text;
+  `relayToRoom` after the task row is final, for room tasks and approval
+  continuations); `queries/inbox.ts` (`disclosures`, queried only with the
+  switches on; counted in `inboxCount`, so `actions/inbox.ts`'s badge needed
+  no edit); `app/(workspace)/inbox/page.tsx` ("Share in room?" section).
+  Track R's own files: `actions/rooms.ts` (mentions on `postMessage`,
+  `addRoomAgent`, `removeRoomAgent`, `setRoomAgentPolicy`,
+  `shareDisclosure`, `discardDisclosure`; leaving or removal takes the
+  person's agents out), `queries/rooms.ts` (`roomAgentsFor`,
+  `myAgentsToAdd`; messages carry the agent's name and the reader's own
+  cost, task ids stay on the server), `lib/rooms/core.ts`
+  (`rooms.maxAgents` in `roomLimit`), `lib/rooms/realtime.ts`,
+  `components/rooms/room-view.tsx` (Agents button, @ picker, labels, cost
+  line, waiting line hidden once shared, refresh on system lines),
+  `app/(workspace)/rooms/[roomId]/page.tsx`, `tests/rooms/imports.test.ts`,
+  `tests/rooms/regression.test.ts`.
+- **Bugs found and fixed during the session:** (1) `lib/rooms/realtime.ts`
+  imported `server-only`, which throws under plain Node, where
+  `kriya-worker` runs (`tsx worker/index.ts`); the relay pings from the
+  worker, so the marker is gone from every room module the worker loads,
+  and `tests/rooms/imports.test.ts` now guards it (the local worker started
+  and relayed replies with these modules). (2) `textOf` collapses
+  whitespace, so the request marker never matched and the quoted room
+  could pick a skill; `runTask` now reads the raw text part (RT-INV-06
+  caught it). (3) The browser check found that a member whose page was
+  open before an agent was added had no @ suggestions; the page now
+  refreshes its server data when a system line arrives.
+- **Tests:** written before the code, but not run against the code before
+  it (so not "seen failing first"); the RT-INV-06 bug above is one they
+  caught. `npx vitest run tests/rooms tests/db/rooms-rls.test.ts` → 10
+  files, 87 tests passed; then `tests/rooms` with the new files → 10
+  files, 93 tests passed.
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (existing, CF-09); format pass; Test
+  Files 222 passed | 3 skipped (225); Tests 2577 passed | 42 skipped
+  (2619); exit 0. That is the baseline's 2540 plus 37 new tests; every
+  existing test passes unchanged (AT-REG-01's snapshot among them). After
+  it, only `components/rooms/room-view.tsx` (the refresh) and the browser
+  script changed: `npm run lint` 0 errors, 6 warnings; `npm run
+  format:check` pass; `npx vitest run tests/rooms` 10 files, 93 passed.
+- **Browser check (`scripts/verify-r4-browser.mjs`, P-3 stack: local
+  Supabase, web on :6796, `npx tsx worker/index.ts`, `npm run
+  verify:stub`):** 14 of 14 pass: adding an agent posts a line; the @
+  picker writes the mention; the mention runs as Asha's task and the
+  worker's reply reaches the room (9.9 s after "working"); the reply reads
+  "Lekha · AI · Asha's agent"; Ravi sees no cost line; Ravi's picker shows
+  Lekha greyed ("answers only to Asha") and his typed mention gets "Lekha
+  answers only to Asha."; a reply after a private read (`ledger_list`)
+  waits and nothing private reaches Ravi; the Inbox shows the exact text
+  with Share in room / Discard; Share posts it and the waiting line goes;
+  Discard posts nothing; `rooms.agents` off → no Agents button, the room
+  still works for people; no console errors on the flow pages. Screens
+  (24, `screenshots/rooms/R4/README.md`): room with agents, agents sheet,
+  the other member's room, Inbox, and neighbours (rooms list, room info) at
+  360 and 1280, light and dark: all 200, 0 console errors, no sideways
+  scroll. Targets under 44 px: none of R4's own except the Inbox's
+  Share/Discard at 1280 (the Inbox's existing `min-h-11 sm:min-h-8`
+  pattern, 44 px on phones), the checkbox's hidden native input (the label
+  is the 44 px target), and existing ones (the header logo at 360, the
+  dialog Close). A first run's only console error was Ravi's open room
+  polling after the script switched `rooms.enabled` off (the route
+  correctly answers 404); the script now closes his page first. All four
+  switches were cleared at the end; the local stack and Docker were
+  stopped again.
+- **Exit checks:** [x] RT-REG-01 (R4 part: shared tables, prompt and belt
+  of other tasks, nothing invoked or relayed with the switch off).
+  [x] RT-INV-01…06. [x] RT-AGT-01…06. [x] NT-REG-01, OT-REG-01,
+  AT-REG-01 (and CT-REG-01) unchanged and passing. [x] Browser check
+  (operator rule 7).
+- **Deviations from the documents:** `room_history` carries
+  `ROOM_FOREIGN` (the room's own wording) rather than `FOREIGN`, whose text
+  speaks of "the person's accounts"; the "waiting" line is hidden by the
+  page once its reply is shared rather than rewritten in the table (both
+  rows stay as history); while a reply waits for an approval, its partial
+  text isn't posted (the continuation posts the whole reply), so if the
+  approval expires the room keeps only the waiting line.
+- **Not done (later phases or needing the owner):** proof cards and
+  verification (R5); Stop agents and agent-to-agent turns (R6); people
+  mentions and notifier events (PX-03); labels for `room_history` in
+  `components/thread/tool-call.tsx` and `components/workbench/activity.tsx`
+  (AGENTS.md convention, but not in CHANGE_IMPACT §3: the raw tool name
+  shows until the owner allows those two lines); a collapsed rendering of
+  the bridge message in the owner's thread (`components/thread/transcript.tsx`,
+  same reason: today it shows as the person's own bubble); the owner's
+  agent memory notes still reach the room-task prompt (the prompt line
+  forbids sharing them; no code gate, recorded as a residual for R9).
+- **Unknowns, with their check:** `pg_advisory`-free concurrency of two
+  simultaneous mentions of one agent is handled by the queued invocation
+  plus `tasks_one_active_per_thread` (409 → "still working"), proven on
+  PGlite one call at a time; repeat with two `psql` sessions on the local
+  stack in R9. Hosted Realtime pings from the worker (RB-03) are unverified
+  until staging.
+- **Next exact action:** R5 (proof cards, independent verification,
+  re-check relay) from `docs/rooms/AGENT_MASTER_PROMPT.md` with `<PHASE>` =
+  `R5`; it holds `worker/index.ts` (one `try` block, RD-09) and builds on
+  `lib/rooms/relay.ts` (the card from the episode's `done` items before
+  `postAgentMessage`). Owner, before `rooms.agents` goes on anywhere:
+  `agents.inbox` on (RF-04), and say whether the two label lines and the
+  transcript rendering above may be added.
+
+### Follow-up plan: the open items (2026-11-01 08:02 IST, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Owner instruction (in chat, 2026-11-01):** "Complete what are not done
+  and procced for the next phase". Taken as the owner's approval of the
+  two changes outside CHANGE_IMPACT §3 named in the R4 result (labels for
+  `room_history` in `components/thread/tool-call.tsx` and
+  `components/workbench/activity.tsx`; the room request's rendering in
+  `components/thread/transcript.tsx`), and as the go-ahead to close the
+  other open items now, then start R5.
+- **Items:** (1) the two label lines; (2) the bridge message shown in the
+  owner's thread as "Room request" with the request and a link to the
+  room, the quoted room collapsed; (3) a code gate for the owner's memory
+  in room tasks: without "Allow my connected accounts in this room" the
+  room task loads no memory notes and has no `memory_search`; with it, a
+  reply after notes were in context goes through Share in room; a room
+  task never has `memory_update` or `memory_forget` (members' words never
+  change the owner's memory); (4) people mentions in the @ picker, and
+  PX-03's room part (already approved: `room-mention` and
+  `room-disclosure` events in `app/api/events/route.ts` and the notifier,
+  behind `rooms.enabled` / `rooms.agents`; track H's `harness-approval`
+  joins the same mechanism in H5); (5) the glyph on the agents sheet
+  through `joinedGlyph` (the role-avatar rule other producers follow).
+- **Not taken up:** Stop agents and agent-to-agent turns stay R6 (their
+  own phase, after R5); staging Realtime (RB-03) and counsel stay the
+  owner's.
+
+### Follow-up result (2026-11-01, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Done:** (1) `room_history` labels in `components/thread/tool-call.tsx`
+  (card: "read the room", the message count) and
+  `components/workbench/activity.tsx` (done and action wording). (2) The
+  bridge message in the owner's thread (`components/thread/transcript.tsx`):
+  "Room request · open the room" (a 44 px link on phones), the request as
+  the bubble, the quoted room under it on a tap. (3) Memory gate in
+  `lib/agent/run-task.ts`: a room task without "Allow my connected
+  accounts" gets no memory notes (v1 and v2 emptied, no re-rank call) and
+  no `memory_search`; no room task gets `memory_update` or
+  `memory_forget`; `memory_write` stays (saved unconfirmed). The relay holds
+  a reply for Share when the owner allowed their accounts and notes were in
+  the prompt (v2's `memoryIds`, or for v1 any of the agent's notes) or
+  `memory_search` ran. The room prompt line now names "your notes about
+  them". (4) People in the @ picker (members other than you), stored as
+  `{ kind: "person" }` mentions after the server checks each is an active
+  member; PX-03's room part: `room-mention` and `room-disclosure` events in
+  `lib/events.ts`, `app/api/events/route.ts` (through RLS, behind
+  `rooms.enabled` / `rooms.agents`; the held reply's text never in the
+  event) and `components/workspace/notifier.tsx` (button "Open room" /
+  "Open Inbox"; the lock-screen line names no content). (5) The agents
+  sheet's glyph through `joinedGlyph`.
+- **Tests:** `tests/rooms/events.test.ts` (4: a mention reaches only the
+  person mentioned; people stored only for active members other than the
+  writer; nothing with `rooms.enabled` off; a held reply's event reaches
+  only its owner, only with `rooms.agents` on, without its text); two
+  memory tests in `tests/rooms/runner.test.ts`; the label check in
+  `tests/rooms/regression.test.ts`.
+- **Deviation:** PX-03 was planned as one combined change with track H;
+  the room part is in now, and `harness-approval` joins the same event
+  union and notifier switch in H5 (recorded under PX-03's track H side).
+
+## Phase R5 — Proof cards, independent verification, re-check relay
+
+**Status:** COMPLETE (2026-11-01).
+
+### Session plan (2026-11-01 08:02 IST, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Preconditions:** R4 COMPLETE; RD-09 approved; `next.recheck`
+  (track N) exists for the re-check relay; no migration (cards live in
+  `room_messages.parts`). Board claimed with the R4 follow-ups.
+- **Create:** `lib/rooms/proof.ts` (the card from the bridge task's
+  episode: `done` items' title, status, method and only `url` /
+  `provider_id` evidence; counts of unconfirmed claims and citation
+  checks; evidence matching for independent verification);
+  `lib/rooms/recheck.ts` (a system line when a late re-check of a card's
+  run records a status, once per check); `tests/rooms/proof.test.ts`
+  (RT-PRF-01…04).
+- **Change:** `lib/rooms/relay.ts` (card on the posted or held reply; a
+  done item from the owner's connected accounts or apps sends the reply
+  through Share in room; verification after a reply to a card);
+  `actions/rooms.ts` (`replyTo` a card on `postMessage`; Share marks a
+  verification too); `lib/rooms/invoke.ts` (a reply to a card puts the
+  card's claims and evidence in the request); `worker/index.ts` (one `try`
+  block in `schedulerLoop`: `roomRecheckRelay()` with `rooms.agents` and
+  `next.recheck` on, CHANGE_IMPACT R5 row); `components/rooms/*` (the card,
+  collapsed and expanded, "Ask an agent to verify").
+- **Decided in code:** the card leaves out task and execution ids (they're
+  the owner's; the message row keeps the task id server-side); a card
+  counts as independently verified only by a different agent's verified
+  run with the same normalized URL or provider id.
+- **Questions for the owner:** none blocking.
+
+### Session result (2026-11-01, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Status:** COMPLETE. Nothing committed, pushed or deployed; no live
+  database, real model, provider, Supabase project setting or account
+  touched.
+- **Created:** `lib/rooms/proof.ts` (`buildCard` from the episode: `done`
+  items' title, status, method and evidence of kind `url`, or
+  `provider_id` from an outside service only (Kriya's own row ids, such as
+  a saved schedule's, stay out); counts of unconfirmed claims and citation
+  checks; no task or execution id; `normalizeEvidence`, `confirms`,
+  `cardRequest`, `markVerified`, `episodeOf`); `lib/rooms/recheck.ts`
+  (`roomRecheckRelay`: one system line per delivery re-check of a card's
+  run, under an advisory lock, never twice, never for runs from the
+  owner's accounts or apps); `components/rooms/proof-card.tsx` (collapsed:
+  "✓ N actions verified" or "No verified actions", claims not verified,
+  "Independently verified by X (owner: Y)"; open: each action with how it
+  was checked and its links, claim and quote counts, "Ask an agent to
+  verify"); `tests/rooms/proof.test.ts` (RT-PRF-01…04, 10 tests);
+  `scripts/verify-r5-browser.mjs`; stub script
+  `tests/operator/verify-scripts/room-claim.json`.
+- **Changed:** `lib/rooms/relay.ts` (card on the posted or held reply; the
+  gate also holds a reply whose card names a run in the owner's accounts
+  or apps; after a reply to a card, `markVerified`); `lib/rooms/invoke.ts`
+  (a reply to a card puts its claims and evidence in the request);
+  `actions/rooms.ts` (`replyTo` only to a card in the same room; Share
+  posts the held card and can verify); `worker/index.ts` (one `try` block
+  in `schedulerLoop`: `roomRecheckRelay()` with `next.recheck` on and
+  `roomAgentsOn()`, the CHANGE_IMPACT R5 row); `components/rooms/room-view.tsx`
+  (cards, "about X's card", the reply chip, and a refreshed render merged
+  in so a newly verified card updates); `queries/rooms.ts` (re-exports the
+  card type for client components).
+- **Tests:** written alongside the code; one of mine assumed which
+  sentences count as unconfirmed claims and was corrected to the detector's
+  real pattern ("I sent the email…").
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (existing, CF-09); format pass; Test
+  Files 224 passed | 3 skipped (227); Tests 2599 passed | 42 skipped
+  (2641); exit 0 (R4's 2577 plus 22: proof 10, events 4, memory 2, labels
+  1, imports 2, the rest in proof's e2e cases). A first full run in this
+  session reported one failure because it started before a `proof.ts`
+  change and picked up the test written for it; a second stopped at format
+  on `proof.ts`; both fixed, and the run above is clean.
+- **Browser check (P-3 stack, `npm run verify:guard` OK before each local
+  command; local stack and Docker stopped again afterwards):**
+  `scripts/verify-r5-browser.mjs` 8 of 8: the reply carries a card
+  counting the unverified claim; the composer says the next message is
+  about Lekha's card; Mira's request carries the card's claims; Mira's
+  reply is labelled as Ravi's agent; Ravi, on Home, gets the in-app card
+  for a mention ("Asha · mentioned you · R5 check room", Open room); the
+  owner's thread shows the room request; no console errors. 20 screens
+  (room with card, card open, owner thread, neighbours Inbox and Home at
+  360/1280, light/dark): all 200, 0 console errors, no sideways scroll; the
+  only new under-44 px target ("open the room" at 360) was fixed to 44 px.
+  `scripts/verify-r4-browser.mjs` re-run after the relay changes: 14 of 14.
+  Independent verification's evidence match isn't shown in the browser
+  (the local stack has no web key, so no URL evidence); RT-PRF-03 proves it
+  end to end in tests.
+- **Found by the browser runs, all verification set-up, not app defects:**
+  Playwright's default screenshot writes an inline `caret-color` on text
+  fields, which React reported as a hydration mismatch when a shot landed
+  before hydration (the scripts now pass `caret: "initial"`); repeated runs
+  used up the local limits that RD-18 and the plan set (invites 20 a day,
+  joins 10 an hour, 20 active rooms, 20 tasks a day on the free plan), and
+  the room showed the plain "can't take requests right now" line for the
+  last; the scripts now discard leftover held replies, archive earlier
+  check rooms and reset the invite and join counters on the local
+  database during setup; the free plan's daily tasks were raised to 500 on
+  the local database for the runs and set back to 20 afterwards.
+- **Exit checks:** [x] RT-PRF-01…04. [x] The whole suite, with every
+  regression test unchanged. [x] Browser check (operator rule 7).
+- **Unknowns, with their check:** concurrent `markVerified` calls on one
+  card could each read the card before the other's write (last write
+  wins, losing one "verified by"); it needs two verifying replies relayed
+  in the same moment; settle with a row lock in R9's load checks.
+  Re-checks need `next.recheck` and track N's late re-check on staging to
+  produce rows outside tests.
+- **Next exact action:** R6 (conductor: agent-to-agent turns within
+  `rooms.agentTurnBudget`, repeat guard, Stop agents) from
+  `docs/rooms/AGENT_MASTER_PROMPT.md` with `<PHASE>` = `R6`; it builds on
+  `lib/rooms/relay.ts` (after posting) and `lib/rooms/invoke.ts`
+  (`chain_depth`). R7 (goals) and R8 (notes) can follow R5/R4 in
+  parallel, sharing one migration (`20270401000100`). Owner, before
+  `rooms.agents` goes on anywhere: `agents.inbox` on (RF-04).
+
+## Phase R6 — Conductor
+
+**Status:** COMPLETE (2026-11-01).
+
+### Session plan (2026-11-01 09:05 IST, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Owner instruction (in chat):** "Start R6 here".
+- **Preconditions:** R5 COMPLETE; RD-12 approved; no migration
+  (`room_invocations.chain_depth` and `rooms.agents_paused_until` exist
+  since R1); R6 holds no existing file outside track R's own
+  (IMPLEMENTATION_PLAN). Board claimed.
+- **Create:** `lib/rooms/conductor.ts` (after an agent's reply reaches the
+  room, its `@Agent` mentions become follow-on turns only when the chain
+  is under `rooms.agentTurnBudget`, the agent isn't the one that spoke,
+  the reply isn't a repeat of one earlier in the chain (text compared with
+  mentions and spacing taken out), and `check_room_invocation` allows the
+  human who started the chain; the follow-on's request names the asking
+  agent); `tests/rooms/conductor.test.ts` (RT-CND-01…04);
+  `scripts/verify-r6-browser.mjs`.
+- **Change (track R files):** `lib/rooms/invoke.ts` (a follow-on keeps the
+  chain's first message and requester, adds one to its depth, names the
+  asking agent); `lib/rooms/relay.ts` and `actions/rooms.ts` (the
+  conductor after a reply is posted or shared; `stopAgents`: any member
+  pauses agents in the room for 10 minutes and their own agents' running
+  room tasks stop); `lib/rooms/agents.ts` (`pauseAgents`, server-written
+  after the membership check); `queries/rooms.ts` (which agents are
+  working, the pause); `components/rooms/room-view.tsx` ("Stop agents"
+  while any agent works, "Agents paused until …").
+- **Known from R1's SQL:** `check_room_invocation` refuses every
+  invocation while paused, people's mentions too, not only follow-ons;
+  kept as it is (stricter than RD-12's wording, and the button says so).
+- **Questions for the owner:** none blocking.
+
+### Session result (2026-11-01, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Status:** COMPLETE. Nothing committed, pushed or deployed; no live
+  database, real model, provider, Supabase project setting or account
+  touched.
+- **Created:** `lib/rooms/conductor.ts` (`conduct`: after a reply reaches
+  the room, the room agents it names as `@Name` (whole names, not one two
+  agents share, never the speaker, at most three) take follow-on turns
+  only while the chain stays within `rooms.agentTurnBudget` agent turns
+  for one person's message, only if the reply doesn't repeat an earlier
+  one in the chain (compared without names, case or spacing), and only as
+  `check_room_invocation` allows for the person who started the chain;
+  the turn limit and a repeat each end the chain with a plain line);
+  `tests/rooms/conductor.test.ts` (RT-CND-01…04, 10 tests; with the
+  conductor switched off by a temporary mutation, the 5 chain tests fail,
+  so they test it); `scripts/verify-r6-browser.mjs` (two modes, below);
+  stub script `tests/operator/verify-scripts/room-chain.json`.
+- **Changed (track R files):** `lib/rooms/invoke.ts` (optional `chain`: a
+  follow-on keeps the chain's first message and person, records its depth,
+  and its request names the asking agent, "Requested by Lekha, Asha's
+  agent"); `lib/rooms/relay.ts` (the conductor after a reply that
+  succeeded was posted, once its invocation is closed); `actions/rooms.ts`
+  (the conductor after Share in room; `stopAgents`: any member, 10 an hour,
+  pauses the room's agents for 10 minutes, cancels only the presser's own
+  agents' room tasks (`cancelThreadTask`, as today), says so in the room);
+  `lib/rooms/agents.ts` (`pauseAgents`, server-written after the
+  membership check); `queries/rooms.ts` (each agent's `working`, the
+  room's live pause); `components/rooms/room-view.tsx` ("<agents>
+  working…" with **Stop agents**, "Agents are paused until …", and a
+  refresh on agents' replies as well as system lines);
+  `tests/rooms/imports.test.ts` (the conductor and `invoke.ts` now load in
+  the worker: no `server-only`).
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (existing, CF-09); format pass; Test
+  Files 225 passed | 3 skipped (228); Tests 2612 passed | 42 skipped
+  (2654); exit 0. An earlier run in this session had 5 failures in
+  `tests/agent` and `tests/next` because I ran it in a shell that had
+  sourced `.env.verify` (the verify stack's browser, renderer and Google
+  settings leaked into the tests); re-run in a clean shell, all pass.
+- **Browser check (P-3 stack, `npm run verify:guard` OK before each local
+  command):** `verify-r6-browser.mjs stop`, worker off so a request stays
+  queued, 7 of 7: while Lekha works, Ravi (a plain member) sees "Lekha
+  working…" and **Stop agents**; pressing it posts "Ravi stopped the
+  agents for 10 minutes.", shows "Agents are paused until …", the pause is
+  10 minutes, Asha's queued task is untouched, a request to the idle Mira
+  gets "Agents are paused in this room for now."; no console errors.
+  `verify-r6-browser.mjs chain`, worker on, 4 of 4: Lekha's reply names
+  Mira, Mira's turn runs as a follow-on of Asha's message (depth 1, asked
+  for Asha), Mira's request names Lekha as the asker; no console errors.
+  16 screens (both people's room at 360/1280, light/dark): all 200, 0
+  console errors, no sideways scroll, no new target under 44 px. R4 and R5
+  checks re-run on the same stack: 14 of 14 and 8 of 8.
+- **Verification set-up notes (not app defects):** the local database
+  came back empty after Docker restarted (no owner, no rooms); Asha was
+  made local owner again with `npm run owner:grant` (runbook step). The
+  first stop run expected "paused" from a request to the still-busy Lekha;
+  `check_room_invocation` correctly answers "busy" first, so the script
+  asks the idle Mira. One leftover queued room task from a failed attempt
+  was canceled on the local database before the worker started. The free
+  plan's daily tasks were raised to 500 on the local database for the runs
+  and set back to 20; local servers, the stack and Docker were stopped.
+- **Exit checks:** [x] RT-CND-01…04. [x] The whole suite, every
+  regression test unchanged. [x] Browser check (operator rule 7).
+- **Known, kept:** while paused, people's requests are refused too (R1's
+  `check_room_invocation`), stricter than RD-12's "follow-ons"; the button
+  and line say "agents are paused". With the stub model, every agent
+  answers from the first `[verify:…]` marker in its request, so Mira
+  repeats Lekha's line in the chain screenshots; real models don't.
+- **Next exact action:** R7 (room goals) and R8 (room notes), which share
+  one migration `20270401000100_room_goals_notes.sql` (claim it on the
+  board; R7 holds `tests/db/migrations.test.ts` and `db/schema.ts`), from
+  `docs/rooms/AGENT_MASTER_PROMPT.md`; then R9 (safety, moderation incl.
+  block and report, scale readiness). Owner, before `rooms.agents` goes on
+  anywhere: `agents.inbox` on (RF-04).
+
+## Phase R7 — Room goals
+
+**Status:** COMPLETE (2026-11-01).
+
+### Session plan (2026-11-01 10:10 IST, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Owner instruction (in chat):** "Start R7 here".
+- **Preconditions:** R5 COMPLETE (proof cards to attach); RD-13 approved;
+  board claimed with the migration timestamp `20270401000100`, which sorts
+  after the last migration (`20270401000000_rooms.sql`).
+- **Migration `20270401000100_room_goals_notes.sql` + rollback**
+  (DATA_MODEL §7a): `kriya.room_goals` (status `open`/`done`/`dropped`,
+  transitions through `check_transition('room_goal')`, no client grant on
+  `status`), `kriya.room_goal_items` (closes only with a proof card in the
+  same room whose chosen `done` item is `verified`, or with
+  `confirmed_by` = the member confirming; a trigger checks both and sets
+  `closed_at`), and R8's `kriya.room_notes` (one migration holds both,
+  IMPLEMENTATION_PLAN lanes; R7 applies it on the local stack, so it is
+  written whole now: members read, insert human notes as themselves,
+  confirm agent notes; agent notes inserted by the worker in R8). RLS
+  through `is_room_member` like every room table.
+- **Change:** `db/schema.ts` (`roomGoals`, `roomGoalItems`, `roomNotes`);
+  `tests/db/migrations.test.ts` (a down/up case with data; the older cases
+  that roll the rooms back roll this one back first); `lib/agent/policy.ts`
+  (`PERSON_ONLY_WRITES += "room_goals", "room_goal_items"`, the R7 row).
+- **Create:** `lib/rooms/goals.ts` (the goal's state computed from its
+  items, written only here), goal actions in `actions/rooms.ts`, reads in
+  `queries/rooms.ts`, `components/rooms/room-goals.tsx`, tests
+  `tests/rooms/goals.test.ts` (RT-GOAL-01/02) and RT-GOAL-03 in
+  `tests/db/rooms-rls.test.ts`, `scripts/verify-r7-browser.mjs`.
+- **Questions for the owner:** none blocking.
+
+### Session result (2026-11-01, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Status:** COMPLETE. Nothing committed, pushed or deployed; no live
+  database touched (the migration was applied to the local stack only,
+  after `npm run verify:guard`).
+- **Created:** `supabase/migrations/20270401000100_room_goals_notes.sql`
+  and its rollback: `kriya.room_goals` (status `open`/`done`/`dropped`
+  through `check_transition('room_goal')`, no client grant on `status`),
+  `kriya.room_goal_items` (a guard trigger, not security definer, so it
+  tells a client's statement from the server's: the item's room is its
+  goal's; proof only from an agent's message in the same room whose chosen
+  card action is `verified`; confirmation only as oneself; `closed_at` set
+  by the trigger, never the client), and R8's `kriya.room_notes` (members
+  read, add human notes as themselves, confirm agents' notes as
+  themselves, delete their own; agent notes come from the worker in R8).
+  `lib/rooms/goals.ts` (`goalState`, pure; `recomputeGoal` writes the state
+  and says "Goal … is done: N of M items closed with proof, K confirmed
+  without." or "open again"; `dropGoal`); `components/rooms/room-goals.tsx`
+  (goals with items; per item "Close with proof" from the room's verified
+  card actions, "Confirm, no proof", "Reopen", remove; add item; new goal;
+  "Drop" for its setter, the owner and admins); tests
+  `tests/rooms/goals.test.ts` (RT-GOAL-01/02, 6), RT-GOAL-03 in
+  `tests/db/rooms-rls.test.ts` (4, including account deletion), a down/up
+  case in `tests/db/migrations.test.ts`; `scripts/verify-r7-browser.mjs`.
+- **Changed:** `db/schema.ts` (`roomGoals`, `roomGoalItems`, `roomNotes`);
+  `tests/db/migrations.test.ts` (the four cases that roll the rooms back
+  now roll this migration back first and re-apply it after);
+  `lib/agent/policy.ts` (`PERSON_ONLY_WRITES += "room_goals",
+  "room_goal_items"`); `actions/rooms.ts` (`createGoal`, `addGoalItem`,
+  `closeGoalItemWithProof`, `confirmGoalItem`, `reopenGoalItem`,
+  `removeGoalItem`, `dropRoomGoal`; 60 goal changes a minute per person;
+  inserts written in SQL for the column grants); `queries/rooms.ts`
+  (`goalsFor`: through RLS, each item's proof from the card itself);
+  `components/rooms/room-view.tsx` (Goals button with the open count),
+  `app/(workspace)/rooms/[roomId]/page.tsx`; `components/rooms/proof-card.tsx`
+  (the evidence link is a 44 px target on phones, found by this check).
+- **Bugs found and fixed before they shipped:** (1) the first draft tied
+  `closed_at` and `proof_item` to their columns with table checks, while
+  `confirmed_by` and `proof_message_id` are `on delete set null`: deleting
+  a person's account would have violated the checks and failed; the
+  trigger now keeps them consistent and a vanished proof or confirmer
+  reopens the item (test added). (2) The guard read `auth.uid()` for every
+  row, including the server's own cascades; it now reads it only for a
+  client's statement (as `room_members_guard`), which also kept PGlite's
+  `auth.uid()` stub from failing on an emptied claims setting.
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 7 warnings: the 6 existing (CF-09) and one of mine
+  (an unused constant in the R7 script), removed after: `npm run lint` →
+  0 errors, 6 warnings; format pass; Test Files 226 passed | 3 skipped
+  (229); Tests 2625 passed | 42 skipped (2667); exit 0 (R6's 2612 plus 13).
+- **Browser check (`scripts/verify-r7-browser.mjs`, P-3 stack, guard OK
+  first; `npm run db:migrate` applied `20270401000100` on the local
+  database; `npm run owner:grant` made Asha local owner again):** 9 of 9:
+  a member sets a goal with items; an item closes with a card's verified
+  action; the goal is done once every item is closed; the room is told,
+  with how many items had proof; the database's state is code's; reopening
+  opens the goal again; the owner drops it, kept as dropped; no console
+  errors. 12 screens (room with goal lines, goals dialog, neighbour room
+  info at 360/1280, light/dark): all 200, 0 console errors, no sideways
+  scroll, no new target under 44 px after the fix. The local stack has no
+  web key, so the card with a verified action was inserted as local test
+  data (said in the script and its README); RT-PRF tests cover cards made
+  from real runs.
+- **Environment note:** port 6796 was already served by the app's
+  `web-verify` preview (`.claude/launch.json`, started 09:52, running with
+  `.env.verify`: local database and local Supabase, checked with `ps`), so
+  the run used it; it isn't mine, so it and the local stack it needs were
+  left running.
+- **Exit checks:** [x] RT-GOAL-01…03. [x] Down + up on PGlite with data,
+  older cases unchanged. [x] The whole suite. [x] Browser check.
+- **Next exact action:** R8 (room notes: `room_note_add` R1 tool with
+  `TOOL_CLASSES`/`TOOL_WRITES`/capability rows, `PERSON_ONLY_WRITES +=
+  "room_notes.confirmed_by"`, confirmed notes into the bridge message's
+  "Confirmed room notes", the notes UI; the table exists from this
+  migration) from `docs/rooms/AGENT_MASTER_PROMPT.md` with `<PHASE>` =
+  `R8`; then R9.
+
+## Phase R8 — Room notes
+
+**Status:** COMPLETE (2026-11-01).
+
+### Session plan (2026-11-01 10:38 IST, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Owner instruction (in chat):** "Start R8 here".
+- **Preconditions:** R4 COMPLETE; RD-14 approved; `kriya.room_notes`
+  exists from R7's migration `20270401000100` (no new migration). Board
+  claimed.
+- **Change (CHANGE_IMPACT R8 rows):** `lib/agent/policy.ts`
+  (`room_note_add` R1, writes `room_notes+`; `PERSON_ONLY_WRITES +=
+  "room_notes.confirmed_by"`); `lib/agent/capabilities.ts`
+  (`FACTS.room_note_add`); `lib/rooms/tools.ts` (`room_note_add` on the
+  room belt: saved unconfirmed, as the agent of its owner, in the bridge
+  thread's room only, at most 10 an hour per agent and room);
+  `lib/rooms/invoke.ts` (the bridge message's "Confirmed room notes":
+  members' notes and confirmed agents' notes, newest 20, never anything
+  else); `lib/agent/instructions.ts` (the room block names the tool; room
+  tasks only); track R files for the Notes UI (`actions/rooms.ts`,
+  `queries/rooms.ts`, `components/rooms/room-notes.tsx`, the room view).
+- **Also:** the two tool-label lines for `room_note_add` in
+  `components/thread/tool-call.tsx` and `components/workbench/activity.tsx`,
+  the same kind of change the owner approved for `room_history` on
+  2026-11-01 (AGENTS.md convention); recorded here and in the result.
+- **Tests:** `tests/rooms/notes.test.ts` (RT-NOTE-01…03).
+- **Questions for the owner:** none blocking.
+
+### Session result (2026-11-01, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Status:** COMPLETE. Nothing committed, pushed or deployed; no live
+  database, real model, provider or account touched; no new migration
+  (`kriya.room_notes` came with R7's `20270401000100`).
+- **Created:** `lib/rooms/notes.ts` (`addAgentNote`: the agent still in the
+  room, its owner a member, the room active; refused where the owner
+  allowed their accounts in this room; at most 10 an hour per agent and
+  room; saved unconfirmed with a room line "Lekha added a note; a member
+  can confirm it in Notes."; `confirmedNotes`: members' notes and agents'
+  confirmed notes, newest 20); `components/rooms/room-notes.tsx` (notes
+  with who wrote each, "not confirmed yet" / "confirmed by …", Confirm,
+  delete one's own, add a note); `tests/rooms/notes.test.ts` (RT-NOTE-01…03,
+  7 tests; with each of the two refusals switched off by a temporary
+  mutation, the refusal test fails); `scripts/verify-r8-browser.mjs`; stub
+  script `tests/operator/verify-scripts/room-note.json`.
+- **Changed:** `lib/agent/policy.ts` (`room_note_add` R1, writes
+  `room_notes+`; `PERSON_ONLY_WRITES += "room_notes.confirmed_by"`);
+  `lib/agent/capabilities.ts` (`FACTS.room_note_add`); `lib/rooms/tools.ts`
+  (`room_note_add` on the room belt; refused once private content is in the
+  conversation (`privateContentSeen`, loaded at call time because
+  `lib/agent/tools.ts` re-exports this file), since a note reaches the
+  room without "Share in room"); `lib/rooms/invoke.ts` (the bridge
+  message's "Confirmed room notes"); `lib/agent/instructions.ts` (the room
+  block names `room_note_add`; room tasks only); `actions/rooms.ts`
+  (`addRoomNote`, 30 an hour, `confirmRoomNote`, `deleteRoomNote`;
+  inserts in SQL for the column grants); `queries/rooms.ts` (`notesFor`);
+  the room page and view (a Notes button with a dot while a note waits;
+  on phones the Goals, Agents and Room info buttons show only their icons,
+  so the title has room); `tests/rooms/imports.test.ts`
+  (`lib/rooms/notes.ts` loads in the worker); `tests/rooms/regression.test.ts`
+  (the R4 "no tool writes a room table" check now allows exactly
+  `room_note_add`'s `room_notes+`).
+- **Two label lines outside CHANGE_IMPACT:** `room_note_add` in
+  `components/thread/tool-call.tsx` (card "note for the room", the note and
+  "waiting for a member to confirm") and `components/workbench/activity.tsx`,
+  the same kind of change the owner approved for `room_history` on
+  2026-11-01 (AGENTS.md convention). If the owner objects, the two lines
+  come out and the raw tool name shows.
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (existing, CF-09); format pass; Test
+  Files 227 passed | 3 skipped (230); Tests 2635 passed | 42 skipped
+  (2677); exit 0 (R7's 2625 plus 10).
+- **Browser check (`scripts/verify-r8-browser.mjs`, P-3 stack with the
+  worker and stub; guard OK first):** 7 of 7: the agent's note is saved
+  unconfirmed; a member confirms it as themselves; the next request quotes
+  the confirmed note and Ravi's note; nothing copied into memory; the
+  owner's thread labels the tool run; no console errors. 12 screens (room,
+  Notes dialog, owner thread at 360/1280, light/dark): all 200, 0 console
+  errors, no sideways scroll, no new target under 44 px. Docker had stopped
+  outside this session; the stack was started again, `owner:grant` re-run,
+  and Docker and the stack stopped at the end (as found). The free plan's
+  daily tasks were raised to 500 on the local database for the run and set
+  back to 20.
+- **Known, kept:** an agent reply saying "I noted …" after
+  `room_note_add` gets one "claim not verified" on its card, because track
+  A's claim detector expects `memory_write` for that wording; the card is
+  conservative, not wrong. With the stub, Lekha saves a second note on the
+  second request (the stub follows the first `[verify:…]` marker it
+  quotes).
+- **Exit checks:** [x] RT-NOTE-01…03. [x] The whole suite. [x] Browser
+  check.
+- **Next exact action:** R9 (safety, moderation and scale readiness:
+  block and report with their own migration and rollback (RT-MOD-02/03),
+  `/owner/rooms` for reports with the "Rooms" link in
+  `components/owner/nav.tsx` (R9 row), RC-1…RC-5 evidence, RT-RLT-03 on
+  staging (owner, RB-03)) from `docs/rooms/AGENT_MASTER_PROMPT.md` with
+  `<PHASE>` = `R9`. Owner, before `rooms.agents` goes on anywhere:
+  `agents.inbox` on (RF-04).
+
+## Phase R9 — Safety, moderation, scale readiness
+
+**Status:** IN_PROGRESS (2026-11-01).
+
+### Session plan (2026-11-01, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Owner instruction (in chat):** "complete the end to end production
+  levely R9 — Safety, Moderation, and Scale Readiness (Track R)". The
+  same paste named C1, which has been COMPLETE since 2026-10-31, so this
+  session does R9.
+- **Preconditions:** R6 COMPLETE; RD-18 approved. Board: only this claim.
+  Migration timestamp `20270401000200` sorts after `20270401000100`.
+- **Create:** `supabase/migrations/20270401000200_room_moderation.sql` and
+  its rollback: `kriya.person_blocks` (a person's own blocks, owner-only
+  RLS) and `kriya.room_reports` (a member reports a room or one of its
+  messages; a trigger copies the reported message, so a client can't make
+  one up; only the reporter reads their own; the owner console reads them
+  through `privileged` after `requireOwner`); `kriya.invite_blocked()` (the
+  RD-18 "blocked people can't invite you": the joiner has blocked the
+  person who made the invite). `app/owner/rooms/page.tsx` (reports, with
+  Reviewed / Dismiss / Archive room); `components/rooms/report-dialog.tsx`;
+  tests `tests/rooms/moderation.test.ts` (RT-MOD-02/03) and
+  `tests/db/rooms-rls.test.ts` cases for the two tables.
+- **Change:** `db/schema.ts` (`personBlocks`, `roomReports`);
+  `tests/db/migrations.test.ts` (down/up for the new migration; the older
+  cases roll it back first); `components/owner/nav.tsx` ("Rooms", CHANGE_IMPACT
+  R9 row); track R files (`actions/rooms.ts` block, unblock, report and the
+  owner's review; `queries/rooms.ts` blocked people and reports;
+  `lib/rooms/invoke.ts` refuses a request from someone the agent's owner
+  blocked; the room view collapses blocked people's messages and their
+  agents' messages; Report on messages and in Room info).
+  `docs/rooms/CHANGE_IMPACT_AND_SAFETY.md` gets R9 rows for `db/schema.ts`
+  and `tests/db/migrations.test.ts`, the same kind of change as R1/R7.
+- **Not possible here (owner):** RT-RLT-03 and RC-3/RC-4 need staging
+  (RB-03, RB-04); RC-6 needs counsel (RB-05).
+
+### Session result (2026-11-01, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+- **Status:** IN_PROGRESS. Everything that can be done without staging
+  is done and checked; RT-RLT-03 and RC-3/RC-4 need the owner's staging
+  project (RB-03, RB-04). Nothing committed, pushed or deployed; no live
+  database, real model, provider or account touched.
+- **Preflight note:** the first `npm run check` (meant as the baseline)
+  ran while this session was already writing the migration and tests, so
+  its 16 failures are this session's half-written state, not the baseline
+  (R8 recorded 2635 passed, exit 0). The final run below is clean.
+- **Created:** `supabase/migrations/20270401000200_room_moderation.sql`:
+  `kriya.person_blocks` (owner-only RLS: read, add, remove one's own;
+  never oneself); `kriya.room_reports` (a member inserts as themselves;
+  the `room_reports_fill` trigger copies the reported message's author and
+  text (none if already deleted), refuses a message from another room and
+  forces `open`; the copy columns and `status` aren't granted; only the
+  reporter reads their own; one open report per person and message
+  (`room_reports_once`); `open → reviewed | dismissed` through
+  `kriya.check_transition`); `kriya.invite_blocked(token_hash)` ('joiner'
+  / 'maker' / null, null for someone already in the room); index
+  `room_messages_created_idx` for the owner console's 24-hour count.
+  `supabase/rollback/20270401000200_room_moderation.down.sql`.
+  `lib/rooms/moderation.ts` (`closeReport`: the owner's privileged write,
+  archive posts "Kriya archived this room after a report."),
+  `app/owner/rooms/page.tsx` (tiles: open reports, active rooms,
+  messages in 24 h with the busiest room, largest room against
+  `rooms.maxHumans`, blocks; open reports with the copy, the note and a
+  link to the author under Members; Reviewed / Dismiss / Archive room;
+  the latest closed), `components/rooms/report-dialog.tsx`,
+  `components/rooms/report-review.tsx`, `components/rooms/blocked-list.tsx`,
+  `scripts/verify-r9-browser.mjs`.
+- **Changed:** `actions/rooms.ts` (`blockPerson`: only someone you share a
+  room with, 30 an hour; `unblockPerson`; `reportRoom`: zod reasons, note
+  ≤ 500, 10 a day; `reviewRoomReport`: `requireOwner`, then `closeReport`
+  and `audit("room_report.<outcome>")`; `joinRoom` checks
+  `invite_blocked` first: the joiner who blocked the maker is told to
+  unblock, someone the maker blocked gets the ordinary "invite isn't
+  valid" answer, and no invite use is spent; the file still never uses
+  `privileged` (RT-ACT-01)); `lib/rooms/invoke.ts` (a requester the
+  agent's owner blocked is refused with reason `blocked` and the neutral
+  line "Lekha can't take this request."); `queries/rooms.ts` (`getRoom`
+  returns the reader's `blocked` ids; `blockedPeople`; `roomsOverview`
+  for the owner page, called only after `requireOwner`);
+  `components/rooms/room-view.tsx` (blocked people's messages and their
+  agents' messages collapse with Show; Report on others' messages);
+  `components/rooms/room-info.tsx` (Block / Unblock with a confirm saying
+  they aren't told; "· Blocked"; Report room; member rows wrap on phones,
+  a layout bug the 360 px screenshot showed with three buttons on one
+  row); `app/(workspace)/rooms/page.tsx` (Blocked list) and
+  `app/(workspace)/rooms/[roomId]/page.tsx` (passes `blocked`);
+  `components/owner/nav.tsx` ("Rooms", CHANGE_IMPACT R9 row);
+  `db/schema.ts` (`personBlocks`, `roomReports`);
+  `tests/db/migrations.test.ts` (the four older track-R chains roll the
+  new migration back first and re-apply it last; a new down/up case with
+  data); `docs/rooms/CHANGE_IMPACT_AND_SAFETY.md` (R9 on the
+  `db/schema.ts` and `tests/db/migrations.test.ts` rows, the migration in
+  "New files": the same kind of rows R1 and R7 have).
+- **Tests:** `tests/rooms/moderation.test.ts` RT-MOD-02 (block rules, both
+  invite directions, members unaffected, unblock) and RT-MOD-03 (copy kept
+  after deletion, once per message, non-members, other rooms' messages,
+  reasons, 10 a day, only the Kriya owner reviews, archive audited and
+  posting refused); `tests/rooms/invoke.test.ts` RT-MOD-02 (a blocked
+  member's mention: no task, `blocked` invocation, owner unaffected, works
+  again after unblock); `tests/db/rooms-rls.test.ts` (blocks owner-only,
+  `invite_blocked`, report insert/select/review rules, deleted message).
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` →
+  typecheck pass; lint 0 errors, 7 warnings (the 6 known CF-09 ones, and
+  `listed` unused in the new script, then removed; `eslint` on the script
+  clean afterwards); format pass; Test Files 227 passed | 3 skipped (230);
+  Tests 2651 passed | 42 skipped (2693); exit 0 (R8's 2635 plus 16).
+  After the room-info wrap fix: `tsc --noEmit` OK and `tests/rooms` 157
+  passed.
+- **Browser check (`scripts/verify-r9-browser.mjs`, P-3 stack; guard OK
+  before each step):** Docker Desktop started (it was stopped),
+  `supabase start`, `npm run db:migrate` → "applied
+  20270401000200_room_moderation.sql" (first run on real Postgres 17,
+  local only); web via `web-verify`. 10 of 10: the report stored with the
+  database's copy; Ravi's message collapses for Asha and Show opens it;
+  Ravi isn't told; Rooms lists him under Blocked; the owner console shows
+  the report with copy and note; Reviewed closes it and is audited;
+  Unblock removes the block; no console errors. 24 screens (room
+  collapsed, Room info, report dialog, Rooms with Blocked, `/owner/rooms`,
+  `/owner/cloud` as the neighbour; 360/1280, light/dark): all 200, 0
+  console errors, no sideways scroll; targets under 44 px only the
+  existing mobile logo link and the shared dialog Close button. Run again
+  after the room-info fix, same results. Web server, the stack and Docker
+  stopped at the end (as found).
+- **Readiness gates:** RC-1 met (whole suite with `rooms.*` off, RT-REG-01
+  unchanged). RC-2 met (RT-DB-*, RT-AGT-*, RT-PRF-*, RT-CND-* pass). RC-5
+  met (above). RC-3 and RC-4 not done: staging (owner). RC-6: counsel
+  (RB-05, before R10).
+- **Choices made (owner may redirect):** blocks work in both invite
+  directions (RD-18 names only "can't invite you"; the reverse stops a
+  blocked person getting into the blocker's rooms through a forwarded
+  link); a blocked person can't ask the blocker's agents; the Kriya owner
+  can archive a reported room and the room's owner can't undo it; reports
+  stay when the reporter's account is deleted only until the room goes
+  (rooms cascade with their creator's account).
+- **Exit checks:** [x] RT-MOD-02/03. [x] RC-1, RC-2, RC-5. [x] The whole
+  suite. [x] Browser check. [ ] RT-RLT-03 on staging. [ ] RC-3, RC-4 on
+  staging.
+- **Next exact action:** owner: set up staging per RB-03 (Realtime "Allow
+  public access" off) and RB-04 (two test accounts), and run
+  `npm run db:migrate` there with the three track-R migrations. Then an
+  agent runs RT-RLT-03 (non-member join refused, member receives, removed
+  member stops after token refresh) and an RS01-style two-account session
+  on staging with screenshots (RC-3, RC-4), records them here and sets R9
+  COMPLETE. R10 also needs counsel RQ-1, RQ-2 (RB-05).
+
 ## Track R owner approvals
 
 The owner answered "Approve all" in chat on 2026-10-31 (session with Claude Code / Opus 5.5) to the question "Approve the decisions of tracks C, H and R as proposed?".
@@ -8517,3 +12733,193 @@ The owner answered "Approve all" in chat on 2026-10-31 (session with Claude Code
 - **Owner-gated, approved by id:** RD-02 (membership-based access; the invariant 1 sentence, which the owner applies to AGENTS.md at R1 start, RB-02), RD-03 (additive `enqueueRoomTurn` in the protected `lib/agent/queue.ts`), RD-10 (Supabase Realtime private channels; the dashboard setting and plan sizing stay owner actions, RB-03), RD-16 (in-app notifications; notifier events through PX-03).
 - **Program decision approved:** PX-03 (see "Track C owner approvals").
 - **Still needed before R10:** counsel RQ-1, RQ-2 (RB-05).
+
+## UX overhaul: navigation, discoverability, consistency (owner request 2026-11-02)
+
+### Session result (2026-11-02, Claude Code / Opus 5.5, `main` in place, uncommitted)
+
+Owner's request: people the app is shared with can't tell what Kriya can
+do; arrange everything so a general audience finds and recognises every
+feature, without breaking any flow or endpoint. Recorded in
+`docs/agent-platform/CHANGE_IMPACT_AND_SAFETY.md` (row "UX overhaul (owner
+2026-11-02)") and `docs/rooms/CHANGE_IMPACT_AND_SAFETY.md`.
+
+- **Found:** the desktop sidebar had no way into Inbox, Goals, Jobs, Phone
+  calls, Accounts, Radar or Skill Studio (only Home cards, the phone tab
+  bar or Account-page links); Account stacked 15 sections with no index;
+  two header styles (`// label` mono vs the display serif); the phone
+  logo tile blank (shared SVG gradient id resolved to the hidden sidebar
+  copy); the Confirm dialog's buttons (32 px), the dialog Close (28 px),
+  the phone brand link, Upgrade, New squad and Sign out under 44 px at
+  360; `/owner/config` scrolled sideways at 360 (voice price row).
+- **Changed:** new `queries/features.ts` (`getFeatures`: each flag is the
+  same check as that page's own `notFound()`/redirect) and
+  `components/workspace/places.ts` (one list of places, names and
+  blurbs); `app/(workspace)/layout.tsx` passes `features` and first-paint
+  `badges` (Inbox count, Rooms unread) through `context.tsx`;
+  `sidebar.tsx` (Inbox in the main nav, a Tools section, current-place
+  matching for sub-pages); `bottom-nav.tsx` (Inbox tab from the flag, no
+  shift); `command-palette.tsx` (every switched-on place); `home/page.tsx`
+  (Working now and Today first, "What Kriya can do" grid, Rooms after
+  the team); `account/page.tsx` (grouped order, section index: sticky
+  column ≥ 1024 px, chip row below; Accounts/Radar links moved to the
+  sidebar); one header style on `usage`, `accounts`, `radar`,
+  `agents/skills`, `not-found`, `error`; `brand.tsx` (per-instance
+  gradient ids); 44 px fixes in `mobile-nav.tsx`, `usage-meter.tsx`,
+  `home/actions.tsx`, `account/page.tsx`, `ui/dialog.tsx`,
+  `ui/alert-dialog.tsx`; `owner/voice-price-form.tsx` row wraps;
+  `status-bar.tsx` says online/offline. No action, query, route, policy,
+  migration or switch changed.
+- **Commands (P-3 stack, `npm run verify:guard` OK before each):**
+  `npm run check` → typecheck OK, lint 0 errors (6 existing warnings),
+  format OK, `Test Files 235 passed | 3 skipped`, `Tests 2754 passed | 55
+  skipped`; after the last edits `npm run typecheck`, `prettier --check .`
+  OK, `vitest run tests/rooms/ui.test.ts tests/agent` → 613 passed.
+- **Browser checks (local stack only; screenshots git-ignored):**
+  - Sweep `screenshots/ui-overhaul/final/` (19 workspace and owner screens
+    × 360/1280 × light/dark, all feature switches on): 76/76 HTTP 200,
+    console errors 0, failed requests 0, horizontal scroll 0, unnamed
+    controls 0; under 44 px at 360 outside `/owner`: none (one hidden
+    file input behind the Files button). `/owner/config` Save buttons
+    stay 28 px (owner console, existing).
+  - Switches back to the local stack's earlier state (only `agents.inbox`
+    and `harness.api` on; `screenshots/ui-overhaul/off/`): home, tasks,
+    agents, account × 360/1280 × light/dark all clean; the sidebar shows
+    Inbox and no Tools or Rooms, Home's grid shows only Kriya Harness.
+  - `verify-r3-browser.mjs` (run from a scratch cwd so the R3 evidence is
+    untouched): first run failed "sidebar total rises by 2 (0 → 0)": the
+    link now paints at once while the count came later; fixed by the
+    first-paint `badges`; then 2 consecutive runs with 0 FAIL (one
+    earlier run missed "archived room takes no messages" while vitest
+    loaded the machine; passed in both idle runs).
+  - `verify-h2-browser.mjs` 36 shots, `verify-h5-browser.mjs` (approval
+    reaches the device long-poll: approved in 1562 ms, declined,
+    canceled + notifier), `verify-h3-browser.mjs` 12 shots: console
+    errors 0, failed requests 0, no horizontal scroll.
+  - `verify-c7-browser.mjs` can't run any more: its hand-seeded threads
+    and workspaces are gone from the local database. Replaced for this
+    session by a seeded check (scratch script; rows removed after):
+    paused, running, failed and close-requested strips at 360/1280 ×
+    light/dark and Close workspace end to end, 37/37 pass.
+- **Open:** real Android + TalkBack (owner's phone); a committed seed for
+  `verify-c7-browser.mjs` so it runs again on a fresh local stack.
+- **Next exact action:** the owner reviews the new navigation on the
+  preview (`web-verify`), then decides whether to commit.
+
+### Follow-up: Kriya Harness inside Kriya Tavi (owner request 2026-11-02, uncommitted)
+
+Owner's request: Kriya Harness should live inside Kriya Tavi the way
+Claude Code lives inside the Claude app: one place for the computers,
+their sessions, cloud sessions, approvals, skills and memory. Recorded in
+`docs/kriya-harness/UX_SPEC.md` §1 (new "Kriya Harness page" row) and
+`docs/kriya-harness/CHANGE_IMPACT_AND_SAFETY.md` §3 (rows "Harness page").
+
+- **Built:** `app/(workspace)/harness/page.tsx` (only with `harness.api`
+  on, else 404): header (Beta) with computers, sessions and this month's
+  spend against the plan's harness cap; **Waiting for you** (the H5
+  device approvals, answered here with the Inbox's card and action);
+  **Sessions** (sessions mirrored from the person's computers → their
+  thread; open workspaces in the cloud or on their computer → their
+  thread); **Your computers** (the H2 Devices list: rename, mirror mode,
+  revoke); **Get started** (install line from the new owner setting
+  `harness.installCommand`, otherwise "private beta" (the client isn't
+  published, HQ-03); `kriya login` → Connect a device; `kriya`);
+  **Commands** (each only with its switch: handoff/pull need
+  `harness.handoff` and `cloud.workspaces`, serve needs
+  `harness.deviceWorld`); **Skills and memory** links. New:
+  `components/harness/command.tsx` (copy a command), `harnessHome` in
+  `queries/harness.ts` (withUser; RLS `read_own` on every table read).
+  Wired in: sidebar main nav "Kriya Harness", palette, Home's grid
+  (`getFeatures().harness`); `"/harness/"` in `proxy.ts` `PROTECTED`.
+  No migration, route, action, policy or switch default changed.
+- **Tests:** `tests/harness/regression.test.ts` (HT-REG-01 key list +
+  `harness.installCommand` refuses chained commands),
+  `tests/harness/proxy.test.ts` (signed out `/harness` → sign-in with
+  `next`; `/api/harness/` keeps its own check). `npm run check`: lint 0
+  errors (6 existing warnings), format OK, `Test Files 235 passed | 3
+  skipped`, `Tests 2755 passed | 55 skipped`, exit 0.
+- **End to end on the P-3 stack (guard OK before each run):**
+  - `verify-h6-browser.mjs` setup/run/restore: the **real client**
+    (`../kriya-harness`, pinned DSH) ran `kriya run`, exit 0, and
+    mirrored its session.
+  - Page check (scratch `harness-hub-check.mjs`, screenshots
+    `screenshots/ui-overhaul/harness/`), **28/28 pass**: the real mirrored
+    session listed and opening its thread ("Mirrored from Kriya
+    Harness"); a local test device's `POST /approvals` (201) shown under
+    Waiting for you, **Approve once** on the page → the device's
+    long-poll gets `approved`; rename stored; sidebar link (current
+    state), palette entry, Home entry; install line hidden until the
+    owner sets it, then shown with Copy; 360/1280 × light/dark: no
+    overflow, console errors 0, every control named, targets ≥ 44 px;
+    signed out → `/login?next=%2Fharness`; `harness.api` off → 404 and no
+    entries. Its test device and requests were deleted afterwards.
+  - `verify-h8-handoff.mjs` setup/run/restore with the real client:
+    **PASS** (`kriya handoff`: patch stored, sha256 matches, task queued;
+    `kriya pull`: identical files on `kriya/pull-<id>`). Between run and
+    restore the page listed "Handoff · calc · In the cloud · asha/calc ·
+    main · starting", and its row opened the thread with the Cloud
+    workspace strip (`asha/calc · main @ 45bca82 · Starting`).
+  - Regressions: `verify-h2-browser.mjs` 36 shots clean (the Dialog Close
+    and Confirm buttons now 44 px at 360); `verify-r3-browser.mjs` all
+    flow checks pass.
+- **Open (observed, not caused by this change as far as tested):** R3's
+  "flow pages: no console errors" intermittently caught a React dev
+  warning, `Each child in a list should have a unique "key" prop … Check
+  the render method of OuterLayoutRouter` (Next.js 16.4.3's own router,
+  dev only, no component stack), on the new room page right after its
+  navigation. 4 of the first 12 runs after the harness work; then 12
+  consecutive clean runs, 6 with this session's Dialog change reverted
+  and 6 with it restored, so the Dialog isn't the cause. Suspect: the
+  workspace `template.tsx` `ViewTransition` during navigation in dev.
+  Not checked on `main` without this session's changes. Next action: run
+  `verify-r3` on a production build (`next build && next start` with the
+  verify env) and, if the owner wants, a 20-run loop on a clean checkout.
+- **Local state restored:** `agents.inbox=on`, `harness.api=on` only; the
+  free plan's harness cap back to 0.
+
+### Follow-up: Kriya modes and the release stage (HD-20, owner 2026-11-02, uncommitted)
+
+Owner's decisions in chat: keep Beta until the gates pass, as one switch;
+"own the experience" (DeepSeek Harness stays the engine); Kriya's own
+modes (plan, auto and the rest).
+
+- **Client (`kriya-harness`, branch `feat/kriya-modes` from
+  `feat/h10-device-world`, uncommitted):** `src/modes.js` (ask, auto, read,
+  plan, full); `bundle/cordis.patch.yml` rows `sandbox-policy`, `approval`,
+  `permission` (Kriya names in the Web UI's Permissions control) from the
+  launcher's `KRIYA_SANDBOX`/`KRIYA_APPROVAL`/`KRIYA_PRESET`;
+  `src/launch.js` (mode only from `--mode`); `bin/kriya.js` (`--mode` on
+  `kriya` and `kriya run`, plan wording for `run`, Full access warning,
+  help); SAFETY.md (modes table; the sandbox limits file changes only, not
+  network or processes; temporary areas stay writable;
+  `DSH_PERMISSION_MODE` no longer read); README; `expected/*.dump.yml`
+  re-recorded (only those three rows changed); `tests/modes.test.js` (8)
+  and HG-6 in `tests/release.test.js` updated to the new defaults.
+- **Real-engine evidence (`node --test tests/modes.test.js`, pinned DSH,
+  fake Kriya, a scripted model writing inside and outside the folder and
+  asking bash for unsandboxed access): 8/8.**
+  - ask: inside written; the outside `write` is refused by DSH; bash asks
+    Kriya; declined → nothing; approved → it runs once.
+  - auto: inside written; outside and bash refused; no request reached Kriya.
+  - read and plan: nothing written, nothing asked; plan's job reached the
+    model as "Plan only … Task: …".
+  - full: everything ran, no request; the warning printed.
+  - Finding: a folder under the system temporary area counts as writable
+    in DSH's folder sandbox (the test's "outside" folder now lives under
+    the home folder and is removed after each test). Disclosed in SAFETY.md.
+- **Client `npm run check`:** pins, notices, brand, `tests 102, pass 102,
+  fail 0`, exit 0.
+- **Kriya:** `harness.releaseStage` (`beta` default, `ga`; HT-REG-01
+  updated); the Kriya Harness page shows a Modes section and the Beta
+  label/line only while `beta`; `docs/kriya-harness/DECISIONS.md` HD-20,
+  UX_SPEC, DSH_DISTRIBUTION, CHANGE_IMPACT rows.
+- **Browser (P-3 stack, guard OK):** H6 setup → real client `kriya run`
+  exit 0 → page check **31/31** (the earlier 28 plus: the five modes
+  listed in order; Beta shown by default; `ga` drops the label and the
+  line) → H6 restore. Two test-script fixes on the way, not app changes:
+  the label is CSS-uppercase, so the check reads it case-insensitively;
+  Home's check now waits for the streamed section.
+- **Not done:** the client's label still says beta in its own texts (it
+  changes with a client release, HD-20); `kriya acp` takes no `--mode`
+  (editors choose through ACP); plan as a starting mode in the Web UI is
+  DSH's `/plan`, not a flag.

@@ -1,9 +1,11 @@
 import { cookies } from "next/headers"
 import { notFound } from "next/navigation"
 
+import { CloudStrip } from "@/components/thread/cloud-strip"
 import { ThreadView } from "@/components/thread/thread-view"
 import { requireUser } from "@/lib/auth"
 import { agentGlyph } from "@/lib/glyph"
+import { getThreadWorkspace } from "@/queries/cloud"
 import { getThread, getThreadsFor } from "@/queries/workspace"
 
 // Shared by the agent and squad thread routes
@@ -51,7 +53,9 @@ export async function ThreadPage({
     )
   ).map((t) => ({ id: t.id, title: t.title, activeAt: t.activeAt.toISOString() }))
 
-  return (
+  // Track C: the thread's cloud workspace, when it has one
+  const workspace = await getThreadWorkspace(user.id, thread.id)
+  const view = (
     <ThreadView
       key={thread.id}
       threadId={thread.id}
@@ -63,5 +67,12 @@ export async function ThreadPage({
       initialMessages={thread.messages}
       workbenchOpen={(await cookies()).get("kriya_panel")?.value !== "closed"}
     />
+  )
+  if (!workspace) return view
+  return (
+    <>
+      <CloudStrip workspace={workspace} />
+      {view}
+    </>
   )
 }

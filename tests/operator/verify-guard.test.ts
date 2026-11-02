@@ -71,6 +71,15 @@ describe("verify:guard (OT-UIV-01)", () => {
     expect(problems(paid, []).join(" ")).not.toContain("sk-or-real")
   })
 
+  it("refuses a sandbox provider key unless paid checks were allowed (track C, C8)", () => {
+    for (const name of ["E2B_API_KEY", "DAYTONA_API_KEY"]) {
+      const found = problems({ ...LOCAL, [name]: "e2b_real_value" }, [])
+      expect(found).toEqual([`${name} is set: paid sandboxes need KRIYA_VERIFY_PAID=1.`])
+      expect(found.join(" ")).not.toContain("e2b_real_value")
+      expect(problems({ ...LOCAL, [name]: "x", KRIYA_VERIFY_PAID: "1" }, [])).toEqual([])
+    }
+  })
+
   it("refuses any name in .env or .env.local the environment leaves undefined (OF-17)", () => {
     // Next.js would fill these from the files
     expect(problems(LOCAL, ["FIRECRAWL_API_KEY", "DATABASE_URL"])).toEqual([

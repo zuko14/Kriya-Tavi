@@ -294,6 +294,25 @@ export const TOOL_CLASSES: Record<string, RiskClass> = {
   gmail_send_draft: "R4",
   // Changes only the person's own calendar; guests aren't emailed
   calendar_delete_event: "R3",
+  // Track C (cloud.workspaces, CD-11): an isolated sandbox inside Kriya's
+  // boundary; nothing in it reaches anyone until workspace_publish (C5).
+  // Opening spends plan minutes; runs and edits change only the sandbox
+  workspace_open: "R1",
+  workspace_run: "R1",
+  workspace_read: "R0",
+  workspace_list: "R0",
+  workspace_search: "R0",
+  workspace_changes: "R0",
+  workspace_write: "R1",
+  workspace_edit: "R1",
+  workspace_patch: "R1",
+  // C5 (cloud.publish, CD-10): a commit and a draft pull request on GitHub
+  // as the person
+  workspace_publish: "R4",
+  // Track R (R4, RD-05): reads the room the request came from
+  room_history: "R0",
+  // R8 (RD-14): a note for the room, unconfirmed until a member confirms
+  room_note_add: "R1",
 }
 
 export function classifyTool(name: string, input: unknown): RiskClass {
@@ -328,6 +347,22 @@ export function classifyMcpTool(tool: McpPolicyInput): RiskClass {
     cls = raise(cls, "R4")
   return cls
 }
+
+// Any workspace call may start, resume or rebuild the sandbox (a failed
+// start meters its seconds; paused is a failed resume). Pausing at the end,
+// checkpoints and close requests are code and the person, never a tool
+const SANDBOX_WRITES = [
+  "workspace_sessions+",
+  "workspace_sessions.generation",
+  "workspace_sessions.status:failed",
+  "resource_usage+",
+  "workspaces.status:starting|running|paused|failed",
+  "workspaces.generation",
+  "workspaces.provider_ref",
+  "workspaces.base_sha",
+  "workspaces.error",
+  "workspaces.last_active_at",
+]
 
 // What each tool changes in Kriya's own tables (AT-POL-07): "table+" inserts
 // rows, "table-" deletes them, "table.column" changes existing rows, with
@@ -428,6 +463,20 @@ export const TOOL_WRITES: Record<string, string[]> = {
   drive_share: [],
   gmail_send_draft: [],
   calendar_delete_event: [],
+  workspace_open: ["workspaces+", ...SANDBOX_WRITES],
+  workspace_run: SANDBOX_WRITES,
+  workspace_read: SANDBOX_WRITES,
+  workspace_list: SANDBOX_WRITES,
+  workspace_search: SANDBOX_WRITES,
+  // Also the strip's counts
+  workspace_changes: [...SANDBOX_WRITES, "workspaces.changes"],
+  workspace_write: SANDBOX_WRITES,
+  workspace_edit: SANDBOX_WRITES,
+  workspace_patch: SANDBOX_WRITES,
+  // It may resume the sandbox; GitHub itself is outside Kriya's tables
+  workspace_publish: SANDBOX_WRITES,
+  room_history: [],
+  room_note_add: ["room_notes+"],
 }
 
 // Changes only the person makes, through their own server actions. Agent
@@ -469,4 +518,18 @@ export const PERSON_ONLY_WRITES = [
   "mcp_connections",
   // Skill Studio: only the person designs, edits, approves or retires a skill
   "user_skills",
+  // Track C: only the person asks to close a workspace
+  "workspaces.close_requested_at",
+  // Track R: rooms, membership, invites, agents in rooms and Share in room
+  // are people's actions (R4)
+  "rooms",
+  "room_members",
+  "room_invites",
+  "room_agents",
+  "room_disclosures",
+  // R7: goals and their items are people's; a goal's state is code's
+  "room_goals",
+  "room_goal_items",
+  // R8: only a member confirms a note (an agent's note stays unconfirmed)
+  "room_notes.confirmed_by",
 ]

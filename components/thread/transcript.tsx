@@ -2,12 +2,14 @@
 
 import * as React from "react"
 import type { ChatStatus } from "ai"
+import Link from "next/link"
 import {
   ArrowDownIcon,
   BrainIcon,
   CalendarClockIcon,
   ChevronRightIcon,
   CornerDownRightIcon,
+  MessagesSquareIcon,
   UsersIcon,
 } from "lucide-react"
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom"
@@ -35,6 +37,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import type { KriyaMessage } from "@/lib/agent/tools"
+import { REQUEST_MARKER, requestOf } from "@/lib/rooms/context"
 import { isTier, TIER_LABELS } from "@/lib/tiers"
 import { cn } from "@/lib/utils"
 
@@ -185,6 +188,8 @@ function UserMessage({
   // O11: a crew member's brief, or the crew's results for the lead
   const crew = message.metadata?.channel === "crew"
   // U3: shown as a card, not as the model-facing text
+  // Track R: a room request, written by code in the agent's bridge thread
+  const room = message.metadata?.channel === "room" ? message.metadata.roomId : null
   const report = crew && !message.metadata?.partId ? parseCrewResults(text) : null
   const brief = crew && message.metadata?.partId ? parseCrewBrief(text) : null
 
@@ -202,6 +207,17 @@ function UserMessage({
             {message.metadata?.partId ? "Your part of a job" : "Crew results"}
           </span>
         )}
+        {room && (
+          <span className="flex items-center gap-1.5 font-mono text-[10.5px] text-muted-foreground">
+            <MessagesSquareIcon className="size-3.5" /> Room request ·{" "}
+            <Link
+              href={`/rooms/${room}`}
+              className="inline-flex min-h-11 items-center underline underline-offset-2 sm:min-h-0"
+            >
+              open the room
+            </Link>
+          </span>
+        )}
         {addressee && (
           <span className="flex items-center gap-1.5 font-mono text-[10.5px] text-muted-foreground">
             to <Glyph seed={addressee.glyph} className="size-3.5 rounded-[3px]" />{" "}
@@ -212,6 +228,16 @@ function UserMessage({
           <CrewReportCard report={report} text={text} />
         ) : brief ? (
           <CrewBriefCard brief={brief} text={text} />
+        ) : room ? (
+          // The request first; the quoted room (untrusted) on a tap
+          <details className="group/sent rounded-[20px] rounded-br-md bg-muted px-4 py-2.5 text-[14.5px] leading-relaxed text-foreground">
+            <summary className="cursor-pointer list-none whitespace-pre-wrap [&::-webkit-details-marker]:hidden">
+              {requestOf(text)}
+            </summary>
+            <p className="mt-2 border-t pt-2 text-[12.5px] whitespace-pre-wrap text-muted-foreground">
+              {text.split(REQUEST_MARKER)[0]}
+            </p>
+          </details>
         ) : scheduled || crew ? (
           // U3: written for the agent; three lines, tap for all
           <details className="group/sent rounded-[20px] rounded-br-md bg-muted px-4 py-2.5 text-[14.5px] leading-relaxed text-foreground">

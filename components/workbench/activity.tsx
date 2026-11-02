@@ -100,6 +100,19 @@ const TOOL_LABELS: Record<string, string> = {
   mandate_status: "Checked a job's progress",
   mandate_report: "Checked a job against what was verifiably done",
   crew_dispatch: "Handed parts of the job to the crew",
+  // Track C: the thread's cloud workspace
+  workspace_open: "Opened the cloud workspace",
+  workspace_run: "Ran a command in the workspace",
+  workspace_read: "Read a file in the workspace",
+  workspace_list: "Listed the workspace's files",
+  workspace_search: "Searched the workspace's files",
+  workspace_write: "Wrote a file in the workspace",
+  workspace_edit: "Edited a file in the workspace",
+  workspace_patch: "Changed files in the workspace",
+  workspace_changes: "Checked what changed in the workspace",
+  workspace_publish: "Opened a draft pull request",
+  room_history: "Read earlier messages in the room",
+  room_note_add: "Added a note for the room",
 }
 
 // What each tool sets out to do, for rows still running or that failed
@@ -169,6 +182,18 @@ const TOOL_ACTIONS: Record<string, string> = {
   mandate_status: "check a job's progress",
   mandate_report: "check a job against the records",
   crew_dispatch: "hand parts of the job to the crew",
+  workspace_open: "open the cloud workspace",
+  workspace_run: "run a command in the workspace",
+  workspace_read: "read a file in the workspace",
+  workspace_list: "list the workspace's files",
+  workspace_search: "search the workspace's files",
+  workspace_write: "write a file in the workspace",
+  workspace_edit: "edit a file in the workspace",
+  workspace_patch: "change files in the workspace",
+  workspace_changes: "check what changed in the workspace",
+  workspace_publish: "open a draft pull request",
+  room_history: "read earlier messages in the room",
+  room_note_add: "add a note for the room",
 }
 
 // A label that matches what happened: "Added…", "Add…" while running, "Couldn't add…"

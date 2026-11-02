@@ -101,19 +101,52 @@ function took(ms: number) {
 
 type Kind = "done" | "attention" | "error"
 
-function describe(event: Extract<KriyaEvent, { type: "turn-finished" }>) {
+// What a card says, its button, and the lock-screen line (which names no
+// content: it can show on a locked phone)
+function describe(event: Exclude<KriyaEvent, { type: "turn-started" }>) {
+  if (event.type === "room-mention")
+    return {
+      kind: "done" as Kind,
+      status: `mentioned you · ${event.room}`,
+      title: `${event.name} mentioned you in ${event.room}`,
+      body: event.preview || "Open the room to read it.",
+      action: "Open room",
+      locked: "You were mentioned in a room.",
+    }
+  if (event.type === "room-disclosure")
+    return {
+      kind: "attention" as Kind,
+      status: `reply to share · ${event.room}`,
+      title: `${event.name} has a reply for ${event.room}`,
+      body: "It used your private data, so it waits for you to share it.",
+      action: "Open Inbox",
+      locked: "A reply is waiting for you to share it.",
+    }
+  if (event.type === "harness-approval")
+    return {
+      kind: "attention" as Kind,
+      status: `wants to run ${event.tool}`,
+      title: `${event.name} wants to run ${event.tool}`,
+      body: "Your laptop agent is waiting for your answer.",
+      action: "Open Inbox",
+      locked: "Your laptop agent is waiting for your answer.",
+    }
   return event.ok
     ? {
         kind: "done" as Kind,
         status: `finished · ${took(event.durationMs)}`,
         title: `${event.name} finished · ${took(event.durationMs)}`,
         body: event.preview || "The reply is ready.",
+        action: "Open thread",
+        locked: "Your reply is ready.",
       }
     : {
         kind: "error" as Kind,
         status: `stopped · ${took(event.durationMs)}`,
         title: `${event.name} stopped`,
         body: event.error ?? "Something went wrong.",
+        action: "Open thread",
+        locked: "Open Kriya to see what happened.",
       }
 }
 
@@ -129,6 +162,7 @@ type CardData = {
   glyph: string
   href: string
   timeout: number
+  action: string
 }
 
 const TONE: Record<Kind, { edge: string; text: string; bar: string }> = {
@@ -178,7 +212,7 @@ function Cards({ onOpen }: { onOpen: (href: string) => void }) {
           <ToastPrimitive.Description className="line-clamp-3 text-[12.5px] leading-relaxed text-foreground/80" />
           <div className="flex items-center justify-between gap-2 border-t border-dashed pt-2.5">
             <span className="font-mono text-[10px] text-faint">
-              {data.kind === "error" ? "// see what happened" : "// kriya"}
+              {data.kind === "error" ? "See what happened" : "Kriya"}
             </span>
             <div className="flex items-center gap-1.5">
               <Button
@@ -189,7 +223,7 @@ function Cards({ onOpen }: { onOpen: (href: string) => void }) {
                   alerts.close(item.id)
                 }}
               >
-                Open thread
+                {data.action}
                 <ArrowRightIcon data-icon="inline-end" />
               </Button>
             </div>
@@ -261,7 +295,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
         // A turn starting is news only for the page showing it
         if (event.type === "turn-started" || !here.current.enabled) return
 
-        const { kind, status, title, body } = describe(event)
+        const { kind, status, title, body, action, locked } = describe(event)
         const looking = document.visibilityState === "visible" && document.hasFocus()
         const onThread = here.current.pathname === event.href.split("?")[0]
         // The thread you're reading already shows its own news
@@ -277,6 +311,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
             glyph: event.glyph,
             href: event.href,
             timeout,
+            action,
           }
           alerts.add({ title: event.name, description: body, timeout, data })
           return
@@ -284,10 +319,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
         if ("Notification" in window && Notification.permission === "granted") {
           // Shown on lock screens too, so it names the agent but not the reply
           const notification = new Notification(title, {
-            body:
-              kind === "error"
-                ? "Open Kriya to see what happened."
-                : "Your reply is ready.",
+            body: locked,
             tag: event.threadId,
             icon: "/icon.svg",
             silent: true,

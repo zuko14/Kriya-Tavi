@@ -1,5 +1,4 @@
 import type { Metadata } from "next"
-import Link from "next/link"
 import { asc, eq } from "drizzle-orm"
 
 import { signOut } from "@/actions/auth"
@@ -13,6 +12,7 @@ import {
 } from "@/components/account/forms"
 import { Apps } from "@/components/account/apps"
 import { Connections } from "@/components/account/connections"
+import { Devices } from "@/components/account/devices"
 import { connectionHealth } from "@/queries/connections"
 import { Files } from "@/components/account/files"
 import { Logins } from "@/components/account/logins"
@@ -31,6 +31,7 @@ import { googleServices, isProviderConfigured, listConnections } from "@/lib/con
 import { usageSummary } from "@/lib/entitlements"
 import { listFiles } from "@/lib/files"
 import { appsForPerson } from "@/queries/apps"
+import { listDevices } from "@/queries/harness"
 import { listLogins } from "@/queries/logins"
 import { listShares } from "@/lib/share"
 import { formatInr } from "@/lib/money"
@@ -53,7 +54,7 @@ function Section({
   return (
     <section
       id={id}
-      className="flex scroll-mt-6 flex-col gap-4 border-t pt-8 first:border-t-0 first:pt-0"
+      className="flex scroll-mt-20 flex-col gap-4 border-t pt-8 first:border-t-0 first:pt-0 lg:scroll-mt-8"
     >
       <header className="flex flex-col gap-1">
         <h2 className="text-[15px] font-semibold">{title}</h2>
@@ -132,12 +133,7 @@ export default async function AccountPage({
   const filesOn = (await getSetting("agents.files")) === "on"
   // A6: Logins (saved sign-ins by take-over)
   const loginsOn = (await getSetting("agents.loginProfiles")) === "on"
-  // A7: the way into Accounts
-  const ledgerOn = (await getSetting("agents.ledger")) === "on"
-  // A13: the way into Radar and watchers
-  const radarOn =
-    (await getSetting("agents.radar")) === "on" ||
-    (await getSetting("agents.watchers")) === "on"
+  // A7 Accounts and A13 Radar are reached from the sidebar's Tools now
   // N6: Apps, after Connected accounts, only with both switches on
   const appsOn =
     (await getSetting("next.mcp")) === "on" &&
@@ -145,260 +141,300 @@ export default async function AccountPage({
   const apps = appsOn ? await appsForPerson(user.id) : null
   // Voice phase 7: "Phone & calls", with voice access only (UX spec §7)
   const voiceOn = await voiceAvailable(user.id)
+  // Track H (H2): computers signed in to Kriya Harness
+  const harnessOn = (await getSetting("harness.api")) === "on"
+  // The page's index, in the order of the sections below
+  const index = [
+    { id: "plan", label: "Plan and usage" },
+    { id: "connections", label: "Connected accounts" },
+    apps && { id: "apps", label: "Apps" },
+    loginsOn && { id: "logins", label: "Logins" },
+    harnessOn && { id: "devices", label: "Devices" },
+    voiceOn && { id: "phone", label: "Phone & calls" },
+    memoryV2 && { id: "about-you", label: "About you" },
+    filesOn && { id: "files", label: "Files" },
+    filesOn && { id: "shared-links", label: "Shared links" },
+    { id: "profile", label: "Profile" },
+    { id: "display", label: "Display" },
+    { id: "security", label: "Password and sign-in" },
+  ].filter((item) => !!item)
+  const name = user.profile.displayName ?? "Your account"
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
-      <div className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
-        <header className="flex flex-col gap-1">
-          <span className="label-mono">{"// account"}</span>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {user.profile.displayName ?? "Your account"}
-          </h1>
-          <p className="text-[13px] text-muted-foreground">{user.email}</p>
-        </header>
-
-        {billing === "active" && (
-          <Notice tone="success">Payment confirmed. Your new plan is active.</Notice>
-        )}
-        {billing === "failed" && (
-          <Notice tone="error">
-            The payment didn&apos;t go through. You&apos;re still on {usage.plan.name}.
-          </Notice>
-        )}
-
-        <Section
-          id="plan"
-          title="Plan and usage"
-          description={`You're on ${usage.plan.name}. Usage resets on your billing date, or on the 1st of each month on Free.`}
+      <div className="mx-auto flex max-w-5xl gap-12 px-4 py-6 sm:px-6 sm:py-12">
+        <nav
+          aria-label="Account sections"
+          className="sticky top-12 hidden h-fit w-48 shrink-0 flex-col gap-px lg:flex"
         >
-          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-3">
-            <div className="flex flex-col gap-1 bg-surface px-4 py-3">
-              <span className="label-mono">tasks today</span>
-              <span className="font-mono text-xl tabular-nums">
-                {usage.tasksToday} / {usage.plan.maxTasksPerDay}
-              </span>
+          {index.map((item) => (
+            <a
+              key={item.id}
+              href={`#${item.id}`}
+              className="flex h-8 items-center rounded-md px-2.5 text-[13px] text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
+            >
+              {item.label}
+            </a>
+          ))}
+        </nav>
+        <div className="flex max-w-3xl min-w-0 flex-1 flex-col gap-8">
+          <header className="flex items-center gap-4">
+            <span
+              aria-hidden
+              className="grid size-14 shrink-0 place-items-center rounded-full bg-rigel-soft font-display text-[26px] text-rigel ring-1 ring-rigel/20 sm:size-16 sm:text-[30px]"
+            >
+              {name.trim().charAt(0).toUpperCase()}
+            </span>
+            <div className="flex min-w-0 flex-col gap-1.5">
+              <h1 className="truncate font-display text-[30px] leading-none font-normal sm:text-[36px]">
+                {name}
+              </h1>
+              <p className="truncate text-[13.5px] text-muted-foreground">{user.email}</p>
             </div>
-            <div className="flex flex-col gap-1 bg-surface px-4 py-3">
-              <span className="label-mono">used this period</span>
-              <span className="font-mono text-xl tabular-nums">
-                {formatInr(usage.usedMicroInr)}
-              </span>
-            </div>
-            <div className="col-span-2 flex flex-col gap-1 bg-surface px-4 py-3 sm:col-span-1">
-              <span className="label-mono">included</span>
-              <span className="font-mono text-xl tabular-nums">
-                {usage.allowanceMicroInr > 0
-                  ? formatInr(usage.allowanceMicroInr)
-                  : "Task limit only"}
-              </span>
-            </div>
-          </div>
-          {subscription && (
-            <div className="flex flex-col gap-2 rounded-lg border p-4 text-[13px]">
-              <span>
-                Subscription:{" "}
-                <strong className="font-medium">{subscription.status}</strong>
-                {subscription.currentPeriodEnd &&
-                  ` · ${subscription.cancelAtPeriodEnd ? "ends" : "renews"} ${subscription.currentPeriodEnd.toLocaleDateString("en-IN", dateFormat)}`}
-                {subscription.provider === "test" && " · test mode, no money moved"}
-              </span>
-              {!subscription.cancelAtPeriodEnd && subscription.status === "active" && (
-                <CancelPlanForm />
-              )}
-            </div>
-          )}
-          <PlanCards
-            plans={planRows}
-            currentPlanId={usage.plan.id}
-            canBuy={!!provider && !subscription}
-            signedIn
-          />
-          {!provider && (
-            <p className="text-[12.5px] text-muted-foreground">Paid plans open soon.</p>
-          )}
-          {provider === "test" && (
-            <p className="text-[12.5px] text-muted-foreground">
-              Payments are in test mode: choosing a plan opens a simulated checkout.
-            </p>
-          )}
-        </Section>
+          </header>
 
-        <Section
-          id="connections"
-          title="Connected accounts"
-          description="Let your agents use your calendar, email and documents. Anything that changes your accounts waits for your approval first."
-        >
-          {connected && (
-            <Notice tone="success">
-              {PROVIDER_NAMES[connected] ?? "Notion"} is connected. Your agents can use it
-              from their next task.
-            </Notice>
+          {/* Phones and tablets: the index as a row of chips under the header */}
+          <nav
+            aria-label="Account sections"
+            className="sticky top-0 z-10 -mx-4 -my-3 flex [scrollbar-width:none] gap-1.5 overflow-x-auto bg-background/80 px-4 py-1.5 backdrop-blur-xl sm:-mx-6 sm:px-6 lg:hidden"
+          >
+            {index.map((item) => (
+              <a
+                key={item.id}
+                href={`#${item.id}`}
+                className="flex min-h-11 shrink-0 items-center rounded-full border px-3.5 text-[13px] whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
+
+          {billing === "active" && (
+            <Notice tone="success">Payment confirmed. Your new plan is active.</Notice>
           )}
-          {connectError && (
+          {billing === "failed" && (
             <Notice tone="error">
-              {CONNECT_ERRORS[connectError] ?? CONNECT_ERRORS.failed}
+              The payment didn&apos;t go through. You&apos;re still on {usage.plan.name}.
             </Notice>
           )}
-          <Connections
-            google={
-              googleRow
-                ? {
-                    account: googleRow.account,
-                    services: googleServices(googleRow.scopes),
-                  }
-                : null
-            }
-            notion={notionRow ? { account: notionRow.account } : null}
-            available={{
-              google: isProviderConfigured("google"),
-              notion: isProviderConfigured("notion"),
-            }}
-            {...(connectorsV2 && {
-              more: {
-                github: githubRow ? { account: githubRow.account } : null,
-                meta: metaRow ? { account: metaRow.account } : null,
-                available: {
-                  github: isProviderConfigured("github"),
-                  meta: isProviderConfigured("meta"),
-                },
-              },
-            })}
-            health={health}
-            testingMode={testingMode}
-            driveShare={driveShare}
-            sheets={sheetsOn}
-          />
-        </Section>
 
-        {apps && (
           <Section
-            id="apps"
-            title="Apps"
-            description="Let your agents use apps outside Kriya, as you. Anything that changes something in an app waits for your OK first."
+            id="plan"
+            title="Plan and usage"
+            description={`You're on ${usage.plan.name}. Usage resets on your billing date, or on the 1st of each month on Free.`}
           >
-            {connectedApp && (
-              <Notice tone="success">
-                {apps.apps.find((a) => a.id === connectedApp)?.name ?? "The app"} is
-                connected. Choose which agents may use it.
-              </Notice>
+            <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-3">
+              <div className="flex flex-col gap-1 bg-surface px-4 py-3">
+                <span className="label-mono">tasks today</span>
+                <span className="font-mono text-xl tabular-nums">
+                  {usage.tasksToday} / {usage.plan.maxTasksPerDay}
+                </span>
+              </div>
+              <div className="flex flex-col gap-1 bg-surface px-4 py-3">
+                <span className="label-mono">used this period</span>
+                <span className="font-mono text-xl tabular-nums">
+                  {formatInr(usage.usedMicroInr)}
+                </span>
+              </div>
+              <div className="col-span-2 flex flex-col gap-1 bg-surface px-4 py-3 sm:col-span-1">
+                <span className="label-mono">included</span>
+                <span className="font-mono text-xl tabular-nums">
+                  {usage.allowanceMicroInr > 0
+                    ? formatInr(usage.allowanceMicroInr)
+                    : "Task limit only"}
+                </span>
+              </div>
+            </div>
+            {subscription && (
+              <div className="flex flex-col gap-2 rounded-lg border p-4 text-[13px]">
+                <span>
+                  Subscription:{" "}
+                  <strong className="font-medium">{subscription.status}</strong>
+                  {subscription.currentPeriodEnd &&
+                    ` · ${subscription.cancelAtPeriodEnd ? "ends" : "renews"} ${subscription.currentPeriodEnd.toLocaleDateString("en-IN", dateFormat)}`}
+                  {subscription.provider === "test" && " · test mode, no money moved"}
+                </span>
+                {!subscription.cancelAtPeriodEnd && subscription.status === "active" && (
+                  <CancelPlanForm />
+                )}
+              </div>
             )}
-            {appError && (
-              <Notice tone="error">
-                {CONNECT_ERRORS[appError] ?? CONNECT_ERRORS.failed}
-              </Notice>
+            <PlanCards
+              plans={planRows}
+              currentPlanId={usage.plan.id}
+              canBuy={!!provider && !subscription}
+              signedIn
+            />
+            {!provider && (
+              <p className="text-[12.5px] text-muted-foreground">Paid plans open soon.</p>
             )}
-            <Apps apps={apps.apps} agents={apps.agents} />
+            {provider === "test" && (
+              <p className="text-[12.5px] text-muted-foreground">
+                Payments are in test mode: choosing a plan opens a simulated checkout.
+              </p>
+            )}
           </Section>
-        )}
 
-        {voiceOn && (
           <Section
-            id="phone"
-            title="Phone & calls"
-            description="Reminders and results come only as phone calls."
+            id="connections"
+            title="Connected accounts"
+            description="Let your agents use your calendar, email and documents. Anything that changes your accounts waits for your approval first."
           >
-            <PhoneSettings settings={await getPhoneSettings(user.id)} />
-            <div className="flex justify-start">
-              <StopAll />
+            {connected && (
+              <Notice tone="success">
+                {PROVIDER_NAMES[connected] ?? "Notion"} is connected. Your agents can use
+                it from their next task.
+              </Notice>
+            )}
+            {connectError && (
+              <Notice tone="error">
+                {CONNECT_ERRORS[connectError] ?? CONNECT_ERRORS.failed}
+              </Notice>
+            )}
+            <Connections
+              google={
+                googleRow
+                  ? {
+                      account: googleRow.account,
+                      services: googleServices(googleRow.scopes),
+                    }
+                  : null
+              }
+              notion={notionRow ? { account: notionRow.account } : null}
+              available={{
+                google: isProviderConfigured("google"),
+                notion: isProviderConfigured("notion"),
+              }}
+              {...(connectorsV2 && {
+                more: {
+                  github: githubRow ? { account: githubRow.account } : null,
+                  meta: metaRow ? { account: metaRow.account } : null,
+                  available: {
+                    github: isProviderConfigured("github"),
+                    meta: isProviderConfigured("meta"),
+                  },
+                },
+              })}
+              health={health}
+              testingMode={testingMode}
+              driveShare={driveShare}
+              sheets={sheetsOn}
+            />
+          </Section>
+
+          {apps && (
+            <Section
+              id="apps"
+              title="Apps"
+              description="Let your agents use apps outside Kriya, as you. Anything that changes something in an app waits for your OK first."
+            >
+              {connectedApp && (
+                <Notice tone="success">
+                  {apps.apps.find((a) => a.id === connectedApp)?.name ?? "The app"} is
+                  connected. Choose which agents may use it.
+                </Notice>
+              )}
+              {appError && (
+                <Notice tone="error">
+                  {CONNECT_ERRORS[appError] ?? CONNECT_ERRORS.failed}
+                </Notice>
+              )}
+              <Apps apps={apps.apps} agents={apps.agents} />
+            </Section>
+          )}
+
+          {loginsOn && (
+            <Section
+              id="logins"
+              title="Logins"
+              description="Sites you signed in to in Kriya's browser, so agents can work there as you within each site's rules. Kriya keeps the session, never your password."
+            >
+              <Logins logins={await listLogins(user.id)} />
+            </Section>
+          )}
+
+          {harnessOn && (
+            <Section
+              id="devices"
+              title="Devices"
+              description="Computers signed in to Kriya Harness. Revoke one and it signs out at once."
+            >
+              <Devices devices={await listDevices(user.id)} />
+            </Section>
+          )}
+
+          {voiceOn && (
+            <Section
+              id="phone"
+              title="Phone & calls"
+              description="Reminders and results come only as phone calls."
+            >
+              <PhoneSettings settings={await getPhoneSettings(user.id)} />
+              <div className="flex justify-start">
+                <StopAll />
+              </div>
+            </Section>
+          )}
+
+          {memoryV2 && (
+            <Section
+              id="about-you"
+              title="About you"
+              description="What all your agents know about you. You can add, pin, confirm or forget anything, and export it all."
+            >
+              <AboutYou initial={await listAboutYou()} />
+            </Section>
+          )}
+
+          {filesOn && (
+            <Section
+              id="files"
+              title="Files"
+              description="Bills, notes and documents your agents can read, and PDFs Kriya made for you. Stored privately; only you can open them."
+            >
+              <Files files={await listFiles(user.id)} />
+            </Section>
+          )}
+
+          {filesOn && (
+            <Section
+              id="shared-links"
+              title="Shared links"
+              description="Read-only copies you shared. Each expires on its own; revoke one to stop it at once."
+            >
+              <Shares shares={await listShares(user.id)} />
+            </Section>
+          )}
+
+          <Section id="profile" title="Profile">
+            <ProfileForm profile={user.profile} />
+          </Section>
+
+          <Section id="display" title="Display">
+            <LiteModeToggle chosen={user.profile.liteMode} />
+          </Section>
+
+          <Section id="security" title="Password and sign-in">
+            <div className="max-w-sm">
+              <ResetForm from="account" />
             </div>
           </Section>
-        )}
 
-        {memoryV2 && (
-          <Section
-            id="about-you"
-            title="About you"
-            description="What all your agents know about you. You can add, pin, confirm or forget anything, and export it all."
-          >
-            <AboutYou initial={await listAboutYou()} />
+          <Section id="session" title="Session">
+            <form action={signOut}>
+              <button
+                type="submit"
+                className="flex min-h-11 items-center text-[13px] text-rigel hover:underline sm:min-h-0"
+              >
+                Sign out of this device
+              </button>
+            </form>
           </Section>
-        )}
 
-        {ledgerOn && (
-          <Section
-            id="accounts"
-            title="Accounts"
-            description="Bills, income, GST invoices and an export for your CA. Prepared by Kriya from your records."
-          >
-            <Link
-              href="/accounts"
-              className="inline-flex min-h-11 w-fit items-center rounded-md border px-3 text-[13px] hover:bg-muted sm:min-h-8"
-            >
-              Open Accounts →
-            </Link>
+          <Section id="delete" title="Delete account">
+            <DeleteAccountForm />
           </Section>
-        )}
-
-        {radarOn && (
-          <Section
-            id="radar"
-            title="Radar"
-            description="Deadlines with the exact words they came from, and the pages Kriya watches for you."
-          >
-            <Link
-              href="/radar"
-              className="inline-flex min-h-11 w-fit items-center rounded-md border px-3 text-[13px] hover:bg-muted sm:min-h-8"
-            >
-              Open Radar →
-            </Link>
-          </Section>
-        )}
-
-        {filesOn && (
-          <Section
-            id="files"
-            title="Files"
-            description="Bills, notes and documents your agents can read, and PDFs Kriya made for you. Stored privately; only you can open them."
-          >
-            <Files files={await listFiles(user.id)} />
-          </Section>
-        )}
-
-        {loginsOn && (
-          <Section
-            id="logins"
-            title="Logins"
-            description="Sites you signed in to in Kriya's browser, so agents can work there as you within each site's rules. Kriya keeps the session, never your password."
-          >
-            <Logins logins={await listLogins(user.id)} />
-          </Section>
-        )}
-
-        {filesOn && (
-          <Section
-            id="shared-links"
-            title="Shared links"
-            description="Read-only copies you shared. Each expires on its own; revoke one to stop it at once."
-          >
-            <Shares shares={await listShares(user.id)} />
-          </Section>
-        )}
-
-        <Section id="profile" title="Profile">
-          <ProfileForm profile={user.profile} />
-        </Section>
-
-        <Section id="display" title="Display">
-          <LiteModeToggle chosen={user.profile.liteMode} />
-        </Section>
-
-        <Section id="security" title="Password">
-          <div className="max-w-sm">
-            <ResetForm from="account" />
-          </div>
-        </Section>
-
-        <Section id="session" title="Session">
-          <form action={signOut}>
-            <button type="submit" className="text-[13px] text-rigel hover:underline">
-              Sign out of this device
-            </button>
-          </form>
-        </Section>
-
-        <Section id="delete" title="Delete account">
-          <DeleteAccountForm />
-        </Section>
+        </div>
       </div>
     </div>
   )
