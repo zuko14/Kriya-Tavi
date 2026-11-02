@@ -13294,3 +13294,43 @@ modes (plan, auto and the rest).
   ECC's GateGuard) and slash commands. ECC documents a DSH hooks bridge
   (`@deepseek-ai/dsh-hooks-claude-code`); it runs commands on the machine
   and needs its own safety review before Kriya offers it.
+
+### Skills page and automatic selection (2026-11-02, owner in chat: "add the skill page … editable skills … automatic skill selection … production level")
+
+- **Skills page (`kriya-harness`, committed locally on `main` after
+  `b1b51e7`, not pushed):** `plugins/skills` mounts a "Skills" row in DSH's
+  `sidebar.panellist` and its page in the layout's `main` slot (the seats
+  DSH's Automation tasks page uses). Its routes (`/api/kriya.skills`,
+  `.skill`, `.skill.save`, `.skill.copy`, `.skill.create`, `.skill.unlink`)
+  are registered with `ctx.connection.fetch.register`, inside DSH's fence:
+  checked live, no cookie → 401 (read and save), cross-site Origin → 403,
+  rebinding Host → 403. Skills are found through the catalog of the folder
+  the agent works in; the browser never sends a path. Save: own skills only,
+  `name` kept, ≤ 64 KB, the file must live in the skill's own folder, and
+  DSH's parser re-reads it; if the agent couldn't read it the old version
+  is restored and DSH's warning shown. Copy turns a link in
+  `~/.kriya/skills` into a real folder; the source is never written.
+- **Browser checks:** the owner's real install (99 skills, ~7,502 tokens):
+  page, search, the linked `ponytail` detail with its link target. An
+  isolated home (no sign-in, nothing of the owner's touched): create
+  (invalid name refused in the form), edit and ⌘S save, Make my own copy,
+  a save with no description refused with DSH's reason and the previous
+  version kept (`cmp` against the plugin's original: identical; the
+  plugin file's mtime unchanged), 375 px stacked layout, light theme,
+  no console errors except the deliberate 400. Rows now carry an
+  accessible name (they had none).
+- **Tests:** `tests/skills-page.test.js` (5; mutation check: dropping the
+  save rollback fails the save test), `tests/skill-eval.test.js` (2).
+  Client `npm run check`: tests 118, pass 118, exit 0.
+- **Automatic selection, measured live** (`scripts/skill-eval.js`, owner's
+  device, 99 skills, `--mode read`, 11:47–11:52 UTC, ₹6.98 for 8 jobs):
+  debug → systematic-debugging; design doc → brainstorming; plan →
+  task-planning (a Kriya account skill; the case's list now accepts it);
+  tests first → tdd-workflow + test-driven-development; review →
+  ponytail-review; security → security-review; commit →
+  conventional-commit-review; trivial control → none. Every load came
+  before the agent's first other action. DSH's catalog already tells the
+  model to load matching skills before acting (Claude Code's pattern), so
+  no Kriya instruction was added: a stronger one would risk loading skills
+  for trivial jobs at ~₹0.9 a request. The security job exited 1 after
+  loading its skill; not investigated (unverified).
