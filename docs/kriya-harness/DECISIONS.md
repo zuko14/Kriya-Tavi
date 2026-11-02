@@ -383,3 +383,38 @@ never say a competitor lacks a feature without that check
 - **Evidence.** `kriya-harness` `tests/modes.test.js` on the real pinned
   DSH (8 tests); HG-6 updated to the new defaults.
 - **Status.** Approved by the owner in chat, 2026-11-02.
+
+## HD-21 — Launch label (owner, 2026-11-02)
+
+- **Decision.** Option (a) of `ENGINE_AND_EVOLUTION.md` §7: the harness stays
+  labelled Beta until the pilot and the launch gates pass (HD-02 as
+  written); `harness.releaseStage` stays `beta`. Track H rule 5 unchanged.
+- **Status.** Approved by the owner in chat, 2026-11-02.
+
+## HD-22 — Automatic promotion in Kriya Evolve (owner, 2026-11-02)
+
+- **Decision.** E1 guidance (prompt fragments, tool descriptions, skill
+  text, compaction thresholds, repo-map weights, tier choice within the
+  plan's aliases) promotes itself through every gate of
+  `ENGINE_AND_EVOLUTION.md` §4.4, with automatic rollback and the owner's
+  freeze switch. E2 behaviour needs the owner's one-click approval after the
+  gates. E3 (risk classes, modes, approvals, sandbox, egress, limits, caps,
+  prices, entitlements, disclosures, R5) is never proposed or changed.
+- **Status.** Approved by the owner in chat, 2026-11-02. Applies from H16;
+  nothing promotes before H17's shadow, canary and rollback drill pass.
+
+## HD-23 — Distribution licence (owner, 2026-11-02)
+
+- **Decision.** HD-14 approved in principle: npm `@kriya-ai/harness` under
+  the MIT licence, published from CI with provenance once the owner
+  connects the npm account. Until then the client stays `"private": true`
+  and `harness.installCommand` stays empty.
+- **Status.** Approved in principle by the owner in chat, 2026-11-02;
+  publishing waits for the npm account (owner).
+
+## HD-24 — Replay signals and consent (owner, 2026-11-02)
+
+- **Decision.** Opt-in sharing of redacted sessions for KriyaBench replays,
+  off by default, revocable, deleted after 30 days. Without opt-in only
+  counts and exit codes leave a device (HD-17).
+- **Status.** Approved by the owner in chat, 2026-11-02.

@@ -12948,3 +12948,55 @@ modes (plan, auto and the rest).
   kriya-web, kriya-worker and kriya-voice to the Supabase **transaction
   pooler** URI (port 6543, Project → Connect), keep
   `MIGRATION_DATABASE_URL` on 5432.
+
+### Production report: Accounts and Skill Studio "Something broke", no install, launch readiness (2026-11-02, Claude Code / Opus 5.5, branch `fix/db-pool-settings` at `be70c17`, uncommitted)
+
+- **Owner report (screenshots):** `/accounts` (reference `493899723`) and
+  `/agents/skills` (reference `2953621155`) show the workspace error
+  boundary in production; login sometimes lands on "Try again"; the
+  Kriya Harness page offers no install. Owner asked to drop beta, build
+  Kriya's own harness modules, a self-improving harness, and production
+  readiness end to end.
+- **Diagnosis:** both pages render on the local verify stack (`next dev`
+  on `.env.verify`, guard OK, fresh local QA user, `agents.ledger`,
+  `next.skillStudio`, `agents.skillLibrary` on locally): Accounts shows
+  the empty financial year, Skill Studio the designer. So the production
+  failures depend on production's state, not the page code. Render logs
+  weren't reachable this session (Claude in Chrome not connected), so the
+  two digests are **unconfirmed**. Candidates, in order: (1) the
+  EMAXCONNSESSION pool exhaustion from this morning's incident, if
+  `DATABASE_URL` is still the session pooler (Accounts opens about 7
+  transactions per view); (2) migrations after `20261202000000` not
+  applied to production. Skill Studio reads `kriya.user_skills`
+  (`20270103000000`), which this file records as applied to local stacks
+  only. Next action: read the two digests in Render's kriya-web logs, or
+  run `npm run readiness` against production, which now fails on both.
+- **Fixed:** CI on `main` failed since `adfed22` (run 41401724296):
+  (a) CT-RUN-02: `bash -lc` on Ubuntu runners adds `SGX_AESM_ADDR`,
+  `DEBUGINFOD_URLS`, `XDG_DATA_DIRS` from the login profile. The test now
+  allows the names a bare login shell adds on that machine; the runner
+  itself is unchanged. (b) HT-DEV-03: the relay removed a revoked device
+  only on the socket's own close event, after the close handshake, so a
+  status read right after the client saw the close could still say
+  connected. `relay/index.ts` now forgets the device when it's signed out.
+  `lib/readiness.ts`: new `db.pooler` check fails on the session pooler
+  (test in `tests/readiness/readiness.test.ts`).
+- **Harness install:** no code gap. The page shows the install line from
+  `harness.installCommand`, empty because the client was never published:
+  `zuko14/kriya-harness` is private, `"private": true`, `UNLICENSED`;
+  `npm view @kriya-ai/harness` → 404; npm not signed in. DSH's npm
+  `latest` is `0.2.1-rc.5`.
+- **Design:** `docs/kriya-harness/ENGINE_AND_EVOLUTION.md` (Proposed):
+  modules K1–K8, Kriya Evolve (signals from verified runs only, offline
+  eval on KriyaBench, shadow, canary, automatic rollback; E1 guidance may
+  promote itself, E2 needs the owner, E3 safety/limits/prices never),
+  launch gaps P1–P7, phases H13–H18, decisions HD-21…HD-24 for the owner.
+- **Owner actions:** P1 transaction pooler on web, worker and voice; P2
+  apply pending migrations to production; Render Auto-Deploy "After CI
+  checks pass"; HD-21…HD-24.
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (the known CF-09 ones); format pass;
+  Test Files 236 passed | 3 skipped (239); Tests 2761 passed | 55 skipped
+  (2816); exit 0. Local stack restored afterwards (`agents.inbox`,
+  `harness.api` on only; the QA user deleted). Nothing committed or pushed;
+  no live database, Render setting or production page touched.
