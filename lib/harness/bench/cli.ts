@@ -1,4 +1,5 @@
 import fs from "node:fs/promises"
+import path from "node:path"
 import { parseArgs } from "node:util"
 
 import { commandAgent } from "./agent"
@@ -41,6 +42,8 @@ const text = JSON.stringify(
   (_, v) => (typeof v === "bigint" ? v.toString() : v),
   2
 )
+// A paid run must never be lost to a missing folder
+await fs.mkdir(path.dirname(values.out!), { recursive: true })
 await fs.writeFile(values.out!, text + "\n")
 for (const r of report.results)
   console.log(

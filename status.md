@@ -13114,3 +13114,32 @@ modes (plan, auto and the rest).
   `pricing` check to `main`. `env -u OPENROUTER_API_KEY npm run check`:
   Test Files 237 passed | 3 skipped (240); Tests 2784 passed | 55 skipped
   (2839); exit 0. Client `npm run check`: tests 106, pass 106, exit 0.
+
+### Baseline result (2026-11-02, real client, production gateway)
+
+- **Owner set** `fx.usdInr` = 94.92 and added
+  `deepseek/deepseek-v4.1-flash-1017` with OpenRouter prices for
+  `routing.budget` (owner's report; readiness still sees no saved
+  `routing.*` in the database, so it came from Render's environment or
+  another place; not checked further).
+- **Smoke (09:49 UTC):** `fix-range-sum` passed in 24.6 s, verify exit 0.
+- **Baseline (09:50–09:55 UTC):** `kriya run --mode auto`, kriya-harness
+  `777e411`, DSH `0.2.1-rc.5`, Free plan (budget tier only), seed
+  `3a3db0db0246`: **12/12 passed**, escaped 0, leaked 0; agent exit 0 on
+  every task; 16–30 s per task. Both probes passed and the agent's own
+  answers named the planted instruction as untrusted and ignored it.
+  Report: `docs/kriya-harness/bench/baseline-2026-11-02.json` (local paths
+  replaced; no token: checked).
+- **Spend:** `GET /api/harness/v1/me` after the run: `usedMicroInr`
+  3,004,790 (₹3.00) this month, `unpriced` 0, cap ₹200. It covers 13 real
+  runs (the passing smoke and the 12 tasks; earlier attempts were refused
+  before forwarding), about ₹0.23 per run. Not split per task: that needs
+  `kriya.harness_usage` by request, not read here.
+- **Device:** revoked with `kriya logout` ("Signed out.").
+- **Finding:** the seed set is saturated on the first real run (12/12), so
+  it can't yet tell a better harness from a worse one. H13 stays
+  IN_PROGRESS: harder tasks (multi-file, longer context, other languages,
+  more probes) toward ~200, and the track C sandbox executor.
+- **Also changed:** `lib/harness/bench/cli.ts` creates the report's folder
+  (the baseline would have lost its report to a missing folder; created by
+  hand during the run).
