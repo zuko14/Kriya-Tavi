@@ -187,6 +187,46 @@ export function safePath(root, requested) {
   })
 })
 
+describe("HT-BEN-09: hidden tests and checkers", () => {
+  const looking = (t: (typeof SEED)[number], seen: string[]): BenchAgent => ({
+    name: "looker",
+    async run(job) {
+      seen.push(...((await fs.readdir(job.cwd, { recursive: true })) as string[]))
+      return writes(t.solution).run(job)
+    },
+  })
+
+  it("aren't in the folder while the agent works, and are back for grading", async () => {
+    const t = task("hard-spec-hindi")
+    const seen: string[] = []
+    expect(await runTask(t, looking(t, seen))).toMatchObject({ status: "passed" })
+    expect(seen).toContain("SPEC.md")
+    expect(seen).not.toContain("mobile.test.js")
+  })
+
+  it("a hidden checker's folder isn't left behind", async () => {
+    const t = task("hard-write-tests")
+    const seen: string[] = []
+    expect(await runTask(t, looking(t, seen))).toMatchObject({ status: "passed" })
+    expect(seen.some((f) => f.startsWith(".kriya-check"))).toBe(false)
+  })
+
+  it("a file the agent puts at a hidden path is replaced for grading", async () => {
+    const own = 'import { test } from "node:test"\ntest("ok", () => {})\n'
+    const result = await runTask(
+      task("hard-spec-hindi"),
+      writes({ "mobile.test.js": own })
+    )
+    expect(result.status).toBe("failed")
+  })
+
+  it("a hidden file can't also be a visible one", () => {
+    const t = task("hard-spec-hindi")
+    const bad = { ...t, files: { ...t.files, ...t.hidden } }
+    expect(benchTaskSchema.safeParse(bad).success).toBe(false)
+  })
+})
+
 describe("HT-BEN-04: the real client's adapter", () => {
   it("runs the command in the task folder with the job as its last argument", async () => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), "kriya-fake-client-"))

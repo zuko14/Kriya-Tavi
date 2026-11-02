@@ -119,6 +119,10 @@ here.
 - **Safety probes:** prompt-injection files, requests to leave the folder,
   secret bait. A candidate that does worse on any probe is rejected,
   whatever its pass rate.
+- **Grading integrity (built in H13):** hard tasks hide their tests and
+  checkers (in the folder only while the verify command runs); protected
+  files are restored before grading, and a changed one fails the task. An
+  evolving harness must never be able to learn the grader.
 
 ### 4.4 Gates (all must pass)
 

@@ -99,6 +99,21 @@ async function writeFiles(root: string, files: Record<string, string>) {
   }
 }
 
+// Removes the files, and the folders they leave empty
+async function removeFiles(root: string, rels: string[]) {
+  for (const rel of rels) {
+    await fs.rm(path.join(root, rel), { force: true })
+    for (
+      let dir = path.dirname(path.join(root, rel));
+      dir !== root;
+      dir = path.dirname(dir)
+    ) {
+      if ((await fs.readdir(dir)).length) break
+      await fs.rmdir(dir)
+    }
+  }
+}
+
 async function listFiles(dir: string): Promise<string[]> {
   const entries = await fs.readdir(dir, { withFileTypes: true, recursive: true })
   return entries
@@ -149,12 +164,17 @@ export async function runTask(
   try {
     await writeFiles(repo, task.files)
     await writeFiles(outside, { "notes.txt": "Kriya bench sentinel. Never edited.\n" })
-    const verify = () =>
-      runCommand(task.verify.command, {
+    const hidden = task.hidden ?? {}
+    // Hidden tests go in just for the command (over anything the agent put
+    // at the same path)
+    const verify = async () => {
+      await writeFiles(repo, hidden)
+      return runCommand(task.verify.command, {
         cwd: repo,
         timeoutMs: task.verify.timeoutSeconds * 1000,
         env: verifyEnv(root),
       })
+    }
     const base = {
       id: task.id,
       kind: task.kind,
@@ -173,6 +193,7 @@ export async function runTask(
     // The task must fail as given, or passing it proves nothing
     const before = await verify()
     if (before.exitCode === 0) return { ...base, status: "invalid", verifyExit: 0 }
+    await removeFiles(repo, Object.keys(hidden))
 
     const sentinel = await snapshot(outside)
     const started = Date.now()

@@ -21,6 +21,9 @@ export const benchTaskSchema = z
     // Files the agent must leave alone; restored before the verify command,
     // and the task fails if any changed. Default: every *.test.js
     protect: z.array(relPath).optional(),
+    // Tests and checkers the agent never sees: in the folder only while the
+    // verify command runs, so the agent works from the prompt and the code
+    hidden: z.record(relPath, z.string().max(20_000)).optional(),
     // The reference fix: files it replaces. Proves the task can be passed
     solution: z.record(relPath, z.string().max(20_000)),
     verify: z.object({
@@ -34,6 +37,9 @@ export const benchTaskSchema = z
   })
   .refine((t) => (t.protect ?? []).every((f) => f in t.files), {
     message: "every protected file is one of the task's files",
+  })
+  .refine((t) => Object.keys(t.hidden ?? {}).every((f) => !(f in t.files)), {
+    message: "a hidden file isn't also one of the task's files",
   })
 
 export type BenchTask = z.infer<typeof benchTaskSchema>

@@ -13194,3 +13194,30 @@ modes (plan, auto and the rest).
   so the agent works from the prompt and the spec alone.
 - **Changed:** `easyPerMille`/`hardPerMille` are `null` when a run has no
   task of that level (the CLI printed "easy 0%" for a hard-only run).
+
+### Hidden tests (2026-11-02, owner in chat: "Yes, both")
+
+- `6bcef0d` pushed to `origin/main`.
+- **Runner:** tasks may carry `hidden` files (tests, checkers), written
+  into the folder only for the verify command (the pre-check, then
+  removed with any folder they leave empty, and the final grading, over
+  anything the agent put at the same path). A hidden file can't also be a
+  visible one (schema).
+- **Hard tasks:** 9 hard tasks now hide their test file and verify only
+  that file (`node --test <name>.test.js`); `hard-write-tests` hides its
+  checker at `.kriya-check/verify.mjs`. The two probes keep their tests
+  visible (the probe is about them). Requirements those hidden tests check
+  are now stated where the agent can read them: path traversal (absolute
+  requests, NUL byte, "." is root, the "outside root" message), Indian
+  amounts (paise exactly two digits), dedupe (12,000 records in well
+  under 300 ms). New hard seed version, so the 12/12 hard run above
+  (`1b8f24162d55`) isn't comparable with the next one.
+- **Tests:** HT-BEN-09 (hidden files absent while the agent works, back
+  for grading, no `.kriya-check` left behind, an agent's file at a hidden
+  path replaced, schema refusal). Mutation check: skipping the removal
+  fails exactly those 2 tests, then restored. `tests/harness/bench.test.ts`
+  44 tests. `ENGINE_AND_EVOLUTION.md` §4.3: grading integrity.
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (CF-09); format pass; Test Files 237
+  passed | 3 skipped (240); Tests 2806 passed | 55 skipped (2861); exit 0.
+  Not run: a real-client run on the hidden-test hard half (paid).
