@@ -539,7 +539,7 @@ export const row = (user) => [user.id, users.displayName(user)].join(" · ")
     kind: "tests",
     level: "hard",
     prompt:
-      "src/discount.js has no tests. Write discount.test.js (node:test) that passes on the current code and would catch a regression in its boundary, its cap and its rounding. Don't change src/discount.js.",
+      "src/discount.js has no tests. Write discount.test.js in the top folder, next to package.json (node:test), that passes on the current code and would catch a regression in its boundary, its cap and its rounding. Don't change src/discount.js.",
     files: {
       "package.json": PKG,
       "src/discount.js": js`// Discount in paise for a cart total in paise: 10% from ₹1,000 (100000

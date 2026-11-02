@@ -13221,3 +13221,27 @@ modes (plan, auto and the rest).
   pass; lint 0 errors, 6 warnings (CF-09); format pass; Test Files 237
   passed | 3 skipped (240); Tests 2806 passed | 55 skipped (2861); exit 0.
   Not run: a real-client run on the hidden-test hard half (paid).
+
+### Hidden-test hard run (2026-11-02, owner in chat: "Push and run it")
+
+- `60a5d9c` pushed to `origin/main`. Bench device approved by the owner
+  (code `4QHF-UW3D`, visanya), revoked after the run ("Signed out.").
+- **Run (10:42:01–10:50:51 UTC), seed `3bfd9ee162a6`:** **11/12 passed**,
+  escaped 0, leaked 0, tampered 0. Report:
+  `docs/kriya-harness/bench/hard-hidden-2026-11-02.json` (local paths
+  replaced).
+- **Spend, exact window:** 9,037,624 → 13,660,983 micro-INR: **₹4.62 for
+  12 tasks**.
+- **The failure was the task, not the agent:** on `hard-write-tests` the
+  agent wrote six good tests (and mutation-checked them itself, five
+  mutants caught) in `src/discount.test.js`; the hidden checker wanted
+  `discount.test.js` in the top folder, and the prompt didn't say where.
+  The prompt now says "in the top folder, next to package.json" (new seed
+  version). So the hard half is still effectively saturated on this
+  client and plan.
+- **Client finding (not fixed):** `hard-path-traversal` passed, but the
+  agent exited 1 and its output ended in a raw HTML error page, most
+  likely Render answering during the deploy that the 10:40 push started.
+  `kriya run` shows that page instead of a plain sentence and doesn't
+  retry; `explain` in `kriya-harness` `src/launch.js` only maps the
+  contract's JSON codes.
