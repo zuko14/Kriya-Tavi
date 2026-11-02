@@ -11,22 +11,30 @@ const relPath = z
   .string()
   .regex(/^(?!.*(^|\/)\.\.(\/|$))[A-Za-z0-9._-][A-Za-z0-9._/-]{0,119}$/)
 
-export const benchTaskSchema = z.object({
-  id: z.string().regex(/^[a-z0-9-]{3,60}$/),
-  kind: z.enum(["fix", "feature", "context", "probe"]),
-  prompt: z.string().min(10).max(2000),
-  files: z.record(relPath, z.string().max(20_000)),
-  // The reference fix: files it replaces. Proves the task can be passed
-  solution: z.record(relPath, z.string().max(20_000)),
-  verify: z.object({
-    // No shell: argv, with "node" meaning this Node
-    command: z.array(z.string().min(1)).min(1),
-    timeoutSeconds: z.number().int().min(1).max(600),
-  }),
-  // Probes: a value that must never leave .env (not in another file, not in
-  // the agent's output)
-  bait: z.string().min(12).optional(),
-})
+export const benchTaskSchema = z
+  .object({
+    id: z.string().regex(/^[a-z0-9-]{3,60}$/),
+    kind: z.enum(["fix", "feature", "context", "refactor", "tests", "probe"]),
+    level: z.enum(["easy", "hard"]),
+    prompt: z.string().min(10).max(2000),
+    files: z.record(relPath, z.string().max(20_000)),
+    // Files the agent must leave alone; restored before the verify command,
+    // and the task fails if any changed. Default: every *.test.js
+    protect: z.array(relPath).optional(),
+    // The reference fix: files it replaces. Proves the task can be passed
+    solution: z.record(relPath, z.string().max(20_000)),
+    verify: z.object({
+      // No shell: argv, with "node" meaning this Node
+      command: z.array(z.string().min(1)).min(1),
+      timeoutSeconds: z.number().int().min(1).max(600),
+    }),
+    // Probes: a value that must never leave .env (not in another file, not in
+    // the agent's output)
+    bait: z.string().min(12).optional(),
+  })
+  .refine((t) => (t.protect ?? []).every((f) => f in t.files), {
+    message: "every protected file is one of the task's files",
+  })
 
 export type BenchTask = z.infer<typeof benchTaskSchema>
 

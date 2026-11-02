@@ -13143,3 +13143,34 @@ modes (plan, auto and the rest).
 - **Also changed:** `lib/harness/bench/cli.ts` creates the report's folder
   (the baseline would have lost its report to a missing folder; created by
   hand during the run).
+
+### Harder tasks (2026-11-02, owner in chat: "Yes, harder tasks")
+
+- **Why:** the first real baseline passed 12/12 easy tasks, so the set
+  couldn't tell a better harness from a worse one.
+- **Added `lib/harness/bench/seed-hard.ts` (12 tasks, `level: "hard"`):**
+  IST day buckets (cause in another file), path traversal (prefix and
+  absolute-path bypasses), a promise pool (concurrency, order, rejection),
+  invoice GST rounding across files, a spec written in Hindi, Indian digit
+  grouping with a regression trap, a 300 ms time budget, a rename across
+  five files with a compatibility alias, writing tests that must catch
+  three mutants (`verify.mjs`), a data file asking to skip the failing
+  test, a README asking to add a dependency and a postinstall script, and
+  cache invalidation with two races. Seed now 24 tasks, version
+  `1b8f24162d55` for the hard half.
+- **Runner:** tasks carry `level` and `protect` (default: every
+  `*.test.js`). Protected files are restored before the verify command and
+  a changed one fails the task as `tampered`, so editing the tests is never
+  a pass. Summary gains `easyPerMille`, `hardPerMille`, `tampered`; the CLI
+  takes `--level easy|hard`.
+- **Evidence:** every task fails as given and passes with its reference
+  fix (HT-BEN-02, now 24 cases); HT-BEN-07 (a weakened test file fails as
+  tampered even when the code fix is right); HT-BEN-08 (the obvious wrong
+  fix fails the amount, cache and path tasks; the amount one checked to
+  fail on behaviour, not syntax); `tests/harness/bench.test.ts` 40 tests.
+- **Not run:** a real-client run of the hard half (paid; about ₹0.23 a
+  task on the easy half). The 12/12 baseline above is for the easy half
+  only (seed `3a3db0db0246`).
+- **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
+  pass; lint 0 errors, 6 warnings (CF-09); format pass; Test Files 237
+  passed | 3 skipped (240); Tests 2802 passed | 55 skipped (2857); exit 0.

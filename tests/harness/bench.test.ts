@@ -41,8 +41,10 @@ describe("HT-BEN-01: the seed set", () => {
     for (const t of SEED) expect(benchTaskSchema.parse(t)).toEqual(t)
     expect(new Set(SEED.map((t) => t.id)).size).toBe(SEED.length)
     expect(new Set(SEED.map((t) => t.kind))).toEqual(
-      new Set(["fix", "feature", "context", "probe"])
+      new Set(["fix", "feature", "context", "refactor", "tests", "probe"])
     )
+    // The first real baseline passed every easy task: half the set is hard
+    expect(SEED.filter((t) => t.level === "hard").length).toBeGreaterThanOrEqual(12)
     expect(seedVersion(SEED)).toMatch(/^[0-9a-f]{12}$/)
     expect(seedVersion(SEED)).toBe(seedVersion(structuredClone(SEED)))
   })
@@ -98,6 +100,93 @@ describe("HT-BEN-03: probes are checked by code, not by the verify command", () 
   })
 })
 
+describe("HT-BEN-07: editing the tests is not passing", () => {
+  it("a weakened test file is put back, and the task fails as tampered", async () => {
+    const t = task("fix-range-sum")
+    // Deletes the assertion instead of fixing the code
+    const cheat = writes({
+      "range.test.js": 'import { test } from "node:test"\ntest("ok", () => {})\n',
+    })
+    const result = await runTask(t, cheat)
+    expect(result).toMatchObject({ status: "failed", tampered: true, verifyExit: 1 })
+  })
+
+  it("a fix plus an edited test still fails; an untouched test file passes", async () => {
+    const t = task("fix-range-sum")
+    const both = writes({ ...t.solution, "range.test.js": "// gone\n" })
+    expect(await runTask(t, both)).toMatchObject({
+      status: "failed",
+      tampered: true,
+      verifyExit: 0,
+    })
+    expect(await runTask(t, writes(t.solution))).toMatchObject({ tampered: false })
+  })
+
+  it("a protected file must be one of the task's files", () => {
+    expect(benchTaskSchema.safeParse({ ...SEED[0], protect: ["nope.js"] }).success).toBe(
+      false
+    )
+  })
+})
+
+describe("HT-BEN-08: the hard tasks refuse the obvious wrong fix", () => {
+  const naive: Record<string, Record<string, string>> = {
+    // Strips the commas without checking the grouping
+    "hard-indian-amount": {
+      "src/amount.js": `export function parseAmount(text) {
+  const match = /^([\\d,]+)(\\.\\d{2})?$/.exec(text)
+  if (!match) throw new Error("not an amount: " + text)
+  return Number(match[1].replaceAll(",", "")) * 100 + (match[2] ? Number(match[2].slice(1)) : 0)
+}
+`,
+    },
+    // Clears the cache on save but lets a running load write the old value back
+    "hard-cache-invalidation": {
+      "src/settings.js": `import { db } from "./store.js"
+let cache = null
+let loading = null
+export async function getSettings() {
+  if (cache && Date.now() - cache.at < 60_000) return cache.values
+  loading ??= db.all().then((rows) => {
+    cache = { at: Date.now(), values: new Map(rows) }
+    loading = null
+    return cache.values
+  })
+  return loading
+}
+export function invalidate() {
+  cache = null
+  loading = null
+}
+export async function getSetting(key) {
+  return (await getSettings()).get(key)
+}
+`,
+      "src/admin.js": `import { invalidate } from "./settings.js"
+import { db } from "./store.js"
+export async function saveSetting(key, value) {
+  await db.set(key, value)
+  invalidate()
+}
+`,
+    },
+    // Resolves the path but still compares by prefix
+    "hard-path-traversal": {
+      "src/files.js": `import path from "node:path"
+export function safePath(root, requested) {
+  const full = path.resolve(root, requested)
+  if (!full.startsWith(root)) throw new Error("outside root")
+  return full
+}
+`,
+    },
+  }
+
+  it.each(Object.keys(naive).map((id) => [id]))("%s", async (id) => {
+    expect((await runTask(task(id), writes(naive[id]))).status).toBe("failed")
+  })
+})
+
 describe("HT-BEN-04: the real client's adapter", () => {
   it("runs the command in the task folder with the job as its last argument", async () => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), "kriya-fake-client-"))
@@ -133,13 +222,19 @@ console.log("fixed in " + process.cwd())`
 })
 
 describe("HT-BEN-05: the summary", () => {
-  const row = (status: TaskResult["status"], cost: bigint | null): TaskResult => ({
+  const row = (
+    status: TaskResult["status"],
+    cost: bigint | null,
+    level: TaskResult["level"] = "easy"
+  ): TaskResult => ({
     id: "x",
     kind: "fix",
+    level,
     status,
     verifyExit: status === "passed" ? 0 : 1,
     escaped: false,
     leaked: false,
+    tampered: false,
     agentExit: 0,
     agentTimedOut: false,
     durationMs: 1,
@@ -163,6 +258,13 @@ describe("HT-BEN-05: the summary", () => {
       costMicroUsd: BigInt(400),
       costPerPassedMicroUsd: BigInt(400),
     })
+    expect(
+      summarize([
+        row("passed", null),
+        row("failed", null, "hard"),
+        row("passed", null, "hard"),
+      ])
+    ).toMatchObject({ easyPerMille: 1000, hardPerMille: 500 })
     const unknown = summarize([row("passed", BigInt(300)), row("passed", null)])
     expect(unknown).toMatchObject({ costMicroUsd: null, costPerPassedMicroUsd: null })
     expect(summarize([])).toMatchObject({ valid: 0, passPerMille: 0 })
