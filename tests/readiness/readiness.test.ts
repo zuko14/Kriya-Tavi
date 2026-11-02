@@ -182,6 +182,21 @@ describe("deployment checks (npm run readiness)", () => {
     )
   })
 
+  it("the session pooler fails, the transaction pooler passes, never printing the URL", () => {
+    const host = "aws-0-ap-south-1.pooler.supabase.com"
+    const session = configChecks({
+      ...BASE,
+      DATABASE_URL: `postgresql://u:secret-pw@${host}:5432/postgres`,
+    })
+    expect(byId(session, "db.pooler")?.status).toBe("fail")
+    expect(JSON.stringify(session)).not.toContain("secret-pw")
+    const transaction = configChecks({
+      ...BASE,
+      DATABASE_URL: `postgresql://u:pw@${host}:6543/postgres`,
+    })
+    expect(byId(transaction, "db.pooler")).toBeUndefined()
+  })
+
   describe("database", () => {
     let pg: TestDb
     const query = async <T>(sql: string) => (await pg.query<T>(sql)).rows

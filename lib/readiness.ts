@@ -1,6 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
 
+import { sessionPooler } from "@/db"
 import { LEGAL_STATUS } from "@/lib/legal"
 import { keyId } from "@/lib/secrets"
 
@@ -40,6 +41,15 @@ export function configChecks(env: Env): Check[] {
       ? { id: "env.required", status: "fail", detail: `missing: ${missing.join(", ")}` }
       : { id: "env.required", status: "pass", detail: "required variables set" }
   )
+  // The session pooler caps clients across every service (2026-11-02 incident)
+  if (env.DATABASE_URL && sessionPooler(env.DATABASE_URL)) {
+    checks.push({
+      id: "db.pooler",
+      status: "fail",
+      detail:
+        "DATABASE_URL is Supabase's session pooler (port 5432); use the transaction pooler (port 6543)",
+    })
+  }
 
   if (!set(env, "KRIYA_TOKEN_KEY")) {
     checks.push({

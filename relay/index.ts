@@ -353,8 +353,11 @@ export async function createRelay(options: RelayOptions) {
           .verify(device.token, device.version)
           .catch(() => deviceId)
           .then((verified) => {
-            if (verified !== deviceId && devices.get(deviceId) === device)
+            if (verified !== deviceId && devices.get(deviceId) === device) {
+              // Gone from now on; the socket's own close comes after the handshake
+              devices.delete(deviceId)
               device.socket.close(4001, "signed out")
+            }
           })
       }
     },

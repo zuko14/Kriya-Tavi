@@ -169,8 +169,23 @@ describe.skipIf(!hasGit)("runner", () => {
       .trim()
       .split("\n")
       .map((line) => line.split("=")[0])
+    // A login shell's own profile adds names on some machines (Ubuntu CI:
+    // SGX_AESM_ADDR, DEBUGINFOD_URLS, XDG_DATA_DIRS); those aren't the runner's
+    const profile = spawnSync("bash", ["-lc", "env"], {
+      env: {
+        PATH: process.env.PATH ?? "",
+        HOME: os.tmpdir(),
+        LANG: "C.UTF-8",
+        TERM: "dumb",
+      } as unknown as NodeJS.ProcessEnv,
+      encoding: "utf8",
+    })
+      .stdout.trim()
+      .split("\n")
+      .map((line) => line.split("=")[0])
     // bash adds PWD, SHLVL, _ and OLDPWD itself
     const allowed = [
+      ...profile,
       "PATH",
       "HOME",
       "LANG",
