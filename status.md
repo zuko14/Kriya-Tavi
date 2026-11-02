@@ -13063,6 +13063,7 @@ modes (plan, auto and the rest).
   run's window); (2) a track C sandbox executor so runs leave developer
   machines; (3) grow the seed set toward ~200 (other languages, longer
   context tasks, more probes).
-- **Pushed:** nothing. The owner asked to push the CI fixes to `main`;
-  AGENTS.md voice rule 3 says never push to `origin`, so the push waits for
-  the owner's explicit override.
+- **Pushed (owner's explicit override of voice rule 3 in chat, 2026-11-02:
+  "Yes, push to main", then "Yes, push them"):** `318e767` (CI fixes) to
+  `origin/main`, then `e342a2b` (design, HD-21…HD-24), `52fb34d` (H13) and
+  this note, all fast-forwards.
