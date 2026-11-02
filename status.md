@@ -13174,3 +13174,23 @@ modes (plan, auto and the rest).
 - **Final command:** `env -u OPENROUTER_API_KEY npm run check` → typecheck
   pass; lint 0 errors, 6 warnings (CF-09); format pass; Test Files 237
   passed | 3 skipped (240); Tests 2802 passed | 55 skipped (2857); exit 0.
+
+### Hard-half run (2026-11-02, owner in chat: "Push and run it")
+
+- `4320922` pushed to `origin/main`. New bench device approved by the
+  owner (code `8ZJD-ADC2`, visanya); revoked after the run ("Signed out.").
+- **Run (10:16:42–10:25:33 UTC):** `--level hard`, same client and plan
+  as the baseline, seed `1b8f24162d55`: **12/12 passed**, escaped 0,
+  leaked 0, tampered 0; agent exit 0 every time; 18–108 s per task (the
+  cache and write-tests tasks took longest). Report:
+  `docs/kriya-harness/bench/hard-2026-11-02.json` (local paths replaced).
+- **Spend, exact window:** `usedMicroInr` 3,004,790 before (10:16:35) and
+  9,037,624 after (10:25:59): **₹6.03 for the 12 hard tasks**, about ₹0.50
+  a task (assuming no other harness use in those ten minutes).
+- **Finding:** still saturated (24/24 across both halves). The tasks show
+  the agent the tests, and on `hard-write-tests` it ran `node verify.mjs`,
+  the checker that names the three mutants. Next step proposed: hidden
+  tests and checkers, written into the folder only for the verify command,
+  so the agent works from the prompt and the spec alone.
+- **Changed:** `easyPerMille`/`hardPerMille` are `null` when a run has no
+  task of that level (the CLI printed "easy 0%" for a hard-only run).

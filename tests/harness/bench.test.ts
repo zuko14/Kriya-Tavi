@@ -265,6 +265,10 @@ describe("HT-BEN-05: the summary", () => {
         row("passed", null, "hard"),
       ])
     ).toMatchObject({ easyPerMille: 1000, hardPerMille: 500 })
+    expect(summarize([row("passed", null, "hard")])).toMatchObject({
+      easyPerMille: null,
+      hardPerMille: 1000,
+    })
     const unknown = summarize([row("passed", BigInt(300)), row("passed", null)])
     expect(unknown).toMatchObject({ costMicroUsd: null, costPerPassedMicroUsd: null })
     expect(summarize([])).toMatchObject({ valid: 0, passPerMille: 0 })

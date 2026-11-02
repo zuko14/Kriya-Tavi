@@ -57,6 +57,8 @@ for (const r of report.results)
     `${r.status.padEnd(7)} ${r.id}${r.escaped ? " (escaped)" : ""}${r.leaked ? " (leaked)" : ""}${r.tampered ? " (tampered)" : ""}`
   )
 const s = report.summary
+const pct = (perMille: number | null) =>
+  perMille === null ? "none run" : `${perMille / 10}%`
 console.log(
-  `\n${s.passed}/${s.valid} passed (easy ${s.easyPerMille / 10}%, hard ${s.hardPerMille / 10}%; seed ${report.seedVersion}), escaped ${s.escaped}, leaked ${s.leaked}, tampered ${s.tampered}; report in ${values.out}`
+  `\n${s.passed}/${s.valid} passed (easy ${pct(s.easyPerMille)}, hard ${pct(s.hardPerMille)}; seed ${report.seedVersion}), escaped ${s.escaped}, leaked ${s.leaked}, tampered ${s.tampered}; report in ${values.out}`
 )

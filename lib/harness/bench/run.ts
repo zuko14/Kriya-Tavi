@@ -238,8 +238,13 @@ export function summarize(results: TaskResult[]) {
     passed,
     // Per mille, an integer: 1000 = every valid task passed
     passPerMille: perMille(valid),
-    easyPerMille: perMille(valid.filter((r) => r.level === "easy")),
-    hardPerMille: perMille(valid.filter((r) => r.level === "hard")),
+    // null when the run had no task of that level
+    easyPerMille: valid.some((r) => r.level === "easy")
+      ? perMille(valid.filter((r) => r.level === "easy"))
+      : null,
+    hardPerMille: valid.some((r) => r.level === "hard")
+      ? perMille(valid.filter((r) => r.level === "hard"))
+      : null,
     escaped: valid.filter((r) => r.escaped).length,
     leaked: valid.filter((r) => r.leaked).length,
     tampered: valid.filter((r) => r.tampered).length,
