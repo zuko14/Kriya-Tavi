@@ -146,6 +146,7 @@ describe("HT-BEN-05: the summary", () => {
     inputTokens: null,
     outputTokens: null,
     costMicroUsd: cost,
+    agentOutputTail: "",
   })
 
   it("leaves invalid tasks out; one unknown cost makes the total unknown", () => {

@@ -252,6 +252,56 @@ export async function databaseChecks(
           }
     )
   }
+
+  // Every routed model priced and a USD→INR rate set, or metered requests
+  // (the harness gateway) are refused as not_priced. Saved settings win over
+  // this machine's environment, as in getSetting
+  const saved = new Map(
+    (
+      await query<{ key: string; value: string }>(
+        "select key, value from kriya.platform_settings where key like 'routing.%' or key = 'fx.usdInr'"
+      )
+    ).map((r) => [r.key, r.value])
+  )
+  const pick = (key: string, name: string) => saved.get(key) || env[name]?.trim()
+  const routed = [
+    ...new Set(
+      [
+        pick("routing.budget", "OPENROUTER_DEFAULT_MODEL"),
+        pick("routing.balanced", "OPENROUTER_BALANCED_MODEL"),
+        pick("routing.escalation", "OPENROUTER_ESCALATION_MODEL"),
+        pick("routing.fallback", "OPENROUTER_FALLBACK_MODEL"),
+      ].filter((id): id is string => !!id)
+    ),
+  ]
+  const priced = new Set(
+    (
+      await query<{ id: string }>(
+        `select id from kriya.models
+         where input_micro_usd_per_mtok is not null and output_micro_usd_per_mtok is not null`
+      )
+    ).map((r) => r.id)
+  )
+  const missing = [
+    ...(pick("fx.usdInr", "KRIYA_FX_USD_INR") ? [] : ["fx.usdInr (USD→INR rate)"]),
+    ...routed.filter((id) => !priced.has(id)).map((id) => `price of ${id}`),
+  ]
+  checks.push(
+    missing.length
+      ? { id: "pricing", status: "fail", detail: `not set: ${missing.join(", ")}` }
+      : routed.length === 0
+        ? {
+            id: "pricing",
+            status: "warn",
+            detail:
+              "rate set; no routing.* saved or in this environment: the services' own environment decides, unchecked here",
+          }
+        : {
+            id: "pricing",
+            status: "pass",
+            detail: `rate set; ${routed.length} routed models priced`,
+          }
+  )
   return checks
 }
 

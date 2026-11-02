@@ -221,7 +221,42 @@ describe("deployment checks (npm run readiness)", () => {
         ["db.migrations", "pass"],
         ["db.rls", "pass"],
         ["db.anon", "pass"],
+        ["pricing", "fail"],
       ])
+    })
+
+    it("pricing: a routed model without prices or no USD→INR rate fails, by name", async () => {
+      const model = "test/budget-model-readiness"
+      const env = { OPENROUTER_DEFAULT_MODEL: model }
+      await pg.query("insert into kriya.models (id, label) values ($1, 'Budget')", [
+        model,
+      ])
+      const noRate = byId(await databaseChecks(query, env), "pricing")!
+      expect(noRate.status).toBe("fail")
+      expect(noRate.detail).toBe(`not set: fx.usdInr (USD→INR rate), price of ${model}`)
+      await pg.query(
+        "update kriya.models set input_micro_usd_per_mtok = 100000, output_micro_usd_per_mtok = 400000 where id = $1",
+        [model]
+      )
+      // A saved setting wins over the environment, as in getSetting
+      await pg.query(
+        "insert into kriya.platform_settings (key, value) values ('fx.usdInr', '84.2500')"
+      )
+      expect(byId(await databaseChecks(query, env), "pricing")).toEqual({
+        id: "pricing",
+        status: "pass",
+        detail: "rate set; 1 routed models priced",
+      })
+      await pg.query(
+        "insert into kriya.platform_settings (key, value) values ('routing.balanced', 'test/unpriced')"
+      )
+      expect(byId(await databaseChecks(query, env), "pricing")?.detail).toBe(
+        "not set: price of test/unpriced"
+      )
+      await pg.query("delete from kriya.platform_settings where key = 'routing.balanced'")
+      // No routing visible here: the services' environment decides, so not a pass
+      expect(byId(await databaseChecks(query, {}), "pricing")?.status).toBe("warn")
+      await pg.query("delete from kriya.platform_settings where key = 'fx.usdInr'")
     })
 
     it("counts sealed values still on an older key, reading prefixes only", async () => {

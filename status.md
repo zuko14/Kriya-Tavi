@@ -13067,3 +13067,50 @@ modes (plan, auto and the rest).
   "Yes, push to main", then "Yes, push them"):** `318e767` (CI fixes) to
   `origin/main`, then `e342a2b` (design, HD-21…HD-24), `52fb34d` (H13) and
   this note, all fast-forwards.
+
+### Baseline attempt (2026-11-02, owner's go-ahead in chat: "Yes, run baseline")
+
+- **Device:** the owner approved a bench device in production (code
+  `DAHQ-DYHD`, working as visanya), signed in under a separate
+  `KRIYA_HOME` in the session scratchpad; `kriya doctor` all ok, gateway
+  models: `budget` only (free plan). The first code failed: the client's
+  login gave up on one `ECONNRESET` while production redeployed.
+- **Found and fixed in the client (`kriya-harness`, branch
+  `feat/kriya-modes`, uncommitted):** (1) login polling now keeps waiting
+  through network errors and 5xx until the code expires (test: a deploy
+  while waiting, 2 resets + 2 × 503); (2) every session started on
+  `balanced`, so on a budget-only plan each request was refused with
+  `tier_not_allowed` (seen live: `dsh: INVALID_REQUEST: 400
+  "tier_not_allowed"`). The launcher now starts on the first of
+  balanced, budget, escalation that `GET /models` allows (`startTier`;
+  `KRIYA_START_TIER` read by the `agent-default-model` and `acp` rows;
+  never from the shell; balanced if Kriya can't be asked). Dumps
+  re-recorded (only those 4 lines). Client `npm run check`: tests 106,
+  pass 106, exit 0.
+- **Blocked:** with the right tier the gateway answers `503
+  "not_priced"`. `npm run readiness` (read-only) now has a `pricing`
+  check: `FAIL pricing: not set: fx.usdInr (USD→INR rate)`. The gateway
+  refuses rather than run unmetered (correct, invariant 6). **Owner
+  action:** set `fx.usdInr` and `fx.source` in `/owner/config`.
+- **Correction (same day):** that run did **not** show the models priced:
+  no `routing.*` is saved in the database and none is in this machine's
+  `.env`, so the check saw 0 routed models (production's routing comes from
+  Render's environment). The check now warns in that case instead of
+  passing.
+- **After the owner set `fx.usdInr` = 94.92 (source as the owner gave it:
+  "google"):** readiness `pricing` warn (rate set, routing unseen); the
+  smoke task still got `dsh: SERVER: 503 "not_priced"` at 09:29 UTC. The
+  remaining cause is the routed budget model's price row in `kriya.models`
+  (unverified: a read-only look at `kriya.models` was blocked by the
+  owner's guardrails). **Owner action:** `/owner/config` → Models → add
+  the `routing.budget` model (adds it with OpenRouter's current prices) or
+  Refresh prices. Spend so far: none metered.
+- **Also changed here:** `lib/harness/bench/run.ts` keeps the last 2,000
+  characters of the agent's output in each result (`agentOutputTail`);
+  `lib/readiness.ts` `pricing` check with its tests.
+- **Committed and pushed (owner in chat: "Push Kriya-Tavi to main",
+  "Commit and push the client fixes on branch feat/kriya-modes"):** client
+  `777e411` on `feat/kriya-modes`; this repository's bench output tail and
+  `pricing` check to `main`. `env -u OPENROUTER_API_KEY npm run check`:
+  Test Files 237 passed | 3 skipped (240); Tests 2784 passed | 55 skipped
+  (2839); exit 0. Client `npm run check`: tests 106, pass 106, exit 0.

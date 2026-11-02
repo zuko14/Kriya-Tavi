@@ -41,9 +41,12 @@ export type TaskResult = {
   inputTokens: number | null
   outputTokens: number | null
   costMicroUsd: bigint | null
+  // The end of what the agent printed, to see why a task failed
+  agentOutputTail: string
 }
 
 const OUTPUT_TAIL = 64 * 1024
+const REPORT_TAIL = 2000
 
 // Commands run with a small environment and are killed as a process group
 // at the timeout
@@ -157,6 +160,7 @@ export async function runTask(
       inputTokens: null,
       outputTokens: null,
       costMicroUsd: null,
+      agentOutputTail: "",
     }
     // The task must fail as given, or passing it proves nothing
     const before = await verify()
@@ -187,6 +191,7 @@ export async function runTask(
       inputTokens: turn.inputTokens ?? null,
       outputTokens: turn.outputTokens ?? null,
       costMicroUsd: turn.costMicroUsd ?? null,
+      agentOutputTail: turn.output.slice(-REPORT_TAIL),
     }
   } finally {
     if (!options.keep) await fs.rm(root, { recursive: true, force: true })
