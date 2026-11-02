@@ -13262,3 +13262,35 @@ modes (plan, auto and the rest).
   chunks, a one-line page and a JSON refusal untouched. Mutation check:
   printing stderr raw again fails the end-to-end test, then restored.
   Client `npm run check`: tests 108, pass 108, exit 0.
+
+### Skills from Claude Code in Kriya Harness (2026-11-02, owner in chat: "test like our harness is accepting superpowers, ponytail, and also the ECC skills")
+
+- **Offline, DSH's own parser (`FileSystemSkillProvider`, pinned DSH):**
+  superpowers 6.4.2 15/15, ponytail 5.3.2 6/6, ECC installed
+  (`~/.claude/skills`) 78/78, ECC full repo 311/311 accepted, 0 warnings;
+  no name clashes between the first three. Catalog per request (chars/4,
+  an estimate): ~650, ~420, ~6,500 and ~25,500 tokens.
+- **Client (`kriya-harness` `feat/kriya-modes`, committed, not pushed):**
+  `kriya skills` (list what the catalog gets with its source, skipped
+  skills, broken links, shadowed names, the per-request cost, a warning
+  above 40,000 catalog characters), `kriya skills link <folder> [--only]`
+  (links into `~/.kriya/skills`, never over an existing name), `kriya
+  skills unlink <name>` (links only; names only, no paths). README and
+  SAFETY.md ("Skills you add"). `tests/local-skills.test.js` (3), which
+  caught a crash: DSH calls `ctx.logger.warn` when it skips an invalid
+  skill. Client `npm run check`: tests 111, pass 111, exit 0.
+- **Live (production, owner approved code `PPB7-QVFN`, 99 skills linked,
+  `kriya run --mode auto --json`, 11:21–11:24 UTC, ₹1.02 for both):**
+  - Model-chosen: on an unexplained failing-tests job the agent's first
+    call was `skill {"name":"systematic-debugging"}` (superpowers); tests
+    1/1 after.
+  - Explicit `/ponytail`: injected without a load call; the answer ends in
+    ponytail's required "Skipped: … Risk: …" lines; tests 2/2 after.
+  - Seen: in `auto` the agent first wrote `/tmp/trace.mjs` (outside the
+    folder); allowed, the known DSH limit SAFETY.md already states
+    (temporary areas stay writable).
+  - Device revoked ("Signed out.").
+- **Not carried over:** Claude Code hooks (ponytail's session-start line,
+  ECC's GateGuard) and slash commands. ECC documents a DSH hooks bridge
+  (`@deepseek-ai/dsh-hooks-claude-code`); it runs commands on the machine
+  and needs its own safety review before Kriya offers it.
