@@ -13245,3 +13245,20 @@ modes (plan, auto and the rest).
   `kriya run` shows that page instead of a plain sentence and doesn't
   retry; `explain` in `kriya-harness` `src/launch.js` only maps the
   contract's JSON codes.
+
+### Client: host error pages (2026-11-02, owner in chat: "Yes, both")
+
+- `761e53c` pushed to `origin/main`.
+- **Reproduced** with a fake Kriya answering chat with an HTML 502: after
+  DSH's own retries (7 requests) `kriya run` printed `dsh: SERVER: 502
+  <!DOCTYPE html>…` and exited 1.
+- **Fixed in `kriya-harness` (`feat/kriya-modes`, committed, not pushed):**
+  `htmlFilter` in `src/launch.js` passes `kriya run`'s stderr through line
+  by line, drops an HTML error body and adds "kriya: Kriya didn't answer
+  (HTTP 502); it may be restarting. Changes made so far stay in this
+  folder; try again in a minute." Exit code stays 1; the job isn't rerun
+  (it could repeat changes). Tests: end to end on the pinned DSH (no HTML
+  in stderr, the sentence present) and the filter in 1-, 7- and whole-text
+  chunks, a one-line page and a JSON refusal untouched. Mutation check:
+  printing stderr raw again fails the end-to-end test, then restored.
+  Client `npm run check`: tests 108, pass 108, exit 0.
