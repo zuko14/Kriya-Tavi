@@ -12923,3 +12923,28 @@ modes (plan, auto and the rest).
   changes with a client release, HD-20); `kriya acp` takes no `--mode`
   (editors choose through ACP); plan as a starting mode in the Web UI is
   DSH's `/plan`, not a flag.
+
+### Incident: owner config Save → "This page couldn't load" in production (2026-11-02, branch `fix/db-pool-settings`, uncommitted at writing)
+
+- **Evidence (Render logs, kriya-web, read only):** the screen's digest
+  `4183819743` = `Failed query: select … from "kriya"."platform_settings"`,
+  cause `PostgresError: (EMAXCONNSESSION) max clients reached in session
+  mode - max clients are limited to pool_size: 15`, repeating from 06:24
+  UTC after today's deploy.
+- **Causes:** (1) production `DATABASE_URL` is Supabase's **session**
+  pooler (15 clients for everything), while the code and
+  `docs/kriya/deployment.md` expect the **transaction** pooler (port
+  6543); `render.yaml` pools add up to 20 (web 10, worker 6, voice 4),
+  more during a deploy's overlap. (2) the settings cache started one query
+  per missed `getSetting`; a Save clears the cache and the next page asks
+  for a dozen settings at once (mutation check: 12 queries for 12 parallel
+  reads on the old code).
+- **Fixed in code:** `lib/config.ts` one shared load, a Save generation so
+  an older load can't cache, an expired copy served up to 5 minutes when a
+  refresh fails (not after a Save); `db/index.ts` warns at start when
+  `DATABASE_URL` is the session pooler. `tests/db/settings-cache.test.ts`
+  (5 tests).
+- **Owner action needed (not done here):** set `DATABASE_URL` on
+  kriya-web, kriya-worker and kriya-voice to the Supabase **transaction
+  pooler** URI (port 6543, Project → Connect), keep
+  `MIGRATION_DATABASE_URL` on 5432.
