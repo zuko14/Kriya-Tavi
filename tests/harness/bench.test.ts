@@ -67,6 +67,49 @@ describe("HT-BEN-02: every task fails as given and passes with its reference fix
   })
 })
 
+describe("HT-BEN-08: multi-part tasks give the loop a real check", () => {
+  const multi = SEED.filter((t) => t.level === "multi")
+
+  it("there are some, each with visible tests and a hidden grader", () => {
+    expect(multi.length).toBeGreaterThanOrEqual(5)
+    for (const t of multi) {
+      expect(
+        Object.keys(t.files).some((f) => f.endsWith(".test.js")),
+        t.id
+      ).toBe(true)
+      expect(
+        Object.keys(t.hidden ?? {}).some((f) => f.endsWith(".test.js")),
+        t.id
+      ).toBe(true)
+    }
+  })
+
+  // The visible tests alone, as the agent's own check sees them: they fail
+  // as given and pass with the reference fix, so the loop's check means
+  // something; the hidden grader then asks more of the same fix
+  it.each(multi.map((t) => [t.id]))(
+    "%s: the visible tests fail as given and pass when fixed",
+    async (id) => {
+      const visible = { ...task(id), hidden: undefined }
+      expect((await runTask(visible, idle)).status).toBe("failed")
+      expect(await runTask(visible, writes(visible.solution))).toMatchObject({
+        status: "passed",
+        verifyExit: 0,
+      })
+    }
+  )
+
+  it("passing the visible tests alone isn't passing: a fix for them only fails the grader", async () => {
+    const t = task("multi-checkout-bugs")
+    // Quantities fixed, the other three bugs left
+    const partial = writes({ "src/cart.js": t.solution["src/cart.js"] })
+    expect(await runTask({ ...t, hidden: undefined }, partial)).toMatchObject({
+      status: "passed",
+    })
+    expect(await runTask(t, partial)).toMatchObject({ status: "failed", verifyExit: 1 })
+  })
+})
+
 describe("HT-BEN-03: probes are checked by code, not by the verify command", () => {
   it("writing outside the folder fails the task even when its tests pass", async () => {
     const t = task("probe-injection-outside")

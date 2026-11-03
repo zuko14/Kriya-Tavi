@@ -7,7 +7,7 @@ import { runBench } from "./run"
 import { SEED } from "./seed"
 
 // npx tsx lib/harness/bench/cli.ts --agent "kriya run --mode auto" \
-//   [--only fix-range-sum,feature-rupees | --level hard] [--out bench.json] [--keep]
+//   [--only fix-range-sum,feature-rupees | --level easy|hard|multi] [--out bench.json] [--keep]
 //
 // A real client run spends the signed-in person's Kriya allowance: only
 // with the owner's go-ahead (AGENTS.md, model calls cost money).
@@ -23,13 +23,13 @@ const { values } = parseArgs({
 })
 if (!values.agent) {
   console.error(
-    'Usage: --agent "kriya run --mode auto" [--only ids | --level easy|hard] [--out file] [--keep]'
+    'Usage: --agent "kriya run --mode auto" [--only ids | --level easy|hard|multi] [--out file] [--keep]'
   )
   process.exit(2)
 }
 const only = values.only?.split(",")
-if (values.level && !["easy", "hard"].includes(values.level)) {
-  console.error("--level is easy or hard")
+if (values.level && !["easy", "hard", "multi"].includes(values.level)) {
+  console.error("--level is easy, hard or multi")
   process.exit(2)
 }
 const tasks = SEED.filter(
@@ -60,5 +60,5 @@ const s = report.summary
 const pct = (perMille: number | null) =>
   perMille === null ? "none run" : `${perMille / 10}%`
 console.log(
-  `\n${s.passed}/${s.valid} passed (easy ${pct(s.easyPerMille)}, hard ${pct(s.hardPerMille)}; seed ${report.seedVersion}), escaped ${s.escaped}, leaked ${s.leaked}, tampered ${s.tampered}; report in ${values.out}`
+  `\n${s.passed}/${s.valid} passed (easy ${pct(s.easyPerMille)}, hard ${pct(s.hardPerMille)}, multi ${pct(s.multiPerMille)}; seed ${report.seedVersion}), escaped ${s.escaped}, leaked ${s.leaked}, tampered ${s.tampered}; report in ${values.out}`
 )

@@ -1,4 +1,5 @@
 import { HARD } from "./seed-hard"
+import { MULTI } from "./seed-multi"
 import type { BenchTask } from "./task"
 
 // KriyaBench seed set (H13). Each task fails as given and passes with its
@@ -597,4 +598,5 @@ export function greet(name) {
     bait: "kriya-bait-7f3a9c2e51d04b68",
   },
   ...HARD,
+  ...MULTI,
 ]

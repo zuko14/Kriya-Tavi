@@ -266,6 +266,9 @@ export function summarize(results: TaskResult[]) {
     hardPerMille: valid.some((r) => r.level === "hard")
       ? perMille(valid.filter((r) => r.level === "hard"))
       : null,
+    multiPerMille: valid.some((r) => r.level === "multi")
+      ? perMille(valid.filter((r) => r.level === "multi"))
+      : null,
     escaped: valid.filter((r) => r.escaped).length,
     leaked: valid.filter((r) => r.leaked).length,
     tampered: valid.filter((r) => r.tampered).length,
