@@ -13750,3 +13750,46 @@ modes (plan, auto and the rest).
   `npm run check`: 174/174.
 - **Owner action:** restart `kriya` (Ctrl-C, then `kriya`) so it reads the
   plan's tiers; in the stuck session pick "Kriya budget".
+
+### Owners never pay; the harness names the owner's model (2026-11-03, owner in chat: "for owners … asking to pay, remove the limits to the owners for the kriya tavi and the harness", "the kriya harness models will be decided by the owner … default model name is displayed in the harness like deepseek flash 1017 not the kriya budget")
+
+- **Owner decision recorded:** owners get an internal plan with no
+  practical limits; this narrows HT-REG-01 ("every plan's harness cap is 0
+  by default") to sold plans. Voice, login profiles (AD-05) and the
+  harness's concurrent-answers limit (HD-16) keep their own gates.
+- **Kriya (this repository):** new migration
+  `supabase/migrations/20270601000000_owner_plan.sql` (and
+  `supabase/rollback/20270601000000_owner_plan.down.sql`): plan `owner`
+  (inactive, unpriced, not default; every tier; included usage and harness
+  cap ₹10^9; counts at their CHECK limits) and `kriya.effective_plan_id`
+  returning it for `platform_roles.role = 'owner'` ahead of any
+  subscription. Every limit (tasks, goals, schedules, skills, files, the
+  harness cap in `reserve_harness_spend`) reads that function, so owners
+  pass them all; usage is still metered. `components/home/usage-meter.tsx`:
+  the owner plan shows usage with "No plan limits" and no Upgrade/Manage.
+  `GET /api/harness/v1/models` gives each level `name`: the catalogue label
+  of the model the owner routes it to in /owner/config (`routing.*`), the
+  repeated vendor prefix trimmed ("DeepSeek: DeepSeek V4.1 Flash" → "DeepSeek
+  V4.1 Flash"); contract and `docs/kriya-harness/contract.json` regenerated.
+- **Client (`kriya-harness`):** `planTiers` carries the names;
+  `KRIYA_MODEL_NAMES` (launcher-only, never from the shell) names the
+  provider row's models; two tiers on the same model read "<name> · <tier>";
+  no usable name keeps "Kriya <tier>". Contract copy and its hash updated.
+- **Tests:** `tests/db/owner-plan.test.ts` (OWN-01: internal plan; owners
+  only, ahead of a subscription; a person can't make themselves an owner;
+  no cap refusal and spend still recorded), HT-DB-05 narrowed to sold
+  plans, HT-GW-01 expects `name`, new HT-GW-09 (names, prefix trim,
+  unusable labels dropped, an unrouted level named after the budget model it
+  really runs on). Client `tests/env.test.js` +1 and the row's expression
+  evaluated with names. Browser: the picker reads "DeepSeek V4.1 Flash".
+  Kriya `npm run check`: typecheck ok, lint 0 errors, format ok, 2878
+  passed, 1 failed: `hard-perf-dedupe` (HT-BEN-02) timed out at 30 s under
+  the full suite's load (its starting code is quadratic by design); alone,
+  `tests/harness/bench.test.ts` 56/56 in 18 s. Not changed here. Client
+  `npm run check`: 175/175.
+- **Owner action to go live:** apply the migration to production
+  (`npm run db:migrate` with the production `MIGRATION_DATABASE_URL`, as for
+  every migration; not run from here), deploy, then restart `kriya`.
+- **Later (owner's direction, not built):** paid plans keep limits and
+  usage for Kriya-hosted models; people may also use the harness with their
+  own provider keys (bring your own key), unmetered by Kriya.

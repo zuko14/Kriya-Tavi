@@ -100,6 +100,13 @@ export const ModelsResponse = z.strictObject({
       id: z.enum(["budget", "balanced", "escalation"]),
       object: z.literal("model"),
       owned_by: z.literal("kriya"),
+      // The model the owner routes this level to, as its catalogue names it
+      // (owner, 2026-11-03: the harness shows the model, not the level).
+      // Absent when the level isn't routed yet
+      name: z
+        .string()
+        .regex(/^[\p{L}\p{N} .()+\/:_-]{1,60}$/u)
+        .optional(),
     })
   ),
 })

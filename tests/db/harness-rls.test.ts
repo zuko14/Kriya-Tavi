@@ -300,9 +300,9 @@ describe("HT-DB-04: the monthly harness cap, in SQL", () => {
 })
 
 describe("HT-DB-05: a plan without a harness cap refuses", () => {
-  it("cap 0 (every plan's default)", async () => {
+  it("cap 0 (every sold plan's default; the owner's internal plan aside)", async () => {
     const { rows } = await pg.query<{ n: number }>(
-      "select count(*)::int as n from kriya.plans where harness_monthly_micro_inr <> 0"
+      "select count(*)::int as n from kriya.plans where harness_monthly_micro_inr <> 0 and id <> 'owner'"
     )
     expect(rows[0].n).toBe(0)
     await expect(reserve(alice, null, 1)).rejects.toThrow(/harness not in plan/)
