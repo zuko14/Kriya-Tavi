@@ -331,6 +331,32 @@ export async function listFiles(
 
 export type FileListItem = Awaited<ReturnType<typeof listFiles>>[number]
 
+// Files attached to a message from the composer: the person's own, past the
+// upload check (a pending, rejected or failed file can't be attached), read
+// as the person so another person's id finds nothing. In the order given.
+export const MAX_ATTACHMENTS = 5
+
+export async function attachableFiles(userId: string, ids: string[]) {
+  if (!ids.length) return []
+  const rows = await withUser(userId, (tx) =>
+    tx
+      .select({ id: files.id, name: files.name, mime: files.mime })
+      .from(files)
+      .where(and(inArray(files.id, ids), inArray(files.status, ["ready", "extracted"])))
+  )
+  return ids.flatMap((id) => rows.filter((row) => row.id === id))
+}
+
+// What the model reads beside a message that came with files: their names
+// and ids, so it opens them with file_read. Their text is never inlined here
+// (file_read marks it as the person's private, untrusted content).
+export function attachmentNote(attachments: { id: string; name: string }[]) {
+  const list = attachments
+    .map((a) => `- ${a.name.replace(/[\r\n]+/g, " ").slice(0, 120)} (file id ${a.id})`)
+    .join("\n")
+  return `[The person attached ${attachments.length === 1 ? "a file" : `${attachments.length} files`} to this message. Read ${attachments.length === 1 ? "it" : "them"} with file_read before answering; a file still being read may need a moment.\n${list}]`
+}
+
 // file_read (TOOLS_AND_CONTRACTS §2.3): a window of a file's extracted text,
 // read as the person, so another person's file simply isn't there. Only a
 // page count is stored, not page breaks, so it pages by character offset.

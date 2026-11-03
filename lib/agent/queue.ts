@@ -15,6 +15,7 @@ import {
 import { loadMessages, saveMessage, textOf } from "@/lib/agent/messages"
 import type { KriyaMessage } from "@/lib/agent/tools"
 import { getMaxSteps, getSetting } from "@/lib/config"
+import { attachableFiles, MAX_ATTACHMENTS } from "@/lib/files"
 import {
   checkTaskAllowed,
   dailyLimit,
@@ -213,24 +214,43 @@ export async function enqueueTurn({
   message,
   agentId,
   idempotencyKey,
+  attachments = [],
 }: {
   userId: string
   threadId: string
   message: KriyaMessage
   agentId?: string
   idempotencyKey?: string
+  // File ids from the composer; checked here as the person
+  attachments?: string[]
 }) {
   const prepared = await prepare(userId, threadId, agentId)
   const { thread, first } = prepared
+
+  const ids = [...new Set(attachments)]
+  if (ids.length > MAX_ATTACHMENTS)
+    throw new TurnError(`Attach at most ${MAX_ATTACHMENTS} files to one message.`)
+  if (ids.length && (await getSetting("agents.files")) !== "on")
+    throw new TurnError("Files aren't available yet.")
+  const attached = await attachableFiles(userId, ids)
+  if (attached.length !== ids.length)
+    throw new TurnError(
+      "A file you attached isn't available. Remove it and try again.",
+      400,
+      "bad_attachment"
+    )
 
   // Only plain text from the person; everything else in a message is the server's
   const userMessage: KriyaMessage = {
     id: message.id,
     role: "user",
     parts: message.parts.filter((part) => part.type === "text"),
-    metadata: thread.squad ? { agentId: first.id } : {},
+    metadata: {
+      ...(thread.squad ? { agentId: first.id } : {}),
+      ...(attached.length ? { attachments: attached } : {}),
+    },
   }
-  const prompt = textOf(userMessage)
+  const prompt = textOf(userMessage) || attached.map((a) => a.name).join(", ")
 
   // Thread ownership was checked above; the message and the task land together
   return insertTask(userId, idempotencyKey ?? null, () =>

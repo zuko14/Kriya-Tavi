@@ -9,6 +9,8 @@ import {
   CalendarClockIcon,
   ChevronRightIcon,
   CornerDownRightIcon,
+  FileTextIcon,
+  ImageIcon,
   MessagesSquareIcon,
   UsersIcon,
 } from "lucide-react"
@@ -196,6 +198,27 @@ function UserMessage({
   return (
     <div className="flex justify-end">
       <div className="flex max-w-[85%] flex-col items-end gap-1">
+        {(message.metadata?.attachments?.length ?? 0) > 0 && (
+          <ul className="flex flex-wrap justify-end gap-1.5" aria-label="Attached files">
+            {message.metadata!.attachments!.map((file) => (
+              <li key={file.id}>
+                <a
+                  href={`/api/files/${file.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-11 max-w-[16rem] min-w-11 items-center gap-1.5 rounded-full border border-border bg-background/60 px-3 text-[12.5px] hover:bg-muted sm:h-9"
+                >
+                  {file.mime?.startsWith("image/") ? (
+                    <ImageIcon className="size-3.5 shrink-0 text-muted-foreground" />
+                  ) : (
+                    <FileTextIcon className="size-3.5 shrink-0 text-muted-foreground" />
+                  )}
+                  <span className="truncate">{file.name}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
         {scheduled && (
           <span className="flex items-center gap-1.5 font-mono text-[10.5px] text-muted-foreground">
             <CalendarClockIcon className="size-3.5" /> Scheduled run
@@ -245,11 +268,11 @@ function UserMessage({
               {text}
             </summary>
           </details>
-        ) : (
+        ) : text.trim() ? (
           <div className="rounded-[20px] rounded-br-md bg-primary px-4 py-2.5 text-[14.5px] leading-relaxed whitespace-pre-wrap text-primary-foreground">
             {text}
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   )

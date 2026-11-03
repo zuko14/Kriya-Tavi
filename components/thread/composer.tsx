@@ -1,7 +1,19 @@
 "use client"
 
 import * as React from "react"
-import { ArrowUpIcon, ChevronDownIcon, MicIcon, SquareIcon } from "lucide-react"
+import {
+  ArrowUpIcon,
+  ChevronDownIcon,
+  FileTextIcon,
+  ImageIcon,
+  Loader2Icon,
+  MicIcon,
+  PaperclipIcon,
+  SquareIcon,
+  XIcon,
+} from "lucide-react"
+
+import { confirmUpload, createUploadUrl } from "@/actions/files"
 
 import { Glyph } from "@/components/glyph"
 import { TierLabel } from "@/components/model-picker"
@@ -16,6 +28,16 @@ import {
 import { toast } from "@/components/ui/toast"
 import { cn } from "@/lib/utils"
 
+// A file attached to the next message: uploaded to the person's Kriya files
+// (the same checked flow as Account → Files), then sent by id
+export type Attachment = { id: string; name: string; mime: string }
+type Pending = Attachment & { key: string; state: "uploading" | "ready" }
+
+// Matches FILE_MIMES (db/schema.ts) and the account page
+const ACCEPT =
+  "image/png,image/jpeg,image/webp,application/pdf,text/csv,text/plain,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+const MAX_FILES = 5
+
 export function Composer({
   placeholder,
   busy,
@@ -29,11 +51,12 @@ export function Composer({
   draftKey,
   leading,
   autoFocus = true,
+  attach = false,
 }: {
   placeholder: string
   busy: boolean
   disabled?: boolean
-  onSend: (text: string) => void
+  onSend: (text: string, attachments: Attachment[]) => void
   onStop: () => void
   members?: AgentLite[]
   addressee?: AgentLite
@@ -44,9 +67,60 @@ export function Composer({
   // Replaces the squad addressee picker, e.g. the home screen's agent picker
   leading?: React.ReactNode
   autoFocus?: boolean
+  // Files can be attached (agents.files)
+  attach?: boolean
 }) {
   const [text, setText] = React.useState("")
+  const [files, setFiles] = React.useState<Pending[]>([])
   const ref = React.useRef<HTMLTextAreaElement>(null)
+  const picker = React.useRef<HTMLInputElement>(null)
+  const uploading = files.some((f) => f.state === "uploading")
+
+  async function upload(file: File) {
+    const key = `${file.name}:${file.size}:${Math.random()}`
+    setFiles((now) => [
+      ...now,
+      { key, id: "", name: file.name, mime: file.type, state: "uploading" },
+    ])
+    const drop = (message: string) => {
+      setFiles((now) => now.filter((f) => f.key !== key))
+      toast.add({ type: "error", title: `${file.name}: ${message}` })
+    }
+    try {
+      const created = await createUploadUrl(file.name, file.type, file.size)
+      if (!("uploadUrl" in created) || !created.uploadUrl || !created.fileId)
+        return drop(("error" in created && created.error) || "couldn't upload it.")
+      const sent = await fetch(created.uploadUrl, {
+        method: "PUT",
+        headers: { "content-type": file.type, "x-upsert": "false" },
+        body: file,
+      })
+      if (!sent.ok) return drop("the upload didn't go through. Try again.")
+      const checked = await confirmUpload(created.fileId)
+      if (!("status" in checked)) return drop(checked.error)
+      if (checked.status !== "ready" && checked.status !== "extracted")
+        return drop(("reason" in checked && checked.reason) || "Kriya can't read it.")
+      setFiles((now) =>
+        now.map((f) =>
+          f.key === key ? { ...f, id: created.fileId!, state: "ready" } : f
+        )
+      )
+    } catch {
+      drop("the upload didn't go through. Try again.")
+    }
+  }
+
+  const pick = (list: FileList | null) => {
+    const room = MAX_FILES - files.length
+    const chosen = Array.from(list ?? [])
+    if (chosen.length > room)
+      toast.add({
+        type: "error",
+        title: `Attach at most ${MAX_FILES} files to one message.`,
+      })
+    for (const file of chosen.slice(0, Math.max(0, room))) void upload(file)
+    if (picker.current) picker.current.value = ""
+  }
 
   // Unsent drafts survive navigation between threads
   React.useEffect(() => {
@@ -85,15 +159,22 @@ export function Composer({
     ref.current?.focus()
   }
 
+  const ready = files.filter((f) => f.state === "ready")
+  const canSend = (!!text.trim() || ready.length > 0) && !uploading && !disabled
+
   const submit = () => {
     const value = text.trim()
-    if (!value || busy || disabled) return
+    if (!canSend || busy) return
     if (listening) {
       spokenAfter.current = null
       dictation.stop()
     }
-    onSend(value)
+    onSend(
+      value,
+      ready.map(({ id, name, mime }) => ({ id, name, mime }))
+    )
     setText("")
+    setFiles([])
   }
 
   return (
@@ -110,6 +191,34 @@ export function Composer({
       >
         {busy && (
           <div className="absolute inset-x-6 -top-px h-px bg-linear-to-r from-transparent via-rigel to-transparent" />
+        )}
+        {files.length > 0 && (
+          <ul className="flex flex-wrap gap-1.5 px-3 pt-3" aria-label="Attached files">
+            {files.map((f) => (
+              <li
+                key={f.key}
+                className="flex h-11 max-w-[16rem] items-center gap-1.5 rounded-full border border-border bg-background/60 pr-0 pl-3 text-[12.5px] sm:h-9 sm:pr-1"
+              >
+                {f.state === "uploading" ? (
+                  <Loader2Icon className="size-3.5 shrink-0 animate-spin text-muted-foreground" />
+                ) : f.mime.startsWith("image/") ? (
+                  <ImageIcon className="size-3.5 shrink-0 text-muted-foreground" />
+                ) : (
+                  <FileTextIcon className="size-3.5 shrink-0 text-muted-foreground" />
+                )}
+                <span className="truncate">{f.name}</span>
+                {f.state === "uploading" && <span className="sr-only">uploading</span>}
+                <button
+                  type="button"
+                  onClick={() => setFiles((now) => now.filter((x) => x.key !== f.key))}
+                  aria-label={`Remove ${f.name}`}
+                  className="grid size-11 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground sm:size-7"
+                >
+                  <XIcon className="size-3.5" />
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
         <textarea
           ref={ref}
@@ -138,6 +247,30 @@ export function Composer({
           className="block [field-sizing:content] max-h-64 min-h-[52px] w-full resize-none bg-transparent px-4 pt-3.5 pb-1 text-[16px] leading-relaxed outline-none placeholder:text-faint disabled:opacity-50 sm:text-[14px]"
         />
         <div className="flex items-center gap-2 px-2.5 pt-1 pb-2.5">
+          {attach && (
+            <>
+              <input
+                ref={picker}
+                type="file"
+                accept={ACCEPT}
+                multiple
+                className="sr-only"
+                tabIndex={-1}
+                aria-hidden
+                onChange={(event) => pick(event.target.files)}
+              />
+              <button
+                type="button"
+                onClick={() => picker.current?.click()}
+                aria-label="Attach files"
+                title="Attach a PDF, image, Word document or text file"
+                disabled={disabled || files.length >= MAX_FILES}
+                className="btn-glass size-11 shrink-0 text-muted-foreground hover:text-foreground disabled:opacity-30 sm:size-9"
+              >
+                <PaperclipIcon className="size-4" />
+              </button>
+            </>
+          )}
           {leading ??
             (members && addressee && onAddresseeChange ? (
               <DropdownMenu>
@@ -219,7 +352,7 @@ export function Composer({
             <button
               type="submit"
               aria-label="Send"
-              disabled={!text.trim() || disabled}
+              disabled={!canSend}
               className="btn-liquid size-11 shrink-0 sm:size-9"
             >
               <ArrowUpIcon className="size-4" />

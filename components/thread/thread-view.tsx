@@ -29,7 +29,7 @@ import {
 } from "@/actions/threads"
 import { Confirm } from "@/components/confirm"
 import { Glyph, SquadGlyph } from "@/components/glyph"
-import { Composer } from "@/components/thread/composer"
+import { Composer, type Attachment } from "@/components/thread/composer"
 import { ApprovalContext, SendContext } from "@/components/thread/tool-call"
 import { Transcript, type AgentLite } from "@/components/thread/transcript"
 import { Button } from "@/components/ui/button"
@@ -74,6 +74,8 @@ export type ThreadViewProps = {
   threads: ThreadSummary[]
   initialMessages: KriyaMessage[]
   workbenchOpen: boolean
+  // Files can be attached from the composer (agents.files)
+  filesOn?: boolean
 }
 
 function parseError(error: Error): { message: string; code?: string } {
@@ -578,10 +580,14 @@ export function ThreadView(props: ThreadViewProps) {
   )
   const addressee = members.find((member) => member.id === addresseeId) ?? members[0]
 
-  const send = (text: string) => {
+  const send = (text: string, attachments: Attachment[] = []) => {
     clearError()
+    const metadata = {
+      ...(kind === "squad" ? { agentId: addressee.id } : {}),
+      ...(attachments.length ? { attachments } : {}),
+    }
     sendMessage(
-      { text, metadata: kind === "squad" ? { agentId: addressee.id } : undefined },
+      { text, metadata: Object.keys(metadata).length ? metadata : undefined },
       { body: { agentId: addressee?.id } }
     )
     // Let the sidebar pick up the new title and the busy indicator
@@ -713,6 +719,7 @@ export function ThreadView(props: ThreadViewProps) {
             busy={busy}
             onSend={send}
             onStop={halt}
+            attach={props.filesOn}
             members={kind === "squad" ? members : undefined}
             addressee={kind === "squad" ? addressee : undefined}
             onAddresseeChange={setAddresseeId}

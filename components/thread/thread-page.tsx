@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import { CloudStrip } from "@/components/thread/cloud-strip"
 import { ThreadView } from "@/components/thread/thread-view"
 import { requireUser } from "@/lib/auth"
+import { getSetting } from "@/lib/config"
 import { agentGlyph } from "@/lib/glyph"
 import { getThreadWorkspace } from "@/queries/cloud"
 import { getThread, getThreadsFor } from "@/queries/workspace"
@@ -66,6 +67,7 @@ export async function ThreadPage({
       threads={threads}
       initialMessages={thread.messages}
       workbenchOpen={(await cookies()).get("kriya_panel")?.value !== "closed"}
+      filesOn={(await getSetting("agents.files")) === "on"}
     />
   )
   if (!workspace) return view

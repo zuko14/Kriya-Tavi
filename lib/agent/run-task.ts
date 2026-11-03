@@ -89,6 +89,7 @@ import { browserProvider, TaskBrowser } from "@/lib/browser/session"
 import { cloudSettings, TaskWorkspace, workspaceProvider } from "@/lib/cloud/session"
 import { withCloudCoding } from "@/lib/cloud/skill"
 import { getSetting } from "@/lib/config"
+import { attachmentNote } from "@/lib/files"
 import { agentGlyph } from "@/lib/glyph"
 import { BASELINE_POLICY, bundleFor, stampTask, type Policy } from "@/lib/improve"
 import { EXTRA_GOOGLE_SERVICES, googleServices } from "@/lib/connectors"
@@ -1000,9 +1001,11 @@ export async function runTask(task: Task, ctx: WorkerContext) {
       model: createGatewayModel(modelId),
       instructions: instructionsFor(first),
       messages: await convertToModelMessages(
-        covered.size > 0
-          ? history.filter((message) => !covered.has(message.id))
-          : history,
+        withAttachmentNotes(
+          covered.size > 0
+            ? history.filter((message) => !covered.has(message.id))
+            : history
+        ),
         {
           tools,
           ignoreIncompleteToolCalls: true,
@@ -1303,4 +1306,21 @@ function skillsMetadata(used: Map<string, Resolution>) {
 function summarize(output: unknown) {
   const text = typeof output === "string" ? output : JSON.stringify(output ?? null)
   return text.length > 500 ? `${text.slice(0, 500)}…` : text
+}
+
+// A message that came with files (the composer, agents.files) reaches the
+// model with a note naming them, so it reads them with file_read; the stored
+// message keeps the person's own words. Messages without files are unchanged.
+export function withAttachmentNotes(messages: KriyaMessage[]): KriyaMessage[] {
+  return messages.map((message) =>
+    message.role === "user" && message.metadata?.attachments?.length
+      ? {
+          ...message,
+          parts: [
+            ...message.parts,
+            { type: "text" as const, text: attachmentNote(message.metadata.attachments) },
+          ],
+        }
+      : message
+  )
 }

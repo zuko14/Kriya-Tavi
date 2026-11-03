@@ -2043,6 +2043,9 @@ export type KriyaMetadata = {
   scheduleId?: string
   runId?: string
   partId?: string
+  // Files the person attached from the composer (agents.files): the
+  // server's own record of each, never names from the browser
+  attachments?: { id: string; name: string; mime: string }[]
 }
 
 export type KriyaMessage = UIMessage<KriyaMetadata, UIDataTypes, InferUITools<KriyaTools>>

@@ -10,6 +10,7 @@ import {
 } from "@/lib/agent/queue"
 import type { KriyaMessage } from "@/lib/agent/tools"
 import { authenticate } from "@/lib/auth"
+import { MAX_ATTACHMENTS } from "@/lib/files"
 import { LITE_HEADER } from "@/lib/lite"
 import { log } from "@/lib/log"
 import { readJson } from "@/lib/json-body"
@@ -29,7 +30,15 @@ const bodySchema = z.object({
       .min(1)
       .max(16),
     metadata: z
-      .object({ agentId: z.string().max(32).optional() })
+      .object({
+        agentId: z.string().max(32).optional(),
+        // Files from the composer: only each id is read (enqueueTurn checks
+        // it's the person's and records its name itself)
+        attachments: z
+          .array(z.object({ id: z.uuid() }).loose())
+          .max(MAX_ATTACHMENTS)
+          .optional(),
+      })
       .loose()
       .optional(),
   }),
@@ -67,7 +76,9 @@ export async function POST(
   const parsed = bodySchema.safeParse(body.ok ? body.body : null)
   if (!parsed.success) return fail("Malformed message.")
   const text = parsed.data.message.parts.map((part) => part.text).join("")
-  if (!text.trim()) return fail("Message is empty.")
+  const attachments = (parsed.data.message.metadata?.attachments ?? []).map((a) => a.id)
+  // Files alone are a message too ("what's in this?")
+  if (!text.trim() && !attachments.length) return fail("Message is empty.")
   if (text.length > MAX_TEXT) return fail("Message is too long.", 413, "too_large")
 
   // A burst guard on top of the plan's daily limit
@@ -86,6 +97,7 @@ export async function POST(
       message: parsed.data.message as unknown as KriyaMessage,
       agentId: parsed.data.agentId,
       idempotencyKey: `msg:${id.data}:${parsed.data.message.id}`,
+      attachments,
     })
     return createUIMessageStreamResponse({
       stream: streamTask(user.id, task.id, request.signal, lite(request)),
