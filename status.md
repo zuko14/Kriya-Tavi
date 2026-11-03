@@ -13727,3 +13727,26 @@ modes (plan, auto and the rest).
   and
   `KRIYA_VERIFY_CHECK="node --test" npx tsx lib/harness/bench/cli.ts --agent "kriya run --mode auto --loop" --level multi --out docs/kriya-harness/bench/multi-loop-<n>.json`,
   on a bench device the owner approves.
+
+### Fix: every turn failed with 400 "tier_not_allowed" (2026-11-03, owner's screenshot: "why the kriya harness not working")
+
+- **Cause:** the `kriya` provider row listed balanced, budget and
+  escalation whatever the plan allowed; the launcher used `GET /models`
+  only for the starting tier. On the owner's budget-only plan the session
+  had "Kriya escalation" selected, so the gateway refused every request
+  (correctly: limits are enforced on the server).
+- **Fix (`kriya-harness` `404a89c`, pushed to zuko14/kriya-harness#17):**
+  `planTiers` reads the plan's tiers once at launch and passes
+  `KRIYA_ALLOWED_TIERS`; the provider row's models are filtered by it (all
+  three if Kriya can't be asked). The headless `tier_not_allowed` message
+  says what to do. README updated.
+- **Checked in the browser** (fake Kriya refusing every tier but budget,
+  persistent home): with all tiers a session was saved on escalation; after
+  restarting as budget-only the picker offers only "Kriya budget", the old
+  session shows "Select model" and its turn fails with `UNKNOWN_MODEL`
+  (no request reaches the gateway); picking budget recovers it ("Completed");
+  a new session starts on budget. Tests: `tests/env.test.js` +2 (tiers,
+  the row's expression evaluated from the recorded dump). Client
+  `npm run check`: 174/174.
+- **Owner action:** restart `kriya` (Ctrl-C, then `kriya`) so it reads the
+  plan's tiers; in the stuck session pick "Kriya budget".
