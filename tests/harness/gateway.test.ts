@@ -151,11 +151,43 @@ describe("HT-GW-01: aliases only", () => {
     }
     expect(sent).toHaveLength(1)
 
+    // Each level carries the name of the model the owner routes it to
     const list = await models(call("GET", "/models", { token }))
     expect(await list.json()).toEqual({
       object: "list",
-      data: [{ id: "budget", object: "model", owned_by: "kriya" }],
+      data: [{ id: "budget", object: "model", owned_by: "kriya", name: "Budget" }],
     })
+  })
+})
+
+describe("HT-GW-09: /models names the owner's model for each level", () => {
+  it("the catalogue label, its repeated vendor prefix trimmed; unusable labels leave the name out", async () => {
+    const { displayName } = await import("@/app/api/harness/v1/models/route")
+    expect(
+      displayName("DeepSeek: DeepSeek V4.1 Flash", "deepseek/deepseek-v4.1-flash-1017")
+    ).toBe("DeepSeek V4.1 Flash")
+    expect(displayName("Anthropic: Claude Sonnet", "anthropic/claude-sonnet")).toBe(
+      "Anthropic: Claude Sonnet"
+    )
+    expect(displayName(null, "deepseek/deepseek-v4.1-flash-1017")).toBe(
+      "deepseek-v4.1-flash-1017"
+    )
+    expect(displayName("<script>alert(1)</script>", "x/y")).toBeUndefined()
+    expect(displayName("a".repeat(90), "x/y")).toHaveLength(60)
+  })
+
+  it("every allowed level, named after the model it really runs on", async () => {
+    await pg.query(
+      "update kriya.plans set allowed_tiers = '{budget,balanced,escalation}' where id = 'free'"
+    )
+    const list = await (await models(call("GET", "/models", { token }))).json()
+    expect(list.data).toEqual([
+      { id: "budget", object: "model", owned_by: "kriya", name: "Budget" },
+      { id: "balanced", object: "model", owned_by: "kriya", name: "Balanced" },
+      // No escalation model routed: the gateway sends it to the budget model,
+      // so that's the name
+      { id: "escalation", object: "model", owned_by: "kriya", name: "Budget" },
+    ])
   })
 })
 
