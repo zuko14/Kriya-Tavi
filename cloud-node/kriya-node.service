@@ -1,0 +1,27 @@
+# kriya-node as a systemd service (SELF_HOSTED_OPERATIONS_RUNBOOK §2 step 7).
+# The repository's cloud-node/ directory, zod and tsx are copied to
+# /opt/kriya-node (only those: no lib/, no database code, no secret).
+# Configuration in /etc/kriya-node/env (mode 0600, root): KRIYA_NODE_ID,
+# KRIYA_NODE_KEY (from scripts/cloud-node-key.ts), KRIYA_NODE_IMAGE pinned
+# by digest. Stopping the agent leaves sandboxes running; they are stopped
+# by their own idle timer if the agent stays away (CD-33).
+[Unit]
+Description=Kriya execution node agent
+After=docker.service network-online.target
+Requires=docker.service
+
+[Service]
+EnvironmentFile=/etc/kriya-node/env
+WorkingDirectory=/opt/kriya-node
+ExecStart=/usr/bin/node --import tsx cloud-node/index.ts
+Restart=always
+RestartSec=2
+KillMode=process
+NoNewPrivileges=true
+ProtectHome=true
+PrivateTmp=true
+StateDirectory=kriya-node
+StateDirectoryMode=0700
+
+[Install]
+WantedBy=multi-user.target

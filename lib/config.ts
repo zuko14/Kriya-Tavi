@@ -510,8 +510,8 @@ export const SETTINGS = {
   "cloud.provider": {
     env: "KRIYA_CLOUD_PROVIDER",
     fallback: "none",
-    pattern: /^(none|local|e2b|daytona|device)$/,
-    hint: "none, local, e2b, daytona or device",
+    pattern: /^(none|local|e2b|daytona|device|selfhosted)$/,
+    hint: "none, local, e2b, daytona, device or selfhosted",
   },
   // The provider's template id for the runner image
   "cloud.image": {
@@ -597,6 +597,98 @@ export const SETTINGS = {
     fallback: "off",
     pattern: /^(on|off)$/,
     hint: "on or off",
+  },
+  // Self-hosted execution fabric (track C extension, CD-28…CD-37,
+  // docs/cloud-execution/SELF_HOSTED_ARCHITECTURE.md): machines Kriya runs
+  // (kriya-node) as cloud.provider = selfhosted. Nothing here takes effect
+  // until cloud.provider is selfhosted; empty lists mean no node and nobody.
+  // The nodes: id=https://address, comma-separated (http only on loopback)
+  "selfhosted.nodes": {
+    env: "KRIYA_SELFHOSTED_NODES",
+    fallback: "",
+    pattern:
+      /^$|^[a-z0-9][a-z0-9-]{0,31}=https?:\/\/[A-Za-z0-9.-]+(:\d{1,5})?(,[a-z0-9][a-z0-9-]{0,31}=https?:\/\/[A-Za-z0-9.-]+(:\d{1,5})?){0,15}$/,
+    hint: "e.g. kvm4-1=https://node1.example.com",
+  },
+  // Who may run on them: user ids, comma-separated, or * for everyone
+  "selfhosted.users": {
+    env: "KRIYA_SELFHOSTED_USERS",
+    fallback: "",
+    pattern: /^$|^\*$|^[0-9a-f-]{36}(,[0-9a-f-]{36}){0,199}$/,
+    hint: "user ids, comma-separated, or *",
+  },
+  // Kill switch: on holds every new sandbox start; running ones carry on
+  "selfhosted.holdAdmissions": {
+    env: "KRIYA_SELFHOSTED_HOLD_ADMISSIONS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Nodes taking no new sandboxes; their paused ones are checkpointed away
+  "selfhosted.drain": {
+    env: "KRIYA_SELFHOSTED_DRAIN",
+    fallback: "",
+    pattern: /^$|^[a-z0-9][a-z0-9-]{0,31}(,[a-z0-9][a-z0-9-]{0,31}){0,15}$/,
+    hint: "node ids, comma-separated",
+  },
+  // gvisor: sandboxes only on nodes that proved runsc (CD-30). trusted-runc
+  // also uses plain containers, which share the host kernel: only for
+  // workloads the owner trusts, never people's code
+  "selfhosted.isolation": {
+    env: "KRIYA_SELFHOSTED_ISOLATION",
+    fallback: "gvisor",
+    pattern: /^(gvisor|trusted-runc)$/,
+    hint: "gvisor or trusted-runc",
+  },
+  // How long a workspace start waits for capacity before "busy"
+  "selfhosted.maxWaitSeconds": {
+    env: "KRIYA_SELFHOSTED_MAX_WAIT_SECONDS",
+    fallback: "60",
+    pattern: /^([5-9]|[1-9]\d|[1-5]\d\d|600)$/,
+    hint: "5 to 600",
+  },
+  // Sandboxes one person runs at once on the fabric
+  "selfhosted.maxPerUser": {
+    env: "KRIYA_SELFHOSTED_MAX_PER_USER",
+    fallback: "1",
+    pattern: /^([1-9]|10)$/,
+    hint: "1 to 10",
+  },
+  // Waiting starts across the fabric; more are refused as busy
+  "selfhosted.maxQueued": {
+    env: "KRIYA_SELFHOSTED_MAX_QUEUED",
+    fallback: "50",
+    pattern: /^([1-9]|[1-9]\d|[1-4]\d\d|500)$/,
+    hint: "1 to 500",
+  },
+  // CPU reserved may reach this share of a node's CPUs (memory never
+  // exceeds 100%)
+  "selfhosted.cpuOvercommitPct": {
+    env: "KRIYA_SELFHOSTED_CPU_OVERCOMMIT_PCT",
+    fallback: "150",
+    pattern: /^(1\d\d|[23]\d\d|400)$/,
+    hint: "100 to 400",
+  },
+  // Disk each sandbox may use
+  "selfhosted.diskGb": {
+    env: "KRIYA_SELFHOSTED_DISK_GB",
+    fallback: "10",
+    pattern: /^([1-9]|[1-9]\d|1\d\d|200)$/,
+    hint: "1 to 200",
+  },
+  // A sandbox without traffic this long is stopped by its node
+  "selfhosted.idleMinutes": {
+    env: "KRIYA_SELFHOSTED_IDLE_MINUTES",
+    fallback: "15",
+    pattern: /^([5-9]|[1-9]\d|[1-9]\d\d|1[0-3]\d\d|14[0-3]\d|1440)$/,
+    hint: "5 to 1440",
+  },
+  // A start waiting this long goes first, and nothing jumps ahead of it
+  "selfhosted.starvationSeconds": {
+    env: "KRIYA_SELFHOSTED_STARVATION_SECONDS",
+    fallback: "120",
+    pattern: /^([1-9]\d|[1-9]\d\d|[1-2]\d{3}|3[0-5]\d\d|3600)$/,
+    hint: "10 to 3600",
   },
   // Kriya Harness (track H, docs/kriya-harness, HD-18). Off means every
   // harness route answers 404 and nothing else changes (HT-REG-01). Each
@@ -898,6 +990,8 @@ export const SECRETS = [
   "DAYTONA_API_KEY",
   // H10, HD-12: the worker's key to kriya-relay (32+ random characters)
   "KRIYA_RELAY_SECRET",
+  // CD-36: each kriya-node's key is derived from this (32+ random characters)
+  "KRIYA_NODE_SECRET",
 ] as const
 
 export type SecretName = (typeof SECRETS)[number]

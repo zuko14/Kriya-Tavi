@@ -1,7 +1,7 @@
 import { and, count, desc, eq, inArray, isNull, ne, sql, sum } from "drizzle-orm"
 
-import { privileged, withUser } from "@/db"
-import { resourceUsage, workspaces, workspaceSessions } from "@/db/schema"
+import { privileged, rowsOf, withUser } from "@/db"
+import { execNodes, resourceUsage, workspaces, workspaceSessions } from "@/db/schema"
 import { getSetting } from "@/lib/config"
 import { getPlan } from "@/lib/entitlements"
 
@@ -137,4 +137,48 @@ export async function getCloudOverview() {
     storedBytes: stored?.bytes ?? 0,
     rows: rows.map((r) => ({ ...r, checkpointBytes: Number(r.checkpointBytes ?? 0) })),
   }
+}
+
+// kriya.exec_metrics() (SH7): the self-hosted fabric's queue, last hour and
+// nodes. Seconds, MB, CPU millis and PSI avg10 %; null where unmeasured.
+export type ExecMetrics = {
+  waiting: number
+  oldestWaitSeconds: number
+  lastHour: {
+    granted: number
+    expired: number
+    cancelled: number
+    startFailed: number
+    waitP50: number | null
+    waitP95: number | null
+    waitP99: number | null
+  }
+  nodes: {
+    id: string
+    status: string
+    healthy: boolean
+    isolation: string | null
+    statsAgeSeconds: number | null
+    cpuMillis: number
+    memMb: number
+    diskMb: number
+    cpuReserved: number
+    memReserved: number
+    diskReserved: number
+    psiCpu: number | null
+    psiMem: number | null
+    psiIo: number | null
+    diskFreeMb: number | null
+    reason: string | null
+  }[]
+}
+
+// The owner's self-hosted panel, or null while the fabric is unused (not the
+// provider and no node ever registered). exec_metrics is revoked from client
+// roles, so privileged; the caller has passed requireOwner (invariant 1).
+export async function getExecMetrics() {
+  const [node] = await privileged.select({ id: execNodes.id }).from(execNodes).limit(1)
+  if (!node && (await getSetting("cloud.provider")) !== "selfhosted") return null
+  const result = await privileged.execute(sql`select kriya.exec_metrics() as m`)
+  return rowsOf<{ m: ExecMetrics }>(result)[0].m
 }

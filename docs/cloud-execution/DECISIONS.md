@@ -39,6 +39,16 @@ Evidence ids: `CF-…` (REPOSITORY_AUDIT §7), `P…` (DSH_COMPONENT_MAP §3),
 | CD-25 | Documentation truth (stale status pages) | — | CP-1, C10 |
 | CD-26 | The runner protocol is Kriya's execution-world contract, also served by the harness device world (track H) | — | C2 |
 | CD-27 | The checkpoint format is also the laptop ↔ cloud handoff format (track H) | — | C6 |
+| CD-28 | Self-hosted execution is one more `WorkspaceProvider` (`selfhosted`) plus a small node agent; no second control plane or task queue | — | SH1–SH3 |
+| CD-29 | Node capacity admission in Postgres (`exec_leases`, `exec_admit`), below `open_workspace_session` | **Yes** (migration) | SH1 |
+| CD-30 | Self-hosted isolation floor: gVisor (`runsc`) required; `trusted-runc` only for owner-trusted work | **Yes** (interprets CD-06) | SH5 |
+| CD-31 | Fencing: the lease id is the fence; the node enforces it on proxy and stop | — | SH2, SH4 |
+| CD-32 | Scheduler: fair rank, best-fit, CPU-only overcommit, PSI gates, strict head after starvation, one pass at a time | — | SH1, SH6 |
+| CD-33 | Node-side safety: idle stop, disk-quota stop, re-probe; containers never restart themselves | — | SH2 |
+| CD-34 | Host network: own bridge without ICC, `KRIYA-SBX` drops private/metadata, no IPv6; fail closed | — | SH5 |
+| CD-35 | Settings, routing, kill switch, drain; no silent overflow to another provider | — | SH3, SH7 |
+| CD-36 | Node authentication: per-node HMAC keys derived from `KRIYA_NODE_SECRET`, signed requests, TLS by a reverse proxy | **Yes** (new secret) | SH2 |
+| CD-37 | Observability: JSON event logs + `kriya.exec_metrics()`; no OpenTelemetry collector on a node yet | — | SH7 |
 
 CD-26 and CD-27 (added 2026-10-31 with tracks H and R, `docs/program/C_H_R_PROGRAM.md`):
 **CD-26.** `runner/protocol.ts` is versioned by its `/v1` paths and kept
@@ -493,3 +503,133 @@ CP-1 corrects CF-01 and CF-02 (stale `docs/kriya/status.md` rows and the
 `docs/kriya/architecture.md` execution section). `README.md` mentions cloud
 workspaces only after C10 passes on staging (CF-03). **Status.** Proposed,
 2026-10-31.
+
+---
+
+# Self-hosted execution fabric (CD-28…CD-37)
+
+Added 2026-11-02 for the owner's brief
+`docs/kriya_self_hosted_ecxecution_fabric.md`. Evidence:
+`SELF_HOSTED_ARCHITECTURE_AUDIT.md`, `SELF_HOSTED_BENCHMARK_PLAN.md`,
+`SELF_HOSTED_THREAT_MODEL.md`. All **Proposed**; owner-gated ones marked.
+
+## CD-28 — One more provider, not a second platform
+
+- **Context.** The brief asks for cheap self-hosted execution without a
+  rewrite. Track C already separates orchestration (`kriya.tasks`,
+  `runTask`, `TaskWorkspace`) from execution (`WorkspaceProvider` + the
+  runner protocol, CD-05).
+- **Options.** (a) a `selfhosted` adapter + a node agent; (b) Nomad or k3s
+  as the execution scheduler; (c) Temporal for workflow state; (d) run the
+  model loop on the node.
+- **Decision.** (a). `lib/cloud/providers/selfhosted.ts` implements the
+  existing interface; `cloud-node/` is a ~700-line agent with Node
+  built-ins and zod only, no database and no Kriya secret.
+- **Reasons.** (b) and (c) add a second scheduler/state owner and a service
+  to run for a fleet of one to three nodes; (d) breaks CD-02 and CD-09.
+- **Reconsider when.** More than ~10 nodes, or placement constraints the
+  SQL pass can't express.
+- **Status.** Proposed, 2026-11-02.
+
+## CD-29 — Capacity admission in Postgres (owner-gated: migration)
+
+- **Decision.** `kriya.exec_nodes` (last measurements), `kriya.exec_leases`
+  (one row per sandbox start or resume; waiting → granted → running ⇄
+  stopped → released), `exec_request` (backpressure: total and per-person
+  queue caps), `exec_admit` (the pass, CD-32), `exec_metrics`. Worker-only
+  (`no_access` policies). Runs below the unchanged `open_workspace_session`
+  (plan minutes, platform cap).
+- **Options rejected.** Redis/BullMQ, NATS JetStream, RabbitMQ (new service,
+  second source of truth, more failure modes); LISTEN/NOTIFY wake-ups
+  (Supabase's transaction pooler doesn't keep LISTEN sessions; polling is
+  cheap at this scale, §4.2).
+- **Evidence.** CT-SH-DB-01…15; benchmark §4.1–4.2.
+- **Status.** Proposed, 2026-11-02. Owner approves the migration (OA-6).
+
+## CD-30 — Self-hosted isolation floor (owner-gated: interprets CD-06)
+
+- **Context.** CD-06 requires "one machine per workspace with its own kernel
+  (microVM or equivalent)". Hostinger VPS plans have nested virtualization
+  disabled (Hostinger support, read 2026-11-02), so Firecracker and Kata are
+  out there. gVisor gives each sandbox its own application kernel (the
+  Sentry) in user space, with the systrap platform needing no KVM.
+- **Decision.** People's code runs on self-hosted nodes only under `runsc`
+  (`selfhosted.isolation = gvisor`, the default; the node reports what it
+  proved, the scheduler refuses anything else). `trusted-runc` exists for
+  owner-trusted internal work only. Hostile/high-risk code stays on a
+  microVM provider.
+- **Owner question.** Does gVisor count as "equivalent" under CD-06? Until
+  approved, nodes run `trusted-runc` work only.
+- **Evidence still missing.** The isolation suite under runsc on the target
+  host (runbook §2 step 6).
+- **Status.** Proposed, 2026-11-02. Owner-gated.
+
+## CD-31 — Fencing
+
+- **Decision.** A lease's identity value is the fence. The node accepts
+  runner traffic only with HMAC(node key, `ref:fence`) for the current
+  fence, refuses stop/open with older fences, persists fences across
+  restarts, and restarts the runner when a newer holder resumes a running
+  sandbox. The provider pauses with its own fence, so a stale worker's late
+  pause gets 409. Complements the generation-bound runner token (which
+  fences sandboxes, not holders of the same sandbox).
+- **Evidence.** REC-01, CT-SH-NODE-02, CT-SH-DOCKER-05; mutation-checked.
+- **Status.** Proposed, 2026-11-02.
+
+## CD-32 — The scheduler
+
+- **Decision.** One pass at a time (try-lock), run when a version counter
+  or the policy changed or ≥ 1 s passed. Rank: starving first; fewest live
+  leases + earlier waiters per person; priority; age. Best-fit on memory;
+  CPU overcommit `cpuOvercommitPct` (default 150); memory and disk never
+  overcommitted; PSI ceilings; stale/unhealthy/disallowed nodes skipped; a
+  starving waiter that fits nowhere stops the pass.
+- **Alternatives.** Weighted fair queuing with virtual time (no product
+  weights defined; equal shares via ceiling + rank measured fair: Jain 1.0);
+  spread placement (within noise, §4.1); every waiter running its own pass
+  (collapsed at 250 waiters, §4.2).
+- **Status.** Proposed, 2026-11-02.
+
+## CD-33 — Node-side safety
+
+Idle stop after `selfhosted.idleMinutes` with no traffic and nothing in
+flight (works with the control plane down); disk-quota stop (`du` sweep,
+soft: XFS project quotas recommended); re-probe each minute; `--restart no`
+so a reboot leaves sandboxes stopped (treated as paused). **Status.**
+Proposed, 2026-11-02.
+
+## CD-34 — Host network
+
+Own bridge (`kriya-sbx`, ICC off, IPv6 off); `KRIYA-SBX` from DOCKER-USER
+drops private, loopback, link-local/metadata, CGNAT, multicast; INPUT from
+the bridge allows replies only; the in-image firewall and registry proxy
+(CD-12) narrow the internet to package registries. The agent refuses work
+while the rules are missing. Tested on real iptables (threat model §6).
+**Status.** Proposed, 2026-11-02.
+
+## CD-35 — Settings, routing, kill switch, drain
+
+`cloud.provider = selfhosted`; `selfhosted.nodes`, `.users` (gates new
+sandboxes only), `.holdAdmissions` (kill switch, off), `.drain`,
+`.isolation`, `.maxWaitSeconds`, `.maxPerUser`, `.maxQueued`,
+`.cpuOvercommitPct`, `.diskGb`, `.idleMinutes`, `.starvationSeconds`. No
+automatic overflow to E2B/Daytona: a workspace's disk lives on one node,
+another vendor is another processor (CQ-1) and another bill. **Status.**
+Proposed, 2026-11-02.
+
+## CD-36 — Node authentication (owner-gated: new secret)
+
+`KRIYA_NODE_SECRET` (worker only) derives each node's key; signed requests
+(method, path, timestamp, nonce, body hash; ±60 s; single-use nonce); the
+agent listens on loopback behind a TLS reverse proxy. mTLS reconsidered at
+more than one node. **Status.** Proposed, 2026-11-02. Owner sets the secret
+(OA-7).
+
+## CD-37 — Observability
+
+Node: one JSON line per lifecycle event, never a token, key or command.
+Control plane: `kriya.exec_metrics()` (queue depth, oldest wait, outcomes
+and wait percentiles of the last hour, per-node reservations, PSI, health);
+janitor log counts (`leasesReleased`, `nodesUnhealthy`). No OpenTelemetry
+collector on a 2–4 vCPU node until more than one node exists. **Status.**
+Proposed, 2026-11-02.

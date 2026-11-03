@@ -28,6 +28,8 @@ const NAMES = [
   "KRIYA_RELAY_URL",
   "KRIYA_RELAY_SECRET",
   "KRIYA_HARNESS_DEVICE_WORLD",
+  "KRIYA_NODE_SECRET",
+  "KRIYA_SELFHOSTED_NODES",
 ]
 const saved = Object.fromEntries(NAMES.map((name) => [name, process.env[name]]))
 
@@ -112,6 +114,25 @@ describe("CT-PRV-01: which provider, if any", () => {
     expect(await workspaceProvider()).toBeNull()
     configure({ ...device, KRIYA_RELAY_SECRET: "short" })
     expect(await workspaceProvider()).toBeNull()
+  })
+
+  it("selfhosted (CD-28): the node secret and at least one https node; plain http only on loopback", async () => {
+    const fabric = {
+      KRIYA_CLOUD_PROVIDER: "selfhosted",
+      KRIYA_WORKSPACE_SECRET: "s".repeat(43),
+      KRIYA_NODE_SECRET: "n".repeat(43),
+      KRIYA_SELFHOSTED_NODES: "kvm4-1=https://node1.kriya.example",
+    }
+    configure(fabric)
+    expect((await workspaceProvider())?.name).toBe("selfhosted")
+    configure({ ...fabric, KRIYA_NODE_SECRET: "short" })
+    expect(await workspaceProvider()).toBeNull()
+    configure({ ...fabric, KRIYA_SELFHOSTED_NODES: undefined })
+    expect(await workspaceProvider()).toBeNull()
+    configure({ ...fabric, KRIYA_SELFHOSTED_NODES: "n1=http://node1.kriya.example" })
+    expect(await workspaceProvider()).toBeNull()
+    configure({ ...fabric, KRIYA_SELFHOSTED_NODES: "n1=http://127.0.0.1:7070" })
+    expect((await workspaceProvider())?.name).toBe("selfhosted")
   })
 
   it("local on the verify stack; a test override wins", async () => {

@@ -64,6 +64,19 @@ export function problems(env: Env, fileNames: string[]) {
   for (const name of ["E2B_API_KEY", "DAYTONA_API_KEY"])
     if (has(env[name]) && env.KRIYA_VERIFY_PAID !== "1")
       found.push(`${name} is set: paid sandboxes need KRIYA_VERIFY_PAID=1.`)
+  // SH: a self-hosted node off this machine is real infrastructure, possibly
+  // shared with live sandboxes (CD-35); local runs use loopback nodes only
+  if (has(env.KRIYA_SELFHOSTED_NODES) && env.KRIYA_VERIFY_PAID !== "1") {
+    const remote = env
+      .KRIYA_SELFHOSTED_NODES!.split(",")
+      .some(
+        (entry) => !LOCAL_HOSTS.has(hostOf(entry.slice(entry.indexOf("=") + 1)) ?? "")
+      )
+    if (remote)
+      found.push(
+        "KRIYA_SELFHOSTED_NODES names a node that isn't on this machine: real nodes need KRIYA_VERIFY_PAID=1."
+      )
+  }
   // OF-17: Next.js fills any name left undefined from .env and .env.local
   for (const name of [...new Set(fileNames)].sort())
     if (env[name] === undefined)

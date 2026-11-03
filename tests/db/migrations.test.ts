@@ -183,6 +183,8 @@ describe("migrations", () => {
     // (O2) reference goals and use check_transition(), as do policy versions
     // (A12), radar (A13), ledger (A7), files (A5), skills (A9) and login
     // profiles (A6); obligations reference goals
+    // The self-hosted fabric (SH1) widens the provider checks and references workspaces
+    await pg.exec(read("rollback", "20270501000000_cloud_fabric.down.sql"))
     await pg.exec(read("rollback", "20270401000200_room_moderation.down.sql"))
     await pg.exec(read("rollback", "20270401000100_room_goals_notes.down.sql"))
     await pg.exec(read("rollback", "20270401000000_rooms.down.sql"))
@@ -225,6 +227,7 @@ describe("migrations", () => {
     await pg.exec(read("migrations", "20270401000000_rooms.sql"))
     await pg.exec(read("migrations", "20270401000100_room_goals_notes.sql"))
     await pg.exec(read("migrations", "20270401000200_room_moderation.sql"))
+    await pg.exec(read("migrations", "20270501000000_cloud_fabric.sql"))
   })
 
   it("rolls the A8 providers and undo columns back and applies them again", async () => {
@@ -937,6 +940,8 @@ describe("migrations", () => {
     )
 
     // Tracks R (R1) and H (H1) sort after it and are rolled back first, newest first
+    // The self-hosted fabric (SH1) widens the provider checks and references workspaces
+    await pg.exec(read("rollback", "20270501000000_cloud_fabric.down.sql"))
     await pg.exec(read("rollback", "20270401000200_room_moderation.down.sql"))
     await pg.exec(read("rollback", "20270401000100_room_goals_notes.down.sql"))
     await pg.exec(read("rollback", "20270401000000_rooms.down.sql"))
@@ -965,6 +970,7 @@ describe("migrations", () => {
     await pg.exec(read("migrations", "20270401000000_rooms.sql"))
     await pg.exec(read("migrations", "20270401000100_room_goals_notes.sql"))
     await pg.exec(read("migrations", "20270401000200_room_moderation.sql"))
+    await pg.exec(read("migrations", "20270501000000_cloud_fabric.sql"))
     expect(await added()).toBe(16)
     expect(await shape()).toEqual(before)
   })
@@ -1048,6 +1054,8 @@ describe("migrations", () => {
     )
 
     // Track R (R1) sorts after it and is rolled back first
+    // The self-hosted fabric (SH1) widens the provider checks and references workspaces
+    await pg.exec(read("rollback", "20270501000000_cloud_fabric.down.sql"))
     await pg.exec(read("rollback", "20270401000200_room_moderation.down.sql"))
     await pg.exec(read("rollback", "20270401000100_room_goals_notes.down.sql"))
     await pg.exec(read("rollback", "20270401000000_rooms.down.sql"))
@@ -1072,6 +1080,7 @@ describe("migrations", () => {
     await pg.exec(read("migrations", "20270401000000_rooms.sql"))
     await pg.exec(read("migrations", "20270401000100_room_goals_notes.sql"))
     await pg.exec(read("migrations", "20270401000200_room_moderation.sql"))
+    await pg.exec(read("migrations", "20270501000000_cloud_fabric.sql"))
     expect(await added()).toBe(11)
     expect(await shape()).toEqual(before)
   })
@@ -1152,6 +1161,8 @@ describe("migrations", () => {
       [r, user]
     )
 
+    // The self-hosted fabric (SH1) widens the provider checks and references workspaces
+    await pg.exec(read("rollback", "20270501000000_cloud_fabric.down.sql"))
     await pg.exec(read("rollback", "20270401000200_room_moderation.down.sql"))
     await pg.exec(read("rollback", "20270401000100_room_goals_notes.down.sql"))
     await pg.exec(read("rollback", "20270401000000_rooms.down.sql"))
@@ -1170,6 +1181,7 @@ describe("migrations", () => {
     await pg.exec(read("migrations", "20270401000000_rooms.sql"))
     await pg.exec(read("migrations", "20270401000100_room_goals_notes.sql"))
     await pg.exec(read("migrations", "20270401000200_room_moderation.sql"))
+    await pg.exec(read("migrations", "20270501000000_cloud_fabric.sql"))
     expect(await added()).toBe(16)
     expect(await shape()).toEqual(before)
   })
@@ -1237,6 +1249,8 @@ describe("20270401000100_room_goals_notes (track R, R7)", () => {
       [r, user]
     )
 
+    // The self-hosted fabric (SH1) widens the provider checks and references workspaces
+    await pg.exec(read("rollback", "20270501000000_cloud_fabric.down.sql"))
     await pg.exec(read("rollback", "20270401000200_room_moderation.down.sql"))
     await pg.exec(read("rollback", "20270401000100_room_goals_notes.down.sql"))
     expect(await added()).toBe(0)
@@ -1255,6 +1269,7 @@ describe("20270401000100_room_goals_notes (track R, R7)", () => {
 
     await pg.exec(read("migrations", "20270401000100_room_goals_notes.sql"))
     await pg.exec(read("migrations", "20270401000200_room_moderation.sql"))
+    await pg.exec(read("migrations", "20270501000000_cloud_fabric.sql"))
     expect(await added()).toBe(8)
     expect(await shape()).toEqual(before)
   })
@@ -1319,6 +1334,8 @@ describe("20270401000200_room_moderation (track R, R9)", () => {
       [r, messages[0].id, user]
     )
 
+    // The self-hosted fabric (SH1) widens the provider checks and references workspaces
+    await pg.exec(read("rollback", "20270501000000_cloud_fabric.down.sql"))
     await pg.exec(read("rollback", "20270401000200_room_moderation.down.sql"))
     expect(await added()).toBe(0)
     expect(
@@ -1335,6 +1352,7 @@ describe("20270401000200_room_moderation (track R, R9)", () => {
     ).toEqual([{ body: "hi" }])
 
     await pg.exec(read("migrations", "20270401000200_room_moderation.sql"))
+    await pg.exec(read("migrations", "20270501000000_cloud_fabric.sql"))
     expect(await added()).toBe(6)
     expect(await shape()).toEqual(before)
   })
@@ -1361,6 +1379,7 @@ describe("20270301000100_harness_device_provider (track H, H10, PX-06)", () => {
     expect(after).toHaveLength(2)
     for (const line of after) expect(line).toContain("'device'")
 
+    await pg.exec(read("rollback", "20270501000000_cloud_fabric.down.sql"))
     await pg.exec(read("rollback", "20270301000200_harness_open_cap.down.sql"))
     await pg.exec(read("rollback", "20270301000100_harness_device_provider.down.sql"))
     const before = await checks()
@@ -1376,6 +1395,7 @@ describe("20270301000100_harness_device_provider (track H, H10, PX-06)", () => {
 
     await pg.exec(read("migrations", "20270301000100_harness_device_provider.sql"))
     await pg.exec(read("migrations", "20270301000200_harness_open_cap.sql"))
+    await pg.exec(read("migrations", "20270501000000_cloud_fabric.sql"))
     expect(await checks()).toEqual(after)
   })
 })
@@ -1413,5 +1433,47 @@ describe("20270301000200_harness_open_cap (track H, re-audit 2026-11-02)", () =>
 
     await pg.exec(read("migrations", "20270301000200_harness_open_cap.sql"))
     expect(await body()).toEqual(after)
+  })
+})
+
+describe("20270501000000_cloud_fabric (track C extension, SH1)", () => {
+  it("CT-SH-DB-15 refuses to roll back over self-hosted workspaces, rolls back empty and applies again", async () => {
+    const read = (dir: string, file: string) =>
+      fs.readFileSync(path.join(process.cwd(), "supabase", dir, file), "utf8")
+    const pg = await createTestDb()
+    await pg.exec(
+      "create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key); insert into supabase_migrations.schema_migrations values ('20270501000000')"
+    )
+    const present = async () =>
+      (
+        await pg.query(
+          `select relname as name from pg_class where relname in ('exec_nodes', 'exec_leases')
+           union all select proname from pg_proc where proname in ('exec_request', 'exec_admit', 'exec_metrics')`
+        )
+      ).rows.length
+    expect(await present()).toBe(5)
+    const { rows } = await pg.query<{ id: string }>(
+      "insert into auth.users (id, email) values (gen_random_uuid(), 'f@test.local') returning id"
+    )
+    await pg.query(
+      "insert into kriya.workspaces (user_id, provider, image, size) values ($1, 'selfhosted', 'i', '2c-4g')",
+      [rows[0].id]
+    )
+    await expect(
+      pg.exec(read("rollback", "20270501000000_cloud_fabric.down.sql"))
+    ).rejects.toThrow(/selfhosted workspaces/)
+    expect(await present()).toBe(5)
+    await pg.query("delete from kriya.workspaces")
+    await pg.exec(read("rollback", "20270501000000_cloud_fabric.down.sql"))
+    expect(await present()).toBe(0)
+    expect(
+      (
+        await pg.query(
+          "select 1 from supabase_migrations.schema_migrations where version = '20270501000000'"
+        )
+      ).rows
+    ).toEqual([])
+    await pg.exec(read("migrations", "20270501000000_cloud_fabric.sql"))
+    expect(await present()).toBe(5)
   })
 })

@@ -80,6 +80,17 @@ describe("verify:guard (OT-UIV-01)", () => {
     }
   })
 
+  it("refuses a self-hosted node off this machine unless paid checks were allowed (SH)", () => {
+    const remote = { ...LOCAL, KRIYA_SELFHOSTED_NODES: "kvm4=https://node1.example.com" }
+    expect(problems(remote, [])).toEqual([
+      "KRIYA_SELFHOSTED_NODES names a node that isn't on this machine: real nodes need KRIYA_VERIFY_PAID=1.",
+    ])
+    expect(problems({ ...remote, KRIYA_VERIFY_PAID: "1" }, [])).toEqual([])
+    expect(
+      problems({ ...LOCAL, KRIYA_SELFHOSTED_NODES: "n1=http://127.0.0.1:7070" }, [])
+    ).toEqual([])
+  })
+
   it("refuses any name in .env or .env.local the environment leaves undefined (OF-17)", () => {
     // Next.js would fill these from the files
     expect(problems(LOCAL, ["FIRECRAWL_API_KEY", "DATABASE_URL"])).toEqual([

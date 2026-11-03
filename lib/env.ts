@@ -84,6 +84,10 @@ const OPTIONAL: Record<Service, Check[]> = {
       why: "phone calls (voice): hashes numbers for limits and opt-outs",
     },
     {
+      name: "KRIYA_NODE_SECRET",
+      why: "cloud workspaces on Kriya's own machines (cloud.provider = selfhosted; 32+ random characters)",
+    },
+    {
       name: "KRIYA_RELAY_URL",
       why: "Kriya Harness device world (harness.deviceWorld): kriya-relay's address for devices",
     },

@@ -25,7 +25,7 @@ export type WorkspaceSpec = {
 export type Opened = { ref: string; runnerUrl: string; headers?: Record<string, string> }
 
 export interface WorkspaceProvider {
-  readonly name: "local" | "e2b" | "daytona" | "device"
+  readonly name: "local" | "e2b" | "daytona" | "device" | "selfhosted"
   create(spec: WorkspaceSpec): Promise<Opened>
   // null: the provider no longer has it (destroyed, expired) → restore path
   resume(ref: string, spec: WorkspaceSpec): Promise<Opened | null>

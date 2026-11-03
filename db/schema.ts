@@ -1926,7 +1926,14 @@ export type CrewPart = typeof crewParts.$inferSelect
 // (privileged, scoped by user id); the person reads their own rows and may
 // only set closeRequestedAt. Statuses move as kriya.allowed_transitions allows.
 
-export const WORKSPACE_PROVIDERS = ["local", "e2b", "daytona", "device"] as const
+export const WORKSPACE_PROVIDERS = [
+  "local",
+  "e2b",
+  "daytona",
+  "device",
+  // Self-hosted execution fabric (migration 20270501000000, CD-28)
+  "selfhosted",
+] as const
 
 export const WORKSPACE_STATUSES = [
   "new",
@@ -2003,6 +2010,69 @@ export const workspaceSessions = kriya.table("workspace_sessions", {
   closedAt: at(),
   seconds: integer(),
   closeReason: text({ enum: WORKSPACE_CLOSE_REASONS }),
+})
+
+/* ─────────────────────── self-hosted fabric ─────────────────────── */
+
+// Self-hosted execution fabric (track C extension, migration
+// 20270501000000, CD-28…CD-37). Worker-only: what was last measured on each
+// node, and the capacity queue whose ids are the nodes' fences.
+
+export const execNodes = kriya.table("exec_nodes", {
+  id: text().primaryKey(),
+  status: text({ enum: ["active", "draining", "retired"] })
+    .notNull()
+    .default("active"),
+  isolation: text({ enum: ["gvisor", "runc"] }),
+  cpuMillis: integer().notNull().default(0),
+  memMb: integer().notNull().default(0),
+  diskMb: bigint({ mode: "number" }).notNull().default(0),
+  diskFreeMb: bigint({ mode: "number" }),
+  inodesFree: bigint({ mode: "number" }),
+  memAvailableMb: integer(),
+  psiCpu: numeric(),
+  psiMem: numeric(),
+  psiIo: numeric(),
+  containers: integer(),
+  agentVersion: text(),
+  imageDigest: text(),
+  healthy: boolean().notNull().default(false),
+  reason: text(),
+  statsAt: at(),
+  createdAt: createdAt(),
+  updatedAt: createdAt(),
+})
+
+export const EXEC_LEASE_STATUSES = [
+  "waiting",
+  "granted",
+  "running",
+  "stopped",
+  "released",
+  "expired",
+  "cancelled",
+] as const
+
+export const execLeases = kriya.table("exec_leases", {
+  id: bigint({ mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  userId: uuid().notNull(),
+  workspaceId: uuid().notNull(),
+  generation: integer().notNull(),
+  pinnedNode: text(),
+  replaces: bigint({ mode: "number" }),
+  nodeId: text(),
+  ref: text(),
+  cpuMillis: integer().notNull(),
+  memMb: integer().notNull(),
+  diskMb: integer().notNull(),
+  priority: smallint().notNull().default(0),
+  status: text({ enum: EXEC_LEASE_STATUSES }).notNull().default("waiting"),
+  requestedAt: createdAt(),
+  polledAt: createdAt(),
+  grantedAt: at(),
+  startedAt: at(),
+  endedAt: at(),
+  reason: text(),
 })
 
 /* ───────────────────────── kriya harness ────────────────────────── */

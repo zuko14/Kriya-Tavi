@@ -130,3 +130,41 @@ Stop and ask the owner when:
 - you need a secret, an account, money, a deploy, a real model call, a real
   provider sandbox, a real GitHub repository or a real site;
 - a local run would reach the live database.
+
+## 8. Self-hosted execution fabric (SH0–SH8, 2026-11-02)
+
+Done on the owner's instruction to execute
+`docs/kriya_self_hosted_ecxecution_fabric.md` (chat, 2026-11-02). Each row
+is additive and switched off unless `cloud.provider = selfhosted`.
+
+| File | Change | Must stay true | Regression test |
+| --- | --- | --- | --- |
+| `db/schema.ts` | `WORKSPACE_PROVIDERS += "selfhosted"`; `execNodes`, `execLeases` mirroring the migration | Existing definitions unchanged | Typecheck |
+| `lib/config.ts` | `cloud.provider` pattern gains `selfhosted`; the `selfhosted.*` block; `SECRETS += KRIYA_NODE_SECRET` | Existing keys untouched; every on/off switch ships off | `tests/readiness/readiness.test.ts` |
+| `lib/env.ts` | Optional worker row `KRIYA_NODE_SECRET` | No new required variable | Existing env tests |
+| `render.yaml` | `kriya-worker`: `KRIYA_NODE_SECRET`, `sync: false` | No new service | Readiness (no valued secret) |
+| `lib/cloud/provider.ts` | `name` union gains `"selfhosted"` | Interface otherwise unchanged | Typecheck |
+| `lib/cloud/session.ts` | `workspaceProvider(options)` builds the `selfhosted` adapter; optional `maxWaitSeconds` | Other providers' selection unchanged | `tests/cloud/provider.test.ts` |
+| `lib/cloud/janitor.ts` | Step (0) fabric sweep for `selfhosted`; drain refs join the idle step; provider asked with a 5 s capacity wait | Other providers: identical behaviour | `tests/cloud/janitor.test.ts`, `recovery.test.ts` unchanged |
+| `scripts/verify-guard.ts`, `tests/operator/verify-guard.test.ts` | A remote node in `KRIYA_SELFHOSTED_NODES` refused unless `KRIYA_VERIFY_PAID=1` | Existing checks unchanged | Itself |
+| `tests/db/migrations.test.ts` | Rollback chains roll `20270501000000` back first and apply it last; a case for it | Existing assertions unchanged | Itself |
+| `tests/cloud/provider.test.ts` | Selection cases for `selfhosted` | Existing cases unchanged | Itself |
+
+New files (no row needed, track C names): `cloud-node/**`,
+`lib/cloud/providers/selfhosted.ts`, `lib/cloud/fabric.ts`,
+`supabase/migrations/20270501000000_cloud_fabric.sql` and its rollback,
+`scripts/fabric-bench.ts`, `scripts/cloud-node-key.ts`,
+`tests/cloud/{cloud-node,selfhosted,selfhosted-docker,node-docker,fabric-sim}.test.ts`,
+`tests/cloud/node-runtime.ts`, `tests/db/cloud-fabric.test.ts`,
+`docs/cloud-execution/SELF_HOSTED_*.md`, `screenshots/cloud-execution/SH5/**`,
+`screenshots/cloud-execution/SH6/**`. SH7 owner panel: `getExecMetrics` in
+`queries/cloud.ts` and a "Self-hosted nodes" section in
+`app/owner/cloud/page.tsx` (track C's own files; hidden unless
+`cloud.provider = selfhosted` or a node row exists), with
+`tests/cloud/owner-fabric.test.ts`, `scripts/verify-sh7-browser.mjs` and
+`screenshots/cloud-execution/SH7/**`.
+
+Boundaries: `cloud-node/` imports only Node built-ins, zod and its own
+files, and only `lib/cloud/` imports it (CT-SH-IMP-01). The migration
+timestamp sorts last (`202705…`, outside track C's `202702…` range, because
+tracks H and R already used later timestamps).

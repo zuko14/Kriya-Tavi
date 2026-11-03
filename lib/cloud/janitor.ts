@@ -6,6 +6,7 @@ import {
   inArray,
   isNotNull,
   isNull,
+  like,
   lt,
   ne,
   notInArray,
@@ -21,7 +22,9 @@ import {
   type CheckpointAt,
 } from "@/lib/cloud/checkpoint"
 import { RunnerClient } from "@/lib/cloud/client"
+import { fabricSettings, fabricSweep } from "@/lib/cloud/fabric"
 import type { WorkspaceProvider } from "@/lib/cloud/provider"
+import { SelfHostedWorkspaceProvider } from "@/lib/cloud/providers/selfhosted"
 import {
   cloudSettings,
   closeWorkspaceSession,
@@ -131,6 +134,8 @@ export async function workspaceJanitor(
     // Tests decide; otherwise every RECONCILE_MS
     reconcile?: boolean
     healthMs?: number
+    // Self-hosted nodes being drained (selfhosted.drain); read when omitted
+    drain?: string[]
   } = {}
 ) {
   const settings = deps.settings ?? (await janitorSettings())
@@ -143,7 +148,10 @@ export async function workspaceJanitor(
       .limit(1)
     if (!open) return null
   }
-  const provider = deps.provider === undefined ? await workspaceProvider() : deps.provider
+  const provider =
+    deps.provider === undefined
+      ? await workspaceProvider({ maxWaitSeconds: 5 })
+      : deps.provider
   const store = deps.store === undefined ? fileStore() : deps.store
   const healthMs = deps.healthMs ?? 10_000
   const rate = settings.cloud.costMicroUsdPerHour
@@ -154,6 +162,26 @@ export async function workspaceJanitor(
     retried: 0,
     reconciled: 0,
     swept: 0,
+    leasesReleased: 0,
+    nodesUnhealthy: 0,
+  }
+
+  // (0) Self-hosted fabric (CD-29, CD-35): node measurements and lease
+  // reconcile before anything here asks a node for work
+  const selfhosted = provider instanceof SelfHostedWorkspaceProvider ? provider : null
+  const drain = selfhosted ? (deps.drain ?? (await fabricSettings()).drain) : []
+  // A paused sandbox on a draining node is checkpointed and destroyed now,
+  // not after pausedHours (runbook §5); its next use restores elsewhere
+  const draining = (ref: string | null) =>
+    !!ref && drain.some((id) => ref.startsWith(`sh-${id}-`))
+  if (selfhosted) {
+    try {
+      const swept = await fabricSweep(selfhosted, drain)
+      result.leasesReleased = swept.released
+      result.nodesUnhealthy = swept.unhealthy
+    } catch (error) {
+      log.error("workspace fabric sweep failed", { error })
+    }
   }
 
   const release = (id: string, userId: string) =>
@@ -308,7 +336,8 @@ export async function workspaceJanitor(
             isNull(workspaces.closeRequestedAt),
             or(
               lt(workspaces.lastActiveAt, ago(settings.pausedHours * 3600)),
-              lt(workspaces.checkpointFailedAt, ago(RETRY_SECONDS))
+              lt(workspaces.checkpointFailedAt, ago(RETRY_SECONDS)),
+              ...drain.map((id) => like(workspaces.providerRef, `sh-${id}-%`))
             )
           )
         )
@@ -318,7 +347,8 @@ export async function workspaceJanitor(
         if (!held) continue
         try {
           const old =
-            row.lastActiveAt.getTime() < Date.now() - settings.pausedHours * 3_600_000
+            row.lastActiveAt.getTime() < Date.now() - settings.pausedHours * 3_600_000 ||
+            draining(row.providerRef)
           const client = await reach(row)
           if (!client) {
             // The provider already let it go

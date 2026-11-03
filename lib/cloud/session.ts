@@ -11,6 +11,7 @@ import {
   type WorkspaceChanges,
 } from "@/db/schema"
 import { saveCheckpoint } from "@/lib/cloud/checkpoint"
+import { fabricSettings } from "@/lib/cloud/fabric"
 import { RunnerClient, RunnerRequestError } from "@/lib/cloud/client"
 import type {
   Opened,
@@ -22,6 +23,7 @@ import { DaytonaWorkspaceProvider } from "@/lib/cloud/providers/daytona"
 import { DeviceWorkspaceProvider } from "@/lib/cloud/providers/device"
 import { E2BWorkspaceProvider } from "@/lib/cloud/providers/e2b"
 import { LocalWorkspaceProvider, localAllowed } from "@/lib/cloud/providers/local"
+import { SelfHostedWorkspaceProvider } from "@/lib/cloud/providers/selfhosted"
 import { runnerToken } from "@/lib/cloud/token"
 import { getSecret, getSetting } from "@/lib/config"
 import { githubTarball } from "@/lib/connectors/github"
@@ -72,7 +74,11 @@ export function setWorkspaceProviderForTests(provider: WorkspaceProvider | null)
 
 // The adapter for cloud.provider when its configuration is complete, else
 // null. Only this reads provider settings (CT-IMP-03), and runTask calls it
-export async function workspaceProvider(): Promise<WorkspaceProvider | null> {
+// options.maxWaitSeconds: the janitor's shorter wait for self-hosted
+// capacity, so a full node never stalls its loop
+export async function workspaceProvider(
+  options: { maxWaitSeconds?: number } = {}
+): Promise<WorkspaceProvider | null> {
   if (forTests) return forTests
   const secret = getSecret("KRIYA_WORKSPACE_SECRET")
   if (!secret || secret.length < 32) return null
@@ -87,6 +93,23 @@ export async function workspaceProvider(): Promise<WorkspaceProvider | null> {
     if ((await getSetting("harness.deviceWorld")) !== "on") return null
     return relayUrl && relaySecret && relaySecret.length >= 32
       ? new DeviceWorkspaceProvider({ relayUrl, secret: relaySecret })
+      : null
+  }
+  // CD-28: machines Kriya operates (kriya-node), each key derived from
+  // KRIYA_NODE_SECRET; no node configured means no workspace
+  if (name === "selfhosted") {
+    const nodeSecret = getSecret("KRIYA_NODE_SECRET")
+    if (!nodeSecret || nodeSecret.length < 32) return null
+    const fabric = await fabricSettings()
+    return fabric.nodes.length
+      ? new SelfHostedWorkspaceProvider({
+          nodes: fabric.nodes,
+          secret: nodeSecret,
+          policy: {
+            ...fabric.policy,
+            maxWaitSeconds: options.maxWaitSeconds ?? fabric.policy.maxWaitSeconds,
+          },
+        })
       : null
   }
   // Vendors tag sandboxes with this deployment's host, so the janitor's
