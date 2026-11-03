@@ -9,6 +9,9 @@ import type { SystemStatus } from "@/queries/workspace"
 // can and can't do today. Warns before a limit, not after.
 export function UsageMeter({ status }: { status: SystemStatus }) {
   const { plan, usage } = status
+  // The platform owner's internal plan (20270601000000_owner_plan.sql): usage
+  // is still shown, limits and upgrades aren't
+  const owner = plan.id === "owner"
   const taskPct = Math.min(
     100,
     Math.round((usage.tasksToday / Math.max(plan.maxTasksPerDay, 1)) * 100)
@@ -24,18 +27,22 @@ export function UsageMeter({ status }: { status: SystemStatus }) {
       <div className="flex flex-col gap-4 bg-surface p-5">
         <div className="flex items-center justify-between">
           <span className="label-mono">{plan.name} plan</span>
-          <Link
-            href="/account#plan"
-            className="-my-3 flex min-h-11 items-center text-[12px] text-rigel hover:underline sm:my-0 sm:min-h-0"
-          >
-            {plan.id === "free" ? "Upgrade" : "Manage"}
-          </Link>
+          {owner ? (
+            <span className="text-[12px] text-muted-foreground">No plan limits</span>
+          ) : (
+            <Link
+              href="/account#plan"
+              className="-my-3 flex min-h-11 items-center text-[12px] text-rigel hover:underline sm:my-0 sm:min-h-0"
+            >
+              {plan.id === "free" ? "Upgrade" : "Manage"}
+            </Link>
+          )}
         </div>
         <div className="flex flex-col gap-1.5">
           <div className="flex items-baseline justify-between text-[13px]">
             <span>Tasks today</span>
             <span className="font-mono tabular-nums">
-              {usage.tasksToday} / {plan.maxTasksPerDay}
+              {owner ? usage.tasksToday : `${usage.tasksToday} / ${plan.maxTasksPerDay}`}
             </span>
           </div>
           <div
@@ -59,7 +66,7 @@ export function UsageMeter({ status }: { status: SystemStatus }) {
           <span>AI usage this period</span>
           <span className="font-mono tabular-nums">
             {formatInr(usage.usedMicroInr)}
-            {usage.allowanceMicroInr > 0 && (
+            {!owner && usage.allowanceMicroInr > 0 && (
               <span className="text-muted-foreground">
                 {" "}
                 of {formatInr(usage.allowanceMicroInr)}
