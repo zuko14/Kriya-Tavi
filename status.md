@@ -13421,3 +13421,54 @@ modes (plan, auto and the rest).
   no Kriya instruction was added: a stronger one would risk loading skills
   for trivial jobs at ~₹0.9 a request. The security job exited 1 after
   loading its skill; not investigated (unverified).
+
+### Liquid-glass material for the Web UI (2026-11-03, Claude Code / Opus 5.5, owner in chat: "very premium UI UX … liquid glass design … colors … should be the same … production level")
+
+- **What changed (`kriya-harness`, uncommitted on `main` at `2366c18`):**
+  `plugins/brand/src/client.js` (and the built `plugins/brand/client.js`)
+  adds a material layer through the same seams as before (HD-02, no DSH
+  file edited): new `--kh-*` tokens in the theme token layer (glass tints,
+  blur, rim, lift, wells, chips, focus and approval halos, the ground's two
+  lights) plus DSH's own menu glass, scrim blur and panel radius tokens;
+  and a stylesheet scoped to `html[data-kh-glass]` (set while the brand's
+  styles are installed, removed on dispose). Kriya's colours are unchanged.
+  The ground is paper with a fine grain lit teal and saffron; the sidebar
+  floats as a thin pane; the composer, approval card and Settings are
+  thick panes; Chat/Trajectory is a segmented control; selected rows and
+  tabs are raised chips; the person's message is a teal pane; DeepSeek's
+  whale in the "working" indicator is replaced by a saffron running stitch;
+  the start screen's K sits in a pool of light. Glass is drawn on each
+  pane's `::before` (a `backdrop-filter` on the pane would trap DSH's
+  `position: fixed` children). Fallbacks: reduced transparency or no
+  `backdrop-filter` → solid panes; more contrast → solid 1 px edges.
+  `plugins/brand/DESIGN.md` gains a Material section and revised rules.
+- **Found and fixed on the way:** the shared pane rule first used
+  `:is(…)`, whose specificity is its most specific argument; it silently
+  outranked the approval card's halo and the Settings panel's lift. Now a
+  plain selector list; both checked by computed style in the browser.
+- **Tests (`tests/brand.test.js`):** the fake document gains
+  `documentElement`; new: the glass attribute is set and removed with the
+  styles; text contrast on every glass pane composited over paper and
+  over each ground light, both schemes (primary ≥ 7, secondary, tertiary,
+  link ≥ 4.5); the solid fallbacks exist; every hashed DSH class the
+  material names (26) exists in the pinned DSH clients.
+  `node --test tests/brand.test.js`: 10 pass, 0 fail.
+  `npm run check` (client): pins current, notices current, brand current,
+  tests 131, pass 131, fail 0.
+- **Browser check:** `node scripts/verify-approvals-web.js 4317 4318`
+  (fake Kriya and gateway on 127.0.0.1, throwaway home; nothing reached a
+  real Kriya or model). 1280 and 360 px, light and dark: start screen,
+  a thread with a tool row, the running indicator and a waiting approval,
+  Settings with a dropdown open. No horizontal scroll at 360 (scrollWidth
+  360). Console: no errors. Screenshots:
+  `screenshots/kriya-harness/H4-glass/` (6; local, `/screenshots/` is
+  git-ignored).
+- **Not done / limits:** DSH's icons, layout and copy ("Deep diving") are
+  DSH's and stay so (changing them would mean editing DSH). The collapsed
+  icon rail at phone width keeps DSH's plain look. Touch targets are DSH's
+  own (e.g. Reject/Allow at 36 px); unchanged here. Not checked in Safari
+  or Firefox, or on Windows' titlebar layout. Nothing committed or pushed.
+- **Next exact action:** the owner looks at the screenshots (or runs
+  `node scripts/verify-approvals-web.js` in `kriya-harness`) and, if
+  approved, commits `feat(brand): liquid-glass material for the Web UI`
+  in `kriya-harness` and `docs(status): …` here.
