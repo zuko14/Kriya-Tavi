@@ -13472,3 +13472,258 @@ modes (plan, auto and the rest).
   `node scripts/verify-approvals-web.js` in `kriya-harness`) and, if
   approved, commits `feat(brand): liquid-glass material for the Web UI`
   in `kriya-harness` and `docs(status): …` here.
+
+### One product: Creator mode off, Kriya's English only, a Projects page, the Kriya loop plan (2026-11-03, Claude Code / Opus 5.5, owner in chat: "creator mode … why does it appear", "the Chinese needed to be removed completely", "everything related to DeepSeek should not be mentioned", project folders "not appearing", "make the Kriya harness … the most advanced harness")
+
+- **What changed (`kriya-harness`, uncommitted on `skill-switches-and-changes` at `98b04cd`):**
+  - `bundle/cordis.patch.yml`: off: `preset-cordis` (Creator mode),
+    `ui-cordis`, `entry-customization` ("Create a DSH plugin" entries),
+    `ui-plugin-manager` (the sidebar Plugins page, installs DSH bundles and
+    could switch Kriya's own rows off), `ui-settings-plugins` and
+    `ui-settings-plugin-inventory` (Settings → Built-in plugins, a list of
+    DSH packages). On: `kriya-projects`. `expected/*.dump.yml` regenerated
+    (`node scripts/dump-config.js`). `kriya run` and ACP have no presets, so
+    never had Creator mode.
+  - `plugins/brand/src/client.js`: a language pack `en-IN` ("English",
+    fallback DSH's `en`, DSH's documented `addLanguage`/`register` seam)
+    with Kriya's words for the 13 visible strings that named DSH or
+    DeepSeek (agent presets intro, chat failure messages, "session in use",
+    model provider label, settings models, office preview, local build);
+    pinned with `setLocale` and kept when the Host's stored preference
+    arrives; DSH's Language row hidden while there's one language, so 中文
+    can't be chosen.
+  - New `plugins/projects/` + `src/projects.js`: the Projects page. Lists
+    folders with a project marker in `~/Developer`, `~/Projects`, `~/code`
+    and other usual places (one level of group folders), plus the start
+    folder; Documents, Desktop and Downloads only via
+    `KRIYA_PROJECT_ROOTS` (macOS asks before those are read). **Open**
+    calls `ctx.workspaces.create({ path })`, then
+    `ctx.uiWorkspace.openWorkspace(id)`, what DSH's own "New session in …"
+    calls. One read-only GET route inside Connection's fence.
+  - `src/profiles.js` links the new package; `README.md` updated.
+- **Found on the way:** `connectWorkspace` alone made the session but
+  left the page showing; `openWorkspace` reveals it (checked in the
+  browser). Projects buttons were 40 px; now 44 px.
+- **Tests:** `tests/projects.test.js` (7: usual roots and group folders,
+  skipped/hidden/Documents folders, start folder first,
+  `KRIYA_PROJECT_ROOTS` with `~`, missing roots, the cap, the bundle rows
+  off/on); `tests/brand.test.js` (+2: one pinned language that switches back
+  from `zh`/`en`, no override names DSH/DeepSeek, every overridden key exists
+  in the pinned DSH). Client `npm run check`: pins current, notices
+  current, brand current, tests 140, pass 140, fail 0; `npm test` again
+  after the last CSS edit: 140/140.
+- **Browser check** (`verify-approvals-web.js`, fake Kriya, throwaway
+  home; `KRIYA_PROJECT_ROOTS` at a scratch `demo-app`): mode menu lists
+  Standard, PTC, Minimal only; Settings nav General, Models, Agent presets;
+  no "DeepSeek"/"DSH" text in any Settings page or the body;
+  `<html lang="en-IN">`; Projects lists the owner's `~/Developer` repos;
+  Open on `demo-app` added the workspace, opened a session in it and left
+  the page. 360 px light: no horizontal scroll, 44 px controls. Console
+  clean after reload. Screenshots: `screenshots/kriya-harness/H4-rebrand/`
+  (3; local, git-ignored). Opening a real `~/Developer` project was not
+  tried (it would add it to the throwaway home only, but wasn't needed).
+- **Not done / limits:** the tab shows "DeepSeek Harness" for a moment
+  while the page loads (DSH's HTML title, renamed once the brand loads; no
+  seam to change it before). DSH puts the default workspace under
+  `~/Documents/deepseek-harness/` (Host-owned path; `documentsDirectory`
+  moves only the Documents part). Strings DSH doesn't route through its
+  dictionaries can't be overridden without editing DSH. The agent loop is
+  planned, not built: `docs/kriya-harness/KRIYA_LOOP.md` (H14a–d, the
+  owner's self-verifying framework mapped onto DSH's goal, subagent,
+  todo, checkpoint and compaction seams; parity table vs Claude Code as
+  targets, not claims). Nothing committed or pushed.
+- **Next exact action:** the owner reviews; on approval commit
+  `feat(harness): one product: Creator mode off, Kriya's English, Projects page`
+  in `kriya-harness`, and decide whether to start H14a.
+
+### H14a: the Kriya loop's verify step (2026-11-03, Claude Code / Opus 5.5, owner in chat: "Yes, start H14a")
+
+- **What changed (`kriya-harness`, uncommitted, on top of the uncommitted
+  rebrand/Projects work on `skill-switches-and-changes`):**
+  - New `src/verify.js`: check discovery (package.json scripts with the
+    lockfile's package manager, npm's placeholder skipped; Makefile
+    `check`/`test`; cargo; go; pytest; deno; Gradle wrapper; Maven); the
+    person's confirmed check per project root in `~/.kriya/verify.json`
+    (one line, ≤ 500 chars); `verifyStep` (runs only the confirmed check,
+    pass only on exit 0 without timeout, blocked after 4 failures and not
+    run again); per-session progress JSON + Markdown in
+    `~/.kriya/progress/<project hash>/<session>.*`; the verdict
+    (verified / failed / blocked / not checked) computed from the runs.
+  - New `plugins/loop/`: the `kriya_verify` tool (parameters: an optional
+    step label only) and one system-prompt line; the check runs through
+    DSH's `ctx.shell` in the session's folder with its standing sandbox
+    policy, as DSH's bash tool does. Bundle row `kriya-loop`,
+    `disabled: !!js process.env.KRIYA_LOOP !== 'on'`, in all three profiles.
+  - `bin/kriya.js`: `--loop` on `kriya` and `kriya run`; `kriya verify`,
+    `kriya verify use <n>|"<command>"`, `kriya verify clear`.
+    `src/profiles.js` links the package; `README.md` and
+    `docs/kriya-harness/KRIYA_LOOP.md` updated (status, the settled unknown,
+    progress location changed from the project to `~/.kriya`).
+- **Found on the way:** DSH refuses a tool whose output schema doesn't
+  state `additionalProperties`; the unit test caught it before any run.
+- **Tests:** `tests/verify.test.js` (11) and `tests/loop-run.test.js` (2,
+  real pinned DSH, headless `kriya run --loop`, fake model and Kriya on
+  127.0.0.1): fail with the check's real output and "3 attempts left",
+  a fix with DSH's bash tool, pass with "Session verdict: verified",
+  progress in the Kriya home and nothing extra in the project; without
+  `--loop`, no `kriya_verify` in the offered tools and no guidance in the
+  prompt. Client `npm run check`: pins, notices, brand current; tests 153,
+  pass 153, fail 0.
+- **Not checked:** the `kriya_verify` card in the Web UI (DSH's generic
+  card; no scripted web run calls it yet); a real model choosing to call
+  it (no paid run, track rule on model spend); Windows. H14b (checkpoints,
+  `kriya undo`), H14c (plan schema, fresh builders, KriyaBench numbers)
+  and H14d (proposed rules) not started.
+- **Next exact action:** the owner reviews and approves a commit; then
+  H14b (checkpoints) per `docs/kriya-harness/KRIYA_LOOP.md` §5.
+
+### H14b: step checkpoints and `kriya undo` (2026-11-03, Claude Code / Opus 5.5, owner in chat: "Start H14b first", "continue … completely end to end production level")
+
+- **What changed (`kriya-harness`, uncommitted, on top of H14a):**
+  - New `src/checkpoints.js`: `snapshot` (tracked + untracked, not
+    ignored, through Kriya's own index file in
+    `~/.kriya/checkpoint-index/`, never the person's), `checkpoint` (a commit
+    on `refs/kriya/checkpoints/<session>/<n>` with a neutral "Kriya Harness"
+    identity; an unchanged tree isn't saved twice; newest 100 kept),
+    `undo` (writes only the files that differ through a throwaway index and
+    `checkout-index`, deletes files the step added and folders it emptied,
+    saves the replaced state on `refs/kriya/undone/<n>` first),
+    `stepBack` (one step back from where the files are, never forward).
+  - `plugins/loop/`: a `tools/pre-execute` hook checkpoints before `write`,
+    `edit`, `bash`, `pwsh`, `run_code` and `workflow`, serialized per folder,
+    skipped in Read only; a failed checkpoint is logged and the call runs.
+  - `bin/kriya.js`: `kriya undo`, `kriya undo --list`, `kriya undo <n>`;
+    `--loop` help mentions checkpoints. `README.md` and `KRIYA_LOOP.md`
+    (status) updated.
+- **Found on the way:** the first `undo` picked "the newest checkpoint
+  that differs", which after two undos went forward again; replaced by
+  `stepBack` (the drill that caught it now passes).
+- **Tests:** `tests/checkpoints.test.js` (8, real git): clean, dirty
+  (staged, unstaged, untracked, ignored) and mid-rebase drills, each with a
+  fingerprint of every non-Kriya ref, HEAD, the index file's sha256, the
+  stash and the rebase state, identical before and after; undo of an undo;
+  step-by-step order, dedupe, the 100 cap; no repository; the hook's
+  order, Read only, non-file tools and failure handling; the CLI.
+  `tests/loop-run.test.js` +1 (real pinned DSH, `kriya run --loop`): the
+  agent rewrites a file with bash, a checkpoint exists, `kriya undo` brings
+  back the person's version, refs/HEAD/index identical. Client
+  `npm run check`: pins, notices, brand current; tests 162, pass 162,
+  fail 0.
+- **Not checked:** very large repositories (a checkpoint is one
+  incremental `git add -A`; ~50 ms each on the fixtures); Windows; Git
+  LFS files (stored as their pointer files, as git does); submodules'
+  contents (only the gitlink); an undo while the agent is still working
+  (git's index lock refuses one of them, with git's message).
+- **Next exact action:** the owner approves a commit of the rebrand,
+  Projects, H14a and H14b work; then H14c (plan schema, fresh builders,
+  KriyaBench on the `budget` tier, which spends allowance and needs the
+  owner's go-ahead).
+
+### H14c: plans, fresh builders per step, retries with the error (2026-11-03, Claude Code / Opus 5.5, owner in chat: "Start H14c")
+
+- **What changed (`kriya-harness`, uncommitted, on top of H14a/H14b):**
+  - New `src/loop.js`: `validatePlan` (a goal, 1–7 distinct steps, each a
+    title, done_when and files), `savePlan`/`readPlan`/`planStatus` (the
+    plan lives in the session's progress record; at most 3 plans per
+    session, earlier plans and runs kept), `builderPrompt` (goal, plan, the
+    one step, and on a retry the check's real output), `runStep` (fresh
+    builder → the harness's check → a new builder with the failure, until
+    pass or blocked at 4 runs; steps in order; a passed step isn't rebuilt;
+    no confirmed check → "not checked").
+  - `plugins/loop/`: tools `kriya_plan` and `kriya_step` (a step number
+    only); builders are DSH's in-process `spawn` children awaited by the
+    step (`delivery: "caller"`, `maxDepth: 1`), disposed on abort; a
+    builder can't plan or run steps. The guidance line now covers planning.
+  - `src/verify.js`: `writeProgress`, the plan in the progress file, and
+    `KRIYA_VERIFY_CHECK` (the person's shell sets one run's check).
+  - `README.md`, `docs/kriya-harness/KRIYA_LOOP.md` (status, §7a as built,
+    the bench estimate) updated.
+- **Tests:** `tests/loop.test.js` (8: plan limits, builder prompt, fail →
+  retry with output → pass, blocked at 4 with no fifth builder, order,
+  not checked, the real verify step with progress, the 3-plan cap, the
+  builder guard and tool parameters), `tests/verify.test.js` +1
+  (`KRIYA_VERIFY_CHECK`), `tests/loop-run.test.js` +1 on the real pinned
+  DSH with real in-process subagents: `kriya_plan`, then `kriya_step 1`;
+  builder 1 writes the wrong value, the check fails, builder 2's prompt
+  carries "LOOP: value is wrong, expected right", it fixes it, "Step 1
+  (Write the value): pass after 2 runs". Client `npm run check`: pins,
+  notices, brand current; tests 172, pass 172, fail 0.
+- **Not done (needs the owner):** H14c's exit, KriyaBench on the `budget`
+  tier with and without `--loop` on one seed. It spends allowance
+  (estimate ₹15–25 for the 12 hard tasks, both arms) and needs a signed-in
+  bench device the owner approves. Command, from the Kriya repo:
+  `KRIYA_VERIFY_CHECK="node --test" npx tsx lib/harness/bench/cli.ts --agent "kriya run --mode auto --loop" --level hard --out docs/kriya-harness/bench/loop-<date>.json`
+  and the same without `--loop` (and without the variable) for the
+  comparison. Not verified: a real model following the plan/step guidance;
+  the Web UI cards for the new tools.
+- **Next exact action:** the owner says yes to the paid comparison and
+  approves the bench device; or approves committing the work so far.
+
+### H14c KriyaBench comparison (2026-11-03, owner in chat: "Yes, run it")
+
+- **Device:** a throwaway bench device (separate `KRIYA_HOME` in the
+  session scratchpad), approved by the owner (code `ASTL-YRNK`; an earlier
+  code `9FJ6-7RDF` was entered wrong, "That code wasn't found", and
+  replaced), working as visanya; `kriya doctor` all ok, gateway models
+  `budget` only. Revoked after the runs (`kriya logout`: "Signed out.").
+- **Client:** `kriya-harness` working copy at `98b04cd` plus the
+  uncommitted rebrand, Projects, H14a, H14b and H14c changes; DSH
+  `0.2.1-rc.5`.
+- **Runs (hard set, seed `7082ed2b6796`, `kriya run --mode auto`):**
+  - without `--loop` (13:48–14:12 UTC): **12/12 passed**, escaped 0,
+    leaked 0, tampered 0. Report
+    `docs/kriya-harness/bench/hard-noloop-2026-11-03.json`.
+  - with `--loop`, `KRIYA_VERIFY_CHECK="node --test"` (14:12–14:22 UTC):
+    **11/12 passed**, escaped 0, leaked 0, tampered 0. Report
+    `docs/kriya-harness/bench/hard-loop-2026-11-03.json`. The failure,
+    `hard-path-traversal` (agent exit 1 after 38 s): the client printed
+    "Kriya didn't answer (HTTP 403)" mid-run; the gateway refused a
+    request. Cause not investigated (unknown: not a rate limit or cap
+    seen in `/me`; the same task passed in the other arm).
+- **Spend, exact windows from `GET /me` `usedMicroInr`:** 21,663,212 →
+  35,581,900 (**₹13.92** without the loop) → 42,101,953 (**₹6.52** with
+  it); ₹20.44 in all, `unpriced` 0, cap ₹200.
+- **What the loop arm did:** 11 sessions called `kriya_verify` (12 runs,
+  all pass, none failed); **no session made a plan**, so `kriya_step` and
+  fresh builders were not exercised by a real model.
+- **What it shows, and doesn't:** no pass-rate gain (the set is
+  saturated on this client), and no proof of lower cost: the no-loop arm
+  cost ₹4.62 on a near-identical run the day before, so run-to-run
+  variance is larger than the difference. The hard tasks hide their tests,
+  so the visible check had little to run. **H14c's exit is not met**: it
+  needs multi-part tasks with visible tests (where planning, fresh
+  builders and retries matter) and several runs per arm.
+- **Next exact action:** add multi-part KriyaBench tasks with visible
+  tests and a hidden grader (H13 seed work), then repeat both arms, three
+  runs each, with the owner's go-ahead on spend. Separately: find why the
+  gateway answered 403 during `hard-path-traversal` (Render and gateway
+  logs for 14:12–14:14 UTC).
+
+### KriyaBench multi-part tasks (2026-11-03, owner in chat: "Yes, add tasks")
+
+- **What changed (this repository, uncommitted):** new
+  `lib/harness/bench/seed-multi.ts` with 5 `multi` tasks
+  (`multi-gst-invoice`, `multi-rate-limiter`, `multi-rename-validate`,
+  `multi-csv-report`, `multi-checkout-bugs`): several distinct parts each,
+  visible tests that fail as given, a hidden `grader.test.js` with more
+  cases; verify is `node --test` (visible tests and the grader together).
+  `lib/harness/bench/task.ts`: level `multi`; `seed.ts` adds `...MULTI`;
+  `cli.ts` accepts `--level multi` and prints the multi rate; `run.ts`
+  summary has `multiPerMille`. The whole seed's version changes; the multi
+  set alone is `4af41d4c9de6`.
+- **Tests:** `tests/harness/bench.test.ts` HT-BEN-02 now covers the 5
+  (each fails as given and passes with its reference fix); new HT-BEN-08:
+  each has visible tests and a hidden grader, the visible tests alone fail
+  as given and pass with the fix, and on `multi-checkout-bugs` a fix for
+  the visible test only still fails the grader. `npx vitest run
+  tests/harness/bench.test.ts`: 56 passed. `npm run check` (after
+  `prettier --write` on the two new/changed files): typecheck ok, lint 0
+  errors (6 old warnings in `tests/operator/golden/harness.ts`), format
+  ok, Test Files 243 passed | 5 skipped, Tests 2873 passed | 63 skipped,
+  exit 0.
+- **Next exact action:** with the owner's go-ahead on spend (estimate
+  ₹25–50, cap left about ₹158), three runs per arm:
+  `npx tsx lib/harness/bench/cli.ts --agent "kriya run --mode auto" --level multi --out docs/kriya-harness/bench/multi-noloop-<n>.json`
+  and
+  `KRIYA_VERIFY_CHECK="node --test" npx tsx lib/harness/bench/cli.ts --agent "kriya run --mode auto --loop" --level multi --out docs/kriya-harness/bench/multi-loop-<n>.json`,
+  on a bench device the owner approves.
