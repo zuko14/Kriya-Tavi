@@ -15,7 +15,8 @@ export const benchTaskSchema = z
   .object({
     id: z.string().regex(/^[a-z0-9-]{3,60}$/),
     kind: z.enum(["fix", "feature", "context", "refactor", "tests", "probe"]),
-    level: z.enum(["easy", "hard"]),
+    // multi: several distinct parts, visible tests plus a hidden grader (H14c)
+    level: z.enum(["easy", "hard", "multi"]),
     prompt: z.string().min(10).max(2000),
     files: z.record(relPath, z.string().max(20_000)),
     // Files the agent must leave alone; restored before the verify command,
