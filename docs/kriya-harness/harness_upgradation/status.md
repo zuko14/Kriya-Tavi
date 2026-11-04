@@ -431,3 +431,22 @@ session also goes to the root `status.md` (track H section).
   page with the same switches. Browser-checked with the real set. Client
   `npm run check` **230/230, exit 0**; Kriya `env -u OPENROUTER_API_KEY npm
   run check` **2933 passed, 63 skipped, exit 0** (lint 0 errors).
+
+### 2026-11-04 — H20 intent router and long horizon (Claude Code / Opus 5.5; owner in chat: skill and tool selection "based upon the tasks … very advanced", "the long horizon task should be perfectly done … our default model context window is very light")
+
+- **Built (client, uncommitted):** `--router` (intent brief: BM25 skill
+  ranking over the live catalog, nine intent classes, tool hints naming only
+  present tools; hides nothing, per KriyaBench §6.4) and, under
+  `--loop-v2`, the plan's state in a never-compacted prompt section.
+- **Found on the real DSH:** the brief lacked skills on a headless run's
+  first request (catalog read finished after prompt assembly; fixed by
+  awaiting the first read at plugin start, ≤ 3 s); a stemming bug
+  ("debugging" → "debugg"); a test whose skill YAML was invalid (fixed in
+  the test).
+- **Evidence (real output):** HU-M-11 on a 32k window: both arms exit 0,
+  4/4 files, one compaction; state shown after compaction only with v2
+  (`stateShown`/`stepsShown`/`nextShown` true vs false). IR-RUN-01: brief in
+  the real prompt naming `kriya-debug`, not `gst-invoices`. Client
+  `npm run check` **238/238, exit 0**.
+- **Not measured:** a real model's gain. KriyaBench-R long-horizon arms
+  (≈ ₹200–300) need the owner's go-ahead (INTENT_ROUTER_AND_LONG_HORIZON.md §5).
