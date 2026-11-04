@@ -4,7 +4,7 @@ import { privileged } from "@/db"
 import { models, TIERS, type Tier } from "@/db/schema"
 import { getPlan } from "@/lib/entitlements"
 import { modelLimits } from "@/lib/harness/model-limits"
-import { harnessRoute, ok } from "@/lib/harness/route"
+import { BODY_ENCODINGS, harnessRoute, ok } from "@/lib/harness/route"
 import { modelForTier } from "@/lib/models"
 
 // The model levels this person's plan allows, as OpenAI lists models, each
@@ -50,5 +50,6 @@ export const GET = harnessRoute(true, async (_request, device) => {
       ...(found[i].name && { name: found[i].name }),
       ...found[i].limits,
     })),
+    bodyEncodings: [...BODY_ENCODINGS],
   })
 })

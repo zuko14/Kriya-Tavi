@@ -10,7 +10,10 @@ vi.mock("server-only", () => ({}))
 
 import { GET as models } from "@/app/api/harness/v1/models/route"
 import { POST as chat } from "@/app/api/harness/v1/chat/completions/route"
+import { gzipSync } from "node:zlib"
+
 import { log } from "@/lib/log"
+import { MAX_DECODED_BODY, MAX_ENCODED_BODY } from "@/lib/harness/route"
 import { applyMarkup, usdToInr } from "@/lib/money"
 import { reserve } from "@/lib/harness/metering"
 
@@ -161,6 +164,7 @@ describe("HT-GW-01: aliases only", () => {
     expect(await list.json()).toEqual({
       object: "list",
       data: [{ id: "budget", object: "model", owned_by: "kriya", name: "Budget" }],
+      bodyEncodings: ["gzip+base64"],
     })
   })
 })
@@ -612,5 +616,115 @@ describe("HT-GW-10: no prompt or output in logs", () => {
     const logged = JSON.stringify(spies.map((s) => s.mock.calls))
     for (const secret of [PROMPT, ANSWER, "read_file", "upstream-key-not-real", token])
       expect(logged).not.toContain(secret)
+  })
+})
+
+// Owner decision 2026-11-04 ("Encode bodies"): the host's firewall blocked
+// harness requests whose conversation held commands or HTML, so the client
+// sends JSON gzip+base64 (kriya-harness src/gateway-proxy.js). The gateway
+// decodes it under limits and validates it exactly like plain JSON.
+describe("HT-GW-11: gzip+base64 request bodies", () => {
+  const encoded = (body: unknown, over: Record<string, string> = {}) => {
+    const plain = call("POST", "/chat/completions", { token, body })
+    const headers = new Headers(plain.headers)
+    headers.set("content-type", "text/plain; charset=us-ascii")
+    headers.set("x-kriya-body", "gzip+base64")
+    for (const [k, v] of Object.entries(over)) headers.set(k, v)
+    const text = gzipSync(Buffer.from(JSON.stringify(body))).toString("base64")
+    return { url: plain.url, headers, text }
+  }
+  const send = ({
+    url,
+    headers,
+    text,
+  }: {
+    url: string
+    headers: Headers
+    text: string
+  }) => chat(new Request(url, { method: "POST", headers, body: text }))
+  // What firewall rules match: commands, HTML, SQL, paths
+  const RISKY = "rm -rf /tmp/x; <script>alert(1)</script> ' OR 1=1 -- ../../etc/passwd"
+
+  it("an encoded body is decoded, validated and sent upstream exactly as the plain one would be", async () => {
+    const sent = upstream(streamed("test/budget"))
+    const body = {
+      model: "budget",
+      stream: true,
+      messages: [{ role: "user", content: RISKY }],
+    }
+    const req = encoded(body)
+    expect(req.text).toMatch(/^[A-Za-z0-9+/]+=*$/)
+    const res = await send(req)
+    expect(res.status).toBe(200)
+    await res.text()
+    expect(sent[0].body.model).toBe("test/budget")
+    expect(sent[0].body.messages).toEqual([{ role: "user", content: RISKY }])
+    const [row] = await usageRows()
+    expect(row.status).toBe("settled")
+  })
+
+  it("the schema still applies after decoding: a disallowed tier or a bad body is refused before anything is sent", async () => {
+    const sent = upstream()
+    const tier = await send(
+      encoded({ model: "escalation", messages: [{ role: "user", content: "x" }] })
+    )
+    expect(tier.status).toBe(400)
+    expect(await tier.json()).toMatchObject({ error: "tier_not_allowed" })
+    const shape = await send(encoded({ model: "budget", messages: "not a list" }))
+    expect(shape.status).toBe(400)
+    expect(await shape.json()).toMatchObject({ error: "bad_request" })
+    expect(sent).toHaveLength(0)
+  })
+
+  it("an unknown encoding, broken base64, non-gzip data or non-JSON is a 400", async () => {
+    const sent = upstream()
+    const good = encoded({ model: "budget", messages: [{ role: "user", content: "x" }] })
+    const cases = [
+      {
+        ...good,
+        headers: new Headers({
+          ...Object.fromEntries(good.headers),
+          "x-kriya-body": "brotli",
+        }),
+      },
+      { ...good, text: "not base64 at all!" },
+      { ...good, text: Buffer.from("plain text, not gzip").toString("base64") },
+      { ...good, text: gzipSync(Buffer.from("{not json")).toString("base64") },
+      { ...good, text: "" },
+    ]
+    for (const c of cases) {
+      const res = await send(c)
+      expect(res.status, c.text.slice(0, 20)).toBe(400)
+      expect(await res.json()).toMatchObject({ error: "bad_request" })
+    }
+    expect(sent).toHaveLength(0)
+  })
+
+  it("size limits: a body that inflates past the limit (a zip bomb) or is too long encoded is a 413", async () => {
+    const sent = upstream()
+    // ~64 KB of gzip that inflates past the decoded limit
+    const bomb = gzipSync(Buffer.alloc(MAX_DECODED_BODY + 1024, 0x20)).toString("base64")
+    expect(bomb.length).toBeLessThan(1024 * 1024)
+    const base = encoded({ model: "budget", messages: [] })
+    const inflated = await send({ ...base, text: bomb })
+    expect(inflated.status).toBe(413)
+    const declared = await send({
+      ...base,
+      headers: new Headers({
+        ...Object.fromEntries(base.headers),
+        "content-length": String(MAX_ENCODED_BODY + 1),
+      }),
+    })
+    expect(declared.status).toBe(413)
+    expect(sent).toHaveLength(0)
+  })
+
+  it("an unsigned encoded request is refused before its body is read", async () => {
+    const req = encoded(
+      { model: "budget", messages: [] },
+      { authorization: "Bearer not-a-device-token" }
+    )
+    const res = await send(req)
+    expect(res.status).toBe(401)
   })
 })

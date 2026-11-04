@@ -116,6 +116,10 @@ export const ModelsResponse = z.strictObject({
       maxOutputTokens: z.number().int().positive().optional(),
     })
   ),
+  // The request-body forms the gateway decodes besides plain JSON
+  // (lib/harness/route.ts readBody; owner, 2026-11-04: harness bodies go
+  // gzip+base64 past the host's firewall). Absent on an older Kriya
+  bodyEncodings: z.array(z.literal("gzip+base64")).optional(),
 })
 
 // H5: a local action waiting for the person (API_AND_CONTRACTS §4). The input
