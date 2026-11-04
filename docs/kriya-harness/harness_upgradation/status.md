@@ -388,3 +388,38 @@ session also goes to the root `status.md` (track H section).
 - **Next exact action (owner).** Say whether to commit; decide the first
   paid probe turn (three candidates vs B4, K = 3, ≈ ₹180–240) and growing
   the capability set to 30 tasks (spec §10).
+
+### 2026-11-04 — H19 workspace panel P1 (Claude Code / Opus 5.5; owner in chat: screenshots of a coding-agent desktop app, "the folder looking … file editing changes … the context window display … background tasks … outputs … connectors … environment"; decisions WP-D1…D4 by question)
+
+- **Recon on the real Web UI** (fake Kriya, throwaway home and project):
+  files, Changes and terminal tabs, the usage strip, the jobs control, the
+  Projects and Skills pages already exist. Missing: one overview, MCP,
+  plugins. DSH's browser pane is Electron-only (`webview`).
+- **Built (client, uncommitted):** the Overview tab (`plugins/overview`,
+  `src/overview.js`), bundle row, profile link, dumps re-recorded (one row
+  each), WP-OV-01…04.
+- **Checks (real output):** client `npm run check`: pins ok, seams ok (10),
+  notices ok, brand ok, **218/218, exit 0**. Browser check: 1280 px dark
+  and light, 360 px, console clean, git and non-git folders (screens in this
+  session's transcript, not saved as files).
+- **Planned, not started:** P1b outputs per session, P2 Kriya default
+  skills (ECC licence unknown), P3 MCP and plugins (AGENTS.md amendment in
+  WORKSPACE_PANEL_SKILLS_PLUGINS.md §5.2 needs the owner's approval).
+- **P1c (same day; owner: "how the tasks are doing … from setting a goal to
+  verifying", the browser pane "from the local host browser only", decision
+  "Both, previews first"):** Progress tab (the loop's records: goal → plan →
+  build → verify → done, steps, check runs, verdict) and Preview tab
+  (localhost frame). Real loop run in the Web UI showed Verified, step 1
+  passed on run 2, runs exit 1 → 0 → 0; Preview refused the harness's own
+  port, rendered a local page; console clean. Client `npm run check`
+  **222/222, exit 0**. Browser stage 2 (agent's localhost browser) designed
+  in WORKSPACE_PANEL_SKILLS_PLUGINS.md §3b, not built.
+- **B2 (same day; owner: "Yes, build it"):** the agent's localhost browser:
+  `src/browser.js` on the installed Chrome via `playwright-core` 1.64.1
+  (pinned, notices regenerated), eight `browser_*` tools behind
+  `--browser-tools` (default off), and the Preview tab's Agent's browser
+  view. Worktree `node_modules` unlinked from `../kriya-harness` (the link
+  only) and installed locally. Real pinned DSH run: open → read → click →
+  read, outside site refused. Browser check on the Web UI found the view's
+  routes answering 404 (fixed: `ctx.inject(["connection"])`). Client
+  `npm run check` **228/228, exit 0**; `release:check` ok.
