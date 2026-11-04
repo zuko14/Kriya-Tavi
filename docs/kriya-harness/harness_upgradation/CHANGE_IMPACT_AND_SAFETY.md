@@ -95,6 +95,24 @@ Offline only: no runtime path, setting, migration, contract or client change.
 | `tests/harness/evolve.test.ts` (new) | HU-EV-* | — | itself |
 | `docs/kriya-harness/RECURSIVE_HARNESS_EVOLUTION{,_RESEARCH}.md`, `krhe/*` (new); `DECISIONS.md` (KU-ADR-19…24); `ENGINE_AND_EVOLUTION.md` §8 (Harness² unknown resolved); status files | Docs and records | — | — |
 
+## 2e. Workspace panel P1, the Overview tab (H19, 2026-11-04, owner in chat; `WORKSPACE_PANEL_SKILLS_PLUGINS.md`)
+
+Client only; read-only; no switch (a new tab, like the Changes tab, changes no agent's prompt or tools).
+
+| File | Change | Must stay true | Test |
+| --- | --- | --- | --- |
+| `plugins/overview/{index,client}.js`, `package.json`, `src/overview.js` (new) | One GET route and a right-sidebar tab | Reads only; inside Connection's fence; never returns a remote's credentials or the device token; unknown session → 400 | WP-OV-01…04 |
+| `src/profiles.js` | Links `@kriya-ai/harness-overview` | Other links unchanged | profiles tests |
+| `bundle/cordis.patch.yml`, `expected/*.dump.yml` | `kriya-overview` row; one added row per dump | Nothing else in the dumps changes | HT-REL-03 |
+| `plugins/progress/*` (new, P1c) | Progress route and tab | Reads the loop's records only; unknown session → 400 | WP-PG-01/02, WP-TAB-01 |
+| `plugins/preview/*` (new, P1c) | Preview tab (browser half only) | Loopback http(s) only, never the Web UI's port | WP-TAB-01/02 |
+| `plugins/overview/client.js` (P1c) | "Failed to fetch" shown as a plain sentence | — | — |
+| `src/browser.js`, `plugins/browser/*` (new, B2) | The agent's localhost browser and the view's routes | Loopback navigations only, never the Web UI's port; off unless `KRIYA_BROWSER=on`; Read only refuses acting tools | WP-BR-01…04, WP-BR-RUN-01/02 |
+| `plugins/preview/client.js` (B2) | "Your app" / "Agent's browser" modes | Frame mode unchanged | WP-TAB-01/02 |
+| `package.json`, `package-lock.json`, `THIRD_PARTY_NOTICES.md` (B2) | `playwright-core` 1.64.1 (exact) | Pins and notices gates pass | `check:pins`, `check:notices`, `release:check` |
+| `src/modes.js`, `bin/kriya.js`, `README.md` (B2) | `--browser-tools` switch, help, docs | Other switches unchanged | HU-SW-01, cli tests |
+| Kriya `docs/kriya-harness/WORKSPACE_PANEL_SKILLS_PLUGINS.md` (new), this file, status files | Docs | — | — |
+
 ## 3. Stop conditions
 
 Stop and ask the owner before: editing a protected file; adding a migration

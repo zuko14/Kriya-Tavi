@@ -13854,3 +13854,8 @@ modes (plan, auto and the rest).
 ### KRHE, Kriya Evolve offline, H16 (2026-11-04, owner in chat: "implement the kriya_recursive_harness_engine.md … the harness should upgrade itself")
 
 - `lib/harness/evolve/` (profiles of the client's switches and limits, a code-decided gate, one-factor proposer, composer, evidence-backed lessons, CLI) and `bench --profile`; spec `docs/kriya-harness/RECURSIVE_HARNESS_EVOLUTION.md`, research, KU-ADR-19…24, records in `docs/kriya-harness/krhe/`. Offline: no model call, nothing promoted. Replay on recorded runs: B4 vs B3 reads `hold` (4–0, p = 0.125, +43% per pass). Kriya full check 2927 passed, exit 0. Uncommitted. Details in `docs/kriya-harness/harness_upgradation/status.md`.
+
+### Kriya Harness workspace panel P1, H19 (2026-11-04, owner in chat: screenshots of a coding-agent desktop app; decisions WP-D1…D4)
+
+- Client: an Overview tab in the Web UI's right sidebar (environment: computer, folder, GitHub repo, branch; context and usage from DSH's token meter; changes; background tasks; connectors). Client `npm run check` 218/218 exit 0; browser-checked at 1280/360 px, light and dark. Plan for Kriya default skills and MCP/plugins in `docs/kriya-harness/WORKSPACE_PANEL_SKILLS_PLUGINS.md` (MCP needs an AGENTS.md amendment the owner approves). Uncommitted.
+- (same day) Progress and Preview tabs, then the agent's localhost browser (`--browser-tools`, default off; installed Chrome via `playwright-core` 1.64.1): open, read, screenshot, click, type, console, network on localhost only, and a live view in the Preview tab. Client `npm run check` 228/228 exit 0. Uncommitted.
