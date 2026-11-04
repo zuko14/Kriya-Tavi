@@ -117,6 +117,17 @@ Client only; read-only; no switch (a new tab, like the Changes tab, changes no a
 | Client `plugins/skills/{index,client}.js` (P2) | Kriya's skills on the Skills page, read-only, switchable | Local skills, edit, copy, unlink unchanged | WP-SK-01/02, skills-page tests |
 | Kriya `docs/kriya-harness/WORKSPACE_PANEL_SKILLS_PLUGINS.md` (new), this file, status files | Docs | — | — |
 
+## 2f. Intent router and long horizon (H20, 2026-11-04, owner in chat; `INTENT_ROUTER_AND_LONG_HORIZON.md`)
+
+Client only; both behind switches that default off.
+
+| File | Change | Must stay true | Test |
+| --- | --- | --- | --- |
+| `src/intent.js`, `plugins/router/*` (new) | The brief: BM25 skill ranking, intent classes, tool hints, late prompt section | Hides and adds no skill or tool; off unless `KRIYA_ROUTER=on`; person's messages only | IR-01…05, IR-RUN-01 |
+| `src/loop.js` (`loopStateText`), `plugins/loop/index.js` | Loop v2's state section; the plugin's `cwd` helper remembers each agent's folder | Off (v1): the prompt is unchanged | KV2-LS-01, HU-M-11, loop tests |
+| `src/modes.js`, `src/profiles.js`, `bin/kriya.js`, `bundle/cordis.patch.yml`, `expected/*.dump.yml`, `README.md` | `--router` switch, link, row (one row per dump), help, docs | Other switches and rows unchanged | HU-SW-01, HT-REL-03, cli tests |
+| `tests/intent.test.js`, `tests/long-horizon-run.test.js` (new), `tests/loop-v2.test.js` | IR-*, HU-M-11, KV2-LS-01 | — | themselves |
+
 ## 3. Stop conditions
 
 Stop and ask the owner before: editing a protected file; adding a migration
