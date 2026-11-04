@@ -1,0 +1,93 @@
+{
+  "suite": "KriyaBench-M",
+  "dsh": "0.2.1-rc.5",
+  "results": [
+    {
+      "scenario": "runaway",
+      "arm": "before",
+      "exitCode": 0,
+      "agentRequests": 31,
+      "modelRequests": 32,
+      "ms": 1400
+    },
+    {
+      "scenario": "runaway",
+      "arm": "after",
+      "exitCode": 1,
+      "agentRequests": 8,
+      "modelRequests": 9,
+      "ms": 856
+    },
+    {
+      "scenario": "stagnation",
+      "arm": "before",
+      "exitCode": 0,
+      "agentRequests": 31,
+      "modelRequests": 32,
+      "ms": 1396
+    },
+    {
+      "scenario": "stagnation",
+      "arm": "after",
+      "exitCode": 1,
+      "agentRequests": 4,
+      "modelRequests": 5,
+      "ms": 769
+    },
+    {
+      "scenario": "overflow",
+      "arm": "before",
+      "exitCode": 1,
+      "agentRequests": 4,
+      "modelRequests": 5,
+      "ms": 754
+    },
+    {
+      "scenario": "overflow",
+      "arm": "after",
+      "exitCode": 0,
+      "agentRequests": 8,
+      "modelRequests": 9,
+      "ms": 828,
+      "summaryRequests": 1
+    },
+    {
+      "scenario": "limits",
+      "arm": "before",
+      "exitCode": 0,
+      "agentRequests": 1,
+      "modelRequests": 2,
+      "ms": 673,
+      "maxCompletionTokens": 32768
+    },
+    {
+      "scenario": "limits",
+      "arm": "after",
+      "exitCode": 0,
+      "agentRequests": 1,
+      "modelRequests": 2,
+      "ms": 667,
+      "maxCompletionTokens": 8192
+    },
+    {
+      "scenario": "minimal",
+      "arm": "before",
+      "exitCode": 0,
+      "agentRequests": 1,
+      "modelRequests": 2,
+      "ms": 683,
+      "tools": 27,
+      "toolSchemaChars": 21272
+    },
+    {
+      "scenario": "minimal",
+      "arm": "after",
+      "exitCode": 0,
+      "agentRequests": 1,
+      "modelRequests": 2,
+      "ms": 606,
+      "tools": 8,
+      "toolSchemaChars": 7181
+    }
+  ]
+}
