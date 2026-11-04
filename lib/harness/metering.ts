@@ -16,8 +16,6 @@ import {
 // estimate and the customer charge stay apart; a missing cost is never zero.
 // kriya.usage_events and kriya.charges are untouched.
 
-// shortcut: one output cap for every tier, since the code has no per-tier limit (HD-16 open item); replace with the owner's per-tier values when decided
-export const MAX_OUTPUT_TOKENS = 16_384
 // A reservation older than this was abandoned (no settle reached it); the
 // same 15 minutes and HD-16's three open answers are in
 // kriya.reserve_harness_spend (20270301000200)

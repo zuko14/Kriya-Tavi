@@ -758,6 +758,17 @@ export const SETTINGS = {
   },
   // Beta until the owner's gates pass (HD-02: H9's gates, the H12 pilot and
   // a stable, audited DeepSeek Harness line); "ga" drops the Beta label
+  // Harness upgrade U9 (owner, 2026-11-04: "raising the reasoning output
+  // limits"): the most output one gateway answer may ask for, reasoning
+  // included; never above the model's own max_output_tokens. Each request
+  // reserves its upper cost at this cap (HD-16 open item, now settled)
+  "harness.maxOutputTokens": {
+    env: "KRIYA_HARNESS_MAX_OUTPUT_TOKENS",
+    fallback: "65536",
+    // Digits only here; lib/harness/model-limits.ts keeps it within 1,024–262,144
+    pattern: /^[1-9]\d{3,5}$/,
+    hint: "1,024 to 262,144 tokens per answer (reasoning included)",
+  },
   "harness.releaseStage": {
     env: "KRIYA_HARNESS_RELEASE_STAGE",
     fallback: "beta",

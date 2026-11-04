@@ -6,7 +6,6 @@ import { getSecret, getSetting } from "@/lib/config"
 import { getPlan } from "@/lib/entitlements"
 import { ChatRequest } from "@/lib/harness/contract"
 import {
-  MAX_OUTPUT_TOKENS,
   readUsage,
   reserve,
   settle,
@@ -15,6 +14,7 @@ import {
   upperEstimateMicroUsd,
   type UpstreamUsage,
 } from "@/lib/harness/metering"
+import { outputCap } from "@/lib/harness/model-limits"
 import { fail, readBody } from "@/lib/harness/route"
 import { fallbackModel, modelForTier, modelPrices } from "@/lib/models"
 import { applyMarkup, parseRate, usdToInr } from "@/lib/money"
@@ -49,6 +49,19 @@ const upstreamUrl = () =>
 // Rate limits, overload and outages are worth one try on the fallback model
 const retryable = (status: number) => status === 429 || status >= 500
 
+// A provider's "the conversation is too long" (OpenRouter and the backends it
+// routes to word it differently). DSH compacts and retries only when it can
+// recognise the refusal, so it gets a code it reads; the provider's text
+// itself never leaves the server (it can quote the request)
+const OVERFLOW =
+  /context[_ ](length|window)|maximum context|prompt (is )?too long|too many tokens|request_too_large|exceeds the (available )?context|input (is )?too long|longer than the model/i
+
+async function overflowed(res: Response) {
+  if (res.status !== 400 && res.status !== 413) return false
+  const text = await res.text().catch(() => "")
+  return OVERFLOW.test(text.slice(0, 8192))
+}
+
 export async function chatCompletion(request: Request, device: DeviceUser) {
   if ((await getSetting("harness.gateway")) !== "on")
     return fail(403, "harness_off", "The Kriya Harness model gateway is off.")
@@ -70,7 +83,9 @@ export async function chatCompletion(request: Request, device: DeviceUser) {
   const model = await modelForTier(alias)
   const price = await modelPrices(model)
   const rateE4 = parseRate(await getSetting("fx.usdInr"))
-  const maxTokens = Math.min(body.max_tokens ?? MAX_OUTPUT_TOKENS, MAX_OUTPUT_TOKENS)
+  // The owner's cap (harness.maxOutputTokens), never above the model's own (U9)
+  const cap = await outputCap(model)
+  const maxTokens = Math.min(body.max_tokens ?? cap, cap)
   const estimateUsd = upperEstimateMicroUsd(
     JSON.stringify(body.messages).length,
     maxTokens,
@@ -135,12 +150,20 @@ export async function chatCompletion(request: Request, device: DeviceUser) {
     res = await send(fallback).catch(() => null)
   }
   if (!res || !res.ok) {
+    const tooLong = res ? await overflowed(res) : false
     void res?.body?.cancel().catch(() => {})
     await settleFailed(requestKey, device.id)
     log.warn("harness upstream refused", {
       deviceId: device.deviceId,
       status: res?.status ?? 0,
+      ...(tooLong && { overflow: true }),
     })
+    if (tooLong)
+      return fail(
+        400,
+        "context_length_exceeded",
+        "The conversation is longer than the model's context window."
+      )
     return !res || retryable(res.status)
       ? fail(
           502,

@@ -22,6 +22,7 @@ describe("HT-REG-01: the harness.* settings", () => {
       "harness.gateway",
       "harness.handoff",
       "harness.installCommand",
+      "harness.maxOutputTokens",
       "harness.minClientVersion",
       "harness.mirror",
       "harness.releaseStage",
@@ -42,6 +43,8 @@ describe("HT-REG-01: the harness.* settings", () => {
     expect(defs["harness.deviceIdleDays"].fallback).toBe("90")
     expect(defs["harness.approvalTtlMinutes"].fallback).toBe("30")
     expect(defs["harness.rpm"].fallback).toBe("60")
+    // U9 (owner, 2026-11-04): raised from the old fixed 16,384
+    expect(defs["harness.maxOutputTokens"].fallback).toBe("65536")
     // HD-02: Beta until the owner flips it after the gates
     expect(defs["harness.releaseStage"].fallback).toBe("beta")
     expect(defs["harness.releaseStage"].pattern?.test("production")).toBe(false)
