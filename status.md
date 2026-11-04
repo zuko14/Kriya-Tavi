@@ -13850,3 +13850,7 @@ modes (plan, auto and the rest).
 ### Kriya loop v2, H14e (2026-11-04, owner in chat: the "Kriya Loop V2" brief)
 
 - Spec `docs/kriya-harness/KRIYA_LOOP_V2.md`; client (uncommitted, worktree `../kriya-harness-upgrade`) `--loop-v2`, default off: plan dependencies (DAG, blocked → dependants skipped), failure classes and excerpts, worse attempts set aside, passes that changed tests re-run on the committed tests, repeated failures proposed as rules the person confirms (`kriya rules`). Client `npm run check` 214/214 exit 0 (baseline 196); Kriya full check 2911 passed, exit 0 (docs only). Unmeasured on a real model. Details in `docs/kriya-harness/harness_upgradation/status.md`.
+
+### KRHE, Kriya Evolve offline, H16 (2026-11-04, owner in chat: "implement the kriya_recursive_harness_engine.md … the harness should upgrade itself")
+
+- `lib/harness/evolve/` (profiles of the client's switches and limits, a code-decided gate, one-factor proposer, composer, evidence-backed lessons, CLI) and `bench --profile`; spec `docs/kriya-harness/RECURSIVE_HARNESS_EVOLUTION.md`, research, KU-ADR-19…24, records in `docs/kriya-harness/krhe/`. Offline: no model call, nothing promoted. Replay on recorded runs: B4 vs B3 reads `hold` (4–0, p = 0.125, +43% per pass). Kriya full check 2927 passed, exit 0. Uncommitted. Details in `docs/kriya-harness/harness_upgradation/status.md`.

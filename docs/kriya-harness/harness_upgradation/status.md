@@ -20,6 +20,7 @@ session also goes to the root `status.md` (track H section).
 | U9 Output cap + limits in `kriya.models` | COMPLETE (2026-11-04, owner approved) | HU-DB-01, HU-SYNC-01, HU-GW-02 |
 | U10 Default-on (B4) and release preparation | COMPLETE (2026-11-04); publish/pilot are the owner's | HU-SW-01, RELEASE_0.2.0.md |
 | H14e Loop v2 (`--loop-v2`, default off) | IN_PROGRESS (2026-11-04): built and tested with a scripted model; not measured on a real model (needs the owner's spend go-ahead) | KV2-*, KRIYA_LOOP_V2.md |
+| H16 KRHE (Kriya Evolve offline) | IN_PROGRESS (2026-11-04): KRHE-0…2 and profile pinning built; nothing probed, nothing promoted | HU-EV-*, RECURSIVE_HARNESS_EVOLUTION.md, krhe/ |
 
 ## Owner actions (exact)
 
@@ -356,3 +357,34 @@ session also goes to the root `status.md` (track H section).
 - **Next exact action (owner).** Review the client diff; say whether to
   commit it on `feat/harness-upgrade` (or a new branch), and whether to fund
   the B4 vs B4 + `--loop-v2` KriyaBench-R run.
+
+### 2026-11-04 — H16 KRHE, Kriya Evolve offline (Claude Code / Opus 5.5; owner in chat: "implement the kriya_recursive_harness_engine.md … design the most advanced recursive harness engine … the harness should upgrade itself")
+
+- **Preflight.** Kriya `main` at `9ef10ed` (PR #5 merged); the brief
+  (`harness_upgradation/bench/kriya_recursuve_harness_engine.md`) untracked,
+  left as is. Client `feat/harness-upgrade` (PR #19 merged), clean, **not
+  changed** in this session.
+- **Research.** Harness² (arXiv:2610.14224) abstract and full text to App.
+  D.2 read, README read; source not inspected (open). Finding that shaped
+  the design: its Compose is judged by the editor model, without ground
+  truth; KRHE judges by code over KriyaBench outcomes instead.
+- **Built (Kriya, uncommitted).** `lib/harness/evolve/` profile, gate,
+  propose, compose, lessons, CLI; `lib/harness/bench/cli.ts --profile`
+  (pinning). Docs: `RECURSIVE_HARNESS_EVOLUTION.md`, `_RESEARCH.md`,
+  KU-ADR-19…24, `krhe/` records. No runtime path, setting, migration,
+  contract or client change; no model call.
+- **First offline turn on recorded runs (no spend).** B3→B0 canary, B3→B4
+  hold (4–0, p = 0.125, +43.4% per pass), B3→B5 hold, B4→B5 hold (0–5,
+  p = 0.063). Four lessons `proposed`. Next candidates from B4: `loopV2`,
+  `anchor`, turn budget ×2 (`krhe/candidates/`).
+- **A regression found and fixed.** The first HU-EV-07 spawned the bench
+  three times; in two full runs that load timed out HT-BEN-02
+  `hard-perf-dedupe` (alone 71/71). HU-EV-07 now tests `pinnedEnv` without
+  a subprocess; the bench's refusal path was smoke-run by hand (exit 2).
+- **Checks (real output).** `env -u OPENROUTER_API_KEY npm run check`:
+  typecheck ok, lint 0 errors / 6 warnings (CF-09), format ok, **Test Files
+  249 passed | 5 skipped; Tests 2927 passed | 63 skipped; exit 0**. Client:
+  not rerun (unchanged since 214/214).
+- **Next exact action (owner).** Say whether to commit; decide the first
+  paid probe turn (three candidates vs B4, K = 3, ≈ ₹180–240) and growing
+  the capability set to 30 tasks (spec §10).

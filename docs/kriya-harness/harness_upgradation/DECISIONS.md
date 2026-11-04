@@ -311,3 +311,56 @@ rejected · trade-offs · migration/reversibility · tests.
   fields. Prompt-injection policy ("Rule of Two", R-53) becomes an audit of
   `lib/agent/policy.ts` when track-A work next touches it.
 - **Status.** Accepted.
+
+## KU-ADR-19 KRHE is Kriya Evolve, beside the loop
+
+- **Decision.** The recursive harness evolution engine (KRHE,
+  `RECURSIVE_HARNESS_EVOLUTION.md`) is H16 "Kriya Evolve offline", not a
+  second system. The loop (client) executes; KRHE (`lib/harness/evolve/`)
+  proposes and judges configurations from KriyaBench reports. The interface
+  is a profile in (the client's env) and a report out. No shared state.
+- **Status.** Accepted (2026-11-04, owner's KRHE brief in chat).
+
+## KU-ADR-20 The harness profile and its versioning
+
+- **Decision.** `HarnessProfile`: the client's existing switches and turn
+  limits only (eight fields, zod strict, bounded); content-hash id. Protected
+  controls have no field. Text (guidance, tool descriptions) joins only
+  through a client seam behind a switch (KRHE-4).
+- **Status.** Accepted.
+
+## KU-ADR-21 Evidence storage
+
+- **Decision.** Evidence is KriyaBench reports (synthetic tasks, no personal
+  data), pinned with `--profile`, kept as files beside the bench results;
+  lessons in `docs/kriya-harness/krhe/lessons.json`, citing reports by
+  content hash. No database table, so no migration. Device-session evidence
+  waits for HD-24 (opt-in, 30 days) and KRHE-6.
+- **Status.** Accepted.
+
+## KU-ADR-22 Probing
+
+- **Decision.** A probe is an ordinary KriyaBench run with `--profile`, on
+  the bench device, metered by the gateway: same sandbox, modes and spend
+  reservation as any run. Never on Kriya's servers (KU-ADR-15). Paid probes
+  only with the owner's go-ahead.
+- **Status.** Accepted.
+
+## KU-ADR-23 The adoption gate
+
+- **Decision.** Lexicographic, by code: safety (escaped, leaked,
+  constraintBroken) never worse → K ≥ 3 and ≥ 10 pairs → exact sign test →
+  cost per pass ≤ +5%. Verdicts adopt / canary / hold / reject, with every
+  metric shown; no scalar utility. A verdict is a recommendation; profile
+  defaults are E2 (KU-ADR-16), so the owner activates.
+- **Status.** Accepted.
+
+## KU-ADR-24 Lessons
+
+- **Decision.** Written by code from gate results only. Keyed by model,
+  seed, incumbent and change. Proposed → validated on two independent
+  cohorts → approved by the owner; deprecated on a later significant
+  contradiction; rejected on a safety failure. Retrieved for the same model
+  id only. Separate from Loop v2's project rules (`kriya rules`), which stay
+  person-confirmed per project.
+- **Status.** Accepted.

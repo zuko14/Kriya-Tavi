@@ -84,6 +84,17 @@ contract, migration or setting changes.
 | Client | `tests/loop-v2.test.js`, `tests/loop-v2-run.test.js` (new) | KV2-* | — | themselves |
 | Kriya | `docs/kriya-harness/KRIYA_LOOP_V2.md` (new), this file, status files | Docs | — | — |
 
+## 2d. KRHE, Kriya Evolve offline (H16, 2026-11-04, owner's KRHE brief in chat; `RECURSIVE_HARNESS_EVOLUTION.md`)
+
+Offline only: no runtime path, setting, migration, contract or client change.
+
+| File | Change | Must stay true | Test |
+| --- | --- | --- | --- |
+| `lib/harness/evolve/{profile,gate,propose,compose,library,cli}.ts` (new) | Profiles, gate, proposer, composer, lessons, CLI | No model call; no agent run; writes only the files named; protected controls have no profile field | HU-EV-01…06 |
+| `lib/harness/bench/cli.ts` | `--profile`: profile env for the agent, `profile`/`profileId` in the report; refuses switch flags in `--agent` | Without `--profile`, runs and reports unchanged | HU-EV-07, HT-BEN-* |
+| `tests/harness/evolve.test.ts` (new) | HU-EV-* | — | itself |
+| `docs/kriya-harness/RECURSIVE_HARNESS_EVOLUTION{,_RESEARCH}.md`, `krhe/*` (new); `DECISIONS.md` (KU-ADR-19…24); `ENGINE_AND_EVOLUTION.md` §8 (Harness² unknown resolved); status files | Docs and records | — | — |
+
 ## 3. Stop conditions
 
 Stop and ask the owner before: editing a protected file; adding a migration
