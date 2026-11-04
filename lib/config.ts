@@ -764,6 +764,16 @@ export const SETTINGS = {
     pattern: /^(on|off)$/,
     hint: "on or off",
   },
+  // The Control Center (CONTROL_CENTER.md): from /harness the person queues
+  // tasks, health checks, rule decisions, handoffs and serve for their own
+  // computer, which runs them through `kriya daemon`; kriya processes report
+  // what they run. Off: the page and every route are exactly as before
+  "harness.controlCenter": {
+    env: "KRIYA_HARNESS_CONTROL_CENTER",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
   // Beta until the owner's gates pass (HD-02: H9's gates, the H12 pilot and
   // a stable, audited DeepSeek Harness line); "ga" drops the Beta label
   // Harness upgrade U9 (owner, 2026-11-04: "raising the reasoning output

@@ -265,6 +265,110 @@ export const WorldResponse = z.strictObject({
   relayUrl: z.string().url(),
 })
 
+/* ─────────── Control Center (CONTROL_CENTER.md; 404 while harness.controlCenter is off) ─────────── */
+
+const SHORT = (max: number) => z.string().min(1).max(max)
+const PROJECT_ID = z.string().regex(/^[a-f0-9]{16}$/)
+
+// A project folder the daemon offers: tasks run only in these. `path` is for
+// the person to recognise it ("~/Documents/app"), never used to address it
+export const DaemonProject = z.strictObject({
+  id: PROJECT_ID,
+  name: SHORT(80),
+  path: SHORT(300),
+  git: z.boolean(),
+})
+// A rule kriya rules lists for a project: proposed by the loop or confirmed
+export const DaemonRule = z.strictObject({
+  project: PROJECT_ID,
+  n: z.number().int().min(1).max(999),
+  text: SHORT(400),
+  status: z.enum(["proposed", "confirmed"]),
+})
+// Set on the computer (`kriya daemon` flags), never from Kriya
+export const DaemonCapabilities = z.strictObject({
+  fullAccess: z.boolean(),
+  serve: z.boolean(),
+  handoff: z.boolean(),
+})
+export const DaemonHelloRequest = z.strictObject({
+  daemonVersion: z.string().regex(/^\d{1,3}\.\d{1,3}\.\d{1,3}$/),
+  capabilities: DaemonCapabilities,
+  projects: z.array(DaemonProject).max(50),
+  rules: z.array(DaemonRule).max(200),
+})
+export const DaemonHelloResponse = z.strictObject({
+  pollSeconds: z.number().int().min(1).max(25),
+})
+
+export const DispatchKind = z.enum([
+  "run",
+  "doctor",
+  "rule_confirm",
+  "rule_dismiss",
+  "handoff",
+  "pull",
+  "serve_start",
+  "serve_stop",
+])
+export const RunSwitches = z.strictObject({
+  loopV2: z.boolean(),
+  budget: z.boolean(),
+  anchor: z.boolean(),
+  browser: z.boolean(),
+})
+// What each kind carries; validated on queueing and again by the daemon
+export const DispatchPayloads = {
+  run: z.strictObject({
+    project: PROJECT_ID,
+    prompt: SHORT(4000),
+    mode: z.enum(["ask", "auto", "read", "plan", "full"]),
+    switches: RunSwitches,
+  }),
+  doctor: z.strictObject({}),
+  rule_confirm: z.strictObject({
+    project: PROJECT_ID,
+    n: z.number().int().min(1).max(999),
+    wording: z.string().max(400).optional(),
+  }),
+  rule_dismiss: z.strictObject({
+    project: PROJECT_ID,
+    n: z.number().int().min(1).max(999),
+  }),
+  handoff: z.strictObject({ project: PROJECT_ID, note: z.string().max(500).optional() }),
+  pull: z.strictObject({ project: PROJECT_ID, workspace: z.uuid().optional() }),
+  serve_start: z.strictObject({ project: PROJECT_ID }),
+  serve_stop: z.strictObject({}),
+} as const
+export const Dispatch = z.strictObject({
+  id: z.uuid(),
+  kind: DispatchKind,
+  payload: z.record(z.string(), z.unknown()),
+  createdAt: z.string(),
+})
+// ?wait=0…25: the oldest queued action for this computer (claimed by this
+// answer), and the running ones the person asked to stop
+export const DispatchNextResponse = z.strictObject({
+  dispatch: Dispatch.nullable(),
+  cancel: z.array(z.uuid()).max(50),
+})
+export const DispatchReportRequest = z.strictObject({
+  status: z.enum(["running", "done", "failed", "canceled"]),
+  result: z.record(z.string(), z.unknown()).optional(),
+})
+// What a kriya process runs: no task text from the terminal
+export const RunReportRequest = z.strictObject({
+  localId: z.string().regex(/^[A-Za-z0-9_-]{1,80}$/),
+  source: z.enum(["terminal", "dispatch"]),
+  kind: z.enum(["app", "run", "acp", "serve", "handoff", "pull"]),
+  mode: z.enum(["ask", "auto", "read", "plan", "full"]).optional(),
+  switches: z.record(z.string().max(30), z.boolean()).optional(),
+  project: z.string().max(80).optional(),
+  status: z.enum(["running", "completed", "failed", "blocked", "stopped"]),
+  exitCode: z.number().int().optional(),
+  dispatchId: z.uuid().optional(),
+})
+
 // Every route: method, path, whether it needs a device token, its schemas
 export const ROUTES = [
   {
@@ -375,6 +479,37 @@ export const ROUTES = [
     response: null,
   },
   { method: "GET", path: "/world", auth: true, request: null, response: WorldResponse },
+  // Control Center: 404 while harness.controlCenter is off
+  {
+    method: "POST",
+    path: "/daemon/hello",
+    auth: true,
+    request: DaemonHelloRequest,
+    response: DaemonHelloResponse,
+  },
+  {
+    method: "GET",
+    path: "/dispatch/next",
+    auth: true,
+    request: null,
+    response: DispatchNextResponse,
+  },
+  // 204; 404 when it isn't this computer's or is already finished
+  {
+    method: "POST",
+    path: "/dispatch/{id}",
+    auth: true,
+    request: DispatchReportRequest,
+    response: null,
+  },
+  // 204; one row per (computer, localId)
+  {
+    method: "POST",
+    path: "/runs",
+    auth: true,
+    request: RunReportRequest,
+    response: null,
+  },
 ] as const
 
 export function contractJson() {

@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm"
+import { relations, sql } from "drizzle-orm"
 import {
   bigint,
   bigserial,
@@ -2176,6 +2176,80 @@ export const harnessSessions = kriya.table("harness_sessions", {
   project: text(),
   lastSeq: integer().notNull().default(-1),
   createdAt: createdAt(),
+})
+
+// Control Center (migration 20270801000000, CONTROL_CENTER.md): what a
+// computer's daemon reports, actions the person queues for it, and what
+// kriya processes run there. The person reads; device routes write
+export const HARNESS_DISPATCH_KINDS = [
+  "run",
+  "doctor",
+  "rule_confirm",
+  "rule_dismiss",
+  "handoff",
+  "pull",
+  "serve_start",
+  "serve_stop",
+] as const
+export const HARNESS_DISPATCH_STATUSES = [
+  "queued",
+  "claimed",
+  "running",
+  "canceling",
+  "done",
+  "failed",
+  "canceled",
+  "expired",
+] as const
+export const HARNESS_MODES = ["ask", "auto", "read", "plan", "full"] as const
+
+export const harnessDeviceState = kriya.table("harness_device_state", {
+  deviceId: uuid().primaryKey(),
+  userId: uuid().notNull(),
+  daemonVersion: text(),
+  capabilities: jsonb().$type<Record<string, unknown>>().notNull().default({}),
+  projects: jsonb().$type<unknown[]>().notNull().default([]),
+  rules: jsonb().$type<unknown[]>().notNull().default([]),
+  doctor: jsonb().$type<Record<string, unknown>>(),
+  polledAt: at(),
+  updatedAt: createdAt(),
+})
+
+export const harnessDispatches = kriya.table("harness_dispatches", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: uuid().notNull(),
+  deviceId: uuid().notNull(),
+  kind: text({ enum: HARNESS_DISPATCH_KINDS }).notNull(),
+  payload: jsonb().$type<Record<string, unknown>>().notNull().default({}),
+  status: text({ enum: HARNESS_DISPATCH_STATUSES }).notNull().default("queued"),
+  result: jsonb().$type<Record<string, unknown>>(),
+  createdAt: createdAt(),
+  // The SQL default (ten minutes): the person's insert can't set it
+  expiresAt: at()
+    .notNull()
+    .default(sql`now() + interval '10 minutes'`),
+  claimedAt: at(),
+  finishedAt: at(),
+})
+
+export const harnessRuns = kriya.table("harness_runs", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: uuid().notNull(),
+  deviceId: uuid().notNull(),
+  localId: text().notNull(),
+  source: text({ enum: ["terminal", "dispatch"] }).notNull(),
+  kind: text({ enum: ["app", "run", "acp", "serve", "handoff", "pull"] }).notNull(),
+  mode: text({ enum: HARNESS_MODES }),
+  switches: jsonb().$type<Record<string, boolean>>().notNull().default({}),
+  project: text(),
+  status: text({ enum: ["running", "completed", "failed", "blocked", "stopped"] })
+    .notNull()
+    .default("running"),
+  exitCode: integer(),
+  dispatchId: uuid(),
+  startedAt: createdAt(),
+  updatedAt: createdAt(),
+  endedAt: at(),
 })
 
 /* ───────────────────────────── rooms ────────────────────────────── */
