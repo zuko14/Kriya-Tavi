@@ -191,6 +191,8 @@ export async function modelPrices(modelId: string) {
 type CatalogueModel = {
   id: string
   name?: string
+  context_length?: number
+  top_provider?: { max_completion_tokens?: number | null }
   pricing?: { prompt?: string; completion?: string }
   supported_parameters?: string[]
   architecture?: { input_modalities?: string[] }
@@ -204,6 +206,15 @@ function perTokenToMicroPerMtok(value: string | undefined) {
   const digits = (whole + fraction.padEnd(12, "0").slice(0, 12)).replace(/^0+(?=\d)/, "")
   return Number(digits)
 }
+
+// The catalogue's token counts, or null when absent or not a positive integer
+const positiveInt = (value: unknown) =>
+  typeof value === "number" &&
+  Number.isSafeInteger(value) &&
+  value > 0 &&
+  value <= 2 ** 31 - 1
+    ? value
+    : null
 
 // Refreshes prices and declared capabilities of models already in the
 // registry from OpenRouter's public catalogue. Declared support is not proof:
@@ -230,6 +241,8 @@ export async function syncCatalogue(ids: string[]) {
       supportsImages: !!model.architecture?.input_modalities?.includes("image"),
       inputMicroUsdPerMtok: perTokenToMicroPerMtok(model.pricing?.prompt),
       outputMicroUsdPerMtok: perTokenToMicroPerMtok(model.pricing?.completion),
+      contextWindow: positiveInt(model.context_length),
+      maxOutputTokens: positiveInt(model.top_provider?.max_completion_tokens),
       pricesCheckedAt: new Date(),
     }
     await privileged
@@ -240,4 +253,4 @@ export async function syncCatalogue(ids: string[]) {
   return { updated: ids.length - missing.length, missing }
 }
 
-export const __test = { perTokenToMicroPerMtok, readUsage }
+export const __test = { perTokenToMicroPerMtok, readUsage, positiveInt }

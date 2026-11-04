@@ -12,7 +12,7 @@ import { GET as models } from "@/app/api/harness/v1/models/route"
 import { POST as chat } from "@/app/api/harness/v1/chat/completions/route"
 import { log } from "@/lib/log"
 import { applyMarkup, usdToInr } from "@/lib/money"
-import { MAX_OUTPUT_TOKENS, reserve } from "@/lib/harness/metering"
+import { reserve } from "@/lib/harness/metering"
 
 import type { TestDb } from "../db/harness"
 import { call, deviceFor, harnessDb, harnessEnv } from "./setup"
@@ -70,7 +70,8 @@ function upstream(...replies: ((sent: Sent) => Response)[]) {
       const request: Sent = {
         url: String(input),
         headers: Object.fromEntries(new Headers(init.headers).entries()),
-        body: JSON.parse(String(init.body)),
+        // The catalogue (GET /models, HU-GW-02) has no body
+        body: init.body === undefined ? {} : JSON.parse(String(init.body)),
       }
       sent.push(request)
       const reply = replies.shift()
@@ -121,10 +122,14 @@ beforeEach(async () => {
     OPENROUTER_BALANCED_MODEL: "test/balanced",
     OPENROUTER_FALLBACK_MODEL: "test/fallback",
     KRIYA_FX_USD_INR: "84.0000",
+    KRIYA_HARNESS_MAX_OUTPUT_TOKENS: undefined,
   })
   await pg.query("delete from kriya.harness_usage")
   await pg.query(
     "update kriya.plans set harness_monthly_micro_inr = 1000000000, allowed_tiers = '{budget}', markup_bps = 15000 where id = 'free'"
+  )
+  await pg.query(
+    "update kriya.models set context_window = null, max_output_tokens = null where id like 'test/%'"
   )
 })
 
@@ -340,7 +345,8 @@ describe("HT-GW-06: what Kriya sends", () => {
     })
     await res.text()
     const body = sent[0].body
-    expect(body.max_tokens).toBe(MAX_OUTPUT_TOKENS)
+    // The owner's cap, harness.maxOutputTokens (default 65,536; U9)
+    expect(body.max_tokens).toBe(65_536)
     for (const field of ["provider", "models", "route", "user", "max_completion_tokens"])
       expect(body, field).not.toHaveProperty(field)
     expect(body.usage).toEqual({ include: true })
@@ -398,6 +404,101 @@ describe("HT-GW-08: upstream failures", () => {
     expect(down.status).toBe(502)
     expect(await down.json()).toMatchObject({ error: "upstream_unavailable" })
     expect((await usageRows())[0]).toMatchObject({ status: "failed" })
+  })
+})
+
+// HU-GW-02 (harness upgrade U3, U9): each level says what its model holds,
+// from kriya.models (filled by the catalogue sync), with the output cap the
+// owner's harness.maxOutputTokens, never above the model's own; a model with
+// no known window has no limits, and the gateway asks for no more than the cap
+describe("HU-GW-02: /models gives each level its model's limits", () => {
+  it("context window and output cap from kriya.models; unknown left out", async () => {
+    await pg.query(
+      "update kriya.plans set allowed_tiers = '{budget,balanced}' where id = 'free'"
+    )
+    await pg.query(
+      "update kriya.models set context_window = 131072, max_output_tokens = 32768 where id = 'test/budget'"
+    )
+    const list = await (await models(call("GET", "/models", { token }))).json()
+    expect(list.data).toEqual([
+      {
+        id: "budget",
+        object: "model",
+        owned_by: "kriya",
+        name: "Budget",
+        contextWindow: 131072,
+        // min(the owner's 65,536, the model's 32,768)
+        maxOutputTokens: 32768,
+      },
+      { id: "balanced", object: "model", owned_by: "kriya", name: "Balanced" },
+    ])
+  })
+
+  it("the owner's cap applies, kept within 1,024–262,144; the gateway sends it", async () => {
+    await pg.query(
+      "update kriya.models set context_window = 131072, max_output_tokens = 393216 where id = 'test/budget'"
+    )
+    harnessEnv({ KRIYA_HARNESS_MAX_OUTPUT_TOKENS: "16384" })
+    expect(
+      (await (await models(call("GET", "/models", { token }))).json()).data[0]
+    ).toMatchObject({
+      maxOutputTokens: 16384,
+    })
+    const sent = upstream(streamed("test/budget"))
+    await (
+      await ask({
+        model: "budget",
+        stream: true,
+        messages: [{ role: "user", content: "x" }],
+      })
+    ).text()
+    expect(sent[0].body.max_tokens).toBe(16384)
+    harnessEnv({ KRIYA_HARNESS_MAX_OUTPUT_TOKENS: "999999" })
+    expect(
+      (await (await models(call("GET", "/models", { token }))).json()).data[0]
+    ).toMatchObject({
+      maxOutputTokens: 262_144,
+    })
+  })
+})
+
+// HU-GW-01 (harness upgrade U1): a provider's context overflow reaches the
+// client as a code DSH recognises (so it compacts and retries), not as the
+// generic refusal; the provider's own text stays on the server, nothing is
+// charged and the fallback model isn't tried
+describe("HU-GW-01: context overflow is named", () => {
+  it("an overflow 400 → context_length_exceeded; other 400s stay bad_request", async () => {
+    const sent = upstream(() =>
+      Response.json(
+        {
+          error: {
+            message: `This endpoint's maximum context length is 131072 tokens. However, you requested about 140000 tokens. ${PROMPT}`,
+            code: 400,
+          },
+        },
+        { status: 400 }
+      )
+    )
+    const res = await ask({
+      model: "budget",
+      messages: [{ role: "user", content: PROMPT }],
+    })
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body).toMatchObject({ error: "context_length_exceeded" })
+    expect(JSON.stringify(body)).not.toContain(PROMPT)
+    expect(sent).toHaveLength(1)
+    expect((await usageRows())[0]).toMatchObject({ status: "failed" })
+
+    await pg.query("delete from kriya.harness_usage")
+    upstream(() =>
+      Response.json({ error: { message: "Invalid tool schema" } }, { status: 400 })
+    )
+    const other = await ask({
+      model: "budget",
+      messages: [{ role: "user", content: PROMPT }],
+    })
+    expect(await other.json()).toMatchObject({ error: "bad_request" })
   })
 })
 

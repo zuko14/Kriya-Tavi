@@ -67,6 +67,9 @@ export const ErrorResponse = z.strictObject({
     "cap_reached",
     "not_priced",
     "upstream_unavailable",
+    // HU: the provider refused a conversation longer than the model's
+    // context window; the client compacts and retries
+    "context_length_exceeded",
     // H6: the mirror's refusals (API_AND_CONTRACTS §5)
     "no_agent",
     "mirror_summary_only",
@@ -107,6 +110,10 @@ export const ModelsResponse = z.strictObject({
         .string()
         .regex(/^[\p{L}\p{N} .()+\/:_-]{1,60}$/u)
         .optional(),
+      // HU (KU-ADR-09): what that model holds, from the provider's catalogue,
+      // and the output cap the gateway allows. Both absent when unknown
+      contextWindow: z.number().int().positive().optional(),
+      maxOutputTokens: z.number().int().positive().optional(),
     })
   ),
 })

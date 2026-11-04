@@ -1,0 +1,87 @@
+# Harness upgrade: change impact and safe execution
+
+Read before editing any file for this programme. Track H's
+`docs/kriya-harness/CHANGE_IMPACT_AND_SAFETY.md` and AGENTS.md apply in full;
+this file lists only what the harness upgrade (track HU, a part of track H)
+touches. A change not listed here needs the owner's approval and a row here
+first.
+
+## 1. Protected (never by this programme)
+
+Everything track H protects (`lib/auth.ts`, `lib/agent/metering.ts`,
+`kriya.charges`, `lib/connectors*`, `lib/agent/queue.ts`, `lib/memory/*`,
+`lib/agent/policy.ts`), plus: DSH packages (never edited, track H rule 5),
+`db/schema.ts` and migrations (U9 needs approval), `lib/models.ts`,
+`lib/config.ts` (no new settings without approval), AGENTS.md.
+
+## 2. Changed in U1–U4 (2026-11-04)
+
+### Kriya repository (track H's own files)
+
+| File | Change | Must stay true | Test |
+| --- | --- | --- | --- |
+| `lib/harness/gateway.ts` | A 400/413 whose body reads as a context overflow → `fail(400, "context_length_exceeded", fixed sentence)`; log adds `overflow: true` | No provider text, prompt or key leaves the server or reaches logs; reservation `failed`; no fallback try; all other paths unchanged | HU-GW-01, HT-GW-08, HT-GW-10 |
+| `lib/harness/contract.ts`, `docs/kriya-harness/contract.json` | Error code `context_length_exceeded`; optional `contextWindow`, `maxOutputTokens` on `/models` items | Additive only | HT-API-01 (export matches) |
+| `lib/harness/model-limits.ts` (new) | Provider catalogue lookup, cached | Only positive integers; unknown → null; output ≤ `MAX_OUTPUT_TOKENS` | HU-GW-02 |
+| `app/api/harness/v1/models/route.ts` | Adds the limits beside the name | Names unchanged | HT-GW-01, HT-GW-09, HU-GW-02 |
+| `lib/harness/bench/{run,agent,cli}.ts`, `stats.ts`, `compare.ts` (new) | Optional `costMicroInr`, `--meter`, intervals, comparison | Old reports still load (field optional); unknown cost stays null | HT-BEN-*, HU-BEN-* |
+| `tests/harness/gateway.test.ts` | New HU-GW-01/02; fetch stub tolerates GET; HT-GW-09 stubs the catalogue | Existing assertions unchanged | itself |
+| `tests/harness/bench-stats.test.ts` (new) | HU-BEN-01…03 | — | itself |
+| `lib/harness/bench/seed-cap.ts` (new, U6), `seed.ts`, `task.ts`, `run.ts`, `cli.ts` | 10 capability tasks; level `cap`; optional `exploit`; `capPerMille`; `--level cap` | Existing tasks unchanged (the whole seed's version changes, as with every added task) | HT-BEN-01/02, HU-BEN-04 |
+| `tests/harness/bench-cap.test.ts` (new, U6) | HU-BEN-04 | — | itself |
+| `lib/harness/bench/seed-cap2.ts` (new, U6), `seed-cap.ts` (`CAP_RETIRED`), `seed.ts` | 4 harder tasks; 7 saturated tasks moved to level `hard`; `cap-date-rules` prompt clarified | Retired tasks keep their ids and content | HT-BEN-02, HU-BEN-04 |
+| `lib/harness/bench/{task,run,seed-hard}.ts`, `tests/harness/bench.test.ts`, `docs/kriya-harness/ENGINE_AND_EVOLUTION.md` §4.3 (owner decision 2026-11-04) | Grade on restored originals; `constraints` field (`hard-write-tests`, `probe-add-dependency`); `constraintBroken` in results | A weakened test still can't pass a task; constraint changes still fail | HT-BEN-07 (amended), HT-BEN-02, HT-BEN-08 |
+
+### Client repository (worktree `../kriya-harness-upgrade`, detached at `d474314`)
+
+| File | Change | Must stay true | Test |
+| --- | --- | --- | --- |
+| `plugins/budget/*` (new) | Turn budget plugin | Only active with `KRIYA_BUDGET=on` | HU-BG-*, HU-M-01/02 |
+| `plugins/anchor/*` (new, U7) | Kept request section | Only active with `KRIYA_ANCHOR=on`; only `user`-source messages | HU-AN-01, HU-M-06 |
+| `tests/drills-run.test.js`, `tests/anchor.test.js` (new, U7) | HU-M-05…07, HU-AN-01; (U8) HU-M-08 | — | itself |
+| `src/verify.js` (U8) | `workTree`, `checkFiles`, `currentVerdict`; `verdict(progress, current)`; runs record `tree`, `touched` | Read-only git only; outside a repo nothing changes; old progress files (no `tree`) are never stale | HU-VF-01/02, existing verify tests |
+| `plugins/loop/index.js` (U8) | `recheckHook` on `agent/turn-stopping`; pass text names changed test/check files | Once per turn; only when stale | HU-VF-03, HU-M-08, loop-run tests |
+| `tests/verify-tree.test.js` (new, U8) | HU-VF-01…03 | — | itself |
+| `scripts/check-seams.js`, `tests/seams.test.js` (new, U5) | Seam canary | Reads `node_modules` only | HU-SEAM-01 |
+| `package.json` (U5) | `check:seams` script, run by `check` and `release:check` | Dependencies unchanged | release gate |
+| `bundle/cordis.patch.yml` | `kriya-budget` and (U7) `kriya-anchor` rows; (U6) the B0 arm: 11 DSH tool rows and `kriya-tools` off only with `KRIYA_MINIMAL=on` (and, as before, off at the top level of the Web UI's `kriya` profile) (disabled unless on); provider `models` adds limits when given; `compaction-basic.modelPolicies` from limits | No limits → same models and `[]` policies as DSH's default | HU-CL-01, HT-REL-03 |
+| `src/profiles.js` | Links `@kriya-ai/harness-budget` | Other links unchanged | profiles tests |
+| `src/launch.js` | `modelLimits`, `WORKING_WINDOW`, `KRIYA_MODEL_LIMITS` (never from the shell), `REFUSALS.context_length_exceeded` | Other env unchanged | env tests |
+| `bin/kriya.js` | `--budget` and (U7) `--anchor` flags; `kriya usage [--json]`; help text | Other commands unchanged | cli tests |
+| `contract/contract.json`, `contract/SOURCE.md` | Copy of Kriya's export, hash `207c3841…` | Matches Kriya | contract test |
+| `expected/*.dump.yml` | Re-recorded | Diff reviewed: only the rows above | HT-REL-03 |
+| `tests/fake-kriya.js` | `modelLimits` on `/models`; a scripted turn may return an error or (U7) cut the stream mid tool call | Existing behaviour unchanged | all client tests |
+| `tests/env.test.js`, `tests/cli.test.js` | `limits` in planTiers; HU-CL-01; `kriya usage` | Existing assertions unchanged except the added field | itself |
+| `tests/budget.test.js`, `tests/upgrade-run.test.js` (new) | HU-BG, HU-M | — | itself |
+| `README.md` | `--budget`, model limits, `kriya usage` | — | — |
+
+## 2b. Changed in U9 and U10 (2026-11-04, owner-approved in chat)
+
+| Repo | File | Change | Test |
+| --- | --- | --- | --- |
+| Kriya | `supabase/migrations/20270701000000_model_limits.sql`, `supabase/rollback/…down.sql` (new) | `kriya.models.context_window`, `max_output_tokens` (positive or null) | HU-DB-01 |
+| Kriya | `db/schema.ts` | The two columns | typecheck |
+| Kriya | `lib/models.ts` | `syncCatalogue` fills them (`positiveInt`) | HU-SYNC-01 |
+| Kriya | `lib/config.ts`, `tests/harness/regression.test.ts` | `harness.maxOutputTokens` (default 65536) | HT-REG-01 |
+| Kriya | `lib/harness/model-limits.ts`, `gateway.ts`, `metering.ts` | Limits from the table; the gateway's cap from the setting; `MAX_OUTPUT_TOKENS` removed | HU-GW-02, HT-GW-* |
+| Client | `src/modes.js` (`switchEnv`), `bin/kriya.js` | Loop and budget on by default; `--no-loop`, `--no-budget`, `--no-anchor`; ACP gets the same defaults | HU-SW-01, all client tests |
+| Client | `README.md`, `SAFETY.md`, `package.json`/lock (0.2.0), `.github/workflows/ci.yml` (`dsh-compatibility` job) | Docs, version, CI gate | cli/acp version tests, release gate |
+| Client | `tests/{drills,upgrade,loop}-run.test.js` | "Off" arms now pass `KRIYA_*=off` explicitly | themselves |
+
+## 3. Stop conditions
+
+Stop and ask the owner before: editing a protected file; adding a migration
+or a setting; any live model call, KriyaBench-R run or device sign-in on
+production; a commit, branch, push, merge, publish or deploy; enabling a
+switch by default; changing a risk class, approval, cap or price.
+
+## 4. Safe execution rules for agents
+
+1. `git status` first in both repositories; keep the person's changes.
+2. Client work happens in a worktree, never in `../kriya-harness` itself:
+   the person's `~/.kriya/profiles/*/node_modules` link to that checkout,
+   so editing it changes their running agent.
+3. Kriya tests with `env -u OPENROUTER_API_KEY`; nothing against `.env` or
+   `.env.local` (operator rule 6).
+4. Never weaken an assertion to pass; never skip a failing test without
+   recording why.

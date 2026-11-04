@@ -595,7 +595,7 @@ for (const [name, code] of mutants) {
 process.exit(missed ? 1 : 0)
 `,
     },
-    protect: ["src/discount.js"],
+    constraints: ["src/discount.js"],
     solution: {
       "discount.test.js": js`import { test } from "node:test"
 import assert from "node:assert/strict"
@@ -698,7 +698,7 @@ test("never longer than n", () => {
 })
 `,
     },
-    protect: ["package.json", "text.test.js"],
+    constraints: ["package.json"],
     solution: {
       "src/text.js": js`// text cut to at most n characters, ending in "…" when cut
 export function truncate(text, n) {

@@ -1249,6 +1249,9 @@ export const models = kriya.table("models", {
   supportsImages: boolean().notNull().default(false),
   inputMicroUsdPerMtok: micro(),
   outputMicroUsdPerMtok: micro(),
+  // 20270701000000 (harness upgrade U9): from the provider's catalogue; null when unknown
+  contextWindow: integer(),
+  maxOutputTokens: integer(),
   pricesCheckedAt: at(),
   evalStatus: text({ enum: ["untested", "passed", "failed"] })
     .notNull()

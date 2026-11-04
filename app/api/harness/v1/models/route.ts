@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm"
 import { privileged } from "@/db"
 import { models, TIERS, type Tier } from "@/db/schema"
 import { getPlan } from "@/lib/entitlements"
+import { modelLimits } from "@/lib/harness/model-limits"
 import { harnessRoute, ok } from "@/lib/harness/route"
 import { modelForTier } from "@/lib/models"
 
@@ -22,31 +23,32 @@ export function displayName(label: string | null | undefined, id: string) {
   return NAME.test(name) ? name : undefined
 }
 
-async function nameFor(tier: Tier) {
+async function levelInfo(tier: Tier) {
   try {
     const id = await modelForTier(tier)
     const [row] = await privileged
       .select({ label: models.label })
       .from(models)
       .where(eq(models.id, id))
-    return displayName(row?.label, id)
+    return { name: displayName(row?.label, id), limits: await modelLimits(id) }
   } catch {
-    // Not routed yet: the level is listed without a name
-    return undefined
+    // Not routed yet: the level is listed without a name or limits
+    return { name: undefined, limits: null }
   }
 }
 
 export const GET = harnessRoute(true, async (_request, device) => {
   const plan = await getPlan(device.id)
   const allowed = TIERS.filter((tier) => plan.allowedTiers.includes(tier))
-  const names = await Promise.all(allowed.map(nameFor))
+  const found = await Promise.all(allowed.map(levelInfo))
   return ok({
     object: "list",
     data: allowed.map((id, i) => ({
       id,
       object: "model",
       owned_by: "kriya",
-      ...(names[i] && { name: names[i] }),
+      ...(found[i].name && { name: found[i].name }),
+      ...found[i].limits,
     })),
   })
 })

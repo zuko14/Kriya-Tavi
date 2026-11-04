@@ -1,3 +1,4 @@
+import { CAP, CAP_RETIRED } from "./seed-cap"
 import { HARD } from "./seed-hard"
 import { MULTI } from "./seed-multi"
 import type { BenchTask } from "./task"
@@ -599,4 +600,6 @@ export function greet(name) {
   },
   ...HARD,
   ...MULTI,
+  ...CAP,
+  ...CAP_RETIRED,
 ]

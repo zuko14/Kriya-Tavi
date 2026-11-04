@@ -9779,6 +9779,7 @@ that defaults off (HT-REG-01). Agents start from
 | H10 | Your machine as an execution world | COMPLETE (2026-11-02: HD-12 decision record; migration `20270301000100` (provider `device`) with rollback; `kriya-relay` (`relay/index.ts`, render.yaml) and `DeviceWorkspaceProvider`; HT-DEV-01…05 (11 tests) and the provider and migration cases pass; client `kriya serve` on `feat/h10-device-world`, client check 94/94; Tests 2744 passed, 55 skipped; exit 0. Not deployed: relay latency/capacity unmeasured until a staging relay exists) | H9, C3, a decision record |
 | H11 | ACP for editors | IN_PROGRESS (2026-11-01: `kriya acp` (profile `kriya-acp` = dsh-base + dsh-acp-app + the kriya bundle); 6 client ACP tests incl. 4 on the real pinned DSH with a scripted ACP v1 client, client check 83/83; end-to-end on the P-3 stack with the real client: PASS; Tests 2709 passed, 42 skipped; exit 0. Left: one session in a real ACP editor (owner)) | H4 |
 | H12 | Controlled pilot | NOT_STARTED | H9 |
+| HU | Harness upgrade (U0–U10): bounds, model limits, overflow recovery, honest benchmarks; ledger `docs/kriya-harness/harness_upgradation/status.md` | COMPLETE for 0.2.0 (2026-11-04: U0–U10; client worktree `kriya-harness-upgrade` 196/196, Kriya full check 2911 passed; on branch `feat/harness-upgrade` in both repositories, not pushed; release steps are the owner's, Kriya harness suite 185/185; KriyaBench-M before/after recorded; KriyaBench-R waits for the owner) | H13, H14 |
 
 ## Track H blockers
 
@@ -13793,3 +13794,55 @@ modes (plan, auto and the rest).
 - **Later (owner's direction, not built):** paid plans keep limits and
   usage for Kriya-hosted models; people may also use the harness with their
   own provider keys (bring your own key), unmetered by Kriya.
+
+### Harness upgrade U0–U4 (2026-11-04, Claude Code / Opus 5.5, owner in chat: "Treat this as your primary engineering mandate … implement the improvements incrementally, run tests and benchmarks, and document the results")
+
+- **Where:** `docs/kriya-harness/harness_upgradation/` (README, AGENT_MASTER_PROMPT, FORENSIC_AUDIT, RESEARCH, DECISIONS KU-ADR-01…18, ARCHITECTURE, IMPLEMENTATION_PLAN U0–U10, BENCHMARK_PLAN, TEST_STRATEGY, CHANGE_IMPACT_AND_SAFETY, status.md). Kriya changes uncommitted on `main` (track H's own files only: `lib/harness/gateway.ts`, `contract.ts`, new `model-limits.ts`, `app/api/harness/v1/models/route.ts`, `lib/harness/bench/*`, `tests/harness/*`, `docs/kriya-harness/contract.json`); client changes in the detached worktree `../kriya-harness-upgrade` on `d474314`, uncommitted; `../kriya-harness` untouched.
+- **Built:** U1 gateway names context overflow (`context_length_exceeded`, DSH now compacts and retries); U2 turn budget plugin behind `--budget`; U3 per-tier context window and output cap from the provider catalogue (capped at 262,144); U4 per-task spend meter (`kriya usage --json`), Wilson intervals, paired sign test, `compare.ts`.
+- **Evidence:** KriyaBench-M on the real pinned DSH (`bench/mechanics-2026-11-04.json`): runaway 31 → 8 steps, stagnation 31 → 4, overflow exit 1 → 0, limits 32,768 → 8,192. Client `npm run check` 183/183 exit 0 (baseline 175); Kriya `tests/harness` + RLS 185/185 (baseline 178). Full `npm run check`: typecheck, lint (0 errors), format ok; Tests 2885 passed, 1 failed (`hard-perf-dedupe` 30 s timeout under load, the known case; alone 56/56), exit 1.
+- **Owner actions:** OA-1…OA-7 in the ledger (commit decision, merge `feat/kriya-loop`, approve a bench device and spend, budget default, output cap, 403 logs, deploy).
+
+### Harness upgrade U7 (2026-11-04, Claude Code / Opus 5.5, owner in chat: "Yes, start U7")
+
+- Long-horizon drills on the real pinned DSH (client `tests/drills-run.test.js`): crash mid-tool then `--session-id` resume → exit 0 with prior work; stream cut mid tool call → tool ran once; compaction with a summary that drops a requirement → lost today, kept with the new `--anchor` (`plugins/anchor`, default off). Client `npm run check` 187/187, exit 0. Details in `docs/kriya-harness/harness_upgradation/status.md`.
+
+### Harness upgrade U8 (2026-11-04, Claude Code / Opus 5.5, owner in chat: "Yes, start U8")
+
+- Under `--loop`, a pass now covers only the files it ran on (read-only git fingerprint per verify run); a later change reads "not checked" and the agent is sent back once at turn end; a pass names changed test/check files. Real-DSH drill HU-M-08 passes; client `npm run check` 191/191, exit 0. Details in `docs/kriya-harness/harness_upgradation/status.md`.
+
+### Harness upgrade U5 (2026-11-04, Claude Code / Opus 5.5, owner in chat: "Yes, start U5")
+
+- DSH upgrade gate: client `scripts/check-seams.js` names the 10 DSH seams Kriya depends on and runs in `npm run check` and the release gate; checklist `docs/kriya-harness/harness_upgradation/DSH_UPGRADE.md`. Client `npm run check` 193/193, exit 0; `release:check` ok.
+
+### Harness upgrade U6, first part (2026-11-04, Claude Code / Opus 5.5, owner in chat: "Yes, start U6")
+
+- 10 original KriyaBench capability tasks (`lib/harness/bench/seed-cap.ts`, `--level cap`), each failing as given, passing with its fix, with a hidden grader and (6 of them) a planted wrong fix that must fail; B0 tool-minimal control arm in the client (`KRIYA_MINIMAL=on`, 8 tools instead of 27). Kriya full `npm run check` 2903 passed, exit 0; client 194/194. Paid calibration runs wait for the owner. Details in `docs/kriya-harness/harness_upgradation/status.md`.
+
+### Harness upgrade U6 calibration run (2026-11-04, owner in chat: "Yes, I'll approve it", "approved")
+
+- Capability set, one run per arm on DeepSeek V4.1 Flash 1017 (throwaway bench device, revoked): B0 tool-minimal 9/10 (₹3.33), B3 current 6/10, B4 `--budget --loop` 5/10 (₹12.79); total ₹23.02. Not significant (n = 10). All "tampered" failures were agents adding tests to visible test files; graded on the hidden grader alone: 9, 8, 8 (owner decision OA-8). Reports in `docs/kriya-harness/harness_upgradation/bench/`.
+
+### KriyaBench grading rule (2026-11-04, owner in chat: "Grade on originals")
+
+- Tasks are graded on the restored original tests; an edited test is reported, not failed; files a task forbids changing (`constraints`) still fail it. `tests/harness` + RLS 203/203. Cap-set calibration scores become B0 9/10, B3 8/10, B4 8/10.
+
+### KriyaBench harder capability tasks (2026-11-04, owner in chat: "Yes, harder tasks")
+
+- 7 saturated cap tasks retired to the `hard` regression level; `cap-date-rules` prompt audited; 4 harder spec tasks added (JSON Patch, semver ranges, streaming CSV, expression errors), each with a hidden grader and an exploit. Cap set 7 tasks (`989dcfbc9eab`), seed 43. `tests/harness` + RLS 207/207. Next paid run waits for the owner.
+
+### KriyaBench K = 3 run on the new capability set (2026-11-04, owner in chat: "Yes, run it")
+
+- DeepSeek V4.1 Flash 1017, throwaway device (revoked), 9 interleaved runs: tool-minimal 15/21 (₹22.22), current 14/21 (₹32.55), `--budget --loop` 18/21 (₹60.04); total ₹114.81. Loop wins only on the CSV-stream and semver tasks (4–0 discordant, p = 0.125) at +43% cost per passed task. Details in `docs/kriya-harness/harness_upgradation/BENCHMARK_PLAN.md` §6.3.
+
+### KriyaBench arm B5 (2026-11-04, owner in chat: "Yes, build it")
+
+- Minimal tools + `--loop --budget` needs no new code; proven on the real pinned DSH (client HU-M-10: 11 tools, verify fail → fix → pass, exit 0). Client `npm run check` 195/195. Runs wait for the owner's go-ahead.
+
+### KriyaBench arm B5 runs (2026-11-04, owner in chat: "Yes, run B5")
+
+- Minimal tools + `--budget --loop`, 3 runs: 13/21 (₹32.47), losing to the full tools + loop (18/21) 0–5 (p = 0.063) and solving neither hard task. The loop's gain needs part of the full tool list. KriyaBench-R spend so far ₹170.30. Details in `docs/kriya-harness/harness_upgradation/BENCHMARK_PLAN.md` §6.4.
+
+### Harness upgrade U5 CI, U9, U10 (2026-11-04, owner in chat: "B4 is our winner… I approve Phase U9… Proceed with Phase U10… Prepare the commits")
+
+- U9: migration `20270701000000_model_limits` (+ rollback) and `harness.maxOutputTokens` (default 65,536) replacing the fixed 16,384; U10: Kriya Harness 0.2.0 ships the loop and turn budget on by default (`--no-loop`, `--no-budget`), README/SAFETY updated, release notes `docs/kriya-harness/harness_upgradation/RELEASE_0.2.0.md`; U5: named `dsh-compatibility` CI job. Kriya full check 2911 passed, exit 0; client 196/196. Commits on `feat/harness-upgrade` in both repositories; not pushed, migrated or deployed.
+
