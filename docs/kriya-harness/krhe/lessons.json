@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "lessons": [
+    {
+      "id": "31fe4b4eed0a",
+      "statement": "On deepseek/deepseek-v4.1-flash-1017, seed 989dcfbc9eab: minimalTools false → true passed 1 pairs the incumbent failed and failed 0 it passed (21 pairs, p = 1.000), cost per pass -36.3%.",
+      "scope": {
+        "model": "deepseek/deepseek-v4.1-flash-1017",
+        "seedVersion": "989dcfbc9eab",
+        "agent": "node /Users/chaitanyakumarmanda/Developer/kriya-harness-upgrade/bin/kriya.js run --mode auto",
+        "incumbentId": "2f567b8883f0"
+      },
+      "change": [
+        {
+          "key": "minimalTools",
+          "from": false,
+          "to": true
+        }
+      ],
+      "status": "proposed",
+      "evidence": [
+        {
+          "at": "2026-11-04T09:03:55.411Z",
+          "reports": [
+            "1e0e210324ef2633",
+            "830ab6b58cdb764d",
+            "94abd13dc10ced67",
+            "cf8ced525b67ee47",
+            "e56c5e0fe50fd9a1",
+            "fd56e3b26fe3fafa"
+          ],
+          "runs": 3,
+          "pairs": 21,
+          "onlyIncumbent": 0,
+          "onlyCandidate": 1,
+          "p": 1,
+          "costChangePerMille": -363,
+          "verdict": "canary",
+          "reasons": ["gain not shown at 95%: only-candidate 1 vs 0, p = 1.000"]
+        }
+      ]
+    },
+    {
+      "id": "4b11ccb9bb52",
+      "statement": "On deepseek/deepseek-v4.1-flash-1017, seed 989dcfbc9eab: budget false → true, loop false → true passed 4 pairs the incumbent failed and failed 0 it passed (21 pairs, p = 0.125), cost per pass +43.4%.",
+      "scope": {
+        "model": "deepseek/deepseek-v4.1-flash-1017",
+        "seedVersion": "989dcfbc9eab",
+        "agent": "node /Users/chaitanyakumarmanda/Developer/kriya-harness-upgrade/bin/kriya.js run --mode auto --budget --loop",
+        "incumbentId": "2f567b8883f0"
+      },
+      "change": [
+        {
+          "key": "budget",
+          "from": false,
+          "to": true
+        },
+        {
+          "key": "loop",
+          "from": false,
+          "to": true
+        }
+      ],
+      "status": "proposed",
+      "evidence": [
+        {
+          "at": "2026-11-04T09:03:55.635Z",
+          "reports": [
+            "1e0e210324ef2633",
+            "7b7da5d44c8b23e7",
+            "830ab6b58cdb764d",
+            "94abd13dc10ced67",
+            "d321f7664dd18ec2",
+            "e05b000811d0b9c8"
+          ],
+          "runs": 3,
+          "pairs": 21,
+          "onlyIncumbent": 0,
+          "onlyCandidate": 4,
+          "p": 0.125,
+          "costChangePerMille": 434,
+          "verdict": "hold",
+          "reasons": [
+            "cost per passed task +43.4% (limit +5%)",
+            "gain not shown at 95%: only-candidate 4 vs 0, p = 0.125"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "17407a59cceb",
+      "statement": "On deepseek/deepseek-v4.1-flash-1017, seed 989dcfbc9eab: budget false → true, loop false → true, minimalTools false → true passed 0 pairs the incumbent failed and failed 1 it passed (21 pairs, p = 1.000), cost per pass +7.4%.",
+      "scope": {
+        "model": "deepseek/deepseek-v4.1-flash-1017",
+        "seedVersion": "989dcfbc9eab",
+        "agent": "node /Users/chaitanyakumarmanda/Developer/kriya-harness-upgrade/bin/kriya.js run --mode auto --budget --loop",
+        "incumbentId": "2f567b8883f0"
+      },
+      "change": [
+        {
+          "key": "budget",
+          "from": false,
+          "to": true
+        },
+        {
+          "key": "loop",
+          "from": false,
+          "to": true
+        },
+        {
+          "key": "minimalTools",
+          "from": false,
+          "to": true
+        }
+      ],
+      "status": "proposed",
+      "evidence": [
+        {
+          "at": "2026-11-04T09:03:55.860Z",
+          "reports": [
+            "1c4576601acb9f7c",
+            "1e0e210324ef2633",
+            "830ab6b58cdb764d",
+            "94abd13dc10ced67",
+            "ebe3d62083fd4f63",
+            "f4cf0decd2522ea5"
+          ],
+          "runs": 3,
+          "pairs": 21,
+          "onlyIncumbent": 1,
+          "onlyCandidate": 0,
+          "p": 1,
+          "costChangePerMille": 74,
+          "verdict": "hold",
+          "reasons": [
+            "cost per passed task +7.4% (limit +5%)",
+            "no pass gain: only-incumbent 1, only-candidate 0"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "34e43117fa96",
+      "statement": "On deepseek/deepseek-v4.1-flash-1017, seed 989dcfbc9eab: minimalTools false → true passed 0 pairs the incumbent failed and failed 5 it passed (21 pairs, p = 0.063), cost per pass -25.1%.",
+      "scope": {
+        "model": "deepseek/deepseek-v4.1-flash-1017",
+        "seedVersion": "989dcfbc9eab",
+        "agent": "node /Users/chaitanyakumarmanda/Developer/kriya-harness-upgrade/bin/kriya.js run --mode auto --budget --loop",
+        "incumbentId": "39c148271e98"
+      },
+      "change": [
+        {
+          "key": "minimalTools",
+          "from": false,
+          "to": true
+        }
+      ],
+      "status": "proposed",
+      "evidence": [
+        {
+          "at": "2026-11-04T09:03:56.084Z",
+          "reports": [
+            "1c4576601acb9f7c",
+            "7b7da5d44c8b23e7",
+            "d321f7664dd18ec2",
+            "e05b000811d0b9c8",
+            "ebe3d62083fd4f63",
+            "f4cf0decd2522ea5"
+          ],
+          "runs": 3,
+          "pairs": 21,
+          "onlyIncumbent": 5,
+          "onlyCandidate": 0,
+          "p": 0.0625,
+          "costChangePerMille": -251,
+          "verdict": "hold",
+          "reasons": ["no pass gain: only-incumbent 5, only-candidate 0"]
+        }
+      ]
+    }
+  ]
+}

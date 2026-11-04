@@ -2,13 +2,18 @@ import fs from "node:fs/promises"
 import path from "node:path"
 import { parseArgs } from "node:util"
 
+import { HarnessProfile, pinnedEnv, profileId } from "../evolve/profile"
 import { commandAgent } from "./agent"
 import { runBench } from "./run"
 import { SEED } from "./seed"
 
 // npx tsx lib/harness/bench/cli.ts --agent "kriya run --mode auto" \
 //   [--only fix-range-sum,feature-rupees | --level easy|hard|multi|cap] [--out bench.json] [--keep]
-//   [--meter "kriya usage --json"]
+//   [--meter "kriya usage --json"] [--profile profile.json]
+//
+// --profile (KRHE, RECURSIVE_HARNESS_EVOLUTION.md): the run is pinned to a
+// harness profile: its switches and limits go to the agent's environment,
+// and the report records the profile, so evidence names what produced it.
 //
 // A real client run spends the signed-in person's Kriya allowance: only
 // with the owner's go-ahead (AGENTS.md, model calls cost money).
@@ -22,6 +27,7 @@ const { values } = parseArgs({
     "timeout-minutes": { type: "string", default: "10" },
     // e.g. "kriya usage --json": each task's spend from Kriya's ledger (U4)
     meter: { type: "string" },
+    profile: { type: "string" },
   },
 })
 if (!values.agent) {
@@ -29,6 +35,18 @@ if (!values.agent) {
     'Usage: --agent "kriya run --mode auto" [--only ids | --level easy|hard|multi] [--out file] [--keep]'
   )
   process.exit(2)
+}
+const agentArgs = values.agent.split(/\s+/)
+let profile: HarnessProfile | undefined
+if (values.profile) {
+  profile = HarnessProfile.parse(JSON.parse(await fs.readFile(values.profile, "utf8")))
+  try {
+    // A switch flag beats the environment in the client, so it would un-pin the run
+    Object.assign(process.env, pinnedEnv(agentArgs, profile))
+  } catch (error) {
+    console.error((error as Error).message)
+    process.exit(2)
+  }
 }
 const only = values.only?.split(",")
 if (values.level && !["easy", "hard", "multi", "cap"].includes(values.level)) {
@@ -45,14 +63,18 @@ if (only && tasks.length !== only.length) {
 
 const report = await runBench(
   tasks,
-  commandAgent(values.agent.split(/\s+/), values.meter?.split(/\s+/)),
+  commandAgent(agentArgs, values.meter?.split(/\s+/)),
   {
     agentTimeoutMs: Number(values["timeout-minutes"]) * 60_000,
     keep: values.keep,
   }
 )
 const text = JSON.stringify(
-  { ...report, finishedAt: new Date().toISOString() },
+  {
+    ...report,
+    ...(profile && { profile, profileId: profileId(profile) }),
+    finishedAt: new Date().toISOString(),
+  },
   (_, v) => (typeof v === "bigint" ? v.toString() : v),
   2
 )

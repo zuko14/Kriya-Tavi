@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "loop": true,
+  "loopV2": false,
+  "budget": true,
+  "anchor": true,
+  "minimalTools": false,
+  "maxSteps": 150,
+  "turnMinutes": 60,
+  "maxRepeats": 10
+}

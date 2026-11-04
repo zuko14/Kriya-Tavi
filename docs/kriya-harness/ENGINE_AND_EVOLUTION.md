@@ -186,7 +186,9 @@ production access that only the owner has.
 
 ## 8. Unknowns
 
-- "Harness²": the owner's name for the Google DeepMind work; no citation
-  checked yet beyond AlphaEvolve.
+- ~~"Harness²": no citation checked yet.~~ Checked 2026-11-04: Xu et al.,
+  arXiv:2610.14224 (Google Research), read in
+  `RECURSIVE_HARNESS_EVOLUTION_RESEARCH.md`; H16 is being built as KRHE
+  (`RECURSIVE_HARNESS_EVOLUTION.md`).
 - Competitor features: not verified here (RG-9 needed before any claim).
 - KriyaBench licences for public tasks: checked per source in H13.
