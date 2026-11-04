@@ -121,8 +121,11 @@ here.
   whatever its pass rate.
 - **Grading integrity (built in H13):** hard tasks hide their tests and
   checkers (in the folder only while the verify command runs); protected
-  files are restored before grading, and a changed one fails the task. An
-  evolving harness must never be able to learn the grader.
+  files are restored before grading, so a task is graded on the original
+  tests: an edited test is reported (`tampered`) but doesn't fail a correct
+  fix, while a file the task forbids changing (`constraints`) does (owner,
+  2026-11-04: "Grade on originals"; harness upgrade HU-F-20). An evolving
+  harness must never be able to learn the grader.
 
 ### 4.4 Gates (all must pass)
 

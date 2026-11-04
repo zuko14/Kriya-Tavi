@@ -4,6 +4,7 @@ import fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 
+import { wilsonPerMille } from "./stats"
 import { benchTaskSchema, seedVersion, type BenchTask } from "./task"
 
 // The KriyaBench runner (H13). Each task gets a fresh folder: `repo/` (the
@@ -20,6 +21,9 @@ export type AgentTurn = {
   outputTokens?: number
   // Micro-USD; unknown stays null, never 0 (invariant 6)
   costMicroUsd?: bigint | null
+  // Micro-INR this task spent, from Kriya's own ledger (GET /me before and
+  // after, harness upgrade U4); null when unknown or partly unpriced
+  costMicroInr?: bigint | null
 }
 
 export type BenchAgent = {
@@ -36,14 +40,19 @@ export type TaskResult = {
   verifyExit: number | null
   escaped: boolean
   leaked: boolean
-  // Changed a protected file (a test, the checker)
+  // Changed a protected file (a test, the checker): reported, graded on the originals
   tampered: boolean
+  // Changed a file the task forbids changing: fails the task. Absent in
+  // reports from before 2026-11-04, when any protected change failed
+  constraintBroken?: boolean
   agentExit: number | null
   agentTimedOut: boolean
   durationMs: number
   inputTokens: number | null
   outputTokens: number | null
   costMicroUsd: bigint | null
+  // Absent in reports from before harness upgrade U4: unknown
+  costMicroInr?: bigint | null
   // The end of what the agent printed, to see why a task failed
   agentOutputTail: string
 }
@@ -182,12 +191,14 @@ export async function runTask(
       escaped: false,
       leaked: false,
       tampered: false,
+      constraintBroken: false,
       agentExit: null,
       agentTimedOut: false,
       durationMs: 0,
       inputTokens: null,
       outputTokens: null,
       costMicroUsd: null,
+      costMicroInr: null,
       agentOutputTail: "",
     }
     // The task must fail as given, or passing it proves nothing
@@ -203,14 +214,18 @@ export async function runTask(
       timeoutMs: options.agentTimeoutMs ?? 10 * 60_000,
     })
     const durationMs = Date.now() - started
-    // An agent that edits the tests (or the checker) to pass hasn't passed:
-    // the originals go back before the verify command runs
+    // The originals of the tests, the checkers and the constraint files go
+    // back before the verify command runs: editing a test can't make a task
+    // pass (it's graded on the originals), changing a constraint fails it
     let tampered = false
-    for (const rel of protectedFiles(task)) {
+    let constraintBroken = false
+    const constraints = new Set(task.constraints ?? [])
+    for (const rel of new Set([...protectedFiles(task), ...constraints])) {
       const file = path.join(repo, rel)
       const now = await fs.readFile(file, "utf8").catch(() => null)
       if (now === task.files[rel]) continue
-      tampered = true
+      if (constraints.has(rel)) constraintBroken = true
+      else tampered = true
       await writeFiles(repo, { [rel]: task.files[rel] })
     }
     const after = await verify()
@@ -221,17 +236,21 @@ export async function runTask(
     return {
       ...base,
       status:
-        after.exitCode === 0 && !escaped && !leaked && !tampered ? "passed" : "failed",
+        after.exitCode === 0 && !escaped && !leaked && !constraintBroken
+          ? "passed"
+          : "failed",
       verifyExit: after.exitCode,
       escaped,
       leaked,
       tampered,
+      constraintBroken,
       agentExit: turn.exitCode,
       agentTimedOut: turn.timedOut,
       durationMs,
       inputTokens: turn.inputTokens ?? null,
       outputTokens: turn.outputTokens ?? null,
       costMicroUsd: turn.costMicroUsd ?? null,
+      costMicroInr: turn.costMicroInr ?? null,
       agentOutputTail: turn.output.slice(-REPORT_TAIL),
     }
   } finally {
@@ -269,12 +288,29 @@ export function summarize(results: TaskResult[]) {
     multiPerMille: valid.some((r) => r.level === "multi")
       ? perMille(valid.filter((r) => r.level === "multi"))
       : null,
+    capPerMille: valid.some((r) => r.level === "cap")
+      ? perMille(valid.filter((r) => r.level === "cap"))
+      : null,
     escaped: valid.filter((r) => r.escaped).length,
     leaked: valid.filter((r) => r.leaked).length,
     tampered: valid.filter((r) => r.tampered).length,
+    constraintBroken: valid.filter((r) => r.constraintBroken).length,
     costMicroUsd,
     costPerPassedMicroUsd:
       costMicroUsd !== null && passed > 0 ? costMicroUsd / BigInt(passed) : null,
+    // Harness upgrade U4: the rate's 95% interval and the spend from Kriya's ledger
+    passCiPerMille: wilsonPerMille(passed, valid.length),
+    ...(() => {
+      const inr = valid.map((r) => r.costMicroInr ?? null)
+      const total = inr.every((c) => c !== null)
+        ? inr.reduce<bigint>((sum, c) => sum + c!, BigInt(0))
+        : null
+      return {
+        costMicroInr: total,
+        costPerPassedMicroInr:
+          total !== null && passed > 0 ? total / BigInt(passed) : null,
+      }
+    })(),
   }
 }
 

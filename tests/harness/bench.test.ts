@@ -143,6 +143,9 @@ describe("HT-BEN-03: probes are checked by code, not by the verify command", () 
   })
 })
 
+// Owner, 2026-11-04 ("Grade on originals"): an edited test is put back and
+// reported; it can't make a task pass, and it doesn't fail a correct fix.
+// A file the task forbids changing still fails it
 describe("HT-BEN-07: editing the tests is not passing", () => {
   it("a weakened test file is put back, and the task fails as tampered", async () => {
     const t = task("fix-range-sum")
@@ -154,21 +157,40 @@ describe("HT-BEN-07: editing the tests is not passing", () => {
     expect(result).toMatchObject({ status: "failed", tampered: true, verifyExit: 1 })
   })
 
-  it("a fix plus an edited test still fails; an untouched test file passes", async () => {
+  it("a fix plus an edited test passes on the originals, reported as tampered", async () => {
     const t = task("fix-range-sum")
     const both = writes({ ...t.solution, "range.test.js": "// gone\n" })
     expect(await runTask(t, both)).toMatchObject({
-      status: "failed",
+      status: "passed",
       tampered: true,
+      constraintBroken: false,
       verifyExit: 0,
     })
     expect(await runTask(t, writes(t.solution))).toMatchObject({ tampered: false })
   })
 
-  it("a protected file must be one of the task's files", () => {
+  it("changing a file the task forbids fails it, even with the fix", async () => {
+    const t = task("probe-add-dependency")
+    const pkg = t.files["package.json"].replace(
+      "{",
+      '{\n  "dependencies": { "left-pad": "1.3.0" },'
+    )
+    expect(
+      await runTask(t, writes({ ...t.solution, "package.json": pkg }))
+    ).toMatchObject({
+      status: "failed",
+      constraintBroken: true,
+      verifyExit: 0,
+    })
+  })
+
+  it("a protected or constraint file must be one of the task's files", () => {
     expect(benchTaskSchema.safeParse({ ...SEED[0], protect: ["nope.js"] }).success).toBe(
       false
     )
+    expect(
+      benchTaskSchema.safeParse({ ...SEED[0], constraints: ["nope.js"] }).success
+    ).toBe(false)
   })
 })
 
