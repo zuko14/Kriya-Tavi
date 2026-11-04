@@ -1,0 +1,53 @@
+{
+  "id": "kriya-lean",
+  "name": "Smallest complete change",
+  "description": "Use on every coding task: solve the whole problem with the least new code, reuse what the codebase already has, add no speculative options, and finish every caller, test and fixture the change touches.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [
+    {
+      "project": "Ponytail",
+      "version": "5.3.2",
+      "commit": "09c434ab73",
+      "license": "MIT",
+      "url": "https://github.com/DietrichGebert/ponytail",
+      "path": "skills/ponytail"
+    }
+  ],
+  "categories": ["engineering", "quality"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "code",
+      "implement",
+      "refactor",
+      "add",
+      "change",
+      "feature",
+      "fix",
+      "function",
+      "module"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from kriya_verify runs the harness records (docs/kriya-harness/KRIYA_LOOP.md); the skill adds no tool or approval.",
+  "limits": {
+    "maxChars": 2500
+  },
+  "evals": [
+    {
+      "ask": "Add a retry to the upload function",
+      "expect": "activate"
+    },
+    {
+      "ask": "Translate this sentence into Hindi",
+      "expect": "skip"
+    }
+  ]
+}

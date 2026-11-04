@@ -111,6 +111,10 @@ Client only; read-only; no switch (a new tab, like the Changes tab, changes no a
 | `plugins/preview/client.js` (B2) | "Your app" / "Agent's browser" modes | Frame mode unchanged | WP-TAB-01/02 |
 | `package.json`, `package-lock.json`, `THIRD_PARTY_NOTICES.md` (B2) | `playwright-core` 1.64.1 (exact) | Pins and notices gates pass | `check:pins`, `check:notices`, `release:check` |
 | `src/modes.js`, `bin/kriya.js`, `README.md` (B2) | `--browser-tools` switch, help, docs | Other switches unchanged | HU-SW-01, cli tests |
+| Kriya `skills-harness/**` (new, P2) | Ten `kriya-*` default skills, `NOTICES.md` | MIT sources credited; validated by `buildCatalog`; apart from `skills/` (cloud catalogue unchanged) | HT-DS-01 |
+| Kriya `lib/harness/default-skills.ts` (new), `lib/harness/skills.ts` (P2) | Defaults appended in `deviceSkills` | Setting off → the same list and bodies as before; `skills.disabled` applies | HT-DS-02, existing skills-memory tests |
+| Kriya `lib/config.ts`, `tests/harness/regression.test.ts` (P2; owner's request in chat 2026-11-04) | `harness.defaultSkills` (default off) | Other settings unchanged | HT-REG-01 |
+| Client `plugins/skills/{index,client}.js` (P2) | Kriya's skills on the Skills page, read-only, switchable | Local skills, edit, copy, unlink unchanged | WP-SK-01/02, skills-page tests |
 | Kriya `docs/kriya-harness/WORKSPACE_PANEL_SKILLS_PLUGINS.md` (new), this file, status files | Docs | — | — |
 
 ## 3. Stop conditions

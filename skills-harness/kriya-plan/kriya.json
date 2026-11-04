@@ -1,0 +1,60 @@
+{
+  "id": "kriya-plan",
+  "name": "Plan in verifiable steps",
+  "description": "Use for a task with several parts: split it into at most seven small steps with kriya_plan, each with files and a done-when the project's check can prove, and the steps each one needs, then run them with kriya_step.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [
+    {
+      "project": "Superpowers",
+      "version": "6.4.2",
+      "commit": "8ca22dba9a",
+      "license": "MIT",
+      "url": "https://github.com/obra/superpowers",
+      "path": "skills/writing-plans"
+    },
+    {
+      "project": "Superpowers",
+      "version": "6.4.2",
+      "commit": "8ca22dba9a",
+      "license": "MIT",
+      "url": "https://github.com/obra/superpowers",
+      "path": "skills/executing-plans"
+    }
+  ],
+  "categories": ["planning", "engineering"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "plan",
+      "multi-step",
+      "refactor",
+      "migrate",
+      "several files",
+      "implementation plan",
+      "break down",
+      "steps"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from kriya_verify runs the harness records (docs/kriya-harness/KRIYA_LOOP.md); the skill adds no tool or approval.",
+  "limits": {
+    "maxChars": 2500
+  },
+  "evals": [
+    {
+      "ask": "Refactor the billing module and migrate its callers",
+      "expect": "activate"
+    },
+    {
+      "ask": "What does this error mean?",
+      "expect": "skip"
+    }
+  ]
+}

@@ -143,7 +143,57 @@ So the agent can test and review a local app as it builds it:
    a navigation to a non-loopback address is refused; real DSH run with a
    scripted model opening, reading and clicking the fixture.
 
-## 4. P2: Kriya default skills (planned)
+## 4. P2: Kriya default skills (built, 2026-11-04)
+
+Owner in chat (2026-11-04): "default skills set should be appeared from the
+Kriya Harness team … so that any new one can download and activate it
+immediately".
+
+**As built.** Ten skills in `skills-harness/` (`SKILL.md` + `kriya.json`,
+validated by the library's own `buildCatalog`), written for Kriya Harness's
+tools and credited to their sources:
+
+| Skill | Based on (all MIT) |
+| --- | --- |
+| `kriya-brainstorm` | superpowers brainstorming |
+| `kriya-plan` | superpowers writing-plans, executing-plans |
+| `kriya-tdd` | superpowers test-driven-development |
+| `kriya-debug` | superpowers systematic-debugging; ECC agent-introspection-debugging |
+| `kriya-verify` | superpowers verification-before-completion; ECC verification-loop |
+| `kriya-lean` | ponytail |
+| `kriya-review` | superpowers requesting-code-review; ponytail-review |
+| `kriya-browser-test` | ECC browser-qa, e2e-testing |
+| `kriya-security` | ECC security-review |
+| `kriya-git` | superpowers finishing-a-development-branch; ECC git-workflow |
+
+Licences checked: superpowers © 2025 Jesse Vincent, ponytail © 2026
+DietrichGebert, ECC © 2026 Affaan Mustafa (upstream `LICENSE`, read
+2026-11-04), all MIT; full texts in `skills-harness/NOTICES.md`.
+
+**Delivery.** `lib/harness/default-skills.ts`; `deviceSkills`
+(`lib/harness/skills.ts`) puts them first in `GET /api/harness/v1/skills`
+for every device when the new setting **`harness.defaultSkills`** is on
+(default off, track H rule 2; the owner turns it on in `/owner/config`).
+The owner's `skills.disabled` applies; an assigned library skill of the
+same id wins. No contract change (same fields).
+
+**In the harness.** The Skills page lists Kriya's served skills first, in
+a **Kriya default skills** group (and "From your Kriya agent" for the
+account's own), read-only, tagged "from the Kriya Harness team" and their
+version, with the same On / Off in this project / Off everywhere switch.
+The agent already received Kriya's skills (H7, `kriya-tools`); the page
+only showed local folders before.
+
+Evidence: Kriya HT-DS-01/02 (set, credits, evals against keywords, only
+real tool names; off by default, on for every device, `skills.disabled`
+honoured, bodies served); client WP-SK-01/02. Browser check with the real
+ten skills served by the fake Kriya: group first, read view, switch "off
+everywhere" took effect ("15 on, 1 off"), console clean after reload.
+
+Not done: measuring the set (the skill-selection eval on a real model and
+KriyaBench with and without it are paid runs).
+
+## 4a. P2 plan (as written before building)
 
 **Sources and licences** (read from the installed copies):
 
@@ -221,7 +271,7 @@ a person types. WP-D1 needs this added under "Kriya Harness (track H)":
 | P1b | Outputs per session from checkpoint refs | Test on a fixture repo; browser check |
 | P1c | Progress and Preview tabs | Done (§3a) |
 | B2 | The agent's localhost browser (§3b) | Done: WP-BR-*, browser check |
-| P2 | Kriya default skills | ECC licence settled; 12 skills with notices; skill-selection eval passes; owner approves |
+| P2 | Kriya default skills | Built (§4): ECC licence settled (MIT); 10 skills with notices; served behind `harness.defaultSkills`; paid eval open |
 | P3a | MCP from the registry, behind `KRIYA_MCP` | Fixture MCP server (no real site); tools classified; approvals unchanged; default-off regression test |
 | P3b | Person-added servers, behind `KRIYA_MCP_OWN` | AGENTS.md amendment approved first; approval UI; sandbox test |
 | P3c | Claude Code plugin import (skills + MCP) | Import of a fixture plugin; nothing else loaded |

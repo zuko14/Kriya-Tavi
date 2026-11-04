@@ -17,6 +17,7 @@ describe("HT-REG-01: the harness.* settings", () => {
     expect(HARNESS_KEYS.sort()).toEqual([
       "harness.api",
       "harness.approvalTtlMinutes",
+      "harness.defaultSkills",
       "harness.deviceIdleDays",
       "harness.deviceWorld",
       "harness.gateway",
@@ -37,6 +38,7 @@ describe("HT-REG-01: the harness.* settings", () => {
       "harness.mirror",
       "harness.handoff",
       "harness.deviceWorld",
+      "harness.defaultSkills",
     ])
       expect(defs[key].fallback, key).toBe("off")
     expect(defs["harness.minClientVersion"].fallback).toBe("0.0.0")

@@ -6,6 +6,7 @@ import { withUser } from "@/db"
 import { agents } from "@/db/schema"
 import type { DeviceUser } from "@/lib/auth"
 import { getSetting } from "@/lib/config"
+import { HARNESS_DEFAULTS, loadDefaultSkill } from "@/lib/harness/default-skills"
 import { readSkill } from "@/lib/skill-engine"
 import {
   CATALOG,
@@ -30,6 +31,34 @@ import { loadSkillV2 } from "@/lib/skills-v2"
 type Loader = (id: string, version: string) => string
 
 export async function deviceSkills(device: DeviceUser) {
+  const base = await librarySkills(device)
+  if ((await getSetting("harness.defaultSkills")) !== "on") return base
+  // Kriya default skills (skills-harness/): every device, whatever its
+  // agent's assignments; the owner's skills.disabled applies to them too,
+  // and an assigned library skill of the same id wins
+  const disabled = parseSkillList(await getSetting("skills.disabled"))
+  const have = new Set(base.skills.map((s) => s.id))
+  const defaults = HARNESS_DEFAULTS.filter(
+    (s) => s.status === "active" && !disabled.has(s.id) && !have.has(s.id)
+  )
+  const ids = new Set(defaults.map((s) => s.id))
+  return {
+    skills: [
+      ...defaults.map((s) => ({
+        id: s.id,
+        name: s.name,
+        version: s.version,
+        description: s.description,
+        activation: { always: s.activation.always, keywords: [...s.activation.keywords] },
+      })),
+      ...base.skills,
+    ],
+    load: ((id, version) =>
+      ids.has(id) ? loadDefaultSkill(id, version) : base.load(id, version)) as Loader,
+  }
+}
+
+async function librarySkills(device: DeviceUser) {
   const none = { skills: [], load: readSkill as Loader }
   if ((await getSetting("agents.skillLibrary")) !== "on" || !device.agentId) return none
   const [agent] = await withUser(device.id, (tx) =>

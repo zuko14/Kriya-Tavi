@@ -706,6 +706,14 @@ export const SETTINGS = {
     pattern: /^(on|off)$/,
     hint: "on or off",
   },
+  // Kriya default skills (skills-harness/) served to every device's agent
+  // (WORKSPACE_PANEL_SKILLS_PLUGINS.md §4); the person can switch each off
+  "harness.defaultSkills": {
+    env: "KRIYA_HARNESS_DEFAULT_SKILLS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
   // Device sessions mirrored into threads (each device opts in too)
   "harness.mirror": {
     env: "KRIYA_HARNESS_MIRROR",

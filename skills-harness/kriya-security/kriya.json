@@ -1,0 +1,57 @@
+{
+  "id": "kriya-security",
+  "name": "Security check",
+  "description": "Use when code handles input from users or the network, authentication, secrets, files, shell commands or database queries: check the trust boundaries, injection, secrets and permissions before calling the work done.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [
+    {
+      "project": "ECC",
+      "version": "main",
+      "commit": "07971588f8",
+      "license": "MIT",
+      "url": "https://github.com/affaan-m/ECC",
+      "path": "skills/security-review"
+    }
+  ],
+  "categories": ["safeguard", "security"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "auth",
+      "login",
+      "password",
+      "token",
+      "secret",
+      "api key",
+      "sql",
+      "upload",
+      "shell",
+      "exec",
+      "permission",
+      "security",
+      "input"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from kriya_verify runs the harness records (docs/kriya-harness/KRIYA_LOOP.md); the skill adds no tool or approval.",
+  "limits": {
+    "maxChars": 2000
+  },
+  "evals": [
+    {
+      "ask": "Add a login endpoint with JWT",
+      "expect": "activate"
+    },
+    {
+      "ask": "Rename the variable total to sum",
+      "expect": "skip"
+    }
+  ]
+}
