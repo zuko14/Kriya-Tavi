@@ -68,6 +68,22 @@ Everything track H protects (`lib/auth.ts`, `lib/agent/metering.ts`,
 | Client | `README.md`, `SAFETY.md`, `package.json`/lock (0.2.0), `.github/workflows/ci.yml` (`dsh-compatibility` job) | Docs, version, CI gate | cli/acp version tests, release gate |
 | Client | `tests/{drills,upgrade,loop}-run.test.js` | "Off" arms now pass `KRIYA_*=off` explicitly | themselves |
 
+## 2c. Loop v2 (H14e, 2026-11-04, owner's "Kriya Loop V2" brief in chat; `KRIYA_LOOP_V2.md`)
+
+All behind `--loop-v2` / `KRIYA_LOOP_V2=on`, default off. No Kriya code,
+contract, migration or setting changes.
+
+| Repo | File | Change | Must stay true | Test |
+| --- | --- | --- | --- | --- |
+| Client | `src/failure.js`, `src/rules.js` (new) | Failure classes, excerpts, signatures; proposed/confirmed rules in `~/.kriya/rules/` | No model calls; rules reach prompts only after `kriya rules confirm` | KV2-FC-*, KV2-RL-* |
+| Client | `src/loop.js` | `after` (v2 only), `skipped`, attempt snapshots and set-aside restore, rules in builder prompts | v1 plans, prompts and order check unchanged; same attempt and plan bounds | KV2-DAG-*, KV2-BT-01/02, KV2-REG-01, loop tests |
+| Client | `src/verify.js` | `onOriginals`; `verifyStep` `v2` option (class, excerpt, originals re-run, rule note) | Without `v2` results and progress records unchanged; git written only on Kriya's own refs (a checkpoint before the swap; no checkpoint, no swap); changed files restored in `finally`; nothing in Read only | KV2-TG-01…04, verify tests |
+| Client | `src/checkpoints.js` | `restoreTree`; undo's restore extracted, unchanged | Undo behaviour and the person's HEAD/index/refs unchanged | KV2-BT-03, checkpoints tests |
+| Client | `plugins/loop/index.js` | v2 schema/guidance/presentation, snapshot/restore hosts | Off: same tools, schema and guidance | KV2-REG-01, KV2-RUN-02 |
+| Client | `src/modes.js`, `bin/kriya.js`, `README.md` | `--loop-v2` switch (default off); `kriya rules [confirm|dismiss|forget]`; help | Other switches and commands unchanged | KV2-REG-01, HU-SW-01, cli tests |
+| Client | `tests/loop-v2.test.js`, `tests/loop-v2-run.test.js` (new) | KV2-* | — | themselves |
+| Kriya | `docs/kriya-harness/KRIYA_LOOP_V2.md` (new), this file, status files | Docs | — | — |
+
 ## 3. Stop conditions
 
 Stop and ask the owner before: editing a protected file; adding a migration
