@@ -1,3 +1,6 @@
+import { promisify } from "node:util"
+import { gunzip } from "node:zlib"
+
 import type { z } from "zod"
 
 import { authenticateDevice, type DeviceUser } from "@/lib/auth"
@@ -13,6 +16,7 @@ import { allow } from "@/lib/rate-limit"
 // device id only (HD-17), never a body.
 
 const NO_STORE = { "cache-control": "no-store" }
+const inflate = promisify(gunzip)
 
 export const fail = (
   status: number,
@@ -35,9 +39,52 @@ function older(client: string, minimum: string) {
 export const addressOf = (request: Request) =>
   request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown"
 
+// Request-body forms besides plain JSON (owner decision 2026-11-04,
+// "Encode bodies"): the host's web application firewall (Render, no
+// per-path setting) blocked harness requests whose conversation held
+// commands, HTML or test code. The client (kriya-harness
+// src/gateway-proxy.js) sends JSON gzip-compressed then base64-encoded,
+// with `x-kriya-body: gzip+base64`; it is decoded here under size limits
+// and then validated by the same schema as plain JSON. Device-token routes
+// only (harnessRoute authenticates before any handler reads a body).
+export const BODY_ENCODINGS = ["gzip+base64"] as const
+// Limits on an encoded body: its base64 text, and the JSON it inflates to
+export const MAX_ENCODED_BODY = 48 * 1024 * 1024
+export const MAX_DECODED_BODY = 64 * 1024 * 1024
+const BASE64 = /^[A-Za-z0-9+/]*={0,2}$/
+
+/** The request's JSON, decoding an encoded body; a Response when it can't be read */
+export async function readJson(request: Request): Promise<unknown | Response> {
+  const encoding = request.headers.get("x-kriya-body")
+  if (!encoding) return request.json().catch(() => undefined)
+  if (encoding !== "gzip+base64")
+    return fail(400, "bad_request", "That request body encoding isn't supported.")
+  const declared = Number(request.headers.get("content-length") ?? "0")
+  if (declared > MAX_ENCODED_BODY)
+    return fail(413, "too_large", "That request is too large.")
+  const text = (await request.text().catch(() => "")).trim()
+  if (text.length > MAX_ENCODED_BODY)
+    return fail(413, "too_large", "That request is too large.")
+  if (!text || text.length % 4 !== 0 || !BASE64.test(text))
+    return fail(400, "bad_request", "That request isn't what this API expects.")
+  try {
+    const json = await inflate(Buffer.from(text, "base64"), {
+      maxOutputLength: MAX_DECODED_BODY,
+    })
+    return JSON.parse(json.toString("utf8"))
+  } catch (error) {
+    // RangeError: it inflates past the limit (a zip bomb stops here)
+    return error instanceof RangeError
+      ? fail(413, "too_large", "That request is too large.")
+      : fail(400, "bad_request", "That request isn't what this API expects.")
+  }
+}
+
 // The body against its schema; a Response when it isn't the contract
 export async function readBody<T extends z.ZodType>(request: Request, schema: T) {
-  const parsed = schema.safeParse(await request.json().catch(() => undefined))
+  const json = await readJson(request)
+  if (json instanceof Response) return json
+  const parsed = schema.safeParse(json)
   return parsed.success
     ? (parsed.data as z.infer<T>)
     : fail(400, "bad_request", "That request isn't what this API expects.")
