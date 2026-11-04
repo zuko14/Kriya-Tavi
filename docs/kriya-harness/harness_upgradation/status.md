@@ -423,3 +423,11 @@ session also goes to the root `status.md` (track H section).
   read, outside site refused. Browser check on the Web UI found the view's
   routes answering 404 (fixed: `ctx.inject(["connection"])`). Client
   `npm run check` **228/228, exit 0**; `release:check` ok.
+- **P2 (same day; owner: "default skills set should be appeared from the
+  Kriya Harness team"):** ten `kriya-*` default skills in `skills-harness/`
+  (MIT sources credited: superpowers, ponytail, ECC; licences checked
+  upstream), served by `/api/harness/v1/skills` behind
+  `harness.defaultSkills` (default off), listed first on the harness Skills
+  page with the same switches. Browser-checked with the real set. Client
+  `npm run check` **230/230, exit 0**; Kriya `env -u OPENROUTER_API_KEY npm
+  run check` **2933 passed, 63 skipped, exit 0** (lint 0 errors).

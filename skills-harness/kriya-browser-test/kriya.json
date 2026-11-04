@@ -1,0 +1,64 @@
+{
+  "id": "kriya-browser-test",
+  "name": "Test the app in the browser",
+  "description": "Use when building or fixing a web app: run it locally and check it in the agent's browser (browser_open, browser_read, browser_click, browser_console) instead of assuming the UI works.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [
+    {
+      "project": "ECC",
+      "version": "main",
+      "commit": "07971588f8",
+      "license": "MIT",
+      "url": "https://github.com/affaan-m/ECC",
+      "path": "skills/browser-qa"
+    },
+    {
+      "project": "ECC",
+      "version": "main",
+      "commit": "07971588f8",
+      "license": "MIT",
+      "url": "https://github.com/affaan-m/ECC",
+      "path": "skills/e2e-testing"
+    }
+  ],
+  "categories": ["testing", "browser"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "web app",
+      "ui",
+      "page",
+      "frontend",
+      "react",
+      "next.js",
+      "button",
+      "form",
+      "localhost",
+      "dev server",
+      "css",
+      "layout"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from kriya_verify runs the harness records (docs/kriya-harness/KRIYA_LOOP.md); the skill adds no tool or approval.",
+  "limits": {
+    "maxChars": 2000
+  },
+  "evals": [
+    {
+      "ask": "The signup form doesn't submit, fix it",
+      "expect": "activate"
+    },
+    {
+      "ask": "Write a SQL query for monthly totals",
+      "expect": "skip"
+    }
+  ]
+}

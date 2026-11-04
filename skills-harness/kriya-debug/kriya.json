@@ -1,0 +1,63 @@
+{
+  "id": "kriya-debug",
+  "name": "Debug from evidence",
+  "description": "Use when something fails (a test, a build, a crash, wrong output): reproduce it, read the real error, form one hypothesis at a time and test it, fix the root cause once, then prove it with kriya_verify.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [
+    {
+      "project": "Superpowers",
+      "version": "6.4.2",
+      "commit": "8ca22dba9a",
+      "license": "MIT",
+      "url": "https://github.com/obra/superpowers",
+      "path": "skills/systematic-debugging"
+    },
+    {
+      "project": "ECC",
+      "version": "main",
+      "commit": "07971588f8",
+      "license": "MIT",
+      "url": "https://github.com/affaan-m/ECC",
+      "path": "skills/agent-introspection-debugging"
+    }
+  ],
+  "categories": ["debugging", "engineering"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "bug",
+      "error",
+      "failing",
+      "fails",
+      "crash",
+      "broken",
+      "exception",
+      "stack trace",
+      "debug",
+      "not working",
+      "regression"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from kriya_verify runs the harness records (docs/kriya-harness/KRIYA_LOOP.md); the skill adds no tool or approval.",
+  "limits": {
+    "maxChars": 2500
+  },
+  "evals": [
+    {
+      "ask": "The build fails with a type error in checkout.ts",
+      "expect": "activate"
+    },
+    {
+      "ask": "Write a haiku about rain",
+      "expect": "skip"
+    }
+  ]
+}

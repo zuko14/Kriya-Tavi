@@ -1,0 +1,52 @@
+{
+  "id": "kriya-brainstorm",
+  "name": "Brainstorm before building",
+  "description": "Use before building a feature or change that isn't fully specified: find the real goal, the constraints and what done looks like, then agree a short design with the person before writing code.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [
+    {
+      "project": "Superpowers",
+      "version": "6.4.2",
+      "commit": "8ca22dba9a",
+      "license": "MIT",
+      "url": "https://github.com/obra/superpowers",
+      "path": "skills/brainstorming"
+    }
+  ],
+  "categories": ["planning", "engineering"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "feature",
+      "build",
+      "design",
+      "idea",
+      "new app",
+      "add support",
+      "implement",
+      "prototype"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from kriya_verify runs the harness records (docs/kriya-harness/KRIYA_LOOP.md); the skill adds no tool or approval.",
+  "limits": {
+    "maxChars": 2000
+  },
+  "evals": [
+    {
+      "ask": "Build me a dashboard for my sales data",
+      "expect": "activate"
+    },
+    {
+      "ask": "Fix the typo in README line 3",
+      "expect": "skip"
+    }
+  ]
+}

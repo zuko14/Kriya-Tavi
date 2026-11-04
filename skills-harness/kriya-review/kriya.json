@@ -1,0 +1,59 @@
+{
+  "id": "kriya-review",
+  "name": "Review the change",
+  "description": "Use before handing work over or opening a pull request: review your own diff as a skeptical reviewer would, for correctness, edge cases, security, tests and needless code, and fix what you find first.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [
+    {
+      "project": "Superpowers",
+      "version": "6.4.2",
+      "commit": "8ca22dba9a",
+      "license": "MIT",
+      "url": "https://github.com/obra/superpowers",
+      "path": "skills/requesting-code-review"
+    },
+    {
+      "project": "Ponytail",
+      "version": "5.3.2",
+      "commit": "09c434ab73",
+      "license": "MIT",
+      "url": "https://github.com/DietrichGebert/ponytail",
+      "path": "skills/ponytail-review"
+    }
+  ],
+  "categories": ["review", "quality"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "review",
+      "pull request",
+      "pr",
+      "diff",
+      "code review",
+      "before merge",
+      "check my changes"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from kriya_verify runs the harness records (docs/kriya-harness/KRIYA_LOOP.md); the skill adds no tool or approval.",
+  "limits": {
+    "maxChars": 2000
+  },
+  "evals": [
+    {
+      "ask": "Review my changes before I open a PR",
+      "expect": "activate"
+    },
+    {
+      "ask": "Set a reminder for 5pm",
+      "expect": "skip"
+    }
+  ]
+}

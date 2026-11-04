@@ -1,0 +1,53 @@
+{
+  "id": "kriya-tdd",
+  "name": "Test first",
+  "description": "Use when adding behaviour or fixing a bug in code with tests: write a failing test that shows the behaviour, see it fail, make it pass with the smallest change, then tidy, checking with kriya_verify at each step.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [
+    {
+      "project": "Superpowers",
+      "version": "6.4.2",
+      "commit": "8ca22dba9a",
+      "license": "MIT",
+      "url": "https://github.com/obra/superpowers",
+      "path": "skills/test-driven-development"
+    }
+  ],
+  "categories": ["testing", "engineering"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "test",
+      "tests",
+      "bug",
+      "fix",
+      "feature",
+      "regression",
+      "failing",
+      "unit test",
+      "tdd"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from kriya_verify runs the harness records (docs/kriya-harness/KRIYA_LOOP.md); the skill adds no tool or approval.",
+  "limits": {
+    "maxChars": 2000
+  },
+  "evals": [
+    {
+      "ask": "Fix the bug where totals round wrong",
+      "expect": "activate"
+    },
+    {
+      "ask": "Explain what this repository does",
+      "expect": "skip"
+    }
+  ]
+}

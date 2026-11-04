@@ -1,0 +1,63 @@
+{
+  "id": "kriya-verify",
+  "name": "Verify before claiming done",
+  "description": "Use before saying work is done, fixed or passing: run kriya_verify, read its result, and report exactly what it shows, including failures, blocked steps, stale passes and changed test files.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [
+    {
+      "project": "Superpowers",
+      "version": "6.4.2",
+      "commit": "8ca22dba9a",
+      "license": "MIT",
+      "url": "https://github.com/obra/superpowers",
+      "path": "skills/verification-before-completion"
+    },
+    {
+      "project": "ECC",
+      "version": "main",
+      "commit": "07971588f8",
+      "license": "MIT",
+      "url": "https://github.com/affaan-m/ECC",
+      "path": "skills/verification-loop"
+    }
+  ],
+  "categories": ["safeguard", "engineering"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "done",
+      "finished",
+      "complete",
+      "passing",
+      "fixed",
+      "ready",
+      "ship",
+      "commit",
+      "pull request",
+      "working",
+      "works"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from kriya_verify runs the harness records (docs/kriya-harness/KRIYA_LOOP.md); the skill adds no tool or approval.",
+  "limits": {
+    "maxChars": 2500
+  },
+  "evals": [
+    {
+      "ask": "Is it working now?",
+      "expect": "activate"
+    },
+    {
+      "ask": "What's the capital of France?",
+      "expect": "skip"
+    }
+  ]
+}

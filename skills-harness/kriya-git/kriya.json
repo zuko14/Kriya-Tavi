@@ -1,0 +1,61 @@
+{
+  "id": "kriya-git",
+  "name": "Safe git and handover",
+  "description": "Use when committing, branching or handing work over: keep the person's branches and uncommitted work safe, write clear Conventional Commit messages, and commit, push or open a pull request only when the person asks.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [
+    {
+      "project": "Superpowers",
+      "version": "6.4.2",
+      "commit": "8ca22dba9a",
+      "license": "MIT",
+      "url": "https://github.com/obra/superpowers",
+      "path": "skills/finishing-a-development-branch"
+    },
+    {
+      "project": "ECC",
+      "version": "main",
+      "commit": "07971588f8",
+      "license": "MIT",
+      "url": "https://github.com/affaan-m/ECC",
+      "path": "skills/git-workflow"
+    }
+  ],
+  "categories": ["git", "engineering"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "commit",
+      "branch",
+      "push",
+      "merge",
+      "rebase",
+      "git",
+      "pull request",
+      "pr",
+      "handover"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from kriya_verify runs the harness records (docs/kriya-harness/KRIYA_LOOP.md); the skill adds no tool or approval.",
+  "limits": {
+    "maxChars": 2000
+  },
+  "evals": [
+    {
+      "ask": "Commit this and open a PR",
+      "expect": "activate"
+    },
+    {
+      "ask": "Summarise this article",
+      "expect": "skip"
+    }
+  ]
+}
