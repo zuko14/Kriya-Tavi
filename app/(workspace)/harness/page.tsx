@@ -13,10 +13,12 @@ import {
 
 import { Devices } from "@/components/account/devices"
 import { Command } from "@/components/harness/command"
+import { ControlCenter } from "@/components/harness/control-center"
 import { HarnessApproval } from "@/components/inbox/harness-approval"
 import { requireUser } from "@/lib/auth"
 import { getSetting } from "@/lib/config"
 import { getPlan } from "@/lib/entitlements"
+import { controlCenter } from "@/lib/harness/control"
 import { harnessSpend } from "@/lib/harness/devices"
 import { formatInr } from "@/lib/money"
 import { studioOn } from "@/lib/skill-studio"
@@ -199,15 +201,19 @@ export default async function HarnessPage() {
   ])
   const on = async (key: Parameters<typeof getSetting>[0]) =>
     (await getSetting(key)) === "on"
-  const [gateway, mirror, handoff, world, cloudOn, memoryV2, studio] = await Promise.all([
-    on("harness.gateway"),
-    on("harness.mirror"),
-    on("harness.handoff"),
-    on("harness.deviceWorld"),
-    on("cloud.workspaces"),
-    on("agents.memoryV2"),
-    studioOn(),
-  ])
+  const [gateway, mirror, handoff, world, cloudOn, memoryV2, studio, control] =
+    await Promise.all([
+      on("harness.gateway"),
+      on("harness.mirror"),
+      on("harness.handoff"),
+      on("harness.deviceWorld"),
+      on("cloud.workspaces"),
+      on("agents.memoryV2"),
+      studioOn(),
+      on("harness.controlCenter"),
+    ])
+  // The Control Center (CONTROL_CENTER.md): only with its switch on
+  const center = control ? await controlCenter(user.id) : null
   const install = await getSetting("harness.installCommand")
   const beta = (await getSetting("harness.releaseStage")) !== "ga"
   const cap = Number(plan.harnessMonthlyMicroInr)
@@ -239,6 +245,10 @@ export default async function HarnessPage() {
     world && {
       command: "kriya serve",
       what: "Lets your Kriya agents work in one folder on this computer while it's on.",
+    },
+    control && {
+      command: "kriya daemon",
+      what: "Lets you run tasks, health checks and more on this computer from here and your phone.",
     },
     { command: "kriya acp", what: "Connects editors that speak ACP to your agent." },
     {
@@ -350,6 +360,20 @@ export default async function HarnessPage() {
                 <HarnessApproval key={item.id} item={item} />
               ))}
             </ul>
+          </Section>
+        )}
+
+        {center && signedIn && (
+          <Section
+            title="Control Center"
+            description="Run tasks and checks on your computer from here or your phone. It runs them only while kriya daemon is on, and only in folders it offers."
+          >
+            <ControlCenter
+              initial={center}
+              spend={{ used: spend.used, cap, unpriced: spend.unpriced }}
+              handoffOn={handoff && cloudOn}
+              serveOn={world}
+            />
           </Section>
         )}
 

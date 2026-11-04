@@ -52,15 +52,16 @@ Everything protected by tracks A, O, N, voice and C, plus:
 | `proxy.ts` | Harness page (owner 2026-11-02) | `"/harness/"` in `PROTECTED` | `/api/harness/` keeps its bearer check and no origin check | `tests/harness/proxy.test.ts` |
 | `lib/config.ts`, `tests/harness/regression.test.ts` | Harness page (owner 2026-11-02) | `harness.installCommand` (no default; one plain `npm`/`npx`/`pnpm`/`brew` line, nothing chained); `harness.releaseStage` (`beta` default, `ga` only after HD-02's gates; HD-20) | Other `harness.*` keys and defaults unchanged | HT-REG-01 (updated list, pattern cases) |
 | `queries/harness.ts`, `components/workspace/{sidebar,places}.tsx`, `queries/features.ts` | Harness page (owner 2026-11-02) | `harnessHome` (sessions, open workspaces, pending approvals as the person); the sidebar/palette/Home entry from `getFeatures().harness` (= `harness.api`) | Off → no entry, `/harness` 404 | `harness-hub-check` browser run (`status.md`) |
+| `db/schema.ts`, `lib/config.ts`, `tests/harness/regression.test.ts`, `lib/harness/contract.ts`, `app/(workspace)/harness/page.tsx` | Control Center (owner brief 2026-11-04, CONTROL_CENTER.md) | The three `harness_*` control tables and their enums; `harness.controlCenter` (off); HT-REG-01 lists it; the four device routes in `ROUTES`; the page renders `<ControlCenter>` and the `kriya daemon` command only with the switch on | Existing tables, keys, routes and the page with the switch off unchanged | HT-REG-01; HT-CC-01…05; HT-CC-DB-01…03; HT-API-01 |
 | `AGENTS.md` | H0, H2 | H0: the track H section; H2: the owner's invariant 3 wording | Other text unchanged | — |
 | `status.md` | every phase | Own section and rows | Others untouched | — |
 
 **New files** (no row needed): `app/(workspace)/harness/**`, `components/harness/**`, `app/api/harness/v1/**`, `app/connect/device/**`,
-`lib/harness/**`, `actions/harness.ts`, `queries/harness.ts`,
+`lib/harness/**`, `actions/harness.ts`, `actions/harness-control.ts`, `queries/harness.ts`,
 `components/account/devices.tsx`, `components/inbox/harness-approval.tsx`,
 `scripts/harness-contract.ts`, `docs/kriya-harness/contract.json`,
-`tests/harness/**`, `tests/db/harness-rls.test.ts`, the migration
-`20270301000000_harness.sql` and its rollback, `screenshots/kriya-harness/**`.
+`tests/harness/**`, `tests/db/harness-rls.test.ts`, the migrations
+`20270301000000_harness.sql` and `20270801000000_harness_control.sql` with their rollbacks, `screenshots/kriya-harness/**`.
 
 **Dependencies:** none in this repository. The gateway uses `fetch` to
 OpenRouter's OpenAI-compatible endpoint (`OPENROUTER_BASE_URL`, already in
