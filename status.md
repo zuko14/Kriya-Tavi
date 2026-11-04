@@ -13846,3 +13846,7 @@ modes (plan, auto and the rest).
 
 - U9: migration `20270701000000_model_limits` (+ rollback) and `harness.maxOutputTokens` (default 65,536) replacing the fixed 16,384; U10: Kriya Harness 0.2.0 ships the loop and turn budget on by default (`--no-loop`, `--no-budget`), README/SAFETY updated, release notes `docs/kriya-harness/harness_upgradation/RELEASE_0.2.0.md`; U5: named `dsh-compatibility` CI job. Kriya full check 2911 passed, exit 0; client 196/196. Commits on `feat/harness-upgrade` in both repositories; not pushed, migrated or deployed.
 
+
+### Kriya loop v2, H14e (2026-11-04, owner in chat: the "Kriya Loop V2" brief)
+
+- Spec `docs/kriya-harness/KRIYA_LOOP_V2.md`; client (uncommitted, worktree `../kriya-harness-upgrade`) `--loop-v2`, default off: plan dependencies (DAG, blocked → dependants skipped), failure classes and excerpts, worse attempts set aside, passes that changed tests re-run on the committed tests, repeated failures proposed as rules the person confirms (`kriya rules`). Client `npm run check` 214/214 exit 0 (baseline 196); Kriya full check 2911 passed, exit 0 (docs only). Unmeasured on a real model. Details in `docs/kriya-harness/harness_upgradation/status.md`.

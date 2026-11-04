@@ -19,6 +19,7 @@ session also goes to the root `status.md` (track H section).
 | U8 Verification hardening | COMPLETE (2026-11-04) | HU-VF-01…03, HU-M-08 |
 | U9 Output cap + limits in `kriya.models` | COMPLETE (2026-11-04, owner approved) | HU-DB-01, HU-SYNC-01, HU-GW-02 |
 | U10 Default-on (B4) and release preparation | COMPLETE (2026-11-04); publish/pilot are the owner's | HU-SW-01, RELEASE_0.2.0.md |
+| H14e Loop v2 (`--loop-v2`, default off) | IN_PROGRESS (2026-11-04): built and tested with a scripted model; not measured on a real model (needs the owner's spend go-ahead) | KV2-*, KRIYA_LOOP_V2.md |
 
 ## Owner actions (exact)
 
@@ -325,3 +326,33 @@ session also goes to the root `status.md` (track H section).
   publish, restart); OA-2 (merge `feat/kriya-loop` or this branch, which
   contains it); OA-6 (403 logs).
 
+
+### 2026-11-04 — H14e Kriya loop v2 (Claude Code / Opus 5.5; owner in chat: the "Kriya Loop V2" brief: spec in `KRIYA_LOOP_V2.md`, implement incrementally behind an opt-out, run both suites)
+
+- **Preflight.** Kriya `main` at `e76a4fd` (PR #4 merged; the brief named
+  `feat/harness-upgrade`, which is merged into `main`), clean. Client
+  worktree `../kriya-harness-upgrade` on `feat/harness-upgrade` at
+  `ccbcad0`, clean (untracked `node_modules` link). `../kriya-harness` not
+  touched. Baseline client `npm run check` **196/196, exit 0**.
+- **Built (client, uncommitted), all behind `--loop-v2` / `KRIYA_LOOP_V2=on`, default off:**
+  KV2-1 plan steps with `after` (DAG in topological order, `skipped`);
+  KV2-2 failure classes and excerpts (`src/failure.js`); KV2-3 attempt
+  snapshots, a worse attempt set aside (`restoreTree`, undo's restore
+  shared); KV2-4 a pass that changed test/check files re-run on HEAD's
+  versions (checkpoint first); KV2-5 failures seen twice proposed as rules,
+  confirmed only with `kriya rules confirm` (`src/rules.js`). No Kriya code,
+  contract, migration or setting changed. Not built, with reasons
+  (KRIYA_LOOP_V2.md §6): recursive decomposition, parallel beam search,
+  parallel DAG steps, property-based checks.
+- **Checks (real output).** Client `npm run check`: pins ok, seams ok (10),
+  notices ok, brand ok, **214/214, exit 0** (18 new: KV2-FC/DAG/BT/TG/RL/
+  REG/CLI and KV2-RUN-01/02 on the real pinned DSH). Kriya
+  `env -u OPENROUTER_API_KEY npm run check`: typecheck ok, lint 0 errors /
+  6 warnings (CF-09), format ok, **Test Files 248 passed | 5 skipped; Tests
+  2911 passed | 63 skipped; exit 0**. Prettier on the edited docs: clean.
+- **Not done / unknown.** No real-model run: whether v2 raises the pass rate
+  or lowers cost is unmeasured (KRIYA_LOOP_V2.md §8, ≈ ₹130–200, needs the
+  owner's go-ahead). Nothing committed, pushed or deployed.
+- **Next exact action (owner).** Review the client diff; say whether to
+  commit it on `feat/harness-upgrade` (or a new branch), and whether to fund
+  the B4 vs B4 + `--loop-v2` KriyaBench-R run.
