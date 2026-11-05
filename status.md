@@ -11,6 +11,7 @@ Canonical progress and coordination file for two tracks:
 | Cloud execution, track C (cloud code workspaces inside the existing product: one isolated sandbox per workspace, `workspace_*` tools, checkpoints, draft pull requests, compute metering) | CP-1, C0–C11 (section "Cloud execution (track C)" at the end) | `docs/cloud-execution/` | `docs/cloud-execution/AGENT_MASTER_PROMPT.md` |
 | Kriya Harness, track H (a downloadable agent app built on DeepSeek Harness that signs in to the Kriya account: Kriya model gateway and allowance, phone approvals, session mirror, skills and memory, laptop ↔ cloud handoff) | HP-1, H0–H12 (section "Kriya Harness (track H)" at the end) | `docs/kriya-harness/` | `docs/kriya-harness/AGENT_MASTER_PROMPT.md` |
 | Rooms, track R (people and their own agents working together: agents act only in their owners' accounts, proof cards computed by code, independent verification, disclosure gate) | RP-1, R0–R10 (section "Rooms (track R)" at the end) | `docs/rooms/` | `docs/rooms/AGENT_MASTER_PROMPT.md` |
+| Flows, track S (graphs a person draws or describes, run on the real runtime: agent steps as ordinary tasks, a device flow as a Loop v2 plan on their computer, bounded loops, code verdicts, versions, Improve and Compare through KRHE's gate) | S0–S8 (section "Flows (track S)" at the end) | `docs/kriya-studio/` | Owner brief `docs/kriya_visual_studio/KRYA_STUDIO_VISUAL_AGENT_ENGENEERING_PRODUCT_BRIEF.md` |
 
 Tracks C, H and R share one program plan (order, shared files, cross-track
 decisions PX-…): `docs/program/C_H_R_PROGRAM.md`.
@@ -13916,3 +13917,155 @@ modes (plan, auto and the rest).
 - **Browser check (isolated stack: `.env.verify`, `verify:guard` OK, local Supabase started with `-x logflare,vector` because those two containers were unhealthy, migrations applied locally, stub model):** a local test account signed up through the UI and made owner (`owner:grant`); a real `kriya login` approved in Connect a device; a real `kriya daemon` (throwaway home, one temp folder); on `/harness` the computer showed listening; a task sent from New task ran on the computer and came back Done, exit 0, answer "Stub model: nothing scripted for this message.", its run linked as dispatch/completed, usage ₹0.0034 metered; a terminal `kriya run` appeared under Activity as "From the terminal: kriya run · Auto · loop · budget · browser"; Run health check returned each check with a tick; the daemon recovered by itself through two server restarts. Found and fixed during the check: failures showed only "Exit 1" (now the reason); polling through a server action refreshed the route (now a GET); a run that never reported its end showed Running forever (now heartbeat + lost). Local test data only: the stub model's price row and `KRIYA_FX_USD_INR=84.0000` in the verify launch config (the gateway refuses to run unpriced, as designed). 360 px: no horizontal overflow, every control ≥ 44 px; console clean after a fresh load.
 - **Not verified:** a production build serving the local stack (`next start` refuses local URLs by design in `lib/env.ts`); the dev server's live-events connection kept reconnecting and refreshing pages (also on `/inbox`, pre-existing); handoff/pull and serve from the UI on a real cloud workspace (need `cloud.workspaces` and `harness.deviceWorld`; their buttons and refusals are tested); `kriya daemon install` actually loading a launchd agent (only the files it writes are tested); real phone. Docker Desktop and the local Supabase stack were started for this check and left running.
 - **Owner actions:** review and merge both branches (push/PR only with the owner's go-ahead), apply the migration on production (`npm run db:migrate`), switch on `harness.controlCenter` in `/owner/config`, then on the laptop `kriya daemon` (or `kriya daemon install`) in the folder to control.
+
+# Flows (track S)
+
+Owner brief: `docs/kriya_visual_studio/KRYA_STUDIO_VISUAL_AGENT_ENGENEERING_PRODUCT_BRIEF.md`
+(2026-11-05, owner in chat: "You own the final architecture and design
+decisions"). Documents: `docs/kriya-studio/` (`PRODUCT_INTENT`,
+`COMPETITIVE_RESEARCH`, `UX_AND_INTERACTION_SPEC`, `ARCHITECTURE`,
+`SECURITY_AND_RELIABILITY`, `IMPLEMENTATION_PLAN`, `DECISIONS` SD-01…17,
+`CHANGE_IMPACT_AND_SAFETY`).
+
+**Release status: built, switched off, nothing committed, nothing deployed.**
+All work is uncommitted: this repository's `main` working tree on `9ed6f41`, and
+client worktree `../kriya-harness-studio`, branch `feat/flows-graph` from `main`
+`c0625dd`. The owner's `../kriya-harness` and `../kriya-harness-upgrade` weren't
+touched. Migration `20270901000000_flows.sql` is applied on the local stack only.
+
+| Phase | Name | Status |
+| --- | --- | --- |
+| S0 | Recon, research, decisions, documents | Done; awaiting owner review |
+| S1 | Graph model, compiler, pure engine | Done |
+| S2 | Migration, RLS, settings, actions, queries | Done on PGlite and local Postgres 17; not on production |
+| S3 | Worker pass, taint across steps, gates, retries | Done on the stub model |
+| S4 | Editor, canvas, inspector, run inspector, Inbox | Done; browser-checked |
+| S5 | Copilot | Done on the stub model; never run on a real model |
+| S6 | Device flows, Harness Graph tab | Done in two halves (see "Not verified") |
+| S7 | Improve, Compare | Done; Compare not exercised in a browser or on a real model |
+| S8 | Benchmarks, regression | Done for orchestration; model quality and cost open (SO-08) |
+
+## What changed
+
+- **Decisions that differ from the brief:** "Flows", not "Studio" (Skill Studio
+  exists); no new runtime: an agent step is `enqueuePart`, so `queue.ts`,
+  `run-task.ts`, `metering.ts` and `policy.ts` are unchanged; structured loop
+  regions, no free cycles, so the worst case is exact; seven node types; one
+  editor in Tavi, a read-only Graph tab in Harness.
+- **Research corrections:** the brief's Harness² link (2610.08123) is a driving
+  paper; the right one is 2610.14224. OpenAI shuts Agent Builder and Evals down
+  on 2026-11-30. n8n's and Dify's licences rule out reuse.
+- **New:** `lib/flows/**`, `actions/flows.ts`, `queries/flows.ts`,
+  `app/(workspace)/flows/**`, `app/api/flows/runs/[id]`, `components/flows/**`,
+  `lib/harness/evolve/profile-schema.ts`, the migration and rollback,
+  `tests/flows/**`, `tests/db/flows-rls.test.ts`, four `flow-*` stub scripts.
+- **Dependencies:** `@xyflow/react` 12.12.1 (MIT), `elkjs` 0.12.1 (EPL-2.0).
+- **Existing files:** as `docs/kriya-studio/CHANGE_IMPACT_AND_SAFETY.md` §1.
+  Protected: `lib/agent/tools.ts` gains two stricter marker checks (**SO-04,
+  owner approval needed**).
+- **Client:** `plugins/graph/`, seeded plans and `writeSnapshot` in `src/loop.js`
+  and `plugins/loop`, `flowEnv` and reporting in `src/daemon.js`, bundle row,
+  three `expected/*.dump.yml` rows, `tests/flows.test.js`.
+
+## Results (real output)
+
+- Baseline before any change, `env -u OPENROUTER_API_KEY npm run check`: **Test
+  Files 252 passed | 5 skipped (257), Tests 2953 passed | 63 skipped (3016)**,
+  exit 0.
+- After, with the local stack stopped: lint 0 errors (the same 6 warnings), "All
+  matched files use Prettier code style!", **Test Files 260 passed | 5 skipped
+  (265), Tests 3075 passed | 63 skipped (3138)**, exit 0. The two Compare tests
+  came after that run: `tests/flows/run.test.ts` Compare cases 2 passed.
+- **Flaky, not caused by a logic change:** `HT-BEN-02 hard-perf-dedupe` timed out
+  at 30 s in 2 of 4 full runs (once beside the client suite, once with Docker and
+  the stack up), and passes alone (83/83). It's CPU-bound; the machine's load
+  average was 16–21 and the suite took 650–690 s against 440 s at baseline. Part
+  of that may be the added tests: not separated. The test wasn't changed.
+- `npm run build` (`verify:guard` OK): "✓ Compiled successfully", exit 0.
+- Client `npm run check`: pins, seams and notices OK, **281 pass, 0 fail**
+  (baseline 274).
+- Local Postgres 17: "applied 20270901000000_flows.sql".
+
+**Benchmarks** (`tests/flows/bench.test.ts`: PGlite and a scripted model, so
+orchestration overhead only, on a loaded machine; no claim about models):
+
+| Case | Result |
+| --- | --- |
+| Sequential, 5 steps | Flow 161 ms against 91 ms for the same five turns on the plain queue; 6 passes |
+| Branch and merge | 67 ms |
+| Parallel, 4 branches | 98 ms, 2 passes |
+| Bounded loop, 4 rounds | 133 ms, exactly 4 runs |
+| Failure and repair | 42 ms |
+| Gate resume | 31 ms |
+| Lost worker | 0 duplicate node runs |
+| 25 runs at once | 50 tasks, 1,084 ms, all completed |
+| Largest flow (57 nodes) | Compile 0.59 ms, decide 0.02 ms, layout 92 ms |
+
+In production a step also waits for the 2-second pass, which these don't show.
+
+**Browser check** (2026-11-05, local stack, `verify:guard` OK, real worker and
+queue, stub model, account `flows-check@example.com`). Screenshots:
+`screenshots/kriya-studio/`.
+
+| Check | Result |
+| --- | --- |
+| Console errors, fresh tab | 0 (earlier ones were from hot reload) |
+| Horizontal scroll at 360 | None on list, editor, run, Inbox |
+| Targets at 360 | 0 under 44 px on list and run; the flow name was 30 px, fixed, not re-measured |
+| Unnamed controls on the run page | 0 |
+| Light and dark | Reviewed |
+| Neighbours with switches on | Home, Tasks, Inbox, Account, Usage, Harness, Agents: 200 |
+| Journey 1, describe | Worked: previewed, unsaved, then applied |
+| Journey 3, parallel and merge | Worked, real tasks |
+| Journey 5, failure and retry | A real plan-limit refusal; Retry recovered both branches |
+| Journey 7, improve | Preview, apply, version recorded as an improvement |
+| Journey 8, Harness | Graph tab drew a real plan in the real Web UI |
+| Journey 9, phone | Approved from 360 px; the run finished |
+| Authoring by mouse | Add, undo, redo, dragged wire, reload: all kept (database confirmed) |
+
+**Bugs the browser found, all fixed:** left-to-right layout unreadable at
+1280 px (now top to bottom, SD-15); a loop's edge ran behind a card and looked
+like it fed it; diagonal wires from a de-duplication error; a green tick on a
+failed check; new steps landing on Finish; "At most 0 agent runs" on a half-drawn
+flow; a refused step's thread on Home; a false "1 changed" from jsonb key order,
+which also affected the version hash.
+
+## Not verified
+
+- **No real model has touched any of this.** Every model reply was the stub. The
+  copilot's quality and how often a real model's design validates are unknown.
+  Costs read "not priced".
+- **Device flows are proven in two halves, never joined:** the client on real
+  pinned DSH with a fake Kriya (FL-07: the model tried to replace the plan and
+  was refused), and the server on PGlite with the real `report()`. No live run
+  has gone from `/flows` through a real daemon. The device Run dialog wasn't
+  opened in a browser.
+- **Compare** is tested on the real runner but not in a browser.
+- Journeys 2 and 4: connected-account steps ran on mocked connectors; nested loops
+  are engine-tested, not drawn in a browser. Journey 6's Restore: tested, not
+  clicked.
+- A production server run (`next start`), real Android and TalkBack, and
+  switches off in a browser (ST-REG covers that in tests).
+- The second person's 404 was tested through RLS and `getRun`, not by signing in
+  as them.
+
+## Known limits
+
+- Each step raises the "finished" notification (SO-09; fix needs protected
+  `app/api/events/route.ts`). The Inbox badge updates on the next navigation.
+- A step runs at its agent's tier; per-step model choice needs `queue.ts`.
+- `HarnessProfile` is editable, but KRHE's own probing (KRHE-4…7) is untouched.
+- Crew reports have the taint gap Flows closed (SD-11 finding, SO-05).
+- Not built, and not shown: schedules and other triggers, code and tool nodes,
+  sub-flows, sharing, import and export, OTel export, retention, plan fields.
+- `tavi_design/KRIYA_AI_DESIGN_SYSTEM.md` and AGENTS.md's "rigel = indigo" are
+  stale against `app/globals.css`. Not changed.
+
+## Owner actions
+
+`docs/kriya-studio/DECISIONS.md` §3, SO-01…09. First: review, then say whether to
+commit. Docker Desktop quit once during the session, cause unknown; it was
+restarted, then stopped at the end, as found.
+
+**Next exact action:** on the owner's go-ahead, commit both trees on branches, then
+one paid real-model run of journeys 1 and 3 (SO-08), then a joined device run.

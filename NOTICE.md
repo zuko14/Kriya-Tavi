@@ -46,3 +46,18 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## Eclipse Layout Kernel (elkjs)
+
+The Flows canvas lays out graphs with `elkjs`
+(<https://github.com/kieler/elkjs>), used unmodified as a dependency and loaded
+only on the Flows pages. It is offered under EPL-2.0 OR GPL-3.0-or-later; Kriya
+uses it under the Eclipse Public License 2.0
+(<https://www.eclipse.org/legal/epl-2.0/>). Its source is available at the link
+above.
+
+## React Flow
+
+The Flows canvas is built on `@xyflow/react`
+(<https://github.com/xyflow/xyflow>), MIT License, Copyright (c) 2019-2025 webkid
+GmbH, used unmodified as a dependency.

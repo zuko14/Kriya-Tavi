@@ -72,6 +72,12 @@ const GROUPS: { title: string; description: string; prefix: string[] }[] = [
       "Track R. Off until rooms.enabled is on; agents in rooms also need rooms.agents. Realtime needs the owner's Supabase setting (public access off) and falls back to polling.",
     prefix: ["rooms."],
   },
+  {
+    title: "Flows",
+    description:
+      "Track S. Off until studio.flows is on. Every agent node is an ordinary task, so plan limits apply; these limits are on top of them.",
+    prefix: ["studio."],
+  },
   { title: "Other", description: "", prefix: ["firecrawl.", "support."] },
 ]
 

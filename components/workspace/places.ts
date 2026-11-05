@@ -8,6 +8,7 @@ import {
   RadarIcon,
   TargetIcon,
   WandSparklesIcon,
+  WorkflowIcon,
   type LucideIcon,
 } from "lucide-react"
 
@@ -25,6 +26,13 @@ export type Place = {
 
 // The sidebar's Tools section, in order
 export const TOOLS: Place[] = [
+  {
+    feature: "flows",
+    href: "/flows",
+    label: "Flows",
+    icon: WorkflowIcon,
+    blurb: "Describe a job, see how it runs, and run it the same way each time.",
+  },
   {
     feature: "goals",
     href: "/goals",

@@ -20,6 +20,7 @@ import { recheckDeliveries } from "@/lib/delivery/recheck"
 import { roomAgentsOn } from "@/lib/rooms/agents"
 import { roomRecheckRelay } from "@/lib/rooms/recheck"
 import { checkDrift } from "@/lib/mcp/drift"
+import { flowsOn, reviewFlows } from "@/lib/flows/run"
 import { reviewCrews } from "@/lib/operator/crews"
 import { reviewMandates } from "@/lib/operator/loop"
 import { markMissed } from "@/lib/radar/obligations"
@@ -357,6 +358,21 @@ async function schedulerLoop() {
 // Undo (K3): compensations the person asked for change outside accounts,
 // so they run here, never on the web server (invariant 5). Its own loop and
 // timer, like the scheduler.
+// Flows (track S): its own short loop, so a step starts within seconds of the
+// one before it (SD-08). No model; with studio.flows off, one settings read
+const FLOW_MS = 2_000
+
+async function flowLoop() {
+  while (!shutdown.signal.aborted) {
+    try {
+      if (await flowsOn()) await reviewFlows()
+    } catch (error) {
+      log.error("flow pass failed", { error })
+    }
+    await sleep(FLOW_MS)
+  }
+}
+
 async function undoLoop() {
   while (!shutdown.signal.aborted) {
     try {
@@ -417,6 +433,7 @@ async function main() {
   log.info("worker started", { workerId: WORKER_ID, concurrency: CONCURRENCY, version })
   void maintenanceLoop()
   void schedulerLoop()
+  void flowLoop()
   void undoLoop()
   void extractLoop()
   void crossCheckLoop()

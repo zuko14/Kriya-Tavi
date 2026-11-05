@@ -214,6 +214,8 @@ export default async function HarnessPage() {
     ])
   // The Control Center (CONTROL_CENTER.md): only with its switch on
   const center = control ? await controlCenter(user.id) : null
+  // Track S: a plan drawn in Flows runs here through the same daemon
+  const flows = center && (await on("studio.flows")) && (await on("studio.deviceFlows"))
   const install = await getSetting("harness.installCommand")
   const beta = (await getSetting("harness.releaseStage")) !== "ga"
   const cap = Number(plan.harnessMonthlyMicroInr)
@@ -363,6 +365,22 @@ export default async function HarnessPage() {
           </Section>
         )}
 
+        {flows && signedIn && (
+          <Link
+            href="/flows"
+            className="glass flex min-h-14 items-center gap-3 rounded-[20px] px-4 py-3 text-[13.5px] transition-colors hover:border-rigel/40"
+          >
+            <span className="flex min-w-0 flex-1 flex-col leading-tight">
+              <span className="font-medium">Design what the agent does here</span>
+              <span className="text-[12.5px] text-muted-foreground">
+                Draw a plan in Flows, send it to this computer, and watch every step.
+              </span>
+            </span>
+            <span aria-hidden className="text-muted-foreground">
+              →
+            </span>
+          </Link>
+        )}
         {center && signedIn && (
           <Section
             title="Control Center"

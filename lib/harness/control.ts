@@ -160,6 +160,15 @@ export async function report(
   if (!row) return false
   // A run the person is stopping stays "canceling" until it ends
   if (row.status === "canceling" && body.status === "running") return true
+  // A flow's progress while it runs (track S, SD-14): the status stays as it is
+  if (row.status === "running" && body.status === "running") {
+    if (body.result)
+      await privileged
+        .update(dispatches)
+        .set({ result: body.result })
+        .where(and(ours(device), eq(dispatches.id, id), eq(dispatches.status, "running")))
+    return true
+  }
   if (!NEXT[row.status]?.includes(body.status)) return false
   const done = body.status !== "running"
   await privileged

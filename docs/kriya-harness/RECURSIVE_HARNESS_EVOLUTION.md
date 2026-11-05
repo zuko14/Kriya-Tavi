@@ -9,6 +9,13 @@ AGENTS.md apply in full. Research: `RECURSIVE_HARNESS_EVOLUTION_RESEARCH.md`.
 Decisions: KU-ADR-19…24 in `harness_upgradation/DECISIONS.md`. Records:
 `krhe/`.
 
+> **Flows (2026-11-05).** `gate()` is reused unchanged to compare two versions of
+> a flow (`lib/flows/compare.ts`), and `HarnessProfile` is what a device flow
+> edits (`docs/kriya-studio/`, SD-13, SD-14). `proposeFlow` applies this
+> document's rules to flows: one-factor moves from evidence, no model, code
+> decides, the person adopts. KRHE's own phases and status below are unchanged:
+> KRHE-4 to KRHE-7 are not started, and nothing here measures a harness.
+
 ## 1. What "the harness upgrades itself" means here
 
 The harness improves **its own configuration** from **its own measured
