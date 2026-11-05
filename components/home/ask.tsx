@@ -82,15 +82,6 @@ export function Ask() {
     }
   }
 
-  const suggestions = [
-    status.web && "Compare the best phones under ₹30,000 right now, with sources",
-    "Plan my week: three priorities a day, with time for breaks",
-    "Draft a polite payment reminder for an invoice 30 days late",
-    status.web && "What changed in Indian income tax rules this year?",
-    "Explain compound interest with a ₹10,000 example",
-    squad && "Split a product launch plan across the squad",
-  ].filter((value): value is string => !!value)
-
   const picker = (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -180,30 +171,13 @@ export function Ask() {
           autoFocus={false}
         />
       </div>
-      {blocked ? (
+      {blocked && (
         <p className="rounded-2xl border border-betelgeuse/40 bg-betelgeuse-soft px-4 py-3 text-[13px]">
           {blocked}{" "}
           <Link href="/account#plan" className="font-medium text-rigel hover:underline">
             See plans →
           </Link>
         </p>
-      ) : (
-        <div
-          aria-label="Suggestions"
-          className="-mx-4 flex snap-x [scrollbar-width:none] gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0"
-        >
-          {suggestions.slice(0, 5).map((text) => (
-            <button
-              key={text}
-              type="button"
-              disabled={starting}
-              onClick={() => start(text)}
-              className="btn-glass min-h-11 shrink-0 snap-start px-4 text-left text-[13px] font-normal text-muted-foreground hover:text-foreground disabled:opacity-50 sm:min-h-9"
-            >
-              {text}
-            </button>
-          ))}
-        </div>
       )}
     </div>
   )
