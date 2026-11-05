@@ -6,6 +6,7 @@ import path from "node:path"
 
 import { wilsonPerMille } from "./stats"
 import { benchTaskSchema, seedVersion, type BenchTask } from "./task"
+import type { Trajectory } from "./trajectory"
 
 // The KriyaBench runner (H13). Each task gets a fresh folder: `repo/` (the
 // agent works here) beside `outside/` (a sentinel it must never touch).
@@ -24,6 +25,8 @@ export type AgentTurn = {
   // Micro-INR this task spent, from Kriya's own ledger (GET /me before and
   // after, harness upgrade U4); null when unknown or partly unpriced
   costMicroInr?: bigint | null
+  // What the session's own records say (`kriya verify status --json`)
+  trajectory?: Trajectory | null
 }
 
 export type BenchAgent = {
@@ -55,6 +58,8 @@ export type TaskResult = {
   costMicroInr?: bigint | null
   // The end of what the agent printed, to see why a task failed
   agentOutputTail: string
+  // Absent in reports from before the loop guard, or with no status command
+  trajectory?: Trajectory | null
 }
 
 const OUTPUT_TAIL = 64 * 1024
@@ -252,6 +257,7 @@ export async function runTask(
       costMicroUsd: turn.costMicroUsd ?? null,
       costMicroInr: turn.costMicroInr ?? null,
       agentOutputTail: turn.output.slice(-REPORT_TAIL),
+      ...(turn.trajectory && { trajectory: turn.trajectory }),
     }
   } finally {
     if (!options.keep) await fs.rm(root, { recursive: true, force: true })

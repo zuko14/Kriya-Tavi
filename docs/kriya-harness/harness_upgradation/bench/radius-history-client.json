@@ -1,0 +1,239 @@
+{
+  "mutants": [],
+  "commits": [
+    {
+      "sha": "9681b85",
+      "files": 6,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "4f16a25",
+      "files": 35,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "0c2b0b6",
+      "files": 13,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "11e8535",
+      "files": 10,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "8113461",
+      "files": 28,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "1a9d0a8",
+      "files": 4,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "c30b8d4",
+      "files": 9,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "f8aaf6f",
+      "files": 6,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "e01c06c",
+      "files": 16,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "b196f75",
+      "files": 3,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "df38441",
+      "files": 29,
+      "invariants": [],
+      "hazards": [
+        "plugins/preview/client.js:217 missing await: tick() returns a promise and nothing waits for it"
+      ]
+    },
+    {
+      "sha": "0651889",
+      "files": 11,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "ccbcad0",
+      "files": 34,
+      "invariants": [],
+      "hazards": [
+        "src/verify.js broken signature: verdict now needs 2 arguments; src/loop.js still passes the old ones"
+      ]
+    },
+    {
+      "sha": "d474314",
+      "files": 9,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "404a89c",
+      "files": 8,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "c42e590",
+      "files": 25,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "98b04cd",
+      "files": 4,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "2366c18",
+      "files": 20,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "ce37113",
+      "files": 2,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "fa2d527",
+      "files": 14,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "b1b51e7",
+      "files": 5,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "891122b",
+      "files": 4,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "777e411",
+      "files": 11,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "c34d5cd",
+      "files": 11,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "39e31ef",
+      "files": 2,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "a79239d",
+      "files": 9,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "f847e61",
+      "files": 10,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "fbd4393",
+      "files": 2,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "4a117f7",
+      "files": 11,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "49bb155",
+      "files": 6,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "c1d4640",
+      "files": 10,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "0ec06ce",
+      "files": 14,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "4e2d4a1",
+      "files": 16,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "43433e8",
+      "files": 14,
+      "invariants": [],
+      "hazards": [
+        "plugins/approvals/index.js:173 missing await: call() returns a promise and nothing waits for it"
+      ]
+    },
+    {
+      "sha": "df2b1b9",
+      "files": 3,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "04532cf",
+      "files": 3,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "c927146",
+      "files": 17,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "a8b677e",
+      "files": 33,
+      "invariants": [],
+      "hazards": []
+    }
+  ]
+}

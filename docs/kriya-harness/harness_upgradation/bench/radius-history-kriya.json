@@ -1,0 +1,251 @@
+{
+  "mutants": [],
+  "commits": [
+    {
+      "sha": "ac1e92c",
+      "files": 3,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "07b813f",
+      "files": 3,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "f2a05e3",
+      "files": 21,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "4b7ab7e",
+      "files": 2,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "db7e23c",
+      "files": 8,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "2974f45",
+      "files": 8,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "836dfcb",
+      "files": 1,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "9f0b1c5",
+      "files": 1,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "cd4944d",
+      "files": 4,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "2c6fecb",
+      "files": 1,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "920cb35",
+      "files": 1,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "1087603",
+      "files": 78,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "ab0a8cd",
+      "files": 22,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "f219afa",
+      "files": 6,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "4693132",
+      "files": 4,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "cecda7b",
+      "files": 31,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "5aa623d",
+      "files": 4,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "f6d8099",
+      "files": 25,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "abedbf3",
+      "files": 4,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "d92f0d5",
+      "files": 31,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "b692877",
+      "files": 15,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "69a386b",
+      "files": 14,
+      "invariants": [],
+      "hazards": [
+        "lib/harness/bench/seed-cap.ts:559 missing await: greet() returns a promise and nothing waits for it"
+      ]
+    },
+    {
+      "sha": "abfebb8",
+      "files": 10,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "419e32b",
+      "files": 1,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "74d6643",
+      "files": 4,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "e3d02be",
+      "files": 6,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "61ec555",
+      "files": 1,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "7a28772",
+      "files": 1,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "9ee2713",
+      "files": 1,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "ab5a6c2",
+      "files": 11,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "0297d82",
+      "files": 46,
+      "invariants": [
+        "scripts/fabric-bench.ts:55 sql injection",
+        "scripts/fabric-bench.ts:56 sql injection",
+        "scripts/fabric-bench.ts:198 sql injection"
+      ],
+      "hazards": []
+    },
+    {
+      "sha": "455bc43",
+      "files": 1,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "bac234a",
+      "files": 1,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "9dceaf4",
+      "files": 1,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "761e53c",
+      "files": 3,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "60a5d9c",
+      "files": 6,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "6bcef0d",
+      "files": 5,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "4320922",
+      "files": 7,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "ae8c6d3",
+      "files": 3,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "c3f17ca",
+      "files": 5,
+      "invariants": [],
+      "hazards": []
+    }
+  ]
+}

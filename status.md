@@ -14157,3 +14157,37 @@ Open before SO-01 (turn `studio.flows` on): the joined run's result; a real-mode
 - **Checks, real output:** client `npm run check`: 300 tests, 300 pass. `scripts/verify-remote-browser.mjs` now runs the real client code into the real route and sends gzip+base64 as production does: "client → server delivery: ok", "all checks passed: 4 pages × 360/1280 × light/dark"; local values restored.
 - **Not fixed by code, owner actions in order:** (1) apply the migration on production; (2) switch on `harness.remoteControl` in `/owner/config`; (3) restart Kriya Harness. Agents may not run against the live database or change production data. Events are kept only while the app stays open, at most 2,000 per session; nothing from before the switch was turned on is sent.
 - **Next exact action:** the owner does the three steps, then Health check shows "Remote Control on Kriya: on".
+
+## Harness architecture audit and loop guard, H21 (2026-11-05, Claude Code / Opus 5.5, owner brief in chat: "Existing architecture intelligence, incremental upgrades and autonomous self-improvement")
+
+Reports in `docs/kriya-harness/harness_upgradation/`: `KRIYA_EXISTING_ARCHITECTURE_AUDIT.md`, `KRIYA_HARNESS_RESEARCH_AND_GAP_ANALYSIS.md`, `KRIYA_INCREMENTAL_UPGRADE_PLAN.md`, `KRIYA_HARNESS_UPGRADE_REPORT.md`, `KRIYA_HARNESS_BENCHMARK_REPORT.md`. Details in that folder's `status.md`.
+
+- **What existed before this task:** the client loop (plan, step, verify; on by default since U10), loop v2, router, anchor and default skills (built, off, unmeasured), KRHE offline, KriyaBench (B4 18/21 on one model, seven tasks, p = 0.125), the cloud runtime and `lib/improve.ts`.
+- **Discovered:** a plan with unstarted steps read `verified`, and one test pinned it; nothing sent back an unfinished plan; dead steps spent all four builders; provider errors counted as attempts and could block a step for good; a resumed step lost its failure; KRHE couldn't see inside a run (HU-F-30…37, all reproduced).
+- **Improved:** verdict `partial` (default on, a correction); `--loop-guard` (default off); `kriya verify status`; run records into the bench, gate and proposer; `loopGuard` in profiles; ways of working in the router; `kriya-visual`, `kriya-research`, `kriya-migrate`.
+- **Preserved:** loop bounds, graph and Flows engines, gateway and provider abstraction, DSH pin, tools, guidance, memory, risk classes, approvals, `lib/improve.ts`, settings, migrations. Guard off spends the same builders and requests as `08f4f66`; prompts differ only by the corrected verdict word.
+- **Verified:** client 323/323 exit 0 (was 300); Kriya 3102 passed, 63 skipped, exit 0 (was 3093); build compiled with `.env.verify`. KriyaBench-M on a scripted model, ₹0: tasks done 3 → 9 of 15, false verified 3 → 0, builders 51 → 45, requests 123 → 135.
+- **Not verified:** any real-model gain (no paid run); the Progress tab's rendering of `partial` (route confirmed only); scenarios 1 and 5 have no grader.
+- **Incomplete:** trajectory-based skill extraction, KRHE-4…7, parallel steps. Nothing committed: client changes are in the detached worktree `../kriya-harness-evolve`, Kriya's on `main`.
+- **Next exact action (owner):** say whether to commit, then whether to fund B4 vs B4 + `--loop-guard`, K = 3 (≈ ₹130–200); default-on follows that evidence.
+
+## Strict coding loop, recon, JIT tools, H22 (2026-11-05, Claude Code / Opus 5.5, owner brief in chat: "World-Class Long-Horizon Autonomous Coding Harness & Self-Evolution Engine")
+
+Report: `docs/kriya-harness/harness_upgradation/KRIYA_CODING_HARNESS_REPORT.md`. Branch `feat/top1-coding-harness` in both repositories (client in `../kriya-harness-evolve`), uncommitted, unpushed, with H21 carried over.
+
+- **Built, default off:** `--strict-loop` (task contract, fast check ladder, weakened tests and silencers refused, bug fixes proved red then green, a step as one transaction), `--recon` (`code_outline`, `code_impact`, 400-line reads), `--jit-tools` (heavy tools per builder, skill hints).
+- **For everyone:** KRHE's gate rejects more false "verified" claims and any net pass loss; Flows' Compare reuses it, so its small-loss `hold` is now `reject`.
+- **Differs from the brief:** rules stay in `~/.kriya/rules/` and need the person's confirmation, not `.kriya/rules.json`; profile activation stays the owner's; rollback uses `restoreTree`, not `git restore`; outlines use patterns, not a parser.
+- **Verified:** client 346/346 exit 0; Kriya 3104 passed, 63 skipped, exit 0; build compiled. Scripted model, ₹0: done 3 → 9 of 15, false verified 9 → 0, files left unparsable 6 → 0, requests 105 → 135.
+- **Not verified:** any real-model result. The claim that a cheap model can beat a frontier one is untested; no 50-file task exists in KriyaBench.
+- **Next exact action (owner):** say whether to commit, then whether to fund the paid arms.
+
+## Defensive engine, H23 (2026-11-05, Claude Code / Opus 5.5, owner brief in chat: "Proactive Failure Anticipation & Cross-Feature Breakdown Defense")
+
+Report: `docs/kriya-harness/harness_upgradation/KRIYA_DEFENSIVE_ENGINE_REPORT.md`. Uncommitted on `feat/top1-coding-harness` in both repositories.
+
+- **Built, `--defensive` (default off, brings `--strict-loop`):** pre-mortem with claims that must name a test; blast radius through imports, aliases, tables and routes, with neighbour tests as their own rung; invariant sentinel; deterministic diff review; bad-input test rule. No model reviews the work.
+- **Verified:** client 365/365 exit 0; Kriya 3104 passed, 63 skipped, exit 0. Injected bugs in this repo: blast radius 10 of 12, direct imports 9; the other 2 pass the full suite too, so they are gaps in Kriya's tests (`lib/reliability/retry.ts` 504, `lib/agent/messages.ts` `OUTPUTS_KEPT`). Accepted commits flagged: 5 of 78, tuned on the same commits. Scripted, ₹0: done 3 → 18 of 18, false verified 15 → 0, requests 99 → 132.
+- **Not verified:** any real-model result, or any comparison with Claude Code.
+- **Next exact action (owner):** say whether to commit, then whether to fund a paid run.
+

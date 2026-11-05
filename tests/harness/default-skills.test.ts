@@ -24,18 +24,21 @@ import type { TestDb } from "../db/harness"
 import { call, deviceFor, harnessDb, harnessEnv } from "./setup"
 
 describe("HT-DS-01: the default set", () => {
-  it("is ten kriya-* skills, active, with no Kriya tool, apart from the cloud catalogue", () => {
+  it("is thirteen kriya-* skills, active, with no Kriya tool, apart from the cloud catalogue", () => {
     expect(HARNESS_DEFAULTS.map((s) => s.id).sort()).toEqual([
       "kriya-brainstorm",
       "kriya-browser-test",
       "kriya-debug",
       "kriya-git",
       "kriya-lean",
+      "kriya-migrate",
       "kriya-plan",
+      "kriya-research",
       "kriya-review",
       "kriya-security",
       "kriya-tdd",
       "kriya-verify",
+      "kriya-visual",
     ])
     const cloud = new Set([...CATALOG, ...CATALOG_V2].map((s) => s.id))
     for (const s of HARNESS_DEFAULTS) {

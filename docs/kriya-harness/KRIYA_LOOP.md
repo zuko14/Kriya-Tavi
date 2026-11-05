@@ -5,6 +5,15 @@ K3 (step checkpoints) of `ENGINE_AND_EVOLUTION.md` §3 as phase H14. Track H
 rules apply in full; nothing here changes a risk class, an approval, a mode,
 a limit or a price.
 
+> **Loop guard and the verdict (H21, 2026-11-05).** With a plan, `verified` now
+> needs every step passed; passes with steps still open read `partial` (this is
+> on for everyone: it corrects a false claim, HU-F-30). `--loop-guard` (default
+> off, unmeasured on a real model) sends back an agent that stops with plan steps
+> open, stops a step after the same failure twice with no file changed or when
+> the check can't run, doesn't count a builder that died on an error before
+> changing a file, and gives a resumed step its last failure.
+> See `harness_upgradation/KRIYA_HARNESS_UPGRADE_REPORT.md`.
+
 ## 1. What the owner asked for (2026-11-03, in chat)
 
 A harness that is "the main intelligent one": it must finish real tasks

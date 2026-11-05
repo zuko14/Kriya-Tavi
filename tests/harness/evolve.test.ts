@@ -4,6 +4,7 @@ import path from "node:path"
 import { describe, expect, it } from "vitest"
 
 import type { TaskResult } from "@/lib/harness/bench/run"
+import { RunProfile } from "@/lib/harness/contract"
 import { compose } from "@/lib/harness/evolve/compose"
 import { gate } from "@/lib/harness/evolve/gate"
 import {
@@ -192,7 +193,9 @@ describe("HU-EV-03 Propose", () => {
     // loop is already on: no "loop-on" candidate (it would be the incumbent)
     expect(first.candidates.some((c) => c.move === "loop-on")).toBe(false)
     const seen = new Set(first.candidates.map((c) => c.id))
-    expect(propose(BASELINE, runs(3, 10, 4), { k: 9, seen }).candidates).toEqual([])
+    // More moves than the cap now exist, so the next turn offers the others
+    const next = propose(BASELINE, runs(3, 10, 4), { k: 9, seen }).candidates
+    expect(next.filter((c) => seen.has(c.id))).toEqual([])
   })
 })
 
@@ -320,9 +323,9 @@ describe("HU-EV-06 the gate on recorded evidence", () => {
     })
     expect(g.metrics.p).toBeCloseTo(0.125, 3)
   })
-  it("holds B5 against B4 (0–5, p = 0.0625): a loss not shown at 95% is not a rejection", () => {
+  it("rejects B5 against B4 (0–5, p = 0.0625): any net pass loss rejects (owner's brief, 2026-11-05)", () => {
     const g = gate(load("b4"), load("b5"))
-    expect(g.verdict).toBe("hold")
+    expect(g.verdict).toBe("reject")
     expect(g.metrics).toMatchObject({ onlyIncumbent: 5, onlyCandidate: 0 })
   })
 })
@@ -341,5 +344,106 @@ describe("HU-EV-07 a run pinned to a profile", () => {
       expect(() => pinnedEnv(["node", "kriya.js", "run", flag], p)).toThrow(
         `take ${flag} out of --agent`
       )
+  })
+})
+
+describe("HU-EV-08 the loop guard in KRHE", () => {
+  const withRecords = (status: string, open = 0, blocked = 0) => ({
+    trajectory: { status, open, blocked, builders: 2, checkRuns: 2, failedRuns: 1 },
+  })
+
+  it("keeps every recorded profile's id, and sets the switch only when on", () => {
+    // B4's id in docs/kriya-harness/krhe/README.md, recorded before the field existed
+    expect(profileId(BASELINE)).toBe("39c148271e98")
+    const stored = HarnessProfile.parse(
+      JSON.parse(
+        fs.readFileSync(path.join("docs/kriya-harness/krhe/profiles/b4.json"), "utf8")
+      )
+    )
+    expect(stored.loopGuard).toBe(false)
+    expect(profileId(stored)).toBe("39c148271e98")
+    expect(toEnv(BASELINE)).not.toHaveProperty("KRIYA_LOOP_GUARD")
+    const on = HarnessProfile.parse({ ...BASELINE, loopGuard: true })
+    expect(toEnv(on).KRIYA_LOOP_GUARD).toBe("on")
+    expect(profileId(on)).not.toBe(profileId(BASELINE))
+    expect(
+      HarnessProfile.safeParse({ ...BASELINE, loop: false, loopGuard: true }).success
+    ).toBe(false)
+    expect(SWITCH_FLAG.test("--loop-guard")).toBe(true)
+  })
+
+  it("a device run may carry the switch; the contract still refuses other names", () => {
+    const env = toEnv(HarnessProfile.parse({ ...BASELINE, loopGuard: true }))
+    const id = profileId(BASELINE)
+    expect(RunProfile.safeParse({ id, env }).success).toBe(true)
+    expect(RunProfile.safeParse({ id, env: toEnv(BASELINE) }).success).toBe(true)
+    expect(
+      RunProfile.safeParse({ id, env: { ...env, KRIYA_SANDBOX: "on" } }).success
+    ).toBe(false)
+  })
+
+  it("Propose reads the session records: unfinished plans put the guard first", () => {
+    const reports = runs(3, 10, 5, (i) =>
+      i < 5 ? withRecords("verified") : withRecords("partial", 2)
+    )
+    const { signals, candidates } = propose(BASELINE, reports, { k: 1 })
+    expect(signals.unfinished).toBe(15)
+    expect(candidates[0].move).toBe("loop-guard-on")
+    expect(candidates[0].diff).toEqual([{ key: "loopGuard", from: false, to: true }])
+  })
+
+  it("Propose without records ranks as before", () => {
+    const { candidates } = propose(BASELINE, runs(3, 10, 5), { k: 5 })
+    expect(candidates[0].move).not.toBe("loop-guard-on")
+  })
+
+  it("the gate rejects a candidate that says verified over failed work more often", () => {
+    const a = runs(3, 10, 2, () => withRecords("failed"))
+    const b = runs(3, 10, 10, (i) => withRecords(i === 0 ? "verified" : "failed"))
+    const clean = gate(a, b)
+    expect(clean.verdict).toBe("adopt")
+    const lying = runs(3, 10, 9, () => withRecords("verified"))
+    const result = gate(a, lying)
+    expect(result.metrics.candidate.evidence?.falseVerified).toBe(3)
+    expect(result.verdict).toBe("reject")
+    expect(result.reasons.join(" ")).toMatch(/false "verified"/)
+  })
+
+  it("any net pass loss rejects, significant or not", () => {
+    const result = gate(runs(3, 10, 8), runs(3, 10, 7))
+    expect(result.metrics.p).toBeGreaterThan(0.05)
+    expect(result.verdict).toBe("reject")
+  })
+
+  it("the later switches keep recorded ids, go out only when on, and need the loop where it matters", () => {
+    expect(profileId(HarnessProfile.parse({ ...BASELINE }))).toBe("39c148271e98")
+    const on = HarnessProfile.parse({
+      ...BASELINE,
+      strictLoop: true,
+      recon: true,
+      jitTools: true,
+    })
+    expect(toEnv(on)).toMatchObject({
+      KRIYA_STRICT_LOOP: "on",
+      KRIYA_RECON: "on",
+      KRIYA_JIT_TOOLS: "on",
+    })
+    expect(RunProfile.safeParse({ id: profileId(on), env: toEnv(on) }).success).toBe(true)
+    expect(
+      HarnessProfile.safeParse({ ...BASELINE, loop: false, strictLoop: true }).success
+    ).toBe(false)
+    expect(SWITCH_FLAG.test("--strict-loop")).toBe(true)
+    expect(SWITCH_FLAG.test("--defensive")).toBe(true)
+    const defensive = HarnessProfile.parse({ ...BASELINE, defensive: true })
+    expect(toEnv(defensive).KRIYA_DEFENSIVE).toBe("on")
+    expect(
+      RunProfile.safeParse({ id: profileId(defensive), env: toEnv(defensive) }).success
+    ).toBe(true)
+  })
+
+  it("reports without records keep the gate's verdict and carry no evidence", () => {
+    const result = gate(runs(3, 10, 2), runs(3, 10, 10))
+    expect(result.verdict).toBe("adopt")
+    expect(result.metrics.candidate.evidence).toBeNull()
   })
 })

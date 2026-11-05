@@ -9,11 +9,14 @@ import kriyaBrowserTest from "./kriya-browser-test/kriya.json"
 import kriyaDebug from "./kriya-debug/kriya.json"
 import kriyaGit from "./kriya-git/kriya.json"
 import kriyaLean from "./kriya-lean/kriya.json"
+import kriyaMigrate from "./kriya-migrate/kriya.json"
 import kriyaPlan from "./kriya-plan/kriya.json"
+import kriyaResearch from "./kriya-research/kriya.json"
 import kriyaReview from "./kriya-review/kriya.json"
 import kriyaSecurity from "./kriya-security/kriya.json"
 import kriyaTdd from "./kriya-tdd/kriya.json"
 import kriyaVerify from "./kriya-verify/kriya.json"
+import kriyaVisual from "./kriya-visual/kriya.json"
 
 export const HARNESS_SKILL_MANIFESTS: unknown[] = [
   kriyaBrainstorm,
@@ -21,9 +24,12 @@ export const HARNESS_SKILL_MANIFESTS: unknown[] = [
   kriyaDebug,
   kriyaGit,
   kriyaLean,
+  kriyaMigrate,
   kriyaPlan,
+  kriyaResearch,
   kriyaReview,
   kriyaSecurity,
   kriyaTdd,
   kriyaVerify,
+  kriyaVisual,
 ]

@@ -1,0 +1,64 @@
+{
+  "id": "kriya-visual",
+  "name": "Refine what you can see",
+  "description": "Use when a page, screen, chart or 3D scene has to look right: render it, look at the result, name each defect, fix one at a time, look again. Judge from the rendered page, never from the code.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [
+    {
+      "project": "ECC",
+      "version": "main",
+      "commit": "07971588f8",
+      "license": "MIT",
+      "url": "https://github.com/affaan-m/ECC",
+      "path": "skills/browser-qa"
+    },
+    {
+      "project": "ECC",
+      "version": "main",
+      "commit": "07971588f8",
+      "license": "MIT",
+      "url": "https://github.com/affaan-m/ECC",
+      "path": "skills/frontend-design-direction"
+    }
+  ],
+  "categories": ["design", "browser"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "design",
+      "visual",
+      "layout",
+      "typography",
+      "responsive",
+      "animation",
+      "screenshot",
+      "3d",
+      "scene",
+      "styling",
+      "looks wrong",
+      "polish"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from kriya_verify runs the harness records (docs/kriya-harness/KRIYA_LOOP.md); the skill adds no tool or approval.",
+  "limits": {
+    "maxChars": 2400
+  },
+  "evals": [
+    {
+      "ask": "Polish the layout of the pricing page",
+      "expect": "activate"
+    },
+    {
+      "ask": "Write a SQL query for monthly totals",
+      "expect": "skip"
+    }
+  ]
+}

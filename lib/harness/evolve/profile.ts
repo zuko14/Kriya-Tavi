@@ -13,11 +13,24 @@ import { BASELINE, HarnessProfile } from "./profile-schema"
 export { BASELINE, HarnessProfile }
 
 const KEYS = Object.keys(BASELINE).sort() as (keyof HarnessProfile)[]
+// Fields added after profiles were first recorded
+const ADDED = new Set<string>([
+  "loopGuard",
+  "strictLoop",
+  "defensive",
+  "recon",
+  "jitTools",
+])
 
-/** A content hash of the profile: the same settings give the same id */
+/**
+ * A content hash of the profile: the same settings give the same id. A field
+ * added later counts only when set, so recorded ids and lessons stay valid.
+ */
 export const profileId = (p: HarnessProfile) =>
   createHash("sha256")
-    .update(JSON.stringify(KEYS.map((k) => [k, p[k]])))
+    .update(
+      JSON.stringify(KEYS.filter((k) => !ADDED.has(k) || p[k]).map((k) => [k, p[k]]))
+    )
     .digest("hex")
     .slice(0, 12)
 
@@ -33,11 +46,18 @@ export const toEnv = (p: HarnessProfile): Record<string, string> => ({
   KRIYA_MAX_STEPS: String(p.maxSteps),
   KRIYA_TURN_MINUTES: String(p.turnMinutes),
   KRIYA_MAX_REPEATS: String(p.maxRepeats),
+  // Only when on: an older daemon refuses names it doesn't know
+  ...(p.loopGuard && { KRIYA_LOOP_GUARD: "on" }),
+  ...(p.strictLoop && { KRIYA_STRICT_LOOP: "on" }),
+  ...(p.defensive && { KRIYA_DEFENSIVE: "on" }),
+  ...(p.recon && { KRIYA_RECON: "on" }),
+  ...(p.jitTools && { KRIYA_JIT_TOOLS: "on" }),
 })
 
 // Flags beat the environment in the client (switchEnv), so a run pinned to
 // a profile must not carry them
-export const SWITCH_FLAG = /^--(no-)?(loop|loop-v2|budget|anchor)$/
+export const SWITCH_FLAG =
+  /^--(no-)?(loop|loop-v2|loop-guard|strict-loop|defensive|recon|jit-tools|budget|anchor)$/
 
 /** The fields two profiles differ in, with both values */
 export const profileDiff = (a: HarnessProfile, b: HarnessProfile) =>

@@ -9,7 +9,7 @@ import { SEED } from "./seed"
 
 // npx tsx lib/harness/bench/cli.ts --agent "kriya run --mode auto" \
 //   [--only fix-range-sum,feature-rupees | --level easy|hard|multi|cap] [--out bench.json] [--keep]
-//   [--meter "kriya usage --json"] [--profile profile.json]
+//   [--meter "kriya usage --json"] [--status "kriya verify status --json"] [--profile profile.json]
 //
 // --profile (KRHE, RECURSIVE_HARNESS_EVOLUTION.md): the run is pinned to a
 // harness profile: its switches and limits go to the agent's environment,
@@ -27,6 +27,8 @@ const { values } = parseArgs({
     "timeout-minutes": { type: "string", default: "10" },
     // e.g. "kriya usage --json": each task's spend from Kriya's ledger (U4)
     meter: { type: "string" },
+    // e.g. "kriya verify status --json": each task's own record of the run
+    status: { type: "string" },
     profile: { type: "string" },
   },
 })
@@ -63,7 +65,7 @@ if (only && tasks.length !== only.length) {
 
 const report = await runBench(
   tasks,
-  commandAgent(agentArgs, values.meter?.split(/\s+/)),
+  commandAgent(agentArgs, values.meter?.split(/\s+/), values.status?.split(/\s+/)),
   {
     agentTimeoutMs: Number(values["timeout-minutes"]) * 60_000,
     keep: values.keep,

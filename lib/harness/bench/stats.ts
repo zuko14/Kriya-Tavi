@@ -43,6 +43,39 @@ type Report = { seedVersion: string; results: TaskResult[] }
 
 const valid = (r: Report) => r.results.filter((t) => t.status !== "invalid")
 
+const total = (
+  rows: TaskResult[],
+  f: (t: NonNullable<TaskResult["trajectory"]>) => number
+) => rows.reduce((n, t) => n + (t.trajectory ? f(t.trajectory) : 0), 0)
+
+/**
+ * What the sessions' own records add to the grader's pass or fail, for runs
+ * with a status command; null without any. `falseVerified` is the number that
+ * matters most: the session said verified and the hidden grader disagreed.
+ */
+function evidence(rows: TaskResult[]) {
+  const seen = rows.filter((t) => t.trajectory)
+  if (!seen.length) return null
+  const verified = seen.filter((t) => t.trajectory!.status === "verified")
+  const honest = verified.filter((t) => t.status === "passed").length
+  return {
+    tasks: seen.length,
+    verifiedPerMille: Math.floor((honest * 1000) / seen.length),
+    falseVerified: verified.length - honest,
+    unfinished: seen.filter((t) => (t.trajectory!.open ?? 0) > 0).length,
+    blocked: seen.filter((t) => (t.trajectory!.blocked ?? 0) > 0).length,
+    recoveredSteps: total(seen, (x) => x.recovered ?? 0),
+    checkRuns: total(seen, (x) => x.checkRuns ?? 0),
+    failedRuns: total(seen, (x) => x.failedRuns ?? 0),
+    builders: total(seen, (x) => x.builders ?? 0),
+    builderSteps: total(seen, (x) => x.builderSteps ?? 0),
+    stalled: total(seen, (x) => x.stalled ?? 0),
+    interrupted: total(seen, (x) => x.interrupted ?? 0),
+    rollbacks: total(seen, (x) => x.rollbacks ?? 0),
+    earlyFailures: total(seen, (x) => x.earlyFailures ?? 0),
+  }
+}
+
 /**
  * One arm over several runs of the same seed set: the pooled pass rate with
  * its interval, pass^k (tasks that passed in every run) and the spend.
@@ -73,6 +106,7 @@ export function armSummary(reports: Report[]) {
     costMicroInr,
     costPerPassedMicroInr:
       costMicroInr !== null && passed > 0 ? costMicroInr / BigInt(passed) : null,
+    evidence: evidence(rows),
   }
 }
 

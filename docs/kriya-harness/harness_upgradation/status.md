@@ -21,6 +21,9 @@ session also goes to the root `status.md` (track H section).
 | U10 Default-on (B4) and release preparation | COMPLETE (2026-11-04); publish/pilot are the owner's | HU-SW-01, RELEASE_0.2.0.md |
 | H14e Loop v2 (`--loop-v2`, default off) | IN_PROGRESS (2026-11-04): built and tested with a scripted model; not measured on a real model (needs the owner's spend go-ahead) | KV2-*, KRIYA_LOOP_V2.md |
 | H16 KRHE (Kriya Evolve offline) | IN_PROGRESS (2026-11-04): KRHE-0…2 and profile pinning built; nothing probed, nothing promoted | HU-EV-*, RECURSIVE_HARNESS_EVOLUTION.md, krhe/ |
+| H21 Loop guard, run evidence, native skills (`--loop-guard`, default off) | IN_PROGRESS (2026-11-05): built, tested on real DSH with a scripted model; not measured on a real model; uncommitted | LG-*, HU-EV-08, HU-BEN-05, KRIYA_HARNESS_UPGRADE_REPORT.md |
+| H22 Strict loop, recon, JIT tools (default off) | IN_PROGRESS (2026-11-05): built, tested on real DSH with a scripted model; no real-model measurement; uncommitted on `feat/top1-coding-harness` | ST-*, HU-EV-06/08, KRIYA_CODING_HARNESS_REPORT.md |
+| H23 Defensive engine (`--defensive`, default off) | IN_PROGRESS (2026-11-05): built; measured on injected bugs, replayed commits and a scripted model; no real-model run; uncommitted | DF-*, KRIYA_DEFENSIVE_ENGINE_REPORT.md |
 
 ## Owner actions (exact)
 
@@ -450,3 +453,53 @@ session also goes to the root `status.md` (track H section).
   `npm run check` **238/238, exit 0**.
 - **Not measured:** a real model's gain. KriyaBench-R long-horizon arms
   (≈ ₹200–300) need the owner's go-ahead (INTENT_ROUTER_AND_LONG_HORIZON.md §5).
+
+### 2026-11-05 — H21 loop guard, run evidence, native skills (Claude Code / Opus 5.5; owner brief in chat: "Existing architecture intelligence, incremental upgrades and autonomous self-improvement")
+
+- **Preflight.** Kriya `main` at `8d76ac4`, only the owner's untracked
+  `docs/kriya_visual_studio/`, left as is. Client `main` at `08f4f66`, clean, not
+  touched. Client work in new detached worktree `../kriya-harness-evolve`;
+  `../kriya-harness-base` is a clean baseline for the A/B, safe to remove.
+- **Found (reproduced):** HU-F-30…37 (`KRIYA_EXISTING_ARCHITECTURE_AUDIT.md` §5).
+- **Built:** see `KRIYA_HARNESS_UPGRADE_REPORT.md`. One default-on correction
+  (`partial`); everything else behind `--loop-guard`, `--router`,
+  `harness.defaultSkills` or an opt-in flag.
+- **Checks (real output):** client `npm run check` **323/323, exit 0** (was 300);
+  `release:check` ok. Kriya `env -u OPENROUTER_API_KEY npm run check` **Test Files
+  263 passed, 5 skipped; Tests 3102 passed, 63 skipped; exit 0** (was 3093); lint 0
+  errors, 8 warnings; `npm run build` with `.env.verify`, guard OK, compiled, exit 0.
+- **KriyaBench-M (scripted model, ₹0):** done 3 → 9 of 15, false verified 3 → 0,
+  builders 51 → 45, requests 123 → 135 (`KRIYA_HARNESS_BENCHMARK_REPORT.md`).
+- **Not done.** No real-model run, commit, push, release or deploy. Progress tab
+  label not seen rendered (route confirmed). Scenarios 1, 5 not covered.
+- **Next exact action (owner).** Say whether to commit, and whether to fund B4 vs
+  B4 + `--loop-guard` (₹130–200).
+
+### 2026-11-05 — H22 strict loop, recon, JIT tools (Claude Code / Opus 5.5; owner brief in chat: "World-Class Long-Horizon Autonomous Coding Harness & Self-Evolution Engine")
+
+- **Branch:** `feat/top1-coding-harness` created in both repositories as the brief
+  asked (client in worktree `../kriya-harness-evolve`); H21's work carried over.
+  Nothing committed or pushed.
+- **Built:** see `KRIYA_CODING_HARNESS_REPORT.md`, including where it differs from
+  the brief and why (rules stay person-confirmed outside the project).
+- **Checks (real output):** client `npm run check` **346/346, exit 0**;
+  `release:check` exit 0; Kriya **3104 passed, 63 skipped, exit 0**; build compiled
+  with `.env.verify`, guard OK.
+- **KriyaBench-M (scripted, ₹0), strict vs guard:** done 3 → 9 of 15, false verified
+  9 → 0, files left unparsable 6 → 0, requests 105 → 135.
+- **Not done.** No real model; no 50-file task; the brief's frontier claim untested.
+- **Next exact action (owner).** Say whether to commit, and whether to fund paid arms.
+
+### 2026-11-05 — H23 defensive engine (Claude Code / Opus 5.5; owner brief in chat: "Proactive Failure Anticipation & Cross-Feature Breakdown Defense")
+
+- **Built, uncommitted on `feat/top1-coding-harness`:** pre-mortem, blast radius and
+  neighbour tests, invariant sentinel, diff review, bad-input test rule
+  (`KRIYA_DEFENSIVE_ENGINE_REPORT.md`).
+- **Real repo:** 12 injected bugs, blast radius 10, direct imports 9; the other 2
+  pass Kriya's full suite too, so nothing tests them. 78 accepted commits replayed:
+  5 flagged (first version: 10 of 40 on Kriya alone).
+- **Scripted, ₹0:** done 3 → 18 of 18, false verified 15 → 0, requests 99 → 132.
+- **Checks (real output):** client `npm run check` **365/365, exit 0**;
+  `release:check` exit 0; Kriya **3104 passed, 63 skipped, exit 0**.
+- **Not done.** No real model; no comparison with any other harness.
+- **Next exact action (owner).** Say whether to commit, and whether to fund a paid run.
