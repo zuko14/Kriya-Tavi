@@ -82,6 +82,10 @@ const provider = (
       isolation: "trusted-runc",
       users: "*",
       maxWaitSeconds: 2,
+      // Sweeps measure the real machine: a busy CI runner isn't a busy node
+      psiCpuMax: 100,
+      psiMemMax: 100,
+      psiIoMax: 100,
       ...policy,
     },
     sleep: (ms) => new Promise((r) => setTimeout(r, Math.min(ms, 100))),
