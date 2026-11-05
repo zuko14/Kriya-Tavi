@@ -480,6 +480,60 @@ describe("taint crosses threads (OT-CREW-12)", () => {
     expect(await asks()).toEqual([{ thread_id: web.thread_id, tool_name: "web_fetch" }])
   })
 
+  it("a lead that reads mail and dispatches in the same turn marks its parts", async () => {
+    const { thread } = await squadJob()
+    model.script = (prompt, results) =>
+      prompt.includes("[lead:go]")
+        ? results === 0
+          ? call("gmail_read", { id: "m1" }, "g1")
+          : results === 1
+            ? call(
+                "crew_dispatch",
+                { parts: [part("web", "a3", "[part:web] Look it up")] },
+                "c1"
+              )
+            : say("Dispatched.")
+        : prompt.includes("[part:web]")
+          ? results === 0
+            ? call("web_fetch", { url: URL }, "w1")
+            : say("Looked it up.")
+          : say("Done.")
+    await w.turn("[lead:go] Read the mail and hand it on", thread)
+    await drain()
+    const [web] = await parts()
+    expect(fixtures.web).toEqual([])
+    expect(await asks()).toEqual([{ thread_id: web.thread_id, tool_name: "web_fetch" }])
+  })
+
+  it("a dependent part is marked even if the lead's turn is never saved", async () => {
+    const { thread } = await squadJob()
+    const read = {
+      role: "assistant" as const,
+      content: [
+        {
+          type: "tool-call" as const,
+          toolCallId: "g1",
+          toolName: "gmail_read",
+          input: { id: "m1" },
+        },
+      ],
+    }
+    await dispatchCrew(
+      { ...lead(thread), messages: [read] },
+      {
+        parts: [
+          part("plain", "a2", "Write a note"),
+          part("web", "a3", "[part:web] Look it up", ["plain"]),
+        ],
+      }
+    )
+    script()
+    await settle(1)
+    const web = (await parts()).find((p) => p.key === "web")!
+    expect(fixtures.web).toEqual([])
+    expect(await asks()).toEqual([{ thread_id: web.thread_id, tool_name: "web_fetch" }])
+  })
+
   it("the join carries the mark to the lead and into the next round's briefs", async () => {
     const { thread } = await squadJob()
     await dispatchCrew(lead(thread), {

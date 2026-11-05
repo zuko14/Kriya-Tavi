@@ -14085,8 +14085,8 @@ restarted, then stopped at the end, as found.
 
 ## Crew report taint (track O, SD-11 finding / SO-05), 2026-11-05
 
-**State: done; rebased onto `main` after PR #12 merged (PR #15).** Closes SO-05
-except the same-turn gap below. Owner approved the protected `lib/agent/tools.ts`
+**State: merged in PR #15; same-turn follow-up below on its own branch.** Closes
+SO-05. Owner approved the protected `lib/agent/tools.ts`
 change in chat on 2026-11-05 ("Yes, apply it").
 
 - Changed: `lib/operator/marker.ts` (new: `CREW_CONTEXT`, `CREW_PRIVATE`),
@@ -14106,14 +14106,14 @@ change in chat on 2026-11-05 ("Yes, apply it").
 - HT-BEN-02: the test allowed 30 s for two runs that may take 120 s each. PR #13
   (`fix/bench-test-timeout`) fixes it; it also failed PR #12's CI, whose build step
   was skipped. That build passes locally on `920cb35`.
-- Known gap, confirmed by a scratch probe: a lead that reads private mail and calls
-  `crew_dispatch` in the same turn sends an unmarked brief (the turn isn't saved
-  yet). Closing it needs `messages` passed from `crew_dispatch`'s `execute` in
-  `lib/agent/tools.ts`: another protected change, not approved or made.
+- Same-turn gap closed 2026-11-05 (owner in chat: "Yes, close it"): `crew_dispatch`
+  passes the running turn's `messages`, and `dispatchCrew` saves the mark in each
+  part's thread inside its transaction, so a dependent part can't start unmarked
+  before the lead's turn is saved. OT-CREW-12 gained 2 tests, red before the change.
 - Rebase: PR #12 edited the same lines of `privateContentSeen` and `untrustedSeen`;
   both sets of markers are kept. PR #14 brought the HT-BEN-02 fix to `main`, plus
   `tests/cloud/selfhosted.test.ts` no longer letting the runner's PSI pressure refuse
   its node (E2E-01 failed #14's first CI run). PR #13 is now redundant.
 - kriya-harness PR #27: its first CI jobs never started (GitHub billing). After the
   repository went public, all 8 checks passed at `0c2b0b6`. Merge it after this.
-- Next exact action: read PR #15's CI, merge it, close PR #13, then merge PR #27.
+- Next exact action: read the follow-up PR's CI and merge it.

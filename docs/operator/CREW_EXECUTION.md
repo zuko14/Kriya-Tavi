@@ -149,9 +149,10 @@ has `CREW_CONTEXT` (memory stays quarantined), and `CREW_PRIVATE` too if a
 quoted thread saw private content (`guardWeb` then fires). `marks()` in
 `lib/operator/crews.ts` decides from the saved messages through the same two
 functions, so a marked thread marks what it hands on: a chain of parts and a
-next round's briefs keep the mark. Known gap: a lead that reads private
-content and dispatches in the **same turn** isn't caught, because its turn
-isn't saved yet.
+next round's briefs keep the mark. A lead's running turn isn't saved yet, so
+`crew_dispatch` also passes its `messages`, and the mark is written into each
+part's own thread in the dispatch transaction: a dependent part stays marked
+even if the lead's turn is saved late or lost.
 
 ## 6. Money, limits and stopping
 

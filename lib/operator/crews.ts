@@ -1,4 +1,4 @@
-import { convertToModelMessages } from "ai"
+import { convertToModelMessages, type ModelMessage } from "ai"
 import { and, asc, desc, eq, gt, inArray, sql } from "drizzle-orm"
 import { nanoid } from "nanoid"
 import { z } from "zod"
@@ -20,6 +20,7 @@ import {
   type CrewRun,
   type Mandate,
 } from "@/db/schema"
+import { saveMessage } from "@/lib/agent/messages"
 import {
   cancelThreadTask,
   enqueuePart,
@@ -106,12 +107,13 @@ const own = (userId: string) => ({
 // Text crosses threads here but tool calls don't, so these words say what the
 // threads read. A thread marked earlier counts, so a chain of parts or a
 // next round keeps the mark. Empty when the threads read nothing from outside.
-async function marks(userId: string, threadIds: string[]) {
+// `current` is a running turn, which isn't saved until it ends.
+async function marks(userId: string, threadIds: string[], current: ModelMessage[] = []) {
   const rows = await privileged
     .select({ id: messages.id, role: messages.role, parts: messages.parts })
     .from(messages)
     .where(and(eq(messages.userId, userId), inArray(messages.threadId, threadIds)))
-  const seen = await convertToModelMessages(rows as KriyaMessage[])
+  const seen = [...current, ...(await convertToModelMessages(rows as KriyaMessage[]))]
   if (privateContentSeen(seen)) return `${CREW_CONTEXT}. ${CREW_PRIVATE}.`
   return untrustedSeen(seen) ? `${CREW_CONTEXT}.` : ""
 }
@@ -119,7 +121,7 @@ async function marks(userId: string, threadIds: string[]) {
 /* ───────────────────────────── dispatch ─────────────────────────── */
 
 export async function dispatchCrew(
-  env: { userId: string; threadId: string; leadId: string },
+  env: { userId: string; threadId: string; leadId: string; messages?: ModelMessage[] },
   input: unknown
 ) {
   const parsed = dispatchSchema.safeParse(input)
@@ -187,6 +189,8 @@ export async function dispatchCrew(
     dependsOn: p.dependsOn ?? [],
     name: members.find((m) => m.id === p.agentId)!.name,
   }))
+  // The briefs may quote what the lead read, or an earlier round's reports
+  const mark = await marks(userId, [threadId], env.messages)
   try {
     await privileged.transaction(async (tx) => {
       await tx.insert(crewRuns).values(run)
@@ -198,6 +202,15 @@ export async function dispatchCrew(
           title: `${job.title} · ${name}`.slice(0, 80),
         })
         await tx.insert(crewParts).values(part)
+        // In the part's own thread, now: a dependent part may start before
+        // the lead's turn is saved, or after it was lost
+        if (mark)
+          await saveMessage(tx, userId, part.threadId, {
+            id: `crew-mark-${part.id}`,
+            role: "user",
+            parts: [{ type: "text", text: mark }],
+            metadata: { channel: "crew", runId: run.id, partId: part.id },
+          })
       }
     })
   } catch (error) {
@@ -211,11 +224,8 @@ export async function dispatchCrew(
   }
 
   const leadName = members.find((m) => m.id === leadId)?.name ?? "your lead"
-  // The brief may quote what the lead read, or an earlier round's reports
-  const mark = await marks(userId, [threadId])
   for (const part of made)
-    if (part.dependsOn.length === 0)
-      await startPart(job, leadName, part, mark && `\n\n${mark}`)
+    if (part.dependsOn.length === 0) await startPart(job, leadName, part)
   return {
     runId: run.id,
     parts: made.map((p) => ({
