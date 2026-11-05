@@ -57,14 +57,23 @@ describe("HT-BEN-01: the seed set", () => {
   })
 })
 
+// Each task runs twice, and each verify may take its whole timeout: code that
+// is slow by design (hard-perf-dedupe) needs it on a loaded CI runner
+const BOTH_RUNS_MS =
+  2 * 1000 * Math.max(...SEED.map((t) => t.verify.timeoutSeconds)) + 30_000
+
 describe("HT-BEN-02: every task fails as given and passes with its reference fix", () => {
-  it.each(SEED.map((t) => [t.id]))("%s", async (id) => {
-    const t = task(id)
-    const fixed = await runTask(t, writes(t.solution))
-    expect(fixed).toMatchObject({ status: "passed", verifyExit: 0, escaped: false })
-    expect(fixed.leaked).toBe(false)
-    expect((await runTask(t, idle)).status).toBe("failed")
-  })
+  it.each(SEED.map((t) => [t.id]))(
+    "%s",
+    async (id) => {
+      const t = task(id)
+      const fixed = await runTask(t, writes(t.solution))
+      expect(fixed).toMatchObject({ status: "passed", verifyExit: 0, escaped: false })
+      expect(fixed.leaked).toBe(false)
+      expect((await runTask(t, idle)).status).toBe("failed")
+    },
+    BOTH_RUNS_MS
+  )
 })
 
 describe("HT-BEN-08: multi-part tasks give the loop a real check", () => {
