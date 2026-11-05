@@ -14081,7 +14081,7 @@ which also affected the version hash.
 `docs/kriya-studio/DECISIONS.md` §3, SO-01…09. First: review the pull requests. Docker Desktop quit once during the session, cause unknown; it was
 restarted, then stopped at the end, as found.
 
-**Next exact action:** on the owner's go-ahead, one paid real-model run of journeys 1 and 3 (SO-08), then a joined device run.
+**Next exact action:** see "Flows launch record" below.
 
 ## Crew report taint (track O, SD-11 finding / SO-05), 2026-11-05
 
@@ -14116,4 +14116,25 @@ change in chat on 2026-11-05 ("Yes, apply it").
   its node (E2E-01 failed #14's first CI run). PR #13 is now redundant.
 - kriya-harness PR #27: its first CI jobs never started (GitHub billing). After the
   repository went public, all 8 checks passed at `0c2b0b6`. Merge it after this.
-- Next exact action: read the follow-up PR's CI and merge it.
+- Follow-up merged as PR #16; CI green on `db7e23c`.
+
+## Flows launch record, 2026-11-05
+
+Owner-reported in chat; not checked by the agent, which never touches the live
+database:
+
+- Migration `20270901000000_flows.sql` applied in Supabase (SO-03).
+- A joined run was done. Its result, and whether it used a real model, weren't shared.
+
+Checked by the agent:
+
+- `~/Developer/kriya-harness` is clean on `main`; the two local edits were discarded by
+  the owner. Committing them would have failed `check:notices` and `release:check`.
+- Kriya-Tavi PRs #12, #14, #15, #16 and kriya-harness #27 are merged; #13 is closed.
+- `studio.flows` is one global switch (`lib/flows/on.ts`): no allow-list, so turning it
+  on shows Flows to every account.
+
+Open before SO-01 (turn `studio.flows` on): the joined run's result; a real-model run
+(SO-08, unless the joined run was one); `kriya-web` and `kriya-worker` deployed from
+`main`; the client release (SO-06) for device flows. Keep `studio.copilot` and
+`studio.deviceFlows` off until those are proven.

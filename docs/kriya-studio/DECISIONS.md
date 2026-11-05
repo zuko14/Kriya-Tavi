@@ -235,7 +235,7 @@ sub-flows, triggers other than Run. None appears in the UI as a dead control.
 | --- | --- | --- |
 | SO-01 | Turn `studio.flows` on in production? | Off |
 | SO-02 | Should Flows be limited by plan? | Plan's task limits apply; no flow-specific plan field |
-| SO-03 | Apply the migration to production | Not applied |
+| SO-03 | Apply the migration to production | Applied by the owner, 2026-11-05 |
 | SO-04 | Approve the `lib/agent/tools.ts` marker change (SD-11), stricter only, protected by track A | Approved by the owner; merged in PR #12 |
 | SO-05 | Fix the crew report taint gap (SD-11 finding) | Fixed in PR #15 and the same-turn follow-up |
 | SO-06 | Release the client with the Graph tab and seeded plans | Not published |
