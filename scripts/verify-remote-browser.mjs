@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
+import { gzipSync } from "node:zlib"
 
 import { createServerClient } from "@supabase/ssr"
 import { createClient } from "@supabase/supabase-js"
@@ -68,17 +69,57 @@ async function setup() {
   console.log("setup: switches on; start web-verify now")
 }
 
+// As the client sends on production: gzip+base64 past the host's firewall
 async function report(token, body) {
   const res = await fetch(`${APP_URL}/api/harness/v1/live`, {
     method: "POST",
     headers: {
       authorization: `Bearer ${token}`,
-      "content-type": "application/json",
+      "content-type": "text/plain; charset=us-ascii",
+      "x-kriya-body": "gzip+base64",
       "x-kriya-harness": "0.2.0",
     },
-    body: JSON.stringify(body),
+    body: gzipSync(Buffer.from(JSON.stringify(body))).toString("base64"),
   })
   if (res.status !== 204) throw new Error(`POST /live answered ${res.status}`)
+}
+
+// The real client (../kriya-harness plugins/remote) into the real route
+async function clientDelivers(token, userId) {
+  const { remote } = await import(
+    path.resolve(process.cwd(), "..", "kriya-harness", "plugins", "remote", "index.js")
+  )
+  const file = path.join(fs.mkdtempSync("/tmp/kriya-rc-"), "remote.json")
+  const r = remote({
+    device: () => ({ url: APP_URL, token }),
+    file,
+    flushMs: 100,
+    external: () => true,
+  })
+  await r.set("session-client", { on: true }, { folder: process.cwd() })
+  const at = Date.now()
+  r.onEvent("session-client", {
+    type: "user/message",
+    time: at,
+    data: {
+      source: { kind: "user" },
+      content: [{ type: "text", text: "From the client" }],
+    },
+  })
+  r.onEvent("session-client", {
+    type: "tool/call",
+    time: at,
+    data: { callId: "c", name: "bash", arguments: '{"command":"npm test"}' },
+  })
+  await new Promise((done) => setTimeout(done, 1500))
+  await r.close()
+  const rows = await sql`select e.kind from kriya.harness_live_events e
+    join kriya.harness_live_sessions s on s.id = e.session_id
+    where s.device_session_id = 'session-client' and s.user_id = ${userId} order by e.seq`
+  const kinds = rows.map((row) => row.kind).join(",")
+  if (kinds !== "user,tool_start")
+    throw new Error(`client delivered: ${kinds || "nothing"}`)
+  console.log("client → server delivery: ok")
 }
 
 // Controls under 44 px on a phone; links inside running text don't count
@@ -134,6 +175,8 @@ async function run() {
   })
   const [session] =
     await sql`select id from kriya.harness_live_sessions where device_session_id = 'session-verify' and user_id = ${user.id}`
+
+  await clientDelivers(token, user.id)
 
   const jar = await cookies()
   const browser = await chromium.launch({ executablePath: CHROME_PATH, headless: true })

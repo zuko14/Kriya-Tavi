@@ -21,6 +21,7 @@ import { getSetting } from "@/lib/config"
 import { getPlan } from "@/lib/entitlements"
 import { controlCenter } from "@/lib/harness/control"
 import { liveSessions } from "@/lib/harness/live"
+import { log } from "@/lib/log"
 import { harnessSpend } from "@/lib/harness/devices"
 import { formatInr } from "@/lib/money"
 import { studioOn } from "@/lib/skill-studio"
@@ -217,7 +218,13 @@ export default async function HarnessPage() {
   // The Control Center (CONTROL_CENTER.md): only with its switch on
   const center = control ? await controlCenter(user.id) : null
   // Remote Control (REMOTE_CONTROL.md): only with its switch on
-  const live = (await on("harness.remoteControl")) ? await liveSessions(user.id) : null
+  // A failed read (the switch on before its migration) costs this section, not the page
+  const live = (await on("harness.remoteControl"))
+    ? await liveSessions(user.id).catch((error) => {
+        log.error("remote control list failed", { error: String(error) })
+        return null
+      })
+    : null
   // Track S: a plan drawn in Flows runs here through the same daemon
   const flows = center && (await on("studio.flows")) && (await on("studio.deviceFlows"))
   const install = await getSetting("harness.installCommand")
