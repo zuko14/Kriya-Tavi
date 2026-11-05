@@ -406,6 +406,29 @@ export const RunReportRequest = z.strictObject({
   dispatchId: z.uuid().optional(),
 })
 
+// Remote Control (REMOTE_CONTROL.md): what one session is doing. Tool lines
+// carry a short target (a path, a command, an address), never tool output
+export const LiveEvent = z.strictObject({
+  seq: z.number().int().min(0),
+  at: z.number().int().positive(),
+  kind: z.enum(["user", "assistant", "tool_start", "tool_end"]),
+  text: z.string().max(8000).optional(),
+  callId: z.string().max(100).optional(),
+  tool: z.string().max(60).optional(),
+  target: z.string().max(400).optional(),
+  status: z.enum(["ok", "error", "declined"]).optional(),
+  ms: z.number().int().min(0).optional(),
+})
+
+export const LiveReportRequest = z.strictObject({
+  deviceSessionId: z.string().min(1).max(100),
+  title: z.string().max(120).optional(),
+  project: z.string().max(80).optional(),
+  remote: z.boolean(),
+  state: z.enum(["running", "waiting", "idle", "ended"]),
+  events: z.array(LiveEvent).max(100),
+})
+
 // Every route: method, path, whether it needs a device token, its schemas
 export const ROUTES = [
   {
@@ -545,6 +568,14 @@ export const ROUTES = [
     path: "/runs",
     auth: true,
     request: RunReportRequest,
+    response: null,
+  },
+  // 204; one row per (computer, session), events kept once per seq
+  {
+    method: "POST",
+    path: "/live",
+    auth: true,
+    request: LiveReportRequest,
     response: null,
   },
 ] as const

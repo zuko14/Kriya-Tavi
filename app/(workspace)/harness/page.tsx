@@ -14,11 +14,13 @@ import {
 import { Devices } from "@/components/account/devices"
 import { Command } from "@/components/harness/command"
 import { ControlCenter } from "@/components/harness/control-center"
+import { LiveList } from "@/components/harness/live"
 import { HarnessApproval } from "@/components/inbox/harness-approval"
 import { requireUser } from "@/lib/auth"
 import { getSetting } from "@/lib/config"
 import { getPlan } from "@/lib/entitlements"
 import { controlCenter } from "@/lib/harness/control"
+import { liveSessions } from "@/lib/harness/live"
 import { harnessSpend } from "@/lib/harness/devices"
 import { formatInr } from "@/lib/money"
 import { studioOn } from "@/lib/skill-studio"
@@ -214,6 +216,8 @@ export default async function HarnessPage() {
     ])
   // The Control Center (CONTROL_CENTER.md): only with its switch on
   const center = control ? await controlCenter(user.id) : null
+  // Remote Control (REMOTE_CONTROL.md): only with its switch on
+  const live = (await on("harness.remoteControl")) ? await liveSessions(user.id) : null
   // Track S: a plan drawn in Flows runs here through the same daemon
   const flows = center && (await on("studio.flows")) && (await on("studio.deviceFlows"))
   const install = await getSetting("harness.installCommand")
@@ -381,10 +385,18 @@ export default async function HarnessPage() {
             </span>
           </Link>
         )}
+        {live && (
+          <Section
+            title="Remote Control"
+            description="Sessions you switched on in Kriya Harness. Open one to follow it as it works."
+          >
+            <LiveList initial={live} />
+          </Section>
+        )}
         {center && signedIn && (
           <Section
             title="Control Center"
-            description="Run tasks and checks on your computer from here or your phone. It runs them only while kriya daemon is on, and only in folders it offers."
+            description="Run tasks and checks on your computer from here or your phone. It runs them only while Remote Control is on there, and only in folders it offers."
           >
             <ControlCenter
               initial={center}

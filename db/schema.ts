@@ -2236,6 +2236,35 @@ export const harnessDispatches = kriya.table("harness_dispatches", {
   finishedAt: at(),
 })
 
+// Remote Control (REMOTE_CONTROL.md): sessions streamed live from a computer
+export const harnessLiveSessions = kriya.table("harness_live_sessions", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: uuid().notNull(),
+  deviceId: uuid().notNull(),
+  deviceSessionId: text().notNull(),
+  title: text(),
+  project: text(),
+  remote: boolean().notNull().default(true),
+  state: text({ enum: ["running", "waiting", "idle", "ended"] })
+    .notNull()
+    .default("idle"),
+  createdAt: createdAt(),
+  updatedAt: createdAt(),
+})
+
+export const harnessLiveEvents = kriya.table(
+  "harness_live_events",
+  {
+    sessionId: uuid().notNull(),
+    seq: integer().notNull(),
+    userId: uuid().notNull(),
+    kind: text({ enum: ["user", "assistant", "tool_start", "tool_end"] }).notNull(),
+    data: jsonb().$type<Record<string, unknown>>().notNull().default({}),
+    at: at().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.sessionId, table.seq] })]
+)
+
 export const harnessRuns = kriya.table("harness_runs", {
   id: uuid().primaryKey().defaultRandom(),
   userId: uuid().notNull(),

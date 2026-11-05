@@ -190,6 +190,7 @@ describe("migrations", () => {
     await pg.exec(read("rollback", "20270401000100_room_goals_notes.down.sql"))
     await pg.exec(read("rollback", "20270401000000_rooms.down.sql"))
     // The Control Center's tables reference harness_devices: rolled back first
+    await pg.exec(read("rollback", "20271001000000_harness_live.down.sql"))
     await pg.exec(read("rollback", "20270801000000_harness_control.down.sql"))
     await pg.exec(read("rollback", "20270301000200_harness_open_cap.down.sql"))
     await pg.exec(read("rollback", "20270301000100_harness_device_provider.down.sql"))
@@ -228,6 +229,7 @@ describe("migrations", () => {
     await pg.exec(read("migrations", "20270301000100_harness_device_provider.sql"))
     await pg.exec(read("migrations", "20270301000200_harness_open_cap.sql"))
     await pg.exec(read("migrations", "20270801000000_harness_control.sql"))
+    await pg.exec(read("migrations", "20271001000000_harness_live.sql"))
     await pg.exec(read("migrations", "20270401000000_rooms.sql"))
     await pg.exec(read("migrations", "20270401000100_room_goals_notes.sql"))
     await pg.exec(read("migrations", "20270401000200_room_moderation.sql"))
@@ -952,6 +954,7 @@ describe("migrations", () => {
     await pg.exec(read("rollback", "20270401000100_room_goals_notes.down.sql"))
     await pg.exec(read("rollback", "20270401000000_rooms.down.sql"))
     // The Control Center's tables reference harness_devices: rolled back first
+    await pg.exec(read("rollback", "20271001000000_harness_live.down.sql"))
     await pg.exec(read("rollback", "20270801000000_harness_control.down.sql"))
     await pg.exec(read("rollback", "20270301000200_harness_open_cap.down.sql"))
     await pg.exec(read("rollback", "20270301000100_harness_device_provider.down.sql"))
@@ -976,6 +979,7 @@ describe("migrations", () => {
     await pg.exec(read("migrations", "20270301000100_harness_device_provider.sql"))
     await pg.exec(read("migrations", "20270301000200_harness_open_cap.sql"))
     await pg.exec(read("migrations", "20270801000000_harness_control.sql"))
+    await pg.exec(read("migrations", "20271001000000_harness_live.sql"))
     await pg.exec(read("migrations", "20270401000000_rooms.sql"))
     await pg.exec(read("migrations", "20270401000100_room_goals_notes.sql"))
     await pg.exec(read("migrations", "20270401000200_room_moderation.sql"))
@@ -1106,6 +1110,7 @@ describe("migrations", () => {
     await pg.exec(read("rollback", "20270401000100_room_goals_notes.down.sql"))
     await pg.exec(read("rollback", "20270401000000_rooms.down.sql"))
     // The Control Center's tables reference harness_devices: rolled back first
+    await pg.exec(read("rollback", "20271001000000_harness_live.down.sql"))
     await pg.exec(read("rollback", "20270801000000_harness_control.down.sql"))
     await pg.exec(read("rollback", "20270301000200_harness_open_cap.down.sql"))
     await pg.exec(read("rollback", "20270301000100_harness_device_provider.down.sql"))
@@ -1126,6 +1131,7 @@ describe("migrations", () => {
     await pg.exec(read("migrations", "20270301000100_harness_device_provider.sql"))
     await pg.exec(read("migrations", "20270301000200_harness_open_cap.sql"))
     await pg.exec(read("migrations", "20270801000000_harness_control.sql"))
+    await pg.exec(read("migrations", "20271001000000_harness_live.sql"))
     await pg.exec(read("migrations", "20270401000000_rooms.sql"))
     await pg.exec(read("migrations", "20270401000100_room_goals_notes.sql"))
     await pg.exec(read("migrations", "20270401000200_room_moderation.sql"))

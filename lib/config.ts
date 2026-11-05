@@ -774,6 +774,15 @@ export const SETTINGS = {
     pattern: /^(on|off)$/,
     hint: "on or off",
   },
+  // Remote Control (REMOTE_CONTROL.md): the switch in Kriya Harness streams a
+  // session to /harness and listens for the Control Center without a command.
+  // Off: POST /live answers 404 and /harness is as before
+  "harness.remoteControl": {
+    env: "KRIYA_HARNESS_REMOTE_CONTROL",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off; the Control Center also needs harness.controlCenter",
+  },
   // Beta until the owner's gates pass (HD-02: H9's gates, the H12 pilot and
   // a stable, audited DeepSeek Harness line); "ga" drops the Beta label
   // Harness upgrade U9 (owner, 2026-11-04: "raising the reasoning output
