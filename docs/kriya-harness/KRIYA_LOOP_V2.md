@@ -7,6 +7,12 @@ and AGENTS.md apply in full. Nothing here changes a risk class, an approval,
 a mode, a limit, a price or the gateway's spend reservation. No server
 (Kriya) code changes: v2 lives in the client and needs no contract change.
 
+> **Flows (2026-11-05).** A person can now draw a plan in Kriya and send it to
+> this loop (`docs/kriya-studio/`, SD-14; client branch `feat/flows-graph`, not
+> released). The semantics here don't change: the plan is saved as written, the
+> model can't replan it, and pass, retry and blocked still come from exit codes.
+> `--loop-v2` stays off by default and unmeasured.
+
 ## 1. What v1 does, and where it loses
 
 v1 composes H = S ⊕ I ⊕ A ⊕ V ⊕ R with I a list of ≤ 7 ordered steps, one

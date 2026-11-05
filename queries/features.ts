@@ -19,6 +19,7 @@ export type Features = {
   apps: boolean
   harness: boolean
   jobs: boolean
+  flows: boolean
 }
 
 export async function getFeatures(userId: string): Promise<Features> {
@@ -36,6 +37,7 @@ export async function getFeatures(userId: string): Promise<Features> {
     mcpConnect,
     harness,
     jobs,
+    flows,
   ] = await Promise.all([
     on("agents.inbox"),
     on("agents.goals"),
@@ -49,6 +51,7 @@ export async function getFeatures(userId: string): Promise<Features> {
     on("next.mcpConnect"),
     on("harness.api"),
     on("operator.mandates"),
+    on("studio.flows"),
   ])
   return {
     inbox,
@@ -61,5 +64,6 @@ export async function getFeatures(userId: string): Promise<Features> {
     apps: mcp && mcpConnect,
     harness,
     jobs,
+    flows,
   }
 }

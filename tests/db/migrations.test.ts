@@ -3,7 +3,7 @@ import path from "node:path"
 
 import { describe, expect, it } from "vitest"
 
-import { createTestDb } from "./harness"
+import { createTestDb, createUser } from "./harness"
 
 const down = fs.readFileSync(
   path.join(process.cwd(), "supabase", "rollback", "20261016000000_kriya_core.down.sql"),
@@ -184,6 +184,7 @@ describe("migrations", () => {
     // (A12), radar (A13), ledger (A7), files (A5), skills (A9) and login
     // profiles (A6); obligations reference goals
     // The self-hosted fabric (SH1) widens the provider checks and references workspaces
+    await pg.exec(read("rollback", "20270901000000_flows.down.sql"))
     await pg.exec(read("rollback", "20270501000000_cloud_fabric.down.sql"))
     await pg.exec(read("rollback", "20270401000200_room_moderation.down.sql"))
     await pg.exec(read("rollback", "20270401000100_room_goals_notes.down.sql"))
@@ -231,6 +232,7 @@ describe("migrations", () => {
     await pg.exec(read("migrations", "20270401000100_room_goals_notes.sql"))
     await pg.exec(read("migrations", "20270401000200_room_moderation.sql"))
     await pg.exec(read("migrations", "20270501000000_cloud_fabric.sql"))
+    await pg.exec(read("migrations", "20270901000000_flows.sql"))
   })
 
   it("rolls the A8 providers and undo columns back and applies them again", async () => {
@@ -944,6 +946,7 @@ describe("migrations", () => {
 
     // Tracks R (R1) and H (H1) sort after it and are rolled back first, newest first
     // The self-hosted fabric (SH1) widens the provider checks and references workspaces
+    await pg.exec(read("rollback", "20270901000000_flows.down.sql"))
     await pg.exec(read("rollback", "20270501000000_cloud_fabric.down.sql"))
     await pg.exec(read("rollback", "20270401000200_room_moderation.down.sql"))
     await pg.exec(read("rollback", "20270401000100_room_goals_notes.down.sql"))
@@ -977,8 +980,45 @@ describe("migrations", () => {
     await pg.exec(read("migrations", "20270401000100_room_goals_notes.sql"))
     await pg.exec(read("migrations", "20270401000200_room_moderation.sql"))
     await pg.exec(read("migrations", "20270501000000_cloud_fabric.sql"))
+    await pg.exec(read("migrations", "20270901000000_flows.sql"))
     expect(await added()).toBe(16)
     expect(await shape()).toEqual(before)
+  })
+
+  it("ST-DB-01 rolls flows back with data in them and applies them again", async () => {
+    const read = (dir: string, file: string) =>
+      fs.readFileSync(path.join(process.cwd(), "supabase", dir, file), "utf8")
+    const pg = await createTestDb()
+    await pg.exec(`
+      create schema if not exists supabase_migrations;
+      create table if not exists supabase_migrations.schema_migrations (version text primary key);
+      insert into supabase_migrations.schema_migrations values ('20270901000000');
+    `)
+    const user = await createUser(pg)
+    await pg.query(
+      `insert into kriya.flows (id, user_id, name, draft) values ('f1', $1, 'F', '{}')`,
+      [user]
+    )
+    await pg.query(
+      "insert into kriya.resource_usage (request_key, kind, quantity) values ('fd:1', 'flow_design', 1), ('br:1', 'browser_seconds', 1)"
+    )
+    await pg.exec(read("rollback", "20270901000000_flows.down.sql"))
+    const { rows: gone } = await pg.query(
+      "select to_regclass('kriya.flows') as flows, to_regclass('kriya.flow_runs') as runs"
+    )
+    expect(gone).toEqual([{ flows: null, runs: null }])
+    // Other usage stays; the old kind check is back
+    const { rows: usage } = await pg.query("select request_key from kriya.resource_usage")
+    expect(usage).toEqual([{ request_key: "br:1" }])
+    await expect(
+      pg.query(
+        "insert into kriya.resource_usage (request_key, kind, quantity) values ('fd:2', 'flow_design', 1)"
+      )
+    ).rejects.toThrow(/resource_usage_kind_check/)
+    await pg.exec(read("migrations", "20270901000000_flows.sql"))
+    await pg.query(
+      "insert into kriya.resource_usage (request_key, kind, quantity) values ('fd:3', 'flow_design', 1)"
+    )
   })
 
   it("HT-DB-06 rolls the harness tables back with data in them and applies them again", async () => {

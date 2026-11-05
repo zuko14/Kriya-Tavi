@@ -5,6 +5,7 @@ import {
   agents,
   charges,
   crewParts,
+  flowNodeRuns,
   memories,
   squadMembers,
   squads,
@@ -17,6 +18,7 @@ import { loadMessages } from "@/lib/agent/messages"
 import { isOwner } from "@/lib/auth"
 import { agentGlyph, joinedGlyph, parseGlyph } from "@/lib/glyph"
 import { crewsOn } from "@/lib/operator/crew-threads"
+import { flowsOn } from "@/lib/flows/on"
 import { checkTaskAllowed, usageSummary } from "@/lib/entitlements"
 import { isGatewayConfigured, TIER_LABELS } from "@/lib/models"
 import { isWebConfigured } from "@/lib/web"
@@ -45,6 +47,21 @@ const notCrewPart = (
       )
     : undefined
 
+// Track S: a flow step's thread is reached from its run, the same way
+const notFlowStep = (
+  tx: Tx,
+  flows: boolean,
+  threadId: typeof threads.id | typeof tasks.threadId
+) =>
+  flows
+    ? notExists(
+        tx
+          .select({ one: sql`1` })
+          .from(flowNodeRuns)
+          .where(eq(flowNodeRuns.threadId, threadId))
+      )
+    : undefined
+
 async function squadsWithAgents(tx: Tx) {
   const rows = await tx.query.squads.findMany({
     orderBy: asc(squads.createdAt),
@@ -67,7 +84,7 @@ export type SquadWithAgents = Awaited<ReturnType<typeof getSquads>>[number]
 // Everything the shell needs: who exists, where their latest thread is,
 // and which of them are working right now
 export async function getNavigation(userId: string) {
-  const crews = await crewsOn()
+  const [crews, flows] = await Promise.all([crewsOn(), flowsOn()])
   return withUser(userId, async (tx) => {
     const agentRows = await tx.select().from(agents).orderBy(asc(agents.createdAt))
     const squadRows = await squadsWithAgents(tx)
@@ -81,7 +98,7 @@ export async function getNavigation(userId: string) {
         activeAt: threads.activeAt,
       })
       .from(threads)
-      .where(notCrewPart(tx, crews, threads.id))
+      .where(and(notCrewPart(tx, crews, threads.id), notFlowStep(tx, flows, threads.id)))
       .orderBy(desc(threads.activeAt))
       .limit(200)
     const active = await tx
@@ -170,7 +187,7 @@ export async function getThreadsFor(
   const where = owner.agentId
     ? eq(threads.agentId, owner.agentId)
     : eq(threads.squadId, owner.squadId ?? "")
-  const crews = await crewsOn()
+  const [crews, flows] = await Promise.all([crewsOn(), flowsOn()])
   return withUser(userId, (tx) =>
     tx
       .select({
@@ -180,7 +197,9 @@ export async function getThreadsFor(
         activeAt: threads.activeAt,
       })
       .from(threads)
-      .where(and(where, notCrewPart(tx, crews, threads.id)))
+      .where(
+        and(where, notCrewPart(tx, crews, threads.id), notFlowStep(tx, flows, threads.id))
+      )
       .orderBy(desc(threads.activeAt))
       .limit(50)
   )
@@ -269,7 +288,7 @@ export type Activity = Awaited<ReturnType<typeof getActivity>>
 
 // Every task across agents and squads, newest first, for the Tasks screen
 export async function getTasks(userId: string, limit = 60) {
-  const crews = await crewsOn()
+  const [crews, flows] = await Promise.all([crewsOn(), flowsOn()])
   return withUser(userId, (tx) =>
     tx
       .select({
@@ -296,7 +315,12 @@ export async function getTasks(userId: string, limit = 60) {
       .leftJoin(threads, eq(tasks.threadId, threads.id))
       .leftJoin(squads, eq(threads.squadId, squads.id))
       .leftJoin(charges, eq(charges.taskId, tasks.id))
-      .where(notCrewPart(tx, crews, tasks.threadId))
+      .where(
+        and(
+          notCrewPart(tx, crews, tasks.threadId),
+          notFlowStep(tx, flows, tasks.threadId)
+        )
+      )
       .orderBy(desc(tasks.createdAt))
       .limit(limit)
       .then((rows) =>

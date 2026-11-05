@@ -787,6 +787,52 @@ export const SETTINGS = {
     pattern: /^[1-9]\d{3,5}$/,
     hint: "1,024 to 262,144 tokens per answer (reasoning included)",
   },
+  // Flows (track S, docs/kriya-studio/): off means no entry, no routes, no pass
+  "studio.flows": {
+    env: "KRIYA_STUDIO_FLOWS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // The describe box: one capped model call a time, previewed before use
+  "studio.copilot": {
+    env: "KRIYA_STUDIO_COPILOT",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off; needs studio.flows",
+  },
+  // Flows for the person's computer; needs harness.controlCenter
+  "studio.deviceFlows": {
+    env: "KRIYA_STUDIO_DEVICE_FLOWS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off; needs studio.flows and harness.controlCenter",
+  },
+  // The validator refuses a flow whose worst case passes this (SD-05)
+  "studio.maxNodeRuns": {
+    env: "KRIYA_STUDIO_MAX_NODE_RUNS",
+    fallback: "40",
+    pattern: /^[1-9][0-9]{0,2}$/,
+    hint: "agent runs at most, 1 to 999",
+  },
+  "studio.maxConcurrentNodes": {
+    env: "KRIYA_STUDIO_MAX_CONCURRENT_NODES",
+    fallback: "4",
+    pattern: /^[1-9][0-9]?$/,
+    hint: "agents at once per run, 1 to 99",
+  },
+  "studio.dailyRuns": {
+    env: "KRIYA_STUDIO_DAILY_RUNS",
+    fallback: "50",
+    pattern: /^[1-9][0-9]{0,3}$/,
+    hint: "runs per person per day",
+  },
+  "studio.copilotDaily": {
+    env: "KRIYA_STUDIO_COPILOT_DAILY",
+    fallback: "20",
+    pattern: /^[1-9][0-9]{0,2}$/,
+    hint: "designs per person per day",
+  },
   "harness.releaseStage": {
     env: "KRIYA_HARNESS_RELEASE_STAGE",
     fallback: "beta",

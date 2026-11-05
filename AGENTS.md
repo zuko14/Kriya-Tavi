@@ -352,3 +352,31 @@ apply to this track too.
 6. Proof cards come only from episode `done` items; model text is never
    proof; agent-to-agent turns stay within the conductor's budget.
 7. Realtime pings carry no content; notifications are in-app only.
+
+## Flows (track S)
+
+Graphs a person draws or describes, run on the real runtime: agent steps are
+ordinary tasks, a device flow is a Loop v2 plan on their computer. Planned in
+`docs/kriya-studio/`; progress in the root `status.md`. Voice rules 2, 3, 6, 7
+and 12, track-A rules 1–12, operator rules 1–9, track-N rules 1–9 and track-C
+rule 3 apply to this track too.
+
+1. Before editing any existing file, read
+   `docs/kriya-studio/CHANGE_IMPACT_AND_SAFETY.md`.
+2. Every capability ships behind a `studio.*` switch that defaults off; off,
+   nothing changes (ST-REG).
+3. No second runtime: an agent step goes through `enqueuePart`, and
+   `lib/agent/queue.ts`, `run-task.ts`, `metering.ts` and `policy.ts` don't
+   change for Flows.
+4. A graph is untrusted input and has no field for a risk class, approval,
+   limit, secret, URL, command or code. Repetition exists only as a bounded loop
+   region; the validator refuses a flow whose exact worst case passes the limit.
+5. A step's output reaches the next step only as data, under `FOREIGN`, marked
+   `FLOW_CONTEXT`, and `FLOW_PRIVATE` if anything upstream read private content
+   (SD-11).
+6. Only code decides pass, fail and done, from verified tool runs and exit
+   codes; a device flow completes only when every step passed its own check.
+7. The copilot proposes; it has no tool and never saves, publishes or runs.
+   Improve's moves are one-factor and made by code; adoption is the person's.
+   Answering a gate is the person's alone.
+8. Retries and re-runs never repeat a side effect silently (track N rule 9).

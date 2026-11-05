@@ -27,6 +27,7 @@ import { describeStep, MAX_SKILL_FAILURES } from "@/lib/skills"
 import { threadHref } from "@/queries/episodes"
 import { jobsNeedGoogle } from "@/queries/connections"
 import { inboxJobs } from "@/queries/mandates"
+import { waitingGates } from "@/queries/flows"
 
 // The Inbox (A3, UX_SPEC §3): what's waiting for the person. Approvals come
 // from the index the worker writes; questions are background runs whose
@@ -43,6 +44,8 @@ const lastSentence = (text: string) =>
     .at(-1) ?? ""
 
 export async function getInbox(userId: string) {
+  // Track S: its own read, outside the transaction below; off = not queried
+  const flowGates = await waitingGates(userId)
   // O3: jobs to review and jobs that need the person; off = not queried
   const jobsOn = (await getSetting("operator.mandates")) === "on"
   // O11: a crew part's approval names its job; off = not queried
@@ -149,6 +152,7 @@ export async function getInbox(userId: string) {
         jobTitle: jobOfPart.get(approval.threadId) ?? null,
       })),
       questions,
+      flowGates,
       memories: await notesToReview(tx),
       skills: skillRows.map((s) => ({
         id: s.id,
@@ -240,6 +244,7 @@ export async function inboxCount(userId: string) {
     inbox.skills.length +
     (inbox.jobs ? inbox.jobs.review.length + inbox.jobs.needs.length : 0) +
     inbox.disclosures.length +
-    inbox.harnessApprovals.length
+    inbox.harnessApprovals.length +
+    inbox.flowGates.length
   )
 }

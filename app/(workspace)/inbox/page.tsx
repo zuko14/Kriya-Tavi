@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import { formatDistanceToNowStrict } from "date-fns"
 import { ChevronRightIcon } from "lucide-react"
 
+import { FlowGate } from "@/components/flows/gate"
 import { Glyph } from "@/components/glyph"
 import { ApprovalButtons, MemoryButtons, SkillButtons } from "@/components/inbox/controls"
 import { HarnessApproval } from "@/components/inbox/harness-approval"
@@ -228,7 +229,8 @@ export default async function Page({
     proposals.length +
     (jobs?.needs.length ?? 0) +
     inbox.disclosures.length +
-    inbox.harnessApprovals.length
+    inbox.harnessApprovals.length +
+    inbox.flowGates.length
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
@@ -327,6 +329,13 @@ export default async function Page({
               <Section title="Approve" count={inbox.approvals.length}>
                 {inbox.approvals.map((item) => (
                   <Approval key={`${item.threadId}:${item.id}`} item={item} />
+                ))}
+              </Section>
+            )}
+            {shown("approve") && (
+              <Section title="Flows" count={inbox.flowGates.length}>
+                {inbox.flowGates.map((gate) => (
+                  <FlowGate key={gate.id} gate={gate} />
                 ))}
               </Section>
             )}

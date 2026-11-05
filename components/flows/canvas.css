@@ -1,0 +1,101 @@
+/* React Flow's structure, in Kriya's tokens (UX_AND_INTERACTION_SPEC §3).
+   Colours come only from app/globals.css. */
+.kflow {
+  --xy-background-color: transparent;
+  --xy-edge-stroke: var(--muted-foreground);
+  --xy-selection-background-color: var(--rigel-soft);
+  --xy-selection-border: 1px dashed var(--rigel);
+  height: 100%;
+  width: 100%;
+}
+.kflow .react-flow__node {
+  border-radius: var(--radius-lg);
+}
+.kflow .react-flow__node:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.kflow .react-flow__handle {
+  width: 10px;
+  height: 10px;
+  min-width: 0;
+  min-height: 0;
+  border: 2px solid var(--surface);
+  border-radius: 999px;
+  background: var(--muted-foreground);
+  transition: box-shadow 120ms var(--ease-out);
+}
+/* A wider hit area than the dot */
+.kflow .react-flow__handle::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+}
+.kflow .react-flow__handle.connectingto,
+.kflow .react-flow__handle:hover {
+  background: var(--rigel);
+  box-shadow: 0 0 0 4px var(--rigel-soft);
+}
+/* An unused error route stays out of the way until you reach for it */
+.kflow .kflow-quiet.react-flow__handle {
+  opacity: 0;
+  transition: opacity 120ms var(--ease-out);
+}
+.kflow .react-flow__node:hover .kflow-quiet.react-flow__handle,
+.kflow .react-flow__node.selected .kflow-quiet.react-flow__handle,
+.kflow .react-flow__node:focus-within .kflow-quiet.react-flow__handle {
+  opacity: 1;
+}
+.kflow .kflow-alt.react-flow__handle {
+  background: var(--betelgeuse);
+}
+.kflow .kflow-err.react-flow__handle {
+  background: var(--destructive);
+}
+.kflow.is-reading .react-flow__handle {
+  opacity: 0.55;
+}
+.kflow .react-flow__edge-path {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.kflow .react-flow__edge:focus-visible .kflow-edge,
+.kflow .react-flow__edge.selected .kflow-edge {
+  stroke: var(--rigel);
+  stroke-width: 2.25;
+}
+.kflow .react-flow__edge.selected .kflow-arrow {
+  fill: var(--rigel);
+}
+.kflow .react-flow__minimap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.kflow .react-flow__attribution {
+  background: transparent;
+  color: var(--faint);
+  font-size: 9px;
+}
+.kflow .react-flow__attribution a {
+  color: var(--faint);
+}
+.kflow-edge-live {
+  stroke-dasharray: 6 6;
+  animation: kflow-dash 900ms linear infinite;
+}
+@keyframes kflow-dash {
+  to {
+    stroke-dashoffset: -12;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kflow-edge-live {
+    animation: none;
+    stroke-dasharray: none;
+  }
+  .kflow .react-flow__handle {
+    transition: none;
+  }
+}

@@ -317,6 +317,41 @@ export const RunSwitches = z.strictObject({
   anchor: z.boolean(),
   browser: z.boolean(),
 })
+// A flow's plan and harness settings (track S, SD-14): the person's own
+// steps, saved as written instead of the model's. No field names a command:
+// the check stays the project's confirmed one (CC-D1). Older daemons ignore
+// both and follow the plan as it's written in the prompt.
+export const RunPlan = z.strictObject({
+  goal: z.string().min(1).max(600),
+  steps: z
+    .array(
+      z.strictObject({
+        title: z.string().min(1).max(120),
+        done_when: z.string().min(1).max(300),
+        files: z.array(z.string().min(1).max(200)).max(12),
+        after: z.array(z.number().int().min(1).max(7)).max(6).optional(),
+      })
+    )
+    .min(1)
+    .max(7),
+})
+const OnOff = z.enum(["on", "off"])
+const Digits = z.string().regex(/^[0-9]{1,3}$/)
+// The client's existing switches and limits (lib/harness/evolve/profile.ts
+// toEnv); nothing protected has a name here (KU-ADR-16 E3)
+export const RunProfile = z.strictObject({
+  id: z.string().regex(/^[0-9a-f]{12}$/),
+  env: z.strictObject({
+    KRIYA_LOOP: OnOff,
+    KRIYA_LOOP_V2: OnOff,
+    KRIYA_BUDGET: OnOff,
+    KRIYA_ANCHOR: OnOff,
+    KRIYA_MINIMAL: OnOff,
+    KRIYA_MAX_STEPS: Digits,
+    KRIYA_TURN_MINUTES: Digits,
+    KRIYA_MAX_REPEATS: Digits,
+  }),
+})
 // What each kind carries; validated on queueing and again by the daemon
 export const DispatchPayloads = {
   run: z.strictObject({
@@ -324,6 +359,8 @@ export const DispatchPayloads = {
     prompt: SHORT(4000),
     mode: z.enum(["ask", "auto", "read", "plan", "full"]),
     switches: RunSwitches,
+    plan: RunPlan.optional(),
+    profile: RunProfile.optional(),
   }),
   doctor: z.strictObject({}),
   rule_confirm: z.strictObject({

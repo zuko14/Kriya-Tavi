@@ -1,0 +1,7 @@
+{
+  "turns": [
+    {
+      "text": "{\"name\":\"Invoice reminders\",\"why\":\"One agent drafts and you check it before anything goes, because a wrong reminder costs goodwill. I left out a loop: nothing here has a rule to pass.\",\"inputs\":[{\"key\":\"client\",\"label\":\"Client\",\"required\":true}],\"nodes\":[{\"id\":\"start\",\"type\":\"start\",\"title\":\"Start\"},{\"id\":\"draft\",\"type\":\"agent\",\"title\":\"Draft the reminder\",\"agent\":\"fa2\",\"prompt\":\"Write a polite reminder to {{input.client}}. [verify:flow-write]\"},{\"id\":\"mentions\",\"type\":\"check\",\"title\":\"Has substance\",\"subject\":\"{{draft}}\",\"rule\":{\"kind\":\"min_chars\",\"n\":40}},{\"id\":\"approve\",\"type\":\"approval\",\"title\":\"Check it first\",\"message\":\"{{draft}}\"},{\"id\":\"end\",\"type\":\"end\",\"title\":\"Finish\",\"result\":\"{{draft}}\"}],\"edges\":[{\"from\":\"start\",\"to\":\"draft\"},{\"from\":\"draft\",\"to\":\"mentions\"},{\"from\":\"mentions\",\"port\":\"pass\",\"to\":\"approve\"},{\"from\":\"approve\",\"port\":\"approved\",\"to\":\"end\"}]}"
+    }
+  ]
+}

@@ -31,6 +31,8 @@ const PROTECTED = [
   "/calls/",
   // Kriya Harness (HF-08): signing in returns to the device's code
   "/connect/",
+  // Track S
+  "/flows",
   // Rooms (R2, RD-11): /rooms and /rooms/join/<token>, so sign-up returns to the invite
   "/rooms/",
   // The Kriya Harness page (owner 2026-11-02)
@@ -46,6 +48,8 @@ const PROTECTED_API = [
   "/api/voice/tasks/",
   // Rooms (R2)
   "/api/rooms/",
+  // Track S: a run's live state
+  "/api/flows/",
 ]
 const AUTH_PAGES = ["/login", "/signup"]
 // Voice status webhooks carry a per-attempt token instead (voice phase 3)

@@ -19,6 +19,8 @@ import { createInsertSchema } from "drizzle-zod"
 import { nanoid } from "nanoid"
 import { z } from "zod"
 
+import type { RowDetail } from "@/lib/flows/engine"
+import type { FlowGraph } from "@/lib/flows/graph"
 import { skillPrefsSchema, type SkillPrefs } from "@/lib/skill-library"
 import { TIERS, type Tier } from "@/lib/tiers"
 
@@ -591,6 +593,8 @@ export const resourceUsage = kriya.table("resource_usage", {
       // Cloud workspaces (track C)
       "workspace_seconds",
       "workspace_storage_bytes",
+      // The Flows copilot (studio.copilot)
+      "flow_design",
     ],
   }).notNull(),
   quantity: micro().notNull(),
@@ -2536,6 +2540,117 @@ export const profileInputSchema = z.object({
   locale: z.enum(LOCALES),
   useCase: z.enum(USE_CASES).optional(),
 })
+
+/* ───────────────────────────── flows ────────────────────────────── */
+
+// Track S (docs/kriya-studio/). Graph shapes live in lib/flows/graph.ts
+
+export const FLOW_RUN_STATUSES = [
+  "queued",
+  "running",
+  "waiting",
+  "completed",
+  "failed",
+  "canceled",
+] as const
+export type FlowRunStatus = (typeof FLOW_RUN_STATUSES)[number]
+
+export const FLOW_NODE_STATUSES = [
+  "running",
+  "waiting",
+  "done",
+  "failed",
+  "skipped",
+  "canceled",
+] as const
+
+export const FLOW_SOURCES = ["person", "copilot", "improve", "rollback"] as const
+export type FlowSource = (typeof FLOW_SOURCES)[number]
+
+export const flows = kriya.table("flows", {
+  id: id(),
+  userId: uuid().notNull(),
+  name: text().notNull(),
+  description: text().notNull().default(""),
+  target: text({ enum: ["cloud", "device"] })
+    .notNull()
+    .default("cloud"),
+  draft: jsonb().notNull().$type<FlowGraph>(),
+  draftRev: integer().notNull().default(0),
+  latestVersion: integer().notNull().default(0),
+  cases: jsonb().notNull().$type<Record<string, string>[]>().default([]),
+  archivedAt: at(),
+  createdAt: createdAt(),
+  updatedAt: createdAt(),
+})
+
+export const flowVersions = kriya.table(
+  "flow_versions",
+  {
+    flowId: text().notNull(),
+    version: integer().notNull(),
+    userId: uuid().notNull(),
+    graph: jsonb().notNull().$type<FlowGraph>(),
+    hash: text().notNull(),
+    source: text({ enum: FLOW_SOURCES }).notNull().default("person"),
+    note: text().notNull().default(""),
+    parentVersion: integer(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.flowId, t.version] })]
+)
+
+export const flowRuns = kriya.table("flow_runs", {
+  id: id(),
+  userId: uuid().notNull(),
+  flowId: text().notNull(),
+  version: integer().notNull(),
+  status: text({ enum: FLOW_RUN_STATUSES }).notNull().default("queued"),
+  inputs: jsonb().notNull().$type<Record<string, string>>().default({}),
+  output: text(),
+  error: text(),
+  budgetMicroInr: micro(),
+  comparisonId: text(),
+  arm: text({ enum: ["incumbent", "candidate"] }),
+  caseIndex: integer(),
+  round: integer(),
+  forkedFrom: text(),
+  deviceId: uuid(),
+  project: text(),
+  mode: text({ enum: ["ask", "auto", "read", "plan", "full"] }),
+  dispatchId: uuid(),
+  reviewAt: createdAt(),
+  deadlineAt: at().notNull(),
+  createdAt: createdAt(),
+  updatedAt: createdAt(),
+  startedAt: at(),
+  finishedAt: at(),
+})
+
+export const flowNodeRuns = kriya.table("flow_node_runs", {
+  id: id(),
+  userId: uuid().notNull(),
+  runId: text().notNull(),
+  nodeId: text().notNull(),
+  scope: text().notNull().default(""),
+  attempt: integer().notNull().default(1),
+  status: text({ enum: FLOW_NODE_STATUSES }).notNull(),
+  port: text(),
+  iteration: integer().notNull().default(1),
+  taskId: uuid(),
+  threadId: text(),
+  output: text(),
+  detail: jsonb().notNull().$type<RowDetail>().default({}),
+  reusedFrom: text(),
+  startedAt: createdAt(),
+  finishedAt: at(),
+  updatedAt: createdAt(),
+})
+
+export type Flow = typeof flows.$inferSelect
+export type FlowVersion = typeof flowVersions.$inferSelect
+export type FlowRun = typeof flowRuns.$inferSelect
+export type FlowNodeRun = typeof flowNodeRuns.$inferSelect
 
 export type Agent = typeof agents.$inferSelect
 export type AgentInput = z.infer<typeof agentInputSchema>
