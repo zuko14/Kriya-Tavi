@@ -1643,9 +1643,14 @@ export function createCrewTools(env: ToolEnv) {
       description:
         "Split this job's work between squad members who act: each does their part in their own thread with their own tools, asks the person for approvals there, and reports back. Their results arrive in this thread as one message when every part settles. Use it for parts that change things (drafts, entries, calls); for research only, use assign.",
       inputSchema: dispatchSchema,
-      execute: (input) =>
+      execute: (input, { messages }) =>
         dispatchCrew(
-          { userId: env.userId, threadId: env.threadId, leadId: env.current().id },
+          {
+            userId: env.userId,
+            threadId: env.threadId,
+            leadId: env.current().id,
+            messages,
+          },
           input
         ),
       toModelOutput: ({ output }) => ({
