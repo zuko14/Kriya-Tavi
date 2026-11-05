@@ -31,12 +31,27 @@ grant usage on schema auth to anon, authenticated;
 
 const MIGRATIONS = path.join(process.cwd(), "supabase", "migrations")
 
-export async function createTestDb() {
+/** A database built by running every migration */
+export async function migratedTestDb() {
   const pg = new PGlite()
   await pg.exec(SUPABASE_SHIM)
   for (const file of fs.readdirSync(MIGRATIONS).sort()) {
     await pg.exec(fs.readFileSync(path.join(MIGRATIONS, file), "utf8"))
   }
+  return pg
+}
+
+// tests/db/global-setup.ts migrates once per run. Restoring that is about five
+// times cheaper than migrating again, and the CPU it saves is what timing-bound
+// tests (HT-BEN-02) were losing on CI. snapshot.test.ts proves they match.
+let snapshot: Promise<Blob> | undefined
+
+export async function createTestDb() {
+  const file = process.env.KRIYA_TEST_DB_SNAPSHOT
+  if (!file) return migratedTestDb()
+  snapshot ??= fs.promises.readFile(file).then((bytes) => new Blob([bytes]))
+  const pg = new PGlite({ loadDataDir: await snapshot })
+  await pg.waitReady
   return pg
 }
 
