@@ -28,6 +28,7 @@ describe("HT-REG-01: the harness.* settings", () => {
       "harness.minClientVersion",
       "harness.mirror",
       "harness.releaseStage",
+      "harness.remoteControl",
       "harness.rpm",
     ])
   })
@@ -41,6 +42,7 @@ describe("HT-REG-01: the harness.* settings", () => {
       "harness.deviceWorld",
       "harness.defaultSkills",
       "harness.controlCenter",
+      "harness.remoteControl",
     ])
       expect(defs[key].fallback, key).toBe("off")
     expect(defs["harness.minClientVersion"].fallback).toBe("0.0.0")

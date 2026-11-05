@@ -53,15 +53,17 @@ Everything protected by tracks A, O, N, voice and C, plus:
 | `lib/config.ts`, `tests/harness/regression.test.ts` | Harness page (owner 2026-11-02) | `harness.installCommand` (no default; one plain `npm`/`npx`/`pnpm`/`brew` line, nothing chained); `harness.releaseStage` (`beta` default, `ga` only after HD-02's gates; HD-20) | Other `harness.*` keys and defaults unchanged | HT-REG-01 (updated list, pattern cases) |
 | `queries/harness.ts`, `components/workspace/{sidebar,places}.tsx`, `queries/features.ts` | Harness page (owner 2026-11-02) | `harnessHome` (sessions, open workspaces, pending approvals as the person); the sidebar/palette/Home entry from `getFeatures().harness` (= `harness.api`) | Off → no entry, `/harness` 404 | `harness-hub-check` browser run (`status.md`) |
 | `db/schema.ts`, `lib/config.ts`, `tests/harness/regression.test.ts`, `lib/harness/contract.ts`, `app/(workspace)/harness/page.tsx` | Control Center (owner brief 2026-11-04, CONTROL_CENTER.md) | The three `harness_*` control tables and their enums; `harness.controlCenter` (off); HT-REG-01 lists it; the four device routes in `ROUTES`; the page renders `<ControlCenter>` and the `kriya daemon` command only with the switch on | Existing tables, keys, routes and the page with the switch off unchanged | HT-REG-01; HT-CC-01…05; HT-CC-DB-01…03; HT-API-01 |
+| `db/schema.ts`, `lib/config.ts`, `tests/harness/regression.test.ts`, `tests/db/migrations.test.ts`, `lib/harness/contract.ts`, `app/(workspace)/harness/page.tsx`, `components/harness/control-center.tsx` | Remote Control (owner brief 2026-11-05, REMOTE_CONTROL.md) | The two `harness_live_*` tables; `harness.remoteControl` (off); `POST /live`; the page's Remote Control section with the switch on; the Control Center's words point at the toggle instead of `kriya daemon` | Existing tables, keys and routes unchanged; dispatch rules (CC-D1…D9) unchanged | HT-REG-01; HT-RC-01; HT-RC-DB-01; HT-API-01 |
+| `app/(workspace)/home/page.tsx`, `components/home/ask.tsx` | Home (owner brief 2026-11-05) | Suggestions, Hand Kriya a job and What Kriya can do move to `/guide`; Home keeps one "How to use Kriya" link. No switch: the owner asked for this for everyone | Hand a job keeps its switches and reads, on `/guide` | Typecheck; browser check still owed |
 | `AGENTS.md` | H0, H2 | H0: the track H section; H2: the owner's invariant 3 wording | Other text unchanged | — |
 | `status.md` | every phase | Own section and rows | Others untouched | — |
 
-**New files** (no row needed): `app/(workspace)/harness/**`, `components/harness/**`, `app/api/harness/v1/**`, `app/connect/device/**`,
+**New files** (no row needed): `app/(workspace)/guide/**`, `app/(workspace)/harness/**`, `components/harness/**`, `app/api/harness/v1/**`, `app/connect/device/**`,
 `lib/harness/**`, `actions/harness.ts`, `actions/harness-control.ts`, `queries/harness.ts`,
 `components/account/devices.tsx`, `components/inbox/harness-approval.tsx`,
 `scripts/harness-contract.ts`, `docs/kriya-harness/contract.json`,
 `tests/harness/**`, `tests/db/harness-rls.test.ts`, the migrations
-`20270301000000_harness.sql` and `20270801000000_harness_control.sql` with their rollbacks, `screenshots/kriya-harness/**`.
+`20270301000000_harness.sql` and `20270801000000_harness_control.sql` and `20271001000000_harness_live.sql` with their rollbacks, `screenshots/kriya-harness/**`.
 
 **Dependencies:** none in this repository. The gateway uses `fetch` to
 OpenRouter's OpenAI-compatible endpoint (`OPENROUTER_BASE_URL`, already in

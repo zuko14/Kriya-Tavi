@@ -13,7 +13,6 @@ import {
 } from "lucide-react"
 
 import { cancelAction, dispatchAction } from "@/actions/harness-control"
-import { Command } from "@/components/harness/command"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import type { ControlCenterData } from "@/lib/harness/control"
@@ -309,8 +308,8 @@ export function ControlCenter({
   if (data.devices.length === 0)
     return (
       <div className="glass rounded-[20px] px-4 py-4 text-[13px] text-muted-foreground">
-        Sign in a computer with kriya login, then start kriya daemon on it to control it
-        from here.
+        Sign in a computer with kriya login, then turn on Remote Control in Kriya Harness
+        to control it from here.
       </div>
     )
 
@@ -350,12 +349,8 @@ export function ControlCenter({
             {device?.polledAt
               ? `${device.name} stopped listening ${ago(device.polledAt)}.`
               : `${device?.name ?? "This computer"} isn't listening yet.`}{" "}
-            Start the daemon on it to run anything from here:
-          </span>
-          <Command command="kriya daemon" />
-          <span className="text-[12px] text-faint">
-            Keep it running in the background with kriya daemon install. Add
-            --allow-full-access or --allow-serve there to allow those from Kriya.
+            Open Kriya Harness on it and turn on Remote Control in a session&apos;s
+            Overview tab. Full access and serving have their own switches there.
           </span>
         </div>
       )}
@@ -518,7 +513,7 @@ export function ControlCenter({
             <p className="text-[12.5px] text-muted-foreground">
               {caps.serve
                 ? `Lets your Kriya agents run commands in new subfolders of ${selected?.name ?? "a folder"} while it's on.`
-                : "Off on this computer. Start kriya daemon --allow-serve there to allow it from Kriya."}
+                : "Off on this computer. Turn on Allow serving under Remote Control in Kriya Harness."}
             </p>
             {serving ? (
               <Button

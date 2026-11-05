@@ -3,6 +3,7 @@ import { formatDistanceToNowStrict } from "date-fns"
 import {
   CheckIcon,
   ChevronRightIcon,
+  CircleHelpIcon,
   InboxIcon,
   PhoneIcon,
   PlusIcon,
@@ -14,21 +15,16 @@ import { Glyph, SquadGlyph } from "@/components/glyph"
 import { NewAgentCard, TemplateGrid } from "@/components/home/actions"
 import { Ask } from "@/components/home/ask"
 import { UsageMeter } from "@/components/home/usage-meter"
-import { HandAJob } from "@/components/operator/hand-a-job"
 import { NewRoom } from "@/components/rooms/new-room"
 import { RoomList } from "@/components/rooms/room-list"
-import { available, CONNECT, TOOLS, type Place } from "@/components/workspace/places"
 import { requireUser } from "@/lib/auth"
 import { getSetting } from "@/lib/config"
-import { runnable } from "@/lib/operator/playbooks"
 import { roomsEnabled } from "@/lib/rooms/core"
 import { cn } from "@/lib/utils"
 import { voiceAvailable } from "@/lib/voice/tasks"
 import { recentEpisodes } from "@/queries/episodes"
-import { getFeatures } from "@/queries/features"
 import { getGoals } from "@/queries/goals"
 import { inboxCount } from "@/queries/inbox"
-import { playbookChoices, playbookNeeds } from "@/queries/mandates"
 import { listRooms } from "@/queries/rooms"
 import { getNavigation, getSystemStatus } from "@/queries/workspace"
 
@@ -50,31 +46,17 @@ function SectionTitle({ children, href }: { children: React.ReactNode; href?: st
   )
 }
 
-function Explore({ places }: { places: Place[] }) {
+// The one way into what Kriya can do; Home itself stays for working (owner 2026-11-05)
+function HowToUse() {
   return (
-    <section className="flex flex-col gap-2.5">
-      <SectionTitle>What Kriya can do</SectionTitle>
-      <ul className="grid gap-2 sm:grid-cols-2">
-        {places.map(({ href, label, icon: Icon, blurb }) => (
-          <li key={href}>
-            <Link
-              href={href}
-              className="glass flex h-full min-h-16 items-start gap-3 rounded-2xl px-4 py-3 transition-colors hover:border-rigel/30"
-            >
-              <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-rigel-soft text-rigel">
-                <Icon className="size-4" />
-              </span>
-              <span className="flex min-w-0 flex-col gap-0.5">
-                <span className="text-[13.5px] leading-tight font-medium">{label}</span>
-                <span className="text-[12.5px] leading-snug text-muted-foreground">
-                  {blurb}
-                </span>
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </section>
+    <Link
+      href="/guide"
+      className="glass flex min-h-14 items-center gap-3 rounded-2xl px-4 py-2.5"
+    >
+      <CircleHelpIcon className="size-4 shrink-0 text-rigel" />
+      <span className="flex-1 text-[13.5px] font-medium">How to use Kriya</span>
+      <ChevronRightIcon className="size-4 text-faint" />
+    </Link>
   )
 }
 
@@ -90,35 +72,11 @@ export default async function Home() {
     goalsOn ? getGoals(user.id) : [],
   ])
   const openGoals = goals.filter((g) => g.status === "active").slice(0, 3)
-  // O7: "Hand Kriya a job", only the playbooks the person can run; off = absent
-  const playbooksOn =
-    (await getSetting("operator.playbooks")) === "on" &&
-    (await getSetting("operator.mandates")) === "on"
-  const [jobs, choices] = playbooksOn
-    ? await Promise.all([
-        playbookNeeds(user.id).then((have) =>
-          runnable(have).map(({ id, title, summary, slots }) => ({
-            id,
-            title,
-            summary,
-            slots,
-          }))
-        ),
-        playbookChoices(user.id),
-      ])
-    : [[], null]
   const voice = await voiceAvailable(user.id)
   // Rooms (track R, R3): the last three, only with rooms.enabled on
   const rooms = (await roomsEnabled()) ? (await listRooms(user.id)).slice(0, 3) : null
   const firstName = user.profile.displayName?.split(" ")[0]
   const hasAgents = nav.agents.length > 0
-  // "What Kriya can do": every switched-on place that Home doesn't already
-  // show as its own section, so a newcomer sees the whole product at once
-  const explore = available([...TOOLS, ...CONNECT], await getFeatures(user.id)).filter(
-    (place) =>
-      !(place.feature === "rooms" && rooms && hasAgents) &&
-      !(place.feature === "calls" && voice)
-  )
   // India time: the server may run anywhere
   const hour = Number(
     new Intl.DateTimeFormat("en-IN", {
@@ -189,6 +147,8 @@ export default async function Home() {
         {hasAgents ? (
           <>
             <Ask />
+
+            <HowToUse />
 
             {callsLink}
 
@@ -287,19 +247,6 @@ export default async function Home() {
                 )}
               </section>
             )}
-
-            {choices && jobs.length > 0 && (
-              <section className="flex flex-col gap-2.5">
-                <SectionTitle>Hand Kriya a job</SectionTitle>
-                <HandAJob
-                  playbooks={jobs}
-                  agents={choices.agents}
-                  invoices={choices.invoices}
-                />
-              </section>
-            )}
-
-            {explore.length > 0 && <Explore places={explore} />}
 
             <section className="flex flex-col gap-3">
               <SectionTitle href="/agents">Your team</SectionTitle>
@@ -421,7 +368,7 @@ export default async function Home() {
             </p>
             <TemplateGrid />
             <NewAgentCard />
-            {explore.length > 0 && <Explore places={explore} />}
+            <HowToUse />
           </section>
         )}
       </div>
