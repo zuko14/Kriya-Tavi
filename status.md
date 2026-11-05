@@ -14191,3 +14191,7 @@ Report: `docs/kriya-harness/harness_upgradation/KRIYA_DEFENSIVE_ENGINE_REPORT.md
 - **Not verified:** any real-model result, or any comparison with Claude Code.
 - **Next exact action (owner):** say whether to commit, then whether to fund a paid run.
 
+## Harness switches default on, 2026-11-05 (owner in chat)
+
+Client: `loop-guard`, `strict-loop`, `defensive`, `recon`, `jit-tools`, `router` on by default, by the owner's decision, unmeasured on a real model. Client `npm run check` 366/366 exit 0, `release:check` exit 0. Every multi-step plan now needs a pre-mortem, which raises cost per task by an unmeasured amount. Next: the owner merges and restarts `kriya`; a paid run would show the real effect.
+

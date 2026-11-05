@@ -170,6 +170,10 @@ Report: `KRIYA_DEFENSIVE_ENGINE_REPORT.md`. Behind `--defensive` (default off; b
 | Client | `src/modes.js`, `src/daemon.js`, `bin/kriya.js`, `README.md`, `scripts/bench-{guard,radius}.js`, `tests/defensive.test.js`, `tests/guard-scenarios.js` | Switch, `PROFILE_ENV`, benches, tests | Others unchanged | HU-SW-01 |
 | Kriya | `lib/harness/evolve/{profile-schema,profile,propose}.ts`, `lib/harness/contract.ts` | `defensive` field, move, optional env | Recorded ids unchanged | HU-EV-08 |
 
+## 2j. Default on (2026-11-05, owner in chat: "I approve toggling all our Top-1% harness capabilities to DEFAULT ON")
+
+Client `src/modes.js`: `loop-guard`, `strict-loop`, `defensive`, `recon`, `jit-tools`, `router` default on, with no real-model measurement. Test arms pin them off; DF-RUN-07 covers no flags. `--no-…` or `KRIYA_…=off` turns each off; `--defensive` brings the strict loop. KRHE's `BASELINE` stays 0.2.0's, so recorded ids hold.
+
 ## 3. Stop conditions
 
 Stop and ask the owner before: editing a protected file; adding a migration
