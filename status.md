@@ -13975,7 +13975,7 @@ touched. Migration `20270901000000_flows.sql` is applied on the local stack only
   matched files use Prettier code style!", **Test Files 260 passed | 5 skipped
   (265), Tests 3075 passed | 63 skipped (3138)**, exit 0. The two Compare tests
   came after that run: `tests/flows/run.test.ts` Compare cases 2 passed.
-- **Flaky, not caused by a logic change:** `HT-BEN-02 hard-perf-dedupe` timed out
+- **Flaky (fixed since, see "CI fix"):** `HT-BEN-02 hard-perf-dedupe` timed out
   at 30 s in 2 of 4 full runs (once beside the client suite, once with Docker and
   the stack up), and passes alone (83/83). It's CPU-bound; the machine's load
   average was 16–21 and the suite took 650–690 s against 440 s at baseline. Part
@@ -14028,6 +14028,22 @@ like it fed it; diagonal wires from a de-duplication error; a green tick on a
 failed check; new steps landing on Finish; "At most 0 agent runs" on a half-drawn
 flow; a refused step's thread on Home; a false "1 changed" from jsonb key order,
 which also affected the version hash.
+
+## CI fix (2026-11-05, owner in chat, branch `fix/flows-ci` onto `feat/flows`)
+
+- **What failed:** run 41974753251 on #12: `HT-BEN-02 hard-perf-dedupe`, 30 s
+  timeout, so the build step never ran. `main` failed the same way twice on
+  2026-11-04, so it predates Flows; Flows' tests added load.
+- **Causes and fixes:** the test ran two verifies, each allowed 120 s, inside
+  30 s (`98dadb9` from #13, cherry-picked). Every database test replayed all
+  migrations, about 4 s of CPU: now `tests/db/global-setup.ts` migrates once per
+  run and `createTestDb` restores that in about 0.9 s; `tests/db/snapshot.test.ts`
+  proves the result matches a migrated database.
+- **Results:** `npm run check`: lint 0 errors, **Test Files 261 passed | 5 skipped
+  (266), Tests 3079 passed | 63 skipped (3142)**, exit 0, 376 s against 691 s
+  before. A clean clone with no `.env`: `npm ci` and `npm run build` exit 0.
+- **Not fixed here:** the Harness repository's CI doesn't start: GitHub refuses
+  the jobs for failed payments or the spending limit. Owner's billing settings.
 
 ## Not verified
 

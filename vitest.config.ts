@@ -6,7 +6,8 @@ export default defineConfig({
   resolve: { alias: { "@": path.resolve(import.meta.dirname) } },
   test: {
     include: ["tests/**/*.test.ts"],
-    // Each database test file boots its own in-process Postgres
+    // Migrates once; each database test restores that into its own Postgres
+    globalSetup: ["tests/db/global-setup.ts"],
     testTimeout: 30_000,
     hookTimeout: 60_000,
   },
