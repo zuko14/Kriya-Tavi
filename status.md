@@ -13927,10 +13927,9 @@ decisions"). Documents: `docs/kriya-studio/` (`PRODUCT_INTENT`,
 `SECURITY_AND_RELIABILITY`, `IMPLEMENTATION_PLAN`, `DECISIONS` SD-01…17,
 `CHANGE_IMPACT_AND_SAFETY`).
 
-**Release status: built, switched off, nothing committed, nothing deployed.**
-All work is uncommitted: this repository's `main` working tree on `9ed6f41`, and
-client worktree `../kriya-harness-studio`, branch `feat/flows-graph` from `main`
-`c0625dd`. The owner's `../kriya-harness` and `../kriya-harness-upgrade` weren't
+**Release status: built, switched off, in review, nothing deployed.**
+On branch `feat/flows` from `main` `9ed6f41`, and client worktree
+`../kriya-harness-studio`, branch `feat/flows-graph` from `main` `c0625dd`. The owner's `../kriya-harness` and `../kriya-harness-upgrade` weren't
 touched. Migration `20270901000000_flows.sql` is applied on the local stack only.
 
 | Phase | Name | Status |
@@ -14063,9 +14062,7 @@ which also affected the version hash.
 
 ## Owner actions
 
-`docs/kriya-studio/DECISIONS.md` §3, SO-01…09. First: review, then say whether to
-commit. Docker Desktop quit once during the session, cause unknown; it was
+`docs/kriya-studio/DECISIONS.md` §3, SO-01…09. First: review the pull requests. Docker Desktop quit once during the session, cause unknown; it was
 restarted, then stopped at the end, as found.
 
-**Next exact action:** on the owner's go-ahead, commit both trees on branches, then
-one paid real-model run of journeys 1 and 3 (SO-08), then a joined device run.
+**Next exact action:** on the owner's go-ahead, one paid real-model run of journeys 1 and 3 (SO-08), then a joined device run.
