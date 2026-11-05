@@ -1,0 +1,61 @@
+{
+  "id": "kriya-research",
+  "name": "Research with evidence",
+  "description": "Use when the answer must be found rather than known (comparing options, investigating a technology, a report): split the question, read primary sources, cross-check each claim, and mark what stayed unverified.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [
+    {
+      "project": "ECC",
+      "version": "main",
+      "commit": "07971588f8",
+      "license": "MIT",
+      "url": "https://github.com/affaan-m/ECC",
+      "path": "skills/deep-research"
+    },
+    {
+      "project": "ECC",
+      "version": "main",
+      "commit": "07971588f8",
+      "license": "MIT",
+      "url": "https://github.com/affaan-m/ECC",
+      "path": "skills/search-first"
+    }
+  ],
+  "categories": ["research"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "research",
+      "investigate",
+      "compare",
+      "sources",
+      "evidence",
+      "survey",
+      "report",
+      "which library",
+      "state of the art"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from kriya_verify runs the harness records (docs/kriya-harness/KRIYA_LOOP.md); the skill adds no tool or approval.",
+  "limits": {
+    "maxChars": 2400
+  },
+  "evals": [
+    {
+      "ask": "Research how other tools handle retries",
+      "expect": "activate"
+    },
+    {
+      "ask": "Fix the failing login test",
+      "expect": "skip"
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import { parseTrajectory } from "@/lib/harness/bench/trajectory"
 import { describe, expect, it } from "vitest"
 
 import { commandAgent } from "@/lib/harness/bench/agent"
@@ -120,5 +121,53 @@ describe("HU-BEN-03: the spend meter around a run", () => {
       timeoutMs: 30_000,
     })
     expect(none.costMicroInr).toBeNull()
+  })
+})
+
+describe("HU-BEN-05: the session's own record", () => {
+  it("parses `kriya verify status --json`, and nothing else", () => {
+    const line = JSON.stringify({
+      status: "partial",
+      steps: [],
+      runs: [],
+      trajectory: { plans: 1, planned: 3, open: 2, builders: 1, classes: { syntax: 1 } },
+    })
+    expect(parseTrajectory(`warning\n${line}\n`)).toMatchObject({
+      status: "partial",
+      open: 2,
+      builders: 1,
+    })
+    expect(parseTrajectory("Unknown verify command status")).toBeNull()
+    expect(parseTrajectory("")).toBeNull()
+  })
+
+  it("the agent reads the status command in the task's folder; none, or an old client, is null", async () => {
+    const job = { cwd: process.cwd(), prompt: "x", timeoutMs: 30_000 }
+    const line = JSON.stringify({ status: "verified", trajectory: { builders: 2 } })
+    const status = ["node", "-e", `console.log(${JSON.stringify(line)})`]
+    const seen = await commandAgent(["node", "-e", ""], undefined, status).run(job)
+    expect(seen.trajectory).toMatchObject({ status: "verified", builders: 2 })
+    expect((await commandAgent(["node", "-e", ""]).run(job)).trajectory).toBeNull()
+    const old = ["node", "-e", "console.log('Unknown verify command status.')"]
+    expect(
+      (await commandAgent(["node", "-e", ""], undefined, old).run(job)).trajectory
+    ).toBeNull()
+  })
+
+  it("counts claims the grader disagrees with", () => {
+    const rows = [
+      { ...row("t1", true, null), trajectory: { status: "verified", builders: 2 } },
+      { ...row("t2", false, null), trajectory: { status: "verified", builders: 3 } },
+      { ...row("t3", false, null), trajectory: { status: "partial", open: 2 } },
+      row("t4", true, null),
+    ]
+    expect(armSummary([report(rows)]).evidence).toMatchObject({
+      tasks: 3,
+      verifiedPerMille: 333,
+      falseVerified: 1,
+      unfinished: 1,
+      builders: 5,
+    })
+    expect(armSummary([report([row("t1", true, null)])]).evidence).toBeNull()
   })
 })

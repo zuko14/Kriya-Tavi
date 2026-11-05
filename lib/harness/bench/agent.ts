@@ -1,4 +1,5 @@
 import { runCommand, type BenchAgent } from "./run"
+import { parseTrajectory } from "./trajectory"
 
 // The real client as a bench agent: `kriya run --mode auto "<job>"` in the
 // task's folder (HD-20: auto writes only inside the folder and refuses
@@ -7,8 +8,14 @@ import { runCommand, type BenchAgent } from "./run"
 // `kriya usage --json`, the device's GET /me), the task's spend is the
 // ledger's difference around the run, in micro-INR; one task runs at a time
 // on the bench device, so nothing else is in that difference. Unknown when
-// the meter fails or a request in between couldn't be priced.
-export function commandAgent(argv: string[], meter?: string[]): BenchAgent {
+// the meter fails or a request in between couldn't be priced. With `status`
+// (`kriya verify status --json`), the session's own record of the run, read
+// in the task's folder before the grader restores anything.
+export function commandAgent(
+  argv: string[],
+  meter?: string[],
+  status?: string[]
+): BenchAgent {
   if (argv.length === 0) throw new Error("No agent command.")
   const read = async (cwd: string) => {
     if (!meter) return null
@@ -36,7 +43,13 @@ export function commandAgent(argv: string[], meter?: string[]): BenchAgent {
         before && after && after.unpriced === before.unpriced && after.used >= before.used
           ? after.used - before.used
           : null
-      return { ...turn, costMicroUsd: null, costMicroInr }
+      const trajectory = status
+        ? parseTrajectory(
+            (await runCommand(status, { cwd, timeoutMs: 30_000, env: process.env }))
+              .output
+          )
+        : null
+      return { ...turn, costMicroUsd: null, costMicroInr, trajectory }
     },
   }
 }

@@ -128,6 +128,48 @@ Client only; both behind switches that default off.
 | `src/modes.js`, `src/profiles.js`, `bin/kriya.js`, `bundle/cordis.patch.yml`, `expected/*.dump.yml`, `README.md` | `--router` switch, link, row (one row per dump), help, docs | Other switches and rows unchanged | HU-SW-01, HT-REL-03, cli tests |
 | `tests/intent.test.js`, `tests/long-horizon-run.test.js` (new), `tests/loop-v2.test.js` | IR-*, HU-M-11, KV2-LS-01 | — | themselves |
 
+## 2g. Loop guard, native skills and run evidence (H21, 2026-11-05, owner's "existing architecture intelligence" brief in chat)
+
+Reports: `KRIYA_EXISTING_ARCHITECTURE_AUDIT.md`, `KRIYA_HARNESS_UPGRADE_REPORT.md`. Client work in the detached worktree `../kriya-harness-evolve`.
+
+| Repo | File | Change | Must stay true | Test |
+| --- | --- | --- | --- | --- |
+| Client | `src/verify.js` | **Default on, a correction:** `verdict` counts the plan (new status `partial`); `stepLabel` moved here. Behind the guard: signature and excerpt on failed runs, `markStalled`. Additive: `trajectory`, `latestSession`, `sessionReport` | No plan → same verdict; off, runs record no output | LG-VD-01, LG-RS-02, verify tests |
+| Client | `src/loop.js` | `guard` in `runStep`, `nextStep`, `MAX_INTERRUPTIONS`; `progress.builders` recorded always (local file, never shown to a model) | Off: same builders, prompts and attempt bound; on: only ever fewer builders | LG-ST-*, LG-IN-*, LG-RS-*, loop tests |
+| Client | `plugins/loop/index.js` | `finishHook`, guard wiring, `presentStep` lines | Off: same tools, schema, guidance, hooks | LG-FN-*, LG-RUN-*, KV2-REG-01 |
+| Client | `plugins/progress/client.js` | Label for `partial` | Others unchanged | WP-PG-01 |
+| Client | `src/modes.js`, `src/daemon.js`, `bin/kriya.js`, `README.md` | `--loop-guard` (default off), `PROFILE_ENV`, `kriya verify status` | Other switches and commands unchanged | LG-SW-01, HU-SW-01, cli tests |
+| Client | `src/intent.js` | `loop` per intent, `research` and `data` intents, small-change line, `MAX_BRIEF` 900 | Router-only (off by default); hides nothing | IR-* |
+| Client | `tests/progress.test.js` | WP-PG-01 pinned HU-F-30 (step 2 not started, verdict verified); now asserts partial, then verified | Stricter | itself |
+| Client | `tests/loop-guard.test.js`, `tests/loop-guard-run.test.js`, `tests/guard-scenarios.js`, `scripts/bench-guard.js` (new) | LG-*, KriyaBench-M scenarios | Nothing leaves the machine | themselves |
+| Kriya | `lib/harness/evolve/{profile-schema,profile,propose,gate}.ts` | `loopGuard`, `loop-guard-on` move, `falseVerified` keeps a candidate from `adopt` | Recorded ids unchanged; no records → same verdicts | HU-EV-08 |
+| Kriya | `lib/harness/contract.ts` | `KRIYA_LOOP_GUARD` optional in `RunProfile` | Strict object otherwise unchanged | HU-EV-08 |
+| Kriya | `lib/harness/bench/{run,agent,cli,stats,compare}.ts`, `trajectory.ts` (new) | `--status`, optional `trajectory`, `evidence` | Old reports load; no status → same report | HU-BEN-05 |
+| Kriya | `skills-harness/{kriya-visual,kriya-research,kriya-migrate}/*`, `skills-harness/index.ts`, `tests/harness/default-skills.test.ts` | Three default skills | Behind `harness.defaultSkills` (off); no tool | HT-DS-* |
+
+## 2h. Strict loop, recon, JIT tools (H22, 2026-11-05, owner's coding-harness brief in chat; branch `feat/top1-coding-harness`)
+
+Report: `KRIYA_CODING_HARNESS_REPORT.md`. All behind `--strict-loop`, `--recon`, `--jit-tools` (default off), except the gate rule below.
+
+| Repo | File | Change | Must stay true | Test |
+| --- | --- | --- | --- | --- |
+| Client | `src/strict.js`, `src/recon.js` (new) | Kinds, weakened tests, silencers, ladder; outlines, importers, read limit | Pure reads; rungs can only fail a step | ST-* |
+| Client | `src/verify.js`, `src/loop.js`, `src/failure.js`, `plugins/loop/index.js` | `strictBefore`, `strictAfter`, the contract, rollback through `restoreTree`, recon tools, hooks, builder mask | Off: same tools, schema, guidance and hooks; passing still needs the confirmed check; the person's HEAD and index untouched | ST-*, KV2-REG-01, loop tests |
+| Client | `src/modes.js`, `src/daemon.js`, `bin/kriya.js`, `README.md`, `scripts/check-seams.js`, `scripts/bench-guard.js`, `tests/guard-scenarios.js` | Switches, `PROFILE_ENV`, flags, 2 seams, strict scenarios | Others unchanged | HU-SW-01, HU-SEAM-01 |
+| Kriya | `lib/harness/evolve/gate.ts` | **For everyone, owner's brief:** false "verified" is a hard constraint; any net pass loss rejects. Flows' Compare reuses this | No records → false-verified rule silent | HU-EV-06, HU-EV-08 |
+| Kriya | `lib/harness/evolve/{profile-schema,profile,propose}.ts`, `lib/harness/contract.ts`, `lib/harness/bench/{stats,trajectory}.ts` | Three profile fields, moves, optional env, run numbers | Recorded ids unchanged; no records → same ranking | HU-EV-03, HU-EV-08 |
+
+## 2i. Defensive engine (H23, 2026-11-05, owner's brief in chat; branch `feat/top1-coding-harness`)
+
+Report: `KRIYA_DEFENSIVE_ENGINE_REPORT.md`. Behind `--defensive` (default off; brings `--strict-loop`).
+
+| Repo | File | Change | Must stay true | Test |
+| --- | --- | --- | --- | --- |
+| Client | `src/sentinel.js` (new), `src/recon.js` | Rules, review, pre-mortem; import graph with aliases, blast radius. `importers` now reads the graph | Pure reads; can only stop a step | DF-*, ST-RC-* |
+| Client | `src/verify.js`, `src/loop.js`, `src/strict.js`, `src/failure.js`, `plugins/loop/index.js` | Sentinel before tests, neighbour rung, final review, plan schema and traced radius | Off: same tools, schema, guidance; `--strict-loop` alone unchanged | DF-*, ST-* |
+| Client | `src/modes.js`, `src/daemon.js`, `bin/kriya.js`, `README.md`, `scripts/bench-{guard,radius}.js`, `tests/defensive.test.js`, `tests/guard-scenarios.js` | Switch, `PROFILE_ENV`, benches, tests | Others unchanged | HU-SW-01 |
+| Kriya | `lib/harness/evolve/{profile-schema,profile,propose}.ts`, `lib/harness/contract.ts` | `defensive` field, move, optional env | Recorded ids unchanged | HU-EV-08 |
+
 ## 3. Stop conditions
 
 Stop and ask the owner before: editing a protected file; adding a migration

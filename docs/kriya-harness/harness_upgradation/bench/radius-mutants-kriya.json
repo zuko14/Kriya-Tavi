@@ -1,0 +1,450 @@
+{
+  "mutants": [
+    {
+      "id": "money-rounding",
+      "file": "lib/money.ts",
+      "nearTests": 4,
+      "nearCaught": true,
+      "nearMs": 4553,
+      "radiusTests": 40,
+      "radiusCaught": true,
+      "radiusMs": 37679,
+      "reached": 177,
+      "cut": 104
+    },
+    {
+      "id": "money-zero-rate",
+      "file": "lib/money.ts",
+      "nearTests": 4,
+      "nearCaught": true,
+      "nearMs": 4413,
+      "radiusTests": 40,
+      "radiusCaught": true,
+      "radiusMs": 35341,
+      "reached": 177,
+      "cut": 104
+    },
+    {
+      "id": "money-currency",
+      "file": "lib/money.ts",
+      "nearTests": 4,
+      "nearCaught": true,
+      "nearMs": 4527,
+      "radiusTests": 40,
+      "radiusCaught": true,
+      "radiusMs": 35523,
+      "reached": 177,
+      "cut": 104
+    },
+    {
+      "id": "gst-percent",
+      "file": "lib/gst.ts",
+      "nearTests": 6,
+      "nearCaught": true,
+      "nearMs": 8318,
+      "radiusTests": 40,
+      "radiusCaught": true,
+      "radiusMs": 40489,
+      "reached": 35,
+      "cut": 19
+    },
+    {
+      "id": "delivery-unsupported",
+      "file": "lib/delivery/status.ts",
+      "nearTests": 4,
+      "nearCaught": true,
+      "nearMs": 7482,
+      "radiusTests": 15,
+      "radiusCaught": true,
+      "radiusMs": 26409,
+      "reached": 14,
+      "cut": 0
+    },
+    {
+      "id": "delivery-accomplished",
+      "file": "lib/delivery/status.ts",
+      "nearTests": 4,
+      "nearCaught": true,
+      "nearMs": 7395,
+      "radiusTests": 15,
+      "radiusCaught": true,
+      "radiusMs": 26651,
+      "reached": 14,
+      "cut": 0
+    },
+    {
+      "id": "retry-status",
+      "file": "lib/reliability/retry.ts",
+      "nearTests": 2,
+      "nearCaught": false,
+      "nearMs": 2537,
+      "radiusTests": 40,
+      "radiusCaught": false,
+      "radiusMs": 88719,
+      "reached": 11,
+      "cut": 20
+    },
+    {
+      "id": "retry-timeout",
+      "file": "lib/reliability/retry.ts",
+      "nearTests": 2,
+      "nearCaught": true,
+      "nearMs": 2364,
+      "radiusTests": 40,
+      "radiusCaught": true,
+      "radiusMs": 91507,
+      "reached": 11,
+      "cut": 20
+    },
+    {
+      "id": "stats-sign-test",
+      "file": "lib/harness/bench/stats.ts",
+      "nearTests": 1,
+      "nearCaught": true,
+      "nearMs": 1784,
+      "radiusTests": 5,
+      "radiusCaught": true,
+      "radiusMs": 31507,
+      "reached": 11,
+      "cut": 0
+    },
+    {
+      "id": "gate-min-runs",
+      "file": "lib/harness/evolve/gate.ts",
+      "nearTests": 1,
+      "nearCaught": true,
+      "nearMs": 1339,
+      "radiusTests": 3,
+      "radiusCaught": true,
+      "radiusMs": 13377,
+      "reached": 14,
+      "cut": 0
+    },
+    {
+      "id": "context-kept",
+      "file": "lib/agent/messages.ts",
+      "nearTests": 2,
+      "nearCaught": false,
+      "nearMs": 1885,
+      "radiusTests": 40,
+      "radiusCaught": false,
+      "radiusMs": 83691,
+      "reached": 101,
+      "cut": 68
+    },
+    {
+      "id": "undo-label",
+      "file": "lib/undo.ts",
+      "nearTests": 3,
+      "nearCaught": false,
+      "nearMs": 6332,
+      "radiusTests": 40,
+      "radiusCaught": true,
+      "radiusMs": 113474,
+      "reached": 14,
+      "cut": 15
+    }
+  ],
+  "commits": [
+    {
+      "sha": "ac1e92c",
+      "files": 3,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "07b813f",
+      "files": 3,
+      "invariants": [],
+      "hazards": [
+        "app/(workspace)/guide/page.tsx:64 missing await: playbookChoices() returns a promise and nothing waits for it"
+      ]
+    },
+    {
+      "sha": "f2a05e3",
+      "files": 21,
+      "invariants": [],
+      "hazards": [
+        "components/harness/live.tsx:152 swallowed error: this drops a rejection without handling it"
+      ]
+    },
+    {
+      "sha": "4b7ab7e",
+      "files": 2,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "db7e23c",
+      "files": 8,
+      "invariants": [],
+      "hazards": [
+        "lib/operator/crews.ts missing await: the change dropped the await on marks()"
+      ]
+    },
+    {
+      "sha": "2974f45",
+      "files": 8,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "836dfcb",
+      "files": 1,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "9f0b1c5",
+      "files": 1,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "cd4944d",
+      "files": 4,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "2c6fecb",
+      "files": 1,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "920cb35",
+      "files": 1,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "1087603",
+      "files": 78,
+      "invariants": [],
+      "hazards": [
+        "app/(workspace)/flows/[id]/page.tsx:21 missing await: agentOptions() returns a promise and nothing waits for it",
+        "app/(workspace)/flows/[id]/page.tsx:22 missing await: maxNodeRuns() returns a promise and nothing waits for it",
+        "app/(workspace)/flows/[id]/page.tsx:23 missing await: getSetting() returns a promise and nothing waits for it",
+        "app/(workspace)/flows/[id]/page.tsx:24 missing await: deviceTargets() returns a promise and nothing waits for it",
+        "app/(workspace)/flows/[id]/page.tsx:25 missing await: flowRowsForEvidence() returns a promise and nothing waits for it",
+        "app/(workspace)/flows/[id]/page.tsx:26 missing await: comparisons() returns a promise and nothing waits for it",
+        "app/(workspace)/flows/page.tsx:23 missing await: listFlows() returns a promise and nothing waits for it",
+        "app/(workspace)/flows/page.tsx:24 missing await: agentOptions() returns a promise and nothing waits for it",
+        "app/(workspace)/flows/page.tsx:25 missing await: getSetting() returns a promise and nothing waits for it",
+        "app/(workspace)/flows/page.tsx:26 missing await: getSetting() returns a promise and nothing waits for it",
+        "lib/flows/store.ts:351 swallowed error: this drops a rejection without handling it",
+        "queries/features.ts:54 missing await: on() returns a promise and nothing waits for it",
+        "queries/workspace.ts missing await: the change dropped the await on crewsOn()",
+        "queries/workspace.ts missing await: the change dropped the await on crewsOn()",
+        "queries/workspace.ts missing await: the change dropped the await on crewsOn()"
+      ]
+    },
+    {
+      "sha": "ab0a8cd",
+      "files": 22,
+      "invariants": [],
+      "hazards": [
+        "app/(workspace)/harness/page.tsx:206 missing await: on() returns a promise and nothing waits for it",
+        "app/(workspace)/harness/page.tsx:207 missing await: on() returns a promise and nothing waits for it",
+        "app/(workspace)/harness/page.tsx:208 missing await: on() returns a promise and nothing waits for it",
+        "app/(workspace)/harness/page.tsx:209 missing await: on() returns a promise and nothing waits for it",
+        "app/(workspace)/harness/page.tsx:210 missing await: on() returns a promise and nothing waits for it",
+        "app/(workspace)/harness/page.tsx:211 missing await: on() returns a promise and nothing waits for it",
+        "app/(workspace)/harness/page.tsx:212 missing await: studioOn() returns a promise and nothing waits for it",
+        "app/(workspace)/harness/page.tsx:213 missing await: on() returns a promise and nothing waits for it",
+        "components/harness/control-center.tsx:258 swallowed error: this drops a rejection without handling it",
+        "components/harness/control-center.tsx:280 swallowed error: this drops a rejection without handling it",
+        "components/harness/control-center.tsx:290 swallowed error: this drops a rejection without handling it"
+      ]
+    },
+    {
+      "sha": "f219afa",
+      "files": 6,
+      "invariants": [],
+      "hazards": [
+        "lib/harness/route.ts:59 swallowed error: this drops a rejection without handling it"
+      ]
+    },
+    {
+      "sha": "4693132",
+      "files": 4,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "cecda7b",
+      "files": 31,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "5aa623d",
+      "files": 4,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "f6d8099",
+      "files": 25,
+      "invariants": ["lib/harness/evolve/library.ts:69 financial precision"],
+      "hazards": [
+        "lib/harness/evolve/cli.ts:193 race: these promises are never awaited together; wrap in Promise.all"
+      ]
+    },
+    {
+      "sha": "abedbf3",
+      "files": 4,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "d92f0d5",
+      "files": 31,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "b692877",
+      "files": 15,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "69a386b",
+      "files": 14,
+      "invariants": [],
+      "hazards": [
+        "lib/harness/bench/seed-cap.ts:559 missing await: greet() returns a promise and nothing waits for it"
+      ]
+    },
+    {
+      "sha": "abfebb8",
+      "files": 10,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "419e32b",
+      "files": 1,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "74d6643",
+      "files": 4,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "e3d02be",
+      "files": 6,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "61ec555",
+      "files": 1,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "7a28772",
+      "files": 1,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "9ee2713",
+      "files": 1,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "ab5a6c2",
+      "files": 11,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "0297d82",
+      "files": 46,
+      "invariants": [
+        "scripts/fabric-bench.ts:55 sql injection",
+        "scripts/fabric-bench.ts:56 sql injection",
+        "scripts/fabric-bench.ts:198 sql injection"
+      ],
+      "hazards": [
+        "app/owner/cloud/page.tsx missing await: the change dropped the await on getCloudOverview()",
+        "cloud-node/index.ts:68 swallowed error: this drops a rejection without handling it",
+        "cloud-node/server.ts:108 swallowed error: this drops a rejection without handling it",
+        "cloud-node/server.ts:216 swallowed error: this drops a rejection without handling it",
+        "cloud-node/server.ts:362 swallowed error: this drops a rejection without handling it",
+        "cloud-node/server.ts:401 swallowed error: this drops a rejection without handling it",
+        "cloud-node/stats.ts:24 swallowed error: this drops a rejection without handling it",
+        "cloud-node/stats.ts:34 swallowed error: this drops a rejection without handling it",
+        "lib/cloud/providers/selfhosted.ts:164 swallowed error: this drops a rejection without handling it",
+        "lib/cloud/providers/selfhosted.ts:168 swallowed error: this drops a rejection without handling it",
+        "lib/cloud/providers/selfhosted.ts:520 swallowed error: this drops a rejection without handling it"
+      ]
+    },
+    {
+      "sha": "455bc43",
+      "files": 1,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "bac234a",
+      "files": 1,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "9dceaf4",
+      "files": 1,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "761e53c",
+      "files": 3,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "60a5d9c",
+      "files": 6,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "6bcef0d",
+      "files": 5,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "4320922",
+      "files": 7,
+      "invariants": ["lib/harness/bench/seed-hard.ts:220 financial precision"],
+      "hazards": [
+        "lib/harness/bench/run.ts:190 swallowed error: this drops a rejection without handling it",
+        "lib/harness/bench/seed-hard.ts:166 missing await: runPool() returns a promise and nothing waits for it",
+        "lib/harness/bench/seed-hard.ts:759 missing await: getSetting() returns a promise and nothing waits for it"
+      ]
+    },
+    {
+      "sha": "ae8c6d3",
+      "files": 3,
+      "invariants": [],
+      "hazards": []
+    },
+    {
+      "sha": "c3f17ca",
+      "files": 5,
+      "invariants": [],
+      "hazards": []
+    }
+  ]
+}

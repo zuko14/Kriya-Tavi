@@ -344,6 +344,11 @@ export const RunProfile = z.strictObject({
   env: z.strictObject({
     KRIYA_LOOP: OnOff,
     KRIYA_LOOP_V2: OnOff,
+    KRIYA_LOOP_GUARD: OnOff.optional(),
+    KRIYA_STRICT_LOOP: OnOff.optional(),
+    KRIYA_DEFENSIVE: OnOff.optional(),
+    KRIYA_RECON: OnOff.optional(),
+    KRIYA_JIT_TOOLS: OnOff.optional(),
     KRIYA_BUDGET: OnOff,
     KRIYA_ANCHOR: OnOff,
     KRIYA_MINIMAL: OnOff,

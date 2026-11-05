@@ -1,0 +1,53 @@
+{
+  "id": "kriya-migrate",
+  "name": "Change data and systems safely",
+  "description": "Use when a change touches a database schema, stored data, an integration or a deployment: make it reversible, prove it on a copy, and check the data afterwards, not just that the command exited 0.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [
+    {
+      "project": "ECC",
+      "version": "main",
+      "commit": "07971588f8",
+      "license": "MIT",
+      "url": "https://github.com/affaan-m/ECC",
+      "path": "skills/database-migrations"
+    }
+  ],
+  "categories": ["engineering", "data"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "migration",
+      "migrate",
+      "schema",
+      "database",
+      "backfill",
+      "deploy",
+      "rollback",
+      "integration",
+      "data validation"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from kriya_verify runs the harness records (docs/kriya-harness/KRIYA_LOOP.md); the skill adds no tool or approval.",
+  "limits": {
+    "maxChars": 2400
+  },
+  "evals": [
+    {
+      "ask": "Add a migration for the new orders column",
+      "expect": "activate"
+    },
+    {
+      "ask": "Explain what this function does",
+      "expect": "skip"
+    }
+  ]
+}

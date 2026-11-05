@@ -8,6 +8,12 @@ export const HarnessProfile = z
     version: z.literal(1),
     loop: z.boolean(),
     loopV2: z.boolean(),
+    // Added after the first profiles were recorded: absent means off
+    loopGuard: z.boolean().default(false),
+    strictLoop: z.boolean().default(false),
+    defensive: z.boolean().default(false),
+    recon: z.boolean().default(false),
+    jitTools: z.boolean().default(false),
     budget: z.boolean(),
     anchor: z.boolean(),
     minimalTools: z.boolean(),
@@ -17,6 +23,9 @@ export const HarnessProfile = z
   })
   .strict()
   .refine((p) => p.loop || !p.loopV2, { message: "loopV2 needs loop" })
+  .refine((p) => p.loop || !(p.loopGuard || p.strictLoop || p.defensive || p.jitTools), {
+    message: "loopGuard, strictLoop, defensive and jitTools need loop",
+  })
 export type HarnessProfile = z.infer<typeof HarnessProfile>
 
 /** Kriya Harness 0.2.0's defaults (U10: loop and budget on) */
@@ -24,6 +33,11 @@ export const BASELINE: HarnessProfile = {
   version: 1,
   loop: true,
   loopV2: false,
+  loopGuard: false,
+  strictLoop: false,
+  defensive: false,
+  recon: false,
+  jitTools: false,
   budget: true,
   anchor: false,
   minimalTools: false,

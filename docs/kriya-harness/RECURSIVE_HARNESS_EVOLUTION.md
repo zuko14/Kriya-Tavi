@@ -83,6 +83,8 @@ No shared state, no second runtime, no daemon.
 | Field | Client meaning | Bounds |
 | --- | --- | --- |
 | `loop`, `loopV2`, `budget`, `anchor` | `KRIYA_LOOP`, `KRIYA_LOOP_V2`, `KRIYA_BUDGET`, `KRIYA_ANCHOR` | booleans; `loopV2 ⇒ loop` |
+| `loopGuard` (H21) | `KRIYA_LOOP_GUARD`, sent only when on | boolean, default false; `loopGuard ⇒ loop`; off, it is left out of the id, so recorded ids and lessons stay valid |
+| `strictLoop`, `defensive`, `recon`, `jitTools` (H22, H23) | `KRIYA_STRICT_LOOP`, `KRIYA_DEFENSIVE`, `KRIYA_RECON`, `KRIYA_JIT_TOOLS`, sent only when on | booleans, default false; left out of the id when off; `strictLoop`, `defensive`, `jitTools` ⇒ `loop` |
 | `minimalTools` | `KRIYA_MINIMAL` (B0's 8 tools) | boolean |
 | `maxSteps`, `turnMinutes`, `maxRepeats` | `KRIYA_MAX_STEPS`, `KRIYA_TURN_MINUTES`, `KRIYA_MAX_REPEATS` | 20–400, 5–120, 3–30 |
 

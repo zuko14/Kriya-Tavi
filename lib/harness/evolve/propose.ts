@@ -28,6 +28,11 @@ type Signals = {
   multiFailed: number
   passed: number
   costly: boolean
+  // From the sessions' own records; 0 for reports without them
+  unfinished: number
+  blocked: number
+  falseVerified: number
+  heavyContext: number
 }
 
 const MOVES: Move[] = [
@@ -47,6 +52,46 @@ const MOVES: Move[] = [
       "Dependency-aware steps, classified failures and set-aside attempts fix multi-part and repeated failures",
     signal: (s) => s.multiFailed * 2 + s.tampered,
     overhead: "one extra check run when tests changed; no extra model calls",
+  },
+  {
+    name: "loop-guard-on",
+    // Only on top of the loop: with the loop off this would change two factors at once
+    apply: (p) => (p.loop ? { ...p, loopGuard: true } : p),
+    hypothesis:
+      "Sending an agent back to unfinished steps and stopping builders that can't help turns abandoned plans into passes and spends less on blocked ones",
+    signal: (s) => s.unfinished * 3 + s.falseVerified * 3 + s.blocked * 2,
+    overhead: "one checkpoint per builder; a notice when a plan is left unfinished",
+  },
+  {
+    name: "strict-loop-on",
+    apply: (p) => (p.loop ? { ...p, strictLoop: true } : p),
+    hypothesis:
+      "Cheap checks first, refused test weakening and step rollback stop false passes and broken edits piling up",
+    signal: (s) => s.falseVerified * 4,
+    overhead: "the fast rungs per check; one extra check run per bug fix",
+  },
+  {
+    name: "defensive-on",
+    apply: (p) => (p.loop ? { ...p, defensive: true } : p),
+    hypothesis:
+      "Tracing the blast radius and reviewing the diff catches regressions in code the task's own tests never touch",
+    signal: (s) => s.falseVerified * 3 + s.blocked,
+    overhead:
+      "neighbouring test suites before each pass; a pre-mortem per multi-step plan",
+  },
+  {
+    name: "recon-on",
+    apply: (p) => ({ ...p, recon: true }),
+    hypothesis: "Outlines and bounded reads keep long tasks from filling the context",
+    signal: (s) => s.heavyContext * 2,
+    overhead: "two more tools in the list; a refused read costs one round",
+  },
+  {
+    name: "jit-tools-on",
+    apply: (p) => (p.loop ? { ...p, jitTools: true } : p),
+    hypothesis: "Builders without unneeded tool schemas cost less for the same passes",
+    signal: () => 0,
+    overhead: "KriyaBench B5 lost passes when tools were cut; this cuts only heavy ones",
   },
   {
     // One factor: the turn budget's size (steps and minutes together)
@@ -92,6 +137,11 @@ function signals(reports: Report[]): Signals {
     passed: rows.length - failed.length,
     // shortcut: "costly" is any metered spend; a per-task cost baseline comes with more runs
     costly: costs.length > 0,
+    unfinished: rows.filter((t) => (t.trajectory?.open ?? 0) > 0).length,
+    blocked: rows.filter((t) => (t.trajectory?.blocked ?? 0) > 0).length,
+    falseVerified: failed.filter((t) => t.trajectory?.status === "verified").length,
+    // shortcut: a fixed line for a builder's peak context; per-model limits come with real runs
+    heavyContext: rows.filter((t) => (t.trajectory?.peakTokens ?? 0) > 100_000).length,
   }
 }
 

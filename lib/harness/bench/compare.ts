@@ -49,6 +49,12 @@ function show(name: string, s: ReturnType<typeof armSummary>) {
   console.log(
     `${name}: ${s.passed}/${s.attempts} over ${s.runs} run(s) = ${pct(s.passPerMille)} (95% ${ci}); pass^${s.runs} ${pct(s.passAllRunsPerMille)} of ${s.tasks} tasks; spend ${inr(s.costMicroInr)}, per passed ${inr(s.costPerPassedMicroInr)}`
   )
+  if (s.evidence) {
+    const e = s.evidence
+    console.log(
+      `  records (${e.tasks} tasks): verified and passed ${pct(e.verifiedPerMille)}; said verified but failed ${e.falseVerified}; left unfinished ${e.unfinished}; blocked ${e.blocked}; recovered steps ${e.recoveredSteps}; check runs ${e.checkRuns} (${e.failedRuns} failed); builders ${e.builders} (${e.builderSteps} steps); stalled ${e.stalled}; interrupted ${e.interrupted}`
+    )
+  }
 }
 
 const a = await load(values.a)
