@@ -32,6 +32,7 @@ import { checkObligation } from "@/lib/radar/extract"
 import { OBLIGATION_KINDS } from "@/lib/radar/templates"
 import { FLOW_CONTEXT, FLOW_PRIVATE } from "@/lib/flows/marker"
 import { MIRROR_CONTEXT } from "@/lib/harness/mirror-context"
+import { CREW_CONTEXT, CREW_PRIVATE } from "@/lib/operator/marker"
 import { ROOM_CONTEXT } from "@/lib/rooms/context"
 import { createRoomTools } from "@/lib/rooms/tools"
 import { UNTRUSTED_DIFF } from "@/lib/watch"
@@ -1046,8 +1047,11 @@ export function privateContentSeen(messages: ModelMessage[]) {
   return messages.some(
     (message) =>
       // Track S (SD-11): a flow step's brief can carry what an earlier step
-      // read from private accounts, in another thread
-      messageTexts([message], ["user"]).some((text) => text.includes(FLOW_PRIVATE)) ||
+      // read from private accounts, in another thread; track O: so can a
+      // crew member's report
+      messageTexts([message], ["user"]).some(
+        (text) => text.includes(FLOW_PRIVATE) || text.includes(CREW_PRIVATE)
+      ) ||
       (Array.isArray(message.content) &&
         message.content.some(
           (part) =>
@@ -1076,13 +1080,15 @@ export function untrustedSeen(messages: ModelMessage[]) {
   return messages.some(
     (message) =>
       // A13: a watcher's run carries a changed page's diff in its message;
-      // track R: a room request quotes the room (RD-07)
+      // track R: a room request quotes the room (RD-07); track O: a crew
+      // message may quote what another thread read
       messageTexts([message], ["user"]).some(
         (text) =>
           text.includes(UNTRUSTED_DIFF) ||
           text.includes(ROOM_CONTEXT) ||
           // Track S (SD-11): a flow step's brief quotes earlier steps
-          text.includes(FLOW_CONTEXT)
+          text.includes(FLOW_CONTEXT) ||
+          text.includes(CREW_CONTEXT)
       ) ||
       // Track H (H6): a turn mirrored from a laptop is that agent's words,
       // possibly carrying what it read (owner decision 2026-11-01)

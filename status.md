@@ -14082,3 +14082,38 @@ which also affected the version hash.
 restarted, then stopped at the end, as found.
 
 **Next exact action:** on the owner's go-ahead, one paid real-model run of journeys 1 and 3 (SO-08), then a joined device run.
+
+## Crew report taint (track O, SD-11 finding / SO-05), 2026-11-05
+
+**State: done; rebased onto `main` after PR #12 merged (PR #15).** Closes SO-05
+except the same-turn gap below. Owner approved the protected `lib/agent/tools.ts`
+change in chat on 2026-11-05 ("Yes, apply it").
+
+- Changed: `lib/operator/marker.ts` (new: `CREW_CONTEXT`, `CREW_PRIVATE`),
+  `lib/operator/crews.ts` (`marks()`, used by dispatch, dependent briefs and the
+  join), `lib/agent/tools.ts` (two stricter-only checks),
+  `tests/operator/crews.test.ts` (OT-CREW-12, 4 tests),
+  `docs/operator/CHANGE_IMPACT_AND_SAFETY.md`, `docs/operator/CREW_EXECUTION.md`,
+  `docs/operator/SECURITY_AND_THREATS.md`.
+- Commands and real output, all `env -u OPENROUTER_API_KEY npm run check`:
+  - Baseline at `9ed6f41`: exit 1, 1 failed | 2951 passed | 64 skipped.
+  - This branch: exit 1, 1 failed | 2955 passed | 64 skipped. The failure, here and
+    at baseline, is HT-BEN-02 `hard-perf-dedupe` timing out at 30 s.
+  - This branch plus PR #13's test file, in a scratch copy: exit 0, 2956 passed | 64
+    skipped; typecheck, lint (0 errors) and format clean.
+  - Rebased onto `main` at `413c9ef`: exit 0, 3082 passed | 64 skipped; typecheck,
+    lint (0 errors) and format clean.
+- HT-BEN-02: the test allowed 30 s for two runs that may take 120 s each. PR #13
+  (`fix/bench-test-timeout`) fixes it; it also failed PR #12's CI, whose build step
+  was skipped. That build passes locally on `920cb35`.
+- Known gap, confirmed by a scratch probe: a lead that reads private mail and calls
+  `crew_dispatch` in the same turn sends an unmarked brief (the turn isn't saved
+  yet). Closing it needs `messages` passed from `crew_dispatch`'s `execute` in
+  `lib/agent/tools.ts`: another protected change, not approved or made.
+- Rebase: PR #12 edited the same lines of `privateContentSeen` and `untrustedSeen`;
+  both sets of markers are kept. PR #14 brought the HT-BEN-02 fix to `main`, plus
+  `tests/cloud/selfhosted.test.ts` no longer letting the runner's PSI pressure refuse
+  its node (E2E-01 failed #14's first CI run). PR #13 is now redundant.
+- kriya-harness PR #27: its first CI jobs never started (GitHub billing). After the
+  repository went public, all 8 checks passed at `0c2b0b6`. Merge it after this.
+- Next exact action: read PR #15's CI, merge it, close PR #13, then merge PR #27.

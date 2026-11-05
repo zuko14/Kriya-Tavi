@@ -142,6 +142,17 @@ Results are members' model text, which may echo untrusted content they
 read. The join message carries the existing `FOREIGN` notice, so the lead
 treats it as data, not instructions.
 
+Text crosses threads but tool calls don't, so `privateContentSeen` and
+`untrustedSeen` can't see what another thread read. `lib/operator/marker.ts`
+carries it across, the `ROOM_CONTEXT` pattern: every message quoting reports
+has `CREW_CONTEXT` (memory stays quarantined), and `CREW_PRIVATE` too if a
+quoted thread saw private content (`guardWeb` then fires). `marks()` in
+`lib/operator/crews.ts` decides from the saved messages through the same two
+functions, so a marked thread marks what it hands on: a chain of parts and a
+next round's briefs keep the mark. Known gap: a lead that reads private
+content and dispatches in the **same turn** isn't caught, because its turn
+isn't saved yet.
+
 ## 6. Money, limits and stopping
 
 - Each part task's budget: `min(plan max per task, remaining job budget ÷
@@ -181,4 +192,5 @@ parts not yet finished)`, converted with the same `capToProviderMicroUsd`
 | OT-CREW-09 | Stop crew / revoke job cancels all part tasks                                                                            |
 | OT-CREW-10 | Another person can't read or reach any crew row or part thread (RLS)                                                     |
 | OT-CREW-11 | With `operator.crews` off: `assign` unchanged, no `crew_dispatch`, prompt byte-identical (OT-REG-01)                     |
+| OT-CREW-12 | A dependent part's web read waits for approval after a member read private mail, through a chain, the join and round 2; a part that read nothing private is unchanged |
 | OG-06      | Golden job: OP-COLLECT with a 2-member crew (one drafts reminders, one prepares the ledger summary); verdict met         |
