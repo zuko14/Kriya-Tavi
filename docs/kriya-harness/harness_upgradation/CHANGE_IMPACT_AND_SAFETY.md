@@ -174,6 +174,17 @@ Report: `KRIYA_DEFENSIVE_ENGINE_REPORT.md`. Behind `--defensive` (default off; b
 
 Client `src/modes.js`: `loop-guard`, `strict-loop`, `defensive`, `recon`, `jit-tools`, `router` default on, with no real-model measurement. Test arms pin them off; DF-RUN-07 covers no flags. `--no-…` or `KRIYA_…=off` turns each off; `--defensive` brings the strict loop. KRHE's `BASELINE` stays 0.2.0's, so recorded ids hold.
 
+## 2k. Kriya naming everywhere a person looks (2026-11-06, owner in chat: "completely this was a Kriya harness product"; client branch `fix/kriya-branding`)
+
+DSH stays a pinned, unedited dependency (track H rule 5) and stays credited in `kriya --version`, SAFETY.md, README and THIRD_PARTY_NOTICES.md (its MIT licence requires the notice). Only what a person sees and the agent's self-description change.
+
+| File | Change | Must stay true | Test |
+| --- | --- | --- | --- |
+| `src/launch.js` | `rebrand`: DSH's leading `dsh web:` / `dsh:` on terminal lines said as `Kriya Harness:` / `kriya:`; the Web UI's stdout and every profile's stderr pass through it | stdout of `kriya run` (the answer) and `kriya acp` (protocol frames) untouched; only a line's start changes | KB-01, KB-04, web/env tests |
+| `plugins/brand/index.js` | The served page's `<title>` via the web server's `tapIndex` | Profiles without the web server skip it | KB-02, KB-04 |
+| `bundle/cordis.patch.yml`, `expected/*.dump.yml` | `system-prompt`: `includeHarnessIdentity: false`, persona "You are Kriya, a coding agent in Kriya Harness, working with the {{model}} model."; the seven web-only rows (changes, overview, progress, skills, projects, sessions, remote) disabled outside the Web UI profile, where they never started anyway | Dump diff: only these rows | KB-03, HT-REL-03 |
+| `tests/branding.test.js` (new) | KB-01…04 | — | itself |
+
 ## 3. Stop conditions
 
 Stop and ask the owner before: editing a protected file; adding a migration
