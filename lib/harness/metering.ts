@@ -25,6 +25,18 @@ type Price = { input: number | null; output: number | null }
 
 // The most a request can cost in micro-USD: input counted generously
 // (characters / 3) plus the full output allowance. Null when unpriced
+// An image is sent as base64, but models bill it by its picture, not its
+// characters: one screenshot would otherwise reserve about 70k tokens
+const IMAGE_DATA = /data:image\/[a-z+.-]+;base64,[A-Za-z0-9+/=]+/g
+const IMAGE_CHARS = 12_288 // 4096 tokens at the estimate's 3 characters each
+
+/** The characters to estimate a request from; every inline image counts as IMAGE_CHARS */
+export function estimatedChars(messages: unknown) {
+  const text = JSON.stringify(messages)
+  const images = text.match(IMAGE_DATA) ?? []
+  return text.replace(IMAGE_DATA, "").length + images.length * IMAGE_CHARS
+}
+
 export function upperEstimateMicroUsd(
   inputChars: number,
   maxTokens: number,

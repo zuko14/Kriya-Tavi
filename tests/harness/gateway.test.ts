@@ -132,7 +132,7 @@ beforeEach(async () => {
     "update kriya.plans set harness_monthly_micro_inr = 1000000000, allowed_tiers = '{budget}', markup_bps = 15000 where id = 'free'"
   )
   await pg.query(
-    "update kriya.models set context_window = null, max_output_tokens = null where id like 'test/%'"
+    "update kriya.models set context_window = null, max_output_tokens = null, supports_images = false where id like 'test/%'"
   )
 })
 
@@ -169,7 +169,28 @@ describe("HT-GW-01: aliases only", () => {
   })
 })
 
+describe("HT-GW-11: an inline image reserves its picture, not its base64", () => {
+  it("counts each image once at a fixed size and leaves text exactly as it was", async () => {
+    const { estimatedChars } = await import("@/lib/harness/metering")
+    const text = [{ role: "user", content: "x".repeat(1000) }]
+    expect(estimatedChars(text)).toBe(JSON.stringify(text).length)
+    const url = `data:image/jpeg;base64,${"A".repeat(300_000)}`
+    const shot = [{ role: "user", content: [{ type: "image_url", image_url: { url } }] }]
+    const size = estimatedChars(shot)
+    expect(size).toBeLessThan(13_000)
+    expect(estimatedChars([...shot, ...shot])).toBeGreaterThan(size)
+  })
+})
+
 describe("HT-GW-09: /models names the owner's model for each level", () => {
+  it("says a level takes images only when its catalogue row does", async () => {
+    await pg.query(
+      "update kriya.models set supports_images = true where id = 'test/budget'"
+    )
+    const list = await models(call("GET", "/models", { token }))
+    expect((await list.json()).data[0]).toMatchObject({ id: "budget", images: true })
+  })
+
   it("the catalogue label, its repeated vendor prefix trimmed; unusable labels leave the name out", async () => {
     const { displayName } = await import("@/app/api/harness/v1/models/route")
     expect(

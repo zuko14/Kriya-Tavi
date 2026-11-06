@@ -11,6 +11,7 @@ import {
   settle,
   settleAborted,
   settleFailed,
+  estimatedChars,
   upperEstimateMicroUsd,
   type UpstreamUsage,
 } from "@/lib/harness/metering"
@@ -87,7 +88,7 @@ export async function chatCompletion(request: Request, device: DeviceUser) {
   const cap = await outputCap(model)
   const maxTokens = Math.min(body.max_tokens ?? cap, cap)
   const estimateUsd = upperEstimateMicroUsd(
-    JSON.stringify(body.messages).length,
+    estimatedChars(body.messages),
     maxTokens,
     price
   )
@@ -283,6 +284,7 @@ function passThrough(
         } catch (error) {
           // Upstream broke off or the device left: settled now (estimated
           // without usage), not left open for the janitor
+          log.warn("harness upstream stream broke off", { model })
           await done()
           controller.error(error)
           return

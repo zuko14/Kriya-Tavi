@@ -68,6 +68,8 @@ Everything protected by tracks A, O, N, voice and C, plus:
 **Dependencies:** none in this repository. The gateway uses `fetch` to
 OpenRouter's OpenAI-compatible endpoint (`OPENROUTER_BASE_URL`, already in
 `render.yaml`).
+| `app/api/harness/v1/models/route.ts`, `lib/harness/contract.ts` | Owner request 2026-11-06 | `/models` adds `images: true` for a tier whose model the catalogue says takes images | Absent otherwise; no other field changes | HT-GW-09 |
+| `lib/harness/gateway.ts`, `lib/harness/metering.ts` | Owner request 2026-11-06 | The reservation counts an inline image as a fixed size, not its base64; a broken upstream stream is logged | Text-only requests estimate exactly as before; `lib/agent/metering.ts` and `kriya.charges` unchanged | HT-GW-11 |
 
 ## 4. Module boundaries
 
