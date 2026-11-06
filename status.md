@@ -14204,3 +14204,46 @@ Client: `loop-guard`, `strict-loop`, `defensive`, `recon`, `jit-tools`, `router`
 - **Checks (real output):** KB-01…04 (KB-03 and KB-04 on the real pinned DSH: the prompt says Kriya and never DeepSeek Harness, no "did not activate"; the Web UI prints "Kriya Harness: http://127.0.0.1:…" and serves `<title>Kriya Harness</title>`). Client `npm run check` **370/370, exit 0**.
 - **Not changed:** the plain-text page DSH's connection layer serves when the Web UI is opened without its token ("dsh web authentication required…"): no Kriya seam reaches it; `kriya --version`'s "built on DeepSeek Harness" (required attribution).
 - **Next exact action (owner):** say whether to commit and open PRs; after merging, `git pull` in `~/Developer/kriya-harness` and restart `kriya`.
+
+## Tool failures on a real long task, 2026-11-06 (Claude Code / Opus 5.5, owner in chat with screenshots: "why are the errors still in the tool calling", "the model can't able to see the image")
+
+Evidence: the 20 session logs of `3D_scene_testing` and `tesing_kriya_benchmark` in `~/.kriya/sessions`: 1000 tool calls, 73 failed, 17 model retries.
+
+| Failure | Count | Root cause | Status |
+| --- | --- | --- | --- |
+| `edit` "file changed since it was read" | 40 of 146 edits | DSH's version includes ctime; iCloud bumps it after a save with the content untouched (measured: 3 changes in 5 s in `~/Documents`, 0 in `~/Developer`). `edit` is exclusive in DSH, so the "parallel" ones were serial. 26 had no other tool between; the other 14 had bash or other writes between, so some are real changes | Fixed: `plugins/fs-freshness` |
+| `kriya_plan` "not lossless JSON", then "already made 3 plans" | 4 | `radius: undefined` in an empty folder; DSH refuses it after `savePlan` wrote the plan, so each "failed" plan spent a slot | Fixed |
+| `read_image` / `browser_screenshot` "can't take images" | 3 + 9 | The `kriya` provider row declares no `input`, so DSH treats every tier as text only; `/models` never sent `models.supportsImages`. All three tiers route to DeepSeek V4.1 Flash 1017, which OpenRouter's catalogue lists as text+image | Fixed in code; needs the deploy below |
+| `kriya_verify` step label | 7 | A comma or `+` in the model's label was refused | Fixed: cleaned, not refused |
+| `relay: TypeError` | 7 logged | `fetch failed` before any answer: ECONNRESET 3, EPIPE 2, connect timeout 2. DSH retried each; no turn ended on them. Only the name was logged | Log fixed. The drops themselves aren't |
+| `kriya_step` "[object Object]" | 1 | DSH's abort reason `{ kind: "user" }`: the person pressed Stop | Fixed |
+
+- **Left as designed:** the 400-line read refusal (7; `tools/pre-execute` can only allow or deny, so it can't clamp), pre-mortem refusals (2), unread/not found/same-string errors (6), `tool call aborted` (3, stops).
+- **Changed, client (`../kriya-harness`, `main` in place, uncommitted):** new `plugins/fs-freshness/`, `tests/tool-failures-run.test.js`; `bundle/cordis.patch.yml`, `plugins/loop/index.js`, `scripts/check-seams.js`, `src/gateway-proxy.js`, `src/launch.js`, `src/profiles.js`, `src/verify.js`, `tests/env.test.js`, `expected/*.dump.yml`, `contract/`. DSH unedited (track H rule 5).
+- **Changed, Kriya (`main` in place, uncommitted):** `app/api/harness/v1/models/route.ts`, `lib/harness/contract.ts`, `docs/kriya-harness/contract.json`, `docs/kriya-harness/CHANGE_IMPACT_AND_SAFETY.md` (row added), `tests/harness/gateway.test.ts`.
+- **Verified (real output):** TF-01…09 on the real pinned DSH: 7 failed before the fixes with the screenshots' error text, TF-04 and TF-06 passed before and after (a real change is still refused; a text-only tier sends no image). A/B on real iCloud, fake gateway, ₹0, 12 edits each: unfixed in `~/Documents` 12 stale, 0 landed; fixed 0 stale, 12 landed; unfixed outside iCloud 0 stale, 12 landed. Client `npm run check` 379/379 exit 0, `release:check` exit 0, 13 seams present. Kriya `env -u OPENROUTER_API_KEY npm run check` 3105 passed, 63 skipped, exit 0.
+- **Not verified:** a real model receiving a screenshot (a paid call); whether `kriya.models.supports_images` is true for `deepseek/deepseek-v4.1-flash-1017` in the live database (not read, per operator rule 6); the cause of the drops (10 further `terminated` mid-stream, which the relay doesn't log; could be the network, Cloudflare, Render or OpenRouter).
+- **Still open:** with no confirmed check every step reads "Not checked", so a from-scratch build gets no harness verdict until the person runs `kriya verify use`. All three tiers are one model, so `escalation` escalates to nothing.
+- **Leftover:** `~/Documents/.kriya-icloud-ab-unfixed` (the A/B's small test files); the guardrail refused its deletion, so the owner removes it.
+- **Next exact action (owner):** say whether to commit both repositories and open PRs; deploy Kriya; if `/models` still shows no `images`, re-sync the catalogue; restart `kriya`.
+
+## Open items closed, 2026-11-06 (Claude Code / Opus 5.5, owner in chat: "fix them end to end what are still open at completely end to end production level")
+
+Follows the section above; it replaces that section's "left as designed" for the read limit and its "still open" for the check.
+
+| Open item | What changed | Proof |
+| --- | --- | --- |
+| A from-scratch build got no verdict | After a builder leaves a check, `kriya_step` asks the person directly through `ctx.userQuestions` (`askCheck`, `plugins/loop/index.js`): only an offered command they select counts, the model is not in the path, 2-minute wait, asked once a session, `kriya run` unchanged (NO_PROVIDER). The step is then judged, and steps built earlier get a run of their own. Builders and the plan are told to leave a real script | Real Web UI on a fake gateway: card shown, `npm test` picked, both steps `pass` exit 0, Progress "Verified", console clean. TF-10…14 |
+| A long outage killed a task | The relay waits out connect failures (4 min per request, then DSH's own retries), and retries a dead pooled socket once at once. Connect failures can't have reached Kriya; the socket retry is once because it may have | A/B, real 40 s outage mid-task, ₹0: unfixed exit 1 at 18 s, task lost; fixed exit 0 at 48 s, task finished. TF-15…17 |
+| Drops had no cause on record | A mid-stream cut is logged with its code in the relay; `lib/harness/gateway.ts` logs an upstream break, so Render's logs now tell the two apart | TF-18 |
+| 400-line read refusal | Deleted. `tools/post-execute` turns a long read into one page with what's left, in every profile. `readLimit` was rejected: it can't reach the Web UI's rows inside agent presets | TF-19, ST-RC-03 |
+| Images could over-reserve spend | `estimatedChars` counts an inline image at a fixed 4096 tokens, not its base64 (about 70k tokens each); text estimates unchanged | HT-GW-11 |
+| Synced folder, one-model tiers | `kriya doctor` prints a note for each; neither fails it | TF-20; real doctor in `~/Documents/3D_scene_testing` shows both |
+
+- **Changed since the last section, client:** `plugins/loop/index.js`, `src/loop.js`, `src/verify.js`, `src/recon.js`, `src/gateway-proxy.js`, `src/doctor.js`, `tests/tool-failures-run.test.js`, `tests/strict.test.js`, `tests/strict-run.test.js`. **Kriya:** `lib/harness/gateway.ts`, `lib/harness/metering.ts`, `tests/harness/gateway.test.ts`, `docs/kriya-harness/CHANGE_IMPACT_AND_SAFETY.md` (row added). All uncommitted.
+- **Checks (real output):** client `npm run check` 390/390 exit 0, `release:check` exit 0. Kriya `env -u OPENROUTER_API_KEY npm run check` 3106 passed, 63 skipped, exit 0.
+- **Flaky, not caused by this work:** `tests/next/memory-rerank-runner.test.ts` NT-MEM-05 failed once while both repositories' suites ran at the same time, then passed 3 of 3 alone and in the full run alone. Cause not found.
+- **Not verified:** a real model receiving a screenshot (needs the deploy and a paid call); the live `supports_images` value.
+- **Still the owner's, not code:** which model `routing.escalation` uses; moving existing projects out of `~/Documents` (not moved: session history is keyed by path); DSH's first-run workspace is hardcoded to `<Documents>/deepseek-harness/default-workspace`.
+- **Still happens:** a stream cut mid-answer can't be resumed, so DSH repeats that model request.
+- **Next exact action (owner):** say whether to commit and open PRs; deploy Kriya; restart `kriya`; pick an escalation model.

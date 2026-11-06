@@ -114,6 +114,9 @@ export const ModelsResponse = z.strictObject({
       // and the output cap the gateway allows. Both absent when unknown
       contextWindow: z.number().int().positive().optional(),
       maxOutputTokens: z.number().int().positive().optional(),
+      // Whether that model takes images, from the same catalogue; absent
+      // when it doesn't or that's unknown (the client stays text only)
+      images: z.literal(true).optional(),
     })
   ),
   // The request-body forms the gateway decodes besides plain JSON

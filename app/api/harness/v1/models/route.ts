@@ -27,13 +27,17 @@ async function levelInfo(tier: Tier) {
   try {
     const id = await modelForTier(tier)
     const [row] = await privileged
-      .select({ label: models.label })
+      .select({ label: models.label, images: models.supportsImages })
       .from(models)
       .where(eq(models.id, id))
-    return { name: displayName(row?.label, id), limits: await modelLimits(id) }
+    return {
+      name: displayName(row?.label, id),
+      limits: await modelLimits(id),
+      images: row?.images === true,
+    }
   } catch {
     // Not routed yet: the level is listed without a name or limits
-    return { name: undefined, limits: null }
+    return { name: undefined, limits: null, images: false }
   }
 }
 
@@ -49,6 +53,7 @@ export const GET = harnessRoute(true, async (_request, device) => {
       owned_by: "kriya",
       ...(found[i].name && { name: found[i].name }),
       ...found[i].limits,
+      ...(found[i].images && { images: true as const }),
     })),
     bodyEncodings: [...BODY_ENCODINGS],
   })
