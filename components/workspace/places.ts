@@ -1,6 +1,7 @@
 import {
   BlocksIcon,
   BriefcaseIcon,
+  ClapperboardIcon,
   IndianRupeeIcon,
   LaptopIcon,
   MessagesSquareIcon,
@@ -32,6 +33,13 @@ export const TOOLS: Place[] = [
     label: "Flows",
     icon: WorkflowIcon,
     blurb: "Describe a job, see how it runs, and run it the same way each time.",
+  },
+  {
+    feature: "editing",
+    href: "/edits",
+    label: "Edits",
+    icon: ClapperboardIcon,
+    blurb: "Cuts made on your computer: watch them here and give notes.",
   },
   {
     feature: "goals",

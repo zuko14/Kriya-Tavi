@@ -78,6 +78,12 @@ const GROUPS: { title: string; description: string; prefix: string[] }[] = [
       "Track S. Off until studio.flows is on. Every agent node is an ordinary task, so plan limits apply; these limits are on top of them.",
     prefix: ["studio."],
   },
+  {
+    title: "Editing Studio",
+    description:
+      "Track E. Off until editing.studio is on. Publish and sign a Media Runtime first (OPERATIONS_RUNBOOK §2); editing.runtimeChannel picks which one devices get.",
+    prefix: ["editing."],
+  },
   { title: "Other", description: "", prefix: ["firecrawl.", "support."] },
 ]
 

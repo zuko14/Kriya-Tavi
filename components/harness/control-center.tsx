@@ -74,6 +74,7 @@ const KIND_LABEL: Record<Dispatch["kind"], string> = {
   pull: "Pull to computer",
   serve_start: "Start serving",
   serve_stop: "Stop serving",
+  edit: "Video edit",
 }
 // Polling reads a plain GET (a server action would refresh the whole route)
 async function refreshControlCenter(): Promise<ControlCenterData | null> {

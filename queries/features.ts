@@ -20,6 +20,7 @@ export type Features = {
   harness: boolean
   jobs: boolean
   flows: boolean
+  editing: boolean
 }
 
 export async function getFeatures(userId: string): Promise<Features> {
@@ -38,6 +39,7 @@ export async function getFeatures(userId: string): Promise<Features> {
     harness,
     jobs,
     flows,
+    editing,
   ] = await Promise.all([
     on("agents.inbox"),
     on("agents.goals"),
@@ -52,6 +54,7 @@ export async function getFeatures(userId: string): Promise<Features> {
     on("harness.api"),
     on("operator.mandates"),
     on("studio.flows"),
+    on("editing.tavi"),
   ])
   return {
     inbox,
@@ -65,5 +68,6 @@ export async function getFeatures(userId: string): Promise<Features> {
     harness,
     jobs,
     flows,
+    editing,
   }
 }

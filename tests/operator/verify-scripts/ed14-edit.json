@@ -1,0 +1,21 @@
+{
+  "turns": [
+    { "toolCalls": [{ "name": "video_edit_places", "input": {} }] },
+    {
+      "toolCalls": [
+        {
+          "name": "video_edit_start",
+          "input": {
+            "device": "e1400000-0000-4000-8000-000000000001",
+            "project": "0e14000000000001",
+            "computer": "Studio MacBook",
+            "folder": "Raw footage",
+            "brief": "Cut last night's recording into a 45 second reel",
+            "effort": "fast"
+          }
+        }
+      ]
+    },
+    { "text": "It's on your computer now. A card will appear here when it's done." }
+  ]
+}

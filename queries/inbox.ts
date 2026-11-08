@@ -26,6 +26,7 @@ import { notesToReview } from "@/lib/memory/person"
 import { describeStep, MAX_SKILL_FAILURES } from "@/lib/skills"
 import { threadHref } from "@/queries/episodes"
 import { jobsNeedGoogle } from "@/queries/connections"
+import { editCards } from "@/queries/editing"
 import { inboxJobs } from "@/queries/mandates"
 import { waitingGates } from "@/queries/flows"
 
@@ -54,6 +55,16 @@ export async function getInbox(userId: string) {
   const roomsOn = await roomAgentsOn()
   // Track H (H5): devices' requests waiting for an answer; off = not queried
   const harnessOn = (await getSetting("harness.api")) === "on"
+  // Track E (ED15): cards from a computer; off = not queried
+  const choicesOn = (await getSetting("editing.review")) === "on"
+  const foundOn = (await getSetting("editing.watchFolders")) === "on"
+  const edit =
+    choicesOn || foundOn
+      ? await editCards(
+          userId,
+          choicesOn && foundOn ? "all" : choicesOn ? "choices" : "found"
+        )
+      : []
   return withUser(userId, async (tx) => {
     const waiting = await tx
       .select({
@@ -153,6 +164,7 @@ export async function getInbox(userId: string) {
       })),
       questions,
       flowGates,
+      editCards: edit,
       memories: await notesToReview(tx),
       skills: skillRows.map((s) => ({
         id: s.id,
@@ -245,6 +257,7 @@ export async function inboxCount(userId: string) {
     (inbox.jobs ? inbox.jobs.review.length + inbox.jobs.needs.length : 0) +
     inbox.disclosures.length +
     inbox.harnessApprovals.length +
-    inbox.flowGates.length
+    inbox.flowGates.length +
+    inbox.editCards.length
   )
 }

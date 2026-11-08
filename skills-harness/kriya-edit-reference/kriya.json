@@ -1,0 +1,53 @@
+{
+  "id": "kriya-edit-reference",
+  "name": "Learning from a reference",
+  "description": "Use when someone shares a video they like and wants theirs to feel similar: measure its pace, structure, colour and caption style as numbers, and apply them to their own footage. Never copy its pixels, words, music or people.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["video", "style"],
+  "roles": ["editor", "video", "creator", "producer"],
+  "activation": {
+    "keywords": [
+      "like this video",
+      "style of this video",
+      "look like this video",
+      "reference video",
+      "edit dna",
+      "same pace as"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the Editing Studio's checks on the rendered file (QUALITY_GATES); the skill adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 2400
+  },
+  "evals": [
+    {
+      "ask": "Make my video in the style of this reference video",
+      "expect": "activate"
+    },
+    {
+      "ask": "Make it look like the Figma mockup",
+      "expect": "skip"
+    },
+    {
+      "ask": "Edit it with the same pace as this one",
+      "expect": "activate"
+    },
+    {
+      "ask": "Use the same style as the existing CSS",
+      "expect": "skip"
+    },
+    {
+      "ask": "Copy this file to the backup folder",
+      "expect": "skip"
+    }
+  ]
+}

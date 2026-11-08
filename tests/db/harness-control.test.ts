@@ -165,9 +165,19 @@ describe("HT-CC-DB-03: the migration rolls back and forward", () => {
     const read = (dir: string, file: string) =>
       readFileSync(path.join(process.cwd(), "supabase", dir, file), "utf8")
     const db = await createTestDb()
+    await db.exec(
+      "create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key)"
+    )
+    // Track E references the Control Center: first out, last in
+    await db.exec(read("rollback", "20271103000000_editing_review.down.sql"))
+    await db.exec(read("rollback", "20271102000000_editing_tables.down.sql"))
+    await db.exec(read("rollback", "20271101000000_harness_dispatch_edit.down.sql"))
     await db.exec(read("rollback", "20270801000000_harness_control.down.sql"))
     await expect(db.query("select 1 from kriya.harness_dispatches")).rejects.toThrow()
     await db.exec(read("migrations", "20270801000000_harness_control.sql"))
     expect((await db.query("select 1 from kriya.harness_dispatches")).rows).toEqual([])
+    await db.exec(read("migrations", "20271101000000_harness_dispatch_edit.sql"))
+    await db.exec(read("migrations", "20271102000000_editing_tables.sql"))
+    await db.exec(read("migrations", "20271103000000_editing_review.sql"))
   })
 })

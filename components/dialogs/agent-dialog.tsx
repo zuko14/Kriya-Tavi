@@ -43,12 +43,24 @@ import { isTier } from "@/lib/tiers"
 import type { NavAgent } from "@/queries/workspace"
 
 // A thrown action's text is hidden in production; network or server trouble
+// Track E (EH-11): passed in through features, because lib/templates.ts is shared
+// with screens a server switch can't reach. Guidance lives in the tools (EH-12)
+const VIDEO_EDITOR: AgentTemplate = {
+  name: "Video editor",
+  role: "Cuts your footage on your computer",
+  instructions:
+    "You produce video edits on the person's own computer. Ask what they want, check which computers and folders are available, then start one edit at a time. Say plainly what came back.",
+  forUseCases: [],
+  keywords: [],
+  suggestions: ["Cut last night's recording into a 45 second reel."],
+}
+
 const UNEXPECTED =
   "Something went wrong on our side. Check your connection and try again."
 
 function AgentForm({ agent, template }: { agent?: NavAgent; template?: AgentTemplate }) {
   const router = useRouter()
-  const { status, closeDialog } = useWorkspace()
+  const { status, features, closeDialog } = useWorkspace()
   const form = useForm({
     resolver: zodResolver(agentInputSchema),
     defaultValues: {
@@ -137,7 +149,10 @@ function AgentForm({ agent, template }: { agent?: NavAgent; template?: AgentTemp
           <div className="flex flex-col gap-2">
             <span className="label-mono">Start from</span>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {agentTemplates.map((preset) => (
+              {(features.editing
+                ? [...agentTemplates, VIDEO_EDITOR]
+                : agentTemplates
+              ).map((preset) => (
                 <button
                   key={preset.name}
                   type="button"

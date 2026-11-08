@@ -313,6 +313,12 @@ export const TOOL_CLASSES: Record<string, RiskClass> = {
   room_history: "R0",
   // R8 (RD-14): a note for the room, unconfirmed until a member confirms
   room_note_add: "R1",
+  // Track E (editing.tavi, EDD-30): what the computer offers and how a job is
+  // going; starting one changes things outside Kriya, so R3 and a side effect
+  video_edit_places: "R0",
+  video_edit_status: "R0",
+  video_edit_start: "R3",
+  video_edit_revise: "R3",
 }
 
 export function classifyTool(name: string, input: unknown): RiskClass {
@@ -477,6 +483,10 @@ export const TOOL_WRITES: Record<string, string[]> = {
   workspace_publish: SANDBOX_WRITES,
   room_history: [],
   room_note_add: ["room_notes+"],
+  video_edit_places: [],
+  video_edit_status: [],
+  video_edit_start: ["harness_dispatches+", "edit_jobs+"],
+  video_edit_revise: ["harness_dispatches+", "edit_jobs+"],
 }
 
 // Changes only the person makes, through their own server actions. Agent

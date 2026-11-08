@@ -1,0 +1,52 @@
+{
+  "id": "kriya-edit-core",
+  "name": "Edit like an editor",
+  "description": "Use when someone wants a video edited in Kriya's Editing Studio: brief first, a recipe makes the cut, read the checks, change one thing at a time, and never promise what the checks didn't confirm.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["video", "editing"],
+  "roles": ["editor", "video", "creator", "producer"],
+  "activation": {
+    "keywords": [
+      "video editing",
+      "edit my video",
+      "edit this video",
+      "edit the video",
+      "editing studio",
+      "cut the video",
+      "edit my footage",
+      "make a video"
+    ],
+    "keywordsIntl": ["वीडियो एडिट", "वीडियो बनाओ", "వీడియో ఎడిట్", "video edit karo"]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the Editing Studio's checks on the rendered file (QUALITY_GATES); the skill adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 2400
+  },
+  "evals": [
+    {
+      "ask": "Edit my video into something I can post",
+      "expect": "activate"
+    },
+    {
+      "ask": "Use the editing studio to cut the video down",
+      "expect": "activate"
+    },
+    {
+      "ask": "Edit the config file to add a port",
+      "expect": "skip"
+    },
+    {
+      "ask": "Fix the failing unit test",
+      "expect": "skip"
+    }
+  ]
+}

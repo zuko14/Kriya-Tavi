@@ -7,6 +7,7 @@ import { ChevronRightIcon } from "lucide-react"
 import { FlowGate } from "@/components/flows/gate"
 import { Glyph } from "@/components/glyph"
 import { ApprovalButtons, MemoryButtons, SkillButtons } from "@/components/inbox/controls"
+import { EditCardView } from "@/components/editing/edit-card"
 import { HarnessApproval } from "@/components/inbox/harness-approval"
 import { RoomDisclosure } from "@/components/inbox/room-disclosure"
 import { MandateCard } from "@/components/operator/controls"
@@ -230,7 +231,8 @@ export default async function Page({
     (jobs?.needs.length ?? 0) +
     inbox.disclosures.length +
     inbox.harnessApprovals.length +
-    inbox.flowGates.length
+    inbox.flowGates.length +
+    inbox.editCards.length
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
@@ -336,6 +338,13 @@ export default async function Page({
               <Section title="Flows" count={inbox.flowGates.length}>
                 {inbox.flowGates.map((gate) => (
                   <FlowGate key={gate.id} gate={gate} />
+                ))}
+              </Section>
+            )}
+            {shown("approve") && (
+              <Section title="Your edits" count={inbox.editCards.length}>
+                {inbox.editCards.map((card) => (
+                  <EditCardView key={card.id} card={card} />
                 ))}
               </Section>
             )}

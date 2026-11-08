@@ -1,0 +1,49 @@
+{
+  "id": "kriya-edit-data",
+  "name": "Numbers on screen",
+  "description": "Use when a video shows charts or numbers: every figure comes from the person's file or words, charts are simple and labelled, animation reveals rather than decorates, and nothing is invented or rounded into a claim.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["video", "data"],
+  "roles": ["editor", "video", "creator", "producer"],
+  "activation": {
+    "keywords": [
+      "animated chart",
+      "chart in the video",
+      "numbers on screen",
+      "data animation",
+      "statistics video",
+      "graph in the video"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the Editing Studio's checks on the rendered file (QUALITY_GATES); the skill adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 2400
+  },
+  "evals": [
+    {
+      "ask": "Add an animated chart of our sales to the video",
+      "expect": "activate"
+    },
+    {
+      "ask": "Show the numbers on screen as he says them",
+      "expect": "activate"
+    },
+    {
+      "ask": "Fix the chart rendering bug in the dashboard",
+      "expect": "skip"
+    },
+    {
+      "ask": "Cut the long pause",
+      "expect": "skip"
+    }
+  ]
+}

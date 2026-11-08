@@ -5,6 +5,7 @@ import { formatDistanceToNowStrict } from "date-fns"
 import {
   BrainIcon,
   ChevronRightIcon,
+  ClapperboardIcon,
   CloudIcon,
   LaptopIcon,
   MonitorSmartphoneIcon,
@@ -26,6 +27,7 @@ import { harnessSpend } from "@/lib/harness/devices"
 import { formatInr } from "@/lib/money"
 import { studioOn } from "@/lib/skill-studio"
 import { cn } from "@/lib/utils"
+import { listEdits, type EditRow } from "@/queries/editing"
 import { harnessHome, listDevices, type HarnessHome } from "@/queries/harness"
 
 export const metadata: Metadata = { title: "Kriya Harness" }
@@ -37,6 +39,19 @@ export const metadata: Metadata = { title: "Kriya Harness" }
 // with harness.api on; each part follows its own switch.
 
 const PLATFORMS = { darwin: "macOS", linux: "Linux", win32: "Windows" } as const
+
+// Short: a phone's row also holds the title and Watch
+const EDIT_LABEL: Record<EditRow["status"], string> = {
+  queued: "Queued",
+  running: "Running",
+  delivered: "Ready",
+  delivered_with_notes: "With notes",
+  blocked: "Blocked",
+  failed: "Failed",
+  canceled: "Canceled",
+  expired: "Not started",
+  lost: "Lost touch",
+}
 
 function Section({
   title,
@@ -217,6 +232,9 @@ export default async function HarnessPage() {
     ])
   // The Control Center (CONTROL_CENTER.md): only with its switch on
   const center = control ? await controlCenter(user.id) : null
+  // Track E: edits an agent asked a computer for, only with editing.tavi on
+  const edits = (await on("editing.tavi")) ? await listEdits(user.id) : null
+  const editRoom = await on("editing.review")
   // Remote Control (REMOTE_CONTROL.md): only with its switch on
   // A failed read (the switch on before its migration) costs this section, not the page
   const live = (await on("harness.remoteControl"))
@@ -411,6 +429,46 @@ export default async function HarnessPage() {
               handoffOn={handoff && cloudOn}
               serveOn={world}
             />
+          </Section>
+        )}
+
+        {edits && (
+          <Section
+            title="Edits"
+            description="Edits your agents asked a computer for. Your footage stays there, and whether an edit passed is what that computer reported."
+          >
+            {edits.length === 0 ? (
+              <Empty>No edits yet. Ask an agent to cut something.</Empty>
+            ) : (
+              <div className="glass flex flex-col divide-y overflow-hidden rounded-[20px]">
+                {edits.map((edit) => (
+                  <div key={edit.id} className="flex items-center">
+                    <div className="min-w-0 flex-1">
+                      <SessionRow
+                        href={editRoom ? `/edits/${edit.id}` : null}
+                        icon={<ClapperboardIcon className="size-4" />}
+                        title={edit.brief}
+                        meta={`${edit.device} · ${formatDistanceToNowStrict(edit.createdAt, { addSuffix: true })}`}
+                        status={{
+                          label:
+                            edit.status === "running" && edit.percent !== null
+                              ? `${edit.percent}%`
+                              : EDIT_LABEL[edit.status],
+                        }}
+                      />
+                    </div>
+                    {edit.preview && !editRoom && (
+                      <a
+                        href={`/api/editing/preview/${edit.preview}`}
+                        className="flex min-h-11 shrink-0 items-center pr-4 text-[13px] font-medium text-rigel hover:underline"
+                      >
+                        Watch
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </Section>
         )}
 

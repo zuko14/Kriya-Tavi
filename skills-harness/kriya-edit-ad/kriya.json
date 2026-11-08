@@ -1,0 +1,52 @@
+{
+  "id": "kriya-edit-ad",
+  "name": "Short ads",
+  "description": "Use when making a short ad or promo: one message, the product clear in the first seconds, variants for each length and shape, and an end card with the offer. Claims only from the brief.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["video", "marketing"],
+  "roles": ["editor", "video", "creator", "producer"],
+  "activation": {
+    "keywords": [
+      "advert",
+      "advertisement",
+      "commercial",
+      "promo video",
+      "product video",
+      "video ad",
+      "15 second ad",
+      "30 second ad"
+    ],
+    "keywordsIntl": ["विज्ञापन", "ప్రకటన"]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the Editing Studio's checks on the rendered file (QUALITY_GATES); the skill adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 2400
+  },
+  "evals": [
+    {
+      "ask": "Make a 15 second ad for our app",
+      "expect": "activate"
+    },
+    {
+      "ask": "Cut a promo video for the launch",
+      "expect": "activate"
+    },
+    {
+      "ask": "Add an index to the products table",
+      "expect": "skip"
+    },
+    {
+      "ask": "Edit my podcast",
+      "expect": "skip"
+    }
+  ]
+}

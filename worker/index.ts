@@ -20,6 +20,8 @@ import { recheckDeliveries } from "@/lib/delivery/recheck"
 import { roomAgentsOn } from "@/lib/rooms/agents"
 import { roomRecheckRelay } from "@/lib/rooms/recheck"
 import { checkDrift } from "@/lib/mcp/drift"
+import { reviewEdits } from "@/lib/editing/jobs"
+import { previewJanitor } from "@/lib/editing/previews"
 import { flowsOn, reviewFlows } from "@/lib/flows/run"
 import { reviewCrews } from "@/lib/operator/crews"
 import { reviewMandates } from "@/lib/operator/loop"
@@ -162,6 +164,11 @@ async function janitor() {
   await expireReservations()
     .then((n) => n > 0 && log.info("harness reservations estimated", { count: n }))
     .catch((error) => log.error("harness reservation expiry failed", { error }))
+  // Track E: expired previews, and objects whose rows are gone (EH-26). Whatever
+  // the switches say, since an account's deletion doesn't wait for one
+  await previewJanitor().catch((error) =>
+    log.error("edit preview janitor failed", { error })
+  )
 }
 
 // Reading uploads (A5): one file at a time, its own loop and timer like the
@@ -373,6 +380,19 @@ async function flowLoop() {
   }
 }
 
+// Track E (TAVI_INTEGRATION §4): only with editing.tavi on; no model call
+const EDIT_MS = 15_000
+async function editLoop() {
+  while (!shutdown.signal.aborted) {
+    try {
+      if ((await getSetting("editing.tavi")) === "on") await reviewEdits()
+    } catch (error) {
+      log.error("edit pass failed", { error })
+    }
+    await sleep(EDIT_MS)
+  }
+}
+
 async function undoLoop() {
   while (!shutdown.signal.aborted) {
     try {
@@ -434,6 +454,7 @@ async function main() {
   void maintenanceLoop()
   void schedulerLoop()
   void flowLoop()
+  void editLoop()
   void undoLoop()
   void extractLoop()
   void crossCheckLoop()

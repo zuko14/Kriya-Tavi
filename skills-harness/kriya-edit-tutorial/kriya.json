@@ -1,0 +1,52 @@
+{
+  "id": "kriya-edit-tutorial",
+  "name": "Screen tutorials",
+  "description": "Use when editing a screen recording or tutorial: zoom where the action is, cut the waiting, keep the thinking that matters, and never hide a step the viewer needs to follow along.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["video", "tutorial"],
+  "roles": ["editor", "video", "creator", "producer"],
+  "activation": {
+    "keywords": [
+      "video tutorial",
+      "tutorial video",
+      "screen recording",
+      "screencast",
+      "walkthrough video",
+      "demo video",
+      "how-to video",
+      "software demo"
+    ],
+    "keywordsIntl": ["ट्यूटोरियल", "ట్యుటోరియల్"]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the Editing Studio's checks on the rendered file (QUALITY_GATES); the skill adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 2400
+  },
+  "evals": [
+    {
+      "ask": "Edit my screen recording into a tutorial",
+      "expect": "activate"
+    },
+    {
+      "ask": "Zoom in on the typing in this screencast",
+      "expect": "activate"
+    },
+    {
+      "ask": "Write a tutorial README for the API",
+      "expect": "skip"
+    },
+    {
+      "ask": "Record the terminal output to a log file",
+      "expect": "skip"
+    }
+  ]
+}

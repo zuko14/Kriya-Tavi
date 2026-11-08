@@ -1,0 +1,52 @@
+{
+  "id": "kriya-edit-longform",
+  "name": "Long YouTube videos",
+  "description": "Use when editing a long video (8 to 60 minutes): read the story first, cut scene by scene, keep the picture changing at a steady pace, write chapters from the story, and take notes per scene.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["video", "longform"],
+  "roles": ["editor", "video", "creator", "producer"],
+  "activation": {
+    "keywords": [
+      "long form",
+      "longform",
+      "youtube video",
+      "chapters",
+      "full episode",
+      "documentary",
+      "lecture recording",
+      "webinar"
+    ],
+    "keywordsIntl": ["यूट्यूब वीडियो", "యూట్యూబ్ వీడియో"]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the Editing Studio's checks on the rendered file (QUALITY_GATES); the skill adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 2400
+  },
+  "evals": [
+    {
+      "ask": "Edit my 20 minute youtube video with chapters",
+      "expect": "activate"
+    },
+    {
+      "ask": "Clean up this webinar recording",
+      "expect": "activate"
+    },
+    {
+      "ask": "Add pagination to the long list endpoint",
+      "expect": "skip"
+    },
+    {
+      "ask": "Make a 30 second instagram reel",
+      "expect": "skip"
+    }
+  ]
+}

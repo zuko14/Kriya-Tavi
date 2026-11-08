@@ -1,0 +1,52 @@
+{
+  "id": "kriya-edit-podcast",
+  "name": "Multi-camera podcasts",
+  "description": "Use when editing a podcast or interview shot on several cameras: sync by sound, the speaker's camera while one talks, the wide when people talk over each other, a look at the listener, and the best microphone throughout.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["video", "podcast"],
+  "roles": ["editor", "video", "creator", "producer"],
+  "activation": {
+    "keywords": [
+      "podcast",
+      "multicam",
+      "multi-camera",
+      "multiple cameras",
+      "camera angles",
+      "interview video",
+      "two cameras",
+      "three cameras"
+    ],
+    "keywordsIntl": ["पॉडकास्ट", "పాడ్‌కాస్ట్"]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the Editing Studio's checks on the rendered file (QUALITY_GATES); the skill adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 2400
+  },
+  "evals": [
+    {
+      "ask": "Switch the camera angles in my podcast",
+      "expect": "activate"
+    },
+    {
+      "ask": "Sync the two cameras from the interview video",
+      "expect": "activate"
+    },
+    {
+      "ask": "Set up a multi-region database",
+      "expect": "skip"
+    },
+    {
+      "ask": "Write the podcast episode description",
+      "expect": "activate"
+    }
+  ]
+}

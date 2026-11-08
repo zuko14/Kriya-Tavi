@@ -76,6 +76,7 @@ import {
   createSkillTools,
   createWebTools,
   createWorkspaceTools,
+  createEditTools,
   SIDE_EFFECT_TOOLS,
   type Assignment,
   type AssignRunner,
@@ -870,6 +871,8 @@ export async function runTask(task: Task, ctx: WorkerContext) {
             publish: (await getSetting("cloud.publish")) === "on",
           })
         : {}),
+      // Track E (EDD-28): the person's own computer, through dispatch kind edit
+      ...((await getSetting("editing.tavi")) === "on" ? createEditTools(env) : {}),
       ...(kitTools ? createKitTools(env, browser) : {}),
       ...createConnectorTools(env, connected, { writes: true }),
       ...(fileTools ? createFileTools(env, connected) : {}),

@@ -27,6 +27,7 @@ import {
   type Verification,
 } from "@/db/schema"
 import { createWorkspaceTools } from "@/lib/cloud/tools"
+import { createEditTools } from "@/lib/editing/tools"
 import { lookupFacts } from "@/lib/facts"
 import { checkObligation } from "@/lib/radar/extract"
 import { OBLIGATION_KINDS } from "@/lib/radar/templates"
@@ -179,6 +180,9 @@ export const SIDE_EFFECT_TOOLS = new Set<string>([
   "calendar_delete_event",
   // Track C (cloud.publish)
   "workspace_publish",
+  // Track E (editing.tavi, EDD-30): an edit starts on the person's computer
+  "video_edit_start",
+  "video_edit_revise",
 ])
 
 // Track N (next.mcp): the owner-pinned app tools lib/mcp/registry.ts built
@@ -1561,6 +1565,9 @@ export { createCallTools } from "@/lib/agent/call-tools"
 // task's TaskWorkspace; only runTask constructs one
 export { createWorkspaceTools }
 
+// Track E (editing.tavi): reaches the person's computer through dispatch kind edit
+export { createEditTools }
+
 // Track R (rooms.agents): room_history, on a room task's belt only
 export { createRoomTools }
 
@@ -2028,6 +2035,8 @@ export type KriyaTools = Omit<ReturnType<typeof createMemoryTools>, "memory_writ
   Partial<ReturnType<typeof createGoogleV2Tools>> &
   // Track C, with cloud.workspaces on
   Partial<ReturnType<typeof createWorkspaceTools>> &
+  // Track E, with editing.tavi on
+  Partial<ReturnType<typeof createEditTools>> &
   // Track R, in a room task's belt only
   Partial<ReturnType<typeof createRoomTools>>
 

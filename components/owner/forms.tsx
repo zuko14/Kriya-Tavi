@@ -223,6 +223,11 @@ export function PlanForm({ plan }: { plan: Plan }) {
           defaultValue={plan.workspaceMinutes}
         />
         <NumberField
+          label="Editing previews MiB"
+          name="editingPreviewMib"
+          defaultValue={Number(plan.editingPreviewBytes) / 1_048_576}
+        />
+        <NumberField
           label="Overage cap ₹"
           name="overageCapRupees"
           defaultValue={plan.overageCapMicroInr / 1_000_000}
