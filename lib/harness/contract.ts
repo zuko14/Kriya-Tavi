@@ -268,6 +268,77 @@ export const WorldResponse = z.strictObject({
   relayUrl: z.string().url(),
 })
 
+/* ─────────── Editing Studio (track E; 404 while editing.studio is off) ─────────── */
+
+// `manifest` is the exact text the signature covers; a client verifies it,
+// then parses it. A 200 is how a client learns this server has editing (EH-01)
+export const EditingManifestResponse = z.strictObject({
+  manifest: z.string().min(2).max(524_288),
+  signature: z
+    .string()
+    .regex(/^[A-Za-z0-9+/]{86}==$/)
+    .nullable(),
+})
+
+const PROJECT_ID_EARLY = z.string().regex(/^[a-f0-9]{16}$/)
+
+// A job's preview, poster, clip or report: reserved in SQL, then sent straight to
+// Storage by the signed link, never through the web service (EH-23). 404 while
+// editing.previews is off
+export const EditingPreviewRequest = z.strictObject({
+  kind: z.enum(["preview", "poster", "clip", "report"]),
+  bytes: z.number().int().min(1).max(1_073_741_824),
+  sha256: z.string().regex(/^[0-9a-f]{64}$/),
+  durationFlicks: z.number().int().min(0).optional(),
+})
+export const EditingPreviewResponse = z.strictObject({
+  id: z.uuid(),
+  uploadUrl: z.string().url(),
+})
+// A decision card (ED15): a default and a timeout, so a person who never answers still
+// gets an edit. 404 while editing.review is off. No device route answers one
+export const EditingQuestionRequest = z.strictObject({
+  kind: z.enum(["take", "hook", "file", "name", "taste"]),
+  prompt: z.string().min(1).max(500),
+  options: z
+    .array(
+      z.strictObject({
+        label: z.string().min(1).max(200),
+        // A clip this job already uploaded, played on the card
+        clip: z.uuid().optional(),
+      })
+    )
+    .min(2)
+    .max(6),
+  defaultOption: z.number().int().min(0).max(5),
+  timeoutSeconds: z.number().int().min(30).max(3600),
+})
+export const EditingQuestionResponse = z.strictObject({
+  id: z.uuid(),
+  expiresAt: z.string(),
+})
+export const EditingAnswerResponse = z.strictObject({
+  status: z.enum(["open", "answered", "defaulted", "expired"]),
+  option: z.number().int().min(0).max(9).optional(),
+})
+export const EditingNotesResponse = z.strictObject({
+  notes: z.array(
+    z.strictObject({
+      id: z.uuid(),
+      atFlicks: z.number().int().min(0),
+      body: z.string().min(1).max(1000),
+    })
+  ),
+})
+// A new recording in a watched folder: its name and duration, nothing else (ES-21).
+// 404 while editing.watchFolders is off; 409 when the computer doesn't offer the folder
+export const EditingFoundRequest = z.strictObject({
+  project: PROJECT_ID_EARLY,
+  name: z.string().min(1).max(200),
+  seconds: z.number().int().min(0).max(604_800),
+})
+export const EditingFoundResponse = z.strictObject({ id: z.uuid() })
+
 /* ─────────── Control Center (CONTROL_CENTER.md; 404 while harness.controlCenter is off) ─────────── */
 
 const SHORT = (max: number) => z.string().min(1).max(max)
@@ -293,6 +364,8 @@ export const DaemonCapabilities = z.strictObject({
   fullAccess: z.boolean(),
   serve: z.boolean(),
   handoff: z.boolean(),
+  // Optional: a client sends it only after /editing/manifest answered 200 (EH-01)
+  edit: z.boolean().optional(),
 })
 export const DaemonHelloRequest = z.strictObject({
   daemonVersion: z.string().regex(/^\d{1,3}\.\d{1,3}\.\d{1,3}$/),
@@ -313,6 +386,7 @@ export const DispatchKind = z.enum([
   "pull",
   "serve_start",
   "serve_stop",
+  "edit",
 ])
 export const RunSwitches = z.strictObject({
   loopV2: z.boolean(),
@@ -384,6 +458,20 @@ export const DispatchPayloads = {
   pull: z.strictObject({ project: PROJECT_ID, workspace: z.uuid().optional() }),
   serve_start: z.strictObject({ project: PROJECT_ID }),
   serve_stop: z.strictObject({}),
+  // Track E: one edit on this computer. Only queueEdit() queues it (EH-06)
+  edit: z.strictObject({
+    project: PROJECT_ID,
+    job: z.uuid(),
+    brief: SHORT(4000),
+    recipe: z
+      .string()
+      .regex(/^[a-z0-9-]{1,48}$/)
+      .optional(),
+    effort: z.enum(["fast", "best"]),
+    revisionOf: z.uuid().optional(),
+    // The one change an agent asked for (a person's notes come from their own route)
+    change: z.string().min(1).max(1000).optional(),
+  }),
 } as const
 export const Dispatch = z.strictObject({
   id: z.uuid(),
@@ -547,6 +635,60 @@ export const ROUTES = [
     response: null,
   },
   { method: "GET", path: "/world", auth: true, request: null, response: WorldResponse },
+  // Editing Studio: 404 while editing.studio is off
+  {
+    method: "GET",
+    path: "/editing/manifest",
+    auth: true,
+    request: null,
+    response: EditingManifestResponse,
+  },
+  // Editing previews: 404 while editing.previews is off or the job isn't this computer's
+  {
+    method: "POST",
+    path: "/editing/jobs/{id}/previews",
+    auth: true,
+    request: EditingPreviewRequest,
+    response: EditingPreviewResponse,
+  },
+  // 204: the upload finished; the worker checks the object before anyone can watch it
+  {
+    method: "POST",
+    path: "/editing/jobs/{id}/previews/{pid}",
+    auth: true,
+    request: null,
+    response: null,
+  },
+  // Decision cards and notes: 404 while editing.review is off
+  {
+    method: "POST",
+    path: "/editing/jobs/{id}/questions",
+    auth: true,
+    request: EditingQuestionRequest,
+    response: EditingQuestionResponse,
+  },
+  {
+    method: "GET",
+    path: "/editing/questions/{id}",
+    auth: true,
+    request: null,
+    response: EditingAnswerResponse,
+  },
+  {
+    method: "GET",
+    path: "/editing/jobs/{id}/notes",
+    auth: true,
+    request: null,
+    response: EditingNotesResponse,
+  },
+  // A new recording: 404 while editing.watchFolders is off
+  {
+    method: "POST",
+    path: "/editing/found",
+    auth: true,
+    request: EditingFoundRequest,
+    response: EditingFoundResponse,
+  },
   // Control Center: 404 while harness.controlCenter is off
   {
     method: "POST",

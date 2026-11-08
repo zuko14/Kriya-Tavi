@@ -1,0 +1,52 @@
+{
+  "id": "kriya-edit-sound",
+  "name": "Sound and mix",
+  "description": "Use when working on a video's sound: a clean voice first, music under it and ducked when people speak, effects with restraint, and loudness at the platform's target.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["video", "audio"],
+  "roles": ["editor", "video", "creator", "producer"],
+  "activation": {
+    "keywords": [
+      "audio mix",
+      "background music",
+      "music too loud",
+      "voice clean",
+      "loudness",
+      "sound design",
+      "ducking",
+      "sound effects"
+    ],
+    "keywordsIntl": ["आवाज़", "సౌండ్"]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the Editing Studio's checks on the rendered file (QUALITY_GATES); the skill adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 2400
+  },
+  "evals": [
+    {
+      "ask": "The background music is too loud in my video",
+      "expect": "activate"
+    },
+    {
+      "ask": "Add some sound effects to the reel",
+      "expect": "activate"
+    },
+    {
+      "ask": "Reduce the noise in the log output",
+      "expect": "skip"
+    },
+    {
+      "ask": "Make the captions bigger",
+      "expect": "skip"
+    }
+  ]
+}

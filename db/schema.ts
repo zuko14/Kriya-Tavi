@@ -112,6 +112,8 @@ export const plans = kriya.table("plans", {
   workspaceMinutes: integer().notNull().default(0),
   // Kriya Harness (track H): monthly harness charges cap; 0 = no harness (HD-07)
   harnessMonthlyMicroInr: micro().notNull().default(0),
+  // Editing Studio (track E, EDD-26): bytes of previews kept in Kriya; 0 = none
+  editingPreviewBytes: micro().notNull().default(0),
 })
 
 export const SUBSCRIPTION_STATUSES = [
@@ -595,6 +597,8 @@ export const resourceUsage = kriya.table("resource_usage", {
       "workspace_storage_bytes",
       // The Flows copilot (studio.copilot)
       "flow_design",
+      // Editing Studio previews kept in Storage (track E)
+      "edit_preview_bytes",
     ],
   }).notNull(),
   quantity: micro().notNull(),
@@ -2194,6 +2198,8 @@ export const HARNESS_DISPATCH_KINDS = [
   "pull",
   "serve_start",
   "serve_stop",
+  // Track E (ED14): only queueEdit() queues one
+  "edit",
 ] as const
 export const HARNESS_DISPATCH_STATUSES = [
   "queued",
@@ -2675,6 +2681,96 @@ export const flowNodeRuns = kriya.table("flow_node_runs", {
   finishedAt: at(),
   updatedAt: createdAt(),
 })
+
+/* ──────────────────── Editing Studio (track E, ED14) ──────────────── */
+
+export const EDIT_JOB_STATUSES = [
+  "queued",
+  "running",
+  "delivered",
+  "delivered_with_notes",
+  "blocked",
+  "failed",
+  "canceled",
+  "expired",
+  "lost",
+] as const
+
+// Footage never comes here. Status moves only in the worker, from the dispatch
+export const editJobs = kriya.table("edit_jobs", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: uuid().notNull(),
+  deviceId: uuid().notNull(),
+  dispatchId: uuid(),
+  threadId: text(),
+  project: text().notNull(),
+  revisionOf: uuid(),
+  recipe: text(),
+  brief: text().notNull(),
+  status: text({ enum: EDIT_JOB_STATUSES }).notNull().default("queued"),
+  stage: text(),
+  percent: smallint(),
+  beat: integer().notNull().default(0),
+  verdict: jsonb().$type<Record<string, unknown>>(),
+  notifiedAt: at(),
+  acceptedAt: at(),
+  createdAt: createdAt(),
+  updatedAt: createdAt(),
+  finishedAt: at(),
+})
+
+export const editDeliverables = kriya.table("edit_deliverables", {
+  id: uuid().primaryKey().defaultRandom(),
+  jobId: uuid().notNull(),
+  userId: uuid().notNull(),
+  kind: text({ enum: ["preview", "poster", "clip", "report"] }).notNull(),
+  status: text({ enum: ["pending", "ready", "rejected"] })
+    .notNull()
+    .default("pending"),
+  storagePath: text().notNull(),
+  bytes: micro().notNull(),
+  sha256: text().notNull(),
+  durationFlicks: micro(),
+  uploadedAt: at(),
+  createdAt: createdAt(),
+  expiresAt: at().notNull(),
+  deletedAt: at(),
+})
+
+export const editQuestions = kriya.table("edit_questions", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: uuid().notNull(),
+  deviceId: uuid().notNull(),
+  jobId: uuid(),
+  kind: text({ enum: ["take", "hook", "file", "name", "taste", "found"] }).notNull(),
+  prompt: text().notNull(),
+  options: jsonb().notNull(),
+  defaultOption: smallint(),
+  answer: jsonb(),
+  status: text({ enum: ["open", "answered", "defaulted", "expired"] })
+    .notNull()
+    .default("open"),
+  createdAt: createdAt(),
+  expiresAt: at().notNull(),
+  answeredAt: at(),
+})
+
+export const editNotes = kriya.table("edit_notes", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: uuid().notNull(),
+  jobId: uuid().notNull(),
+  atFlicks: micro().notNull(),
+  body: text().notNull(),
+  status: text({ enum: ["open", "sent", "done", "removed"] })
+    .notNull()
+    .default("open"),
+  // The revision a sent note went into (ED15)
+  sentIn: uuid(),
+  createdAt: createdAt(),
+})
+
+export type EditJob = typeof editJobs.$inferSelect
+export type EditDeliverable = typeof editDeliverables.$inferSelect
 
 export type Flow = typeof flows.$inferSelect
 export type FlowVersion = typeof flowVersions.$inferSelect

@@ -1,0 +1,50 @@
+{
+  "id": "kriya-edit-montage",
+  "name": "Music-led edits",
+  "description": "Use when cutting a montage, travel video or music video: the song leads, cuts land on beats, energy follows the music, and the song starts and ends cleanly at the target length.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["video", "music"],
+  "roles": ["editor", "video", "creator", "producer"],
+  "activation": {
+    "keywords": [
+      "montage",
+      "music video",
+      "to the beat",
+      "beat sync",
+      "highlight reel",
+      "travel video",
+      "wedding video"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the Editing Studio's checks on the rendered file (QUALITY_GATES); the skill adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 2400
+  },
+  "evals": [
+    {
+      "ask": "Make a travel video montage with this song",
+      "expect": "activate"
+    },
+    {
+      "ask": "Cut my clips to the beat",
+      "expect": "activate"
+    },
+    {
+      "ask": "Sync the database to the backup",
+      "expect": "skip"
+    },
+    {
+      "ask": "Edit my talking head reel",
+      "expect": "skip"
+    }
+  ]
+}

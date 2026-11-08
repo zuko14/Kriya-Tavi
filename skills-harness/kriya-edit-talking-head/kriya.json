@@ -1,0 +1,52 @@
+{
+  "id": "kriya-edit-talking-head",
+  "name": "Reels from raw takes",
+  "description": "Use when turning a raw talking-to-camera take into a phone reel: best take per line, a hook that stands alone, fillers out, the face kept in a 9:16 frame, captions people can read.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["video", "social"],
+  "roles": ["editor", "video", "creator", "producer"],
+  "activation": {
+    "keywords": [
+      "talking head",
+      "reel",
+      "reels",
+      "instagram reel",
+      "best take",
+      "retakes",
+      "to camera",
+      "selfie video"
+    ],
+    "keywordsIntl": ["रील", "रील्स", "రీల్", "రీల్స్"]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the Editing Studio's checks on the rendered file (QUALITY_GATES); the skill adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 2400
+  },
+  "evals": [
+    {
+      "ask": "Make a reel from my talking head take",
+      "expect": "activate"
+    },
+    {
+      "ask": "I recorded three retakes, keep the best take",
+      "expect": "activate"
+    },
+    {
+      "ask": "Turn this two-hour podcast into chapters",
+      "expect": "skip"
+    },
+    {
+      "ask": "Refactor the login form",
+      "expect": "skip"
+    }
+  ]
+}

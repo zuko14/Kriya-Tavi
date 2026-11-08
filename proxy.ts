@@ -20,6 +20,8 @@ const PROTECTED = [
   "/onboarding",
   "/owner",
   "/billing",
+  // Track E: the Review Room
+  "/edits",
   // A3: the Inbox and goal pages
   "/inbox",
   "/goals",

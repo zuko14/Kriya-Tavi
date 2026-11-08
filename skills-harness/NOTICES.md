@@ -81,3 +81,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## Editing Studio skills (`kriya-edit-*`)
+
+The eighteen `kriya-edit-*` skills were written for Kriya's Editing Studio
+(track E, `docs/kriya-harness/kriya_video_editing/SKILLS_AND_OPEN_SOURCE.md` §4)
+and are Kriya-native: no wording was copied from any project, so their
+`source` lists are empty. The editorial ideas they draw on, and those projects'
+MIT licences, are recorded in that document's §3. They are served only with
+`editing.skills` on.

@@ -855,6 +855,119 @@ export const SETTINGS = {
     pattern: /^(npm|npx|pnpm|brew) [A-Za-z0-9@/._:=+ -]{1,120}$/,
     hint: "e.g. npm install -g @kriya-ai/harness",
   },
+  // Editing Studio (track E, docs/kriya-harness/kriya_video_editing). Off: the
+  // manifest route answers 404, which is how a client learns editing isn't here
+  "editing.studio": {
+    env: "KRIYA_EDITING_STUDIO",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Which approved Media Runtime is served (lib/editing/manifest.ts)
+  "editing.runtimeChannel": {
+    env: "KRIYA_EDITING_RUNTIME_CHANNEL",
+    fallback: "stable",
+    pattern: /^(stable|beta)$/,
+    hint: "stable or beta",
+  },
+  // Contact sheets may go to the Director's model, and then only with the
+  // project's own consent, asked once (EDD-14). Off: no frame leaves the computer
+  "editing.frameVision": {
+    env: "KRIYA_EDITING_FRAME_VISION",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Model-written motion compositions (EDD-44), only inside the OS sandbox and
+  // after lint. Off: only Kriya's own blocks and captions render
+  "editing.customMotion": {
+    env: "KRIYA_EDITING_CUSTOM_MOTION",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // The kriya-edit-* skills (skills-harness/, SKILLS_AND_OPEN_SOURCE §4) go to
+  // devices with the default skills. Off: harness.defaultSkills serves as before
+  "editing.skills": {
+    env: "KRIYA_EDITING_SKILLS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // A stock narrator and generated images (EDD-24). Never synthetic people or
+  // cloned voices; off: no generative tool exists
+  "editing.generative": {
+    env: "KRIYA_EDITING_GENERATIVE",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Importing a reference from a link (EDD-22, owner-gated, counsel first).
+  // Off: a person drops a file they already have
+  "editing.urlImport": {
+    env: "KRIYA_EDITING_URL_IMPORT",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Tavi reaches a computer (ED14, EDD-28): the video_edit_* tools, dispatch kind
+  // edit and editLoop. Off: agents get the same tools and nothing can queue an edit
+  "editing.tavi": {
+    env: "KRIYA_EDITING_TAVI",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Previews may be uploaded to the bucket kriya-edit-previews (EDD-46)
+  "editing.previews": {
+    env: "KRIYA_EDITING_PREVIEWS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // 45 MiB: under the platform's 50 MiB object limit (EH-23)
+  "editing.previewMaxBytes": {
+    env: "KRIYA_EDITING_PREVIEW_MAX_BYTES",
+    fallback: "47185920",
+    pattern: /^[1-9][0-9]{0,8}$/,
+    hint: "bytes per file, e.g. 47185920",
+  },
+  "editing.previewDays": {
+    env: "KRIYA_EDITING_PREVIEW_DAYS",
+    fallback: "14",
+    pattern: /^[1-9][0-9]{0,2}$/,
+    hint: "days a preview is kept, e.g. 14",
+  },
+  // Jobs from Tavi per person per day
+  "editing.dailyJobs": {
+    env: "KRIYA_EDITING_DAILY_JOBS",
+    fallback: "20",
+    pattern: /^[1-9][0-9]{0,3}$/,
+    hint: "jobs a day, e.g. 20",
+  },
+  // A running job the computer has said nothing about for this long is lost
+  "editing.jobLostMinutes": {
+    env: "KRIYA_EDITING_JOB_LOST_MINUTES",
+    fallback: "30",
+    pattern: /^[1-9][0-9]{0,3}$/,
+    hint: "minutes, e.g. 30",
+  },
+  // The Review Room, decision cards and notes (ED15). Off: no card, no note, and a job's
+  // own questions take their default at once
+  "editing.review": {
+    env: "KRIYA_EDITING_REVIEW",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // New-recording cards (ED15, EDD-47). Also off per folder, on the computer. Only a name
+  // and a duration leave it, and nothing runs until the person taps
+  "editing.watchFolders": {
+    env: "KRIYA_EDITING_WATCH_FOLDERS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
   // Rooms (track R, docs/rooms, RD-19). Off means no room page, route or
   // query exists for anyone and agents are unchanged (RT-REG-01)
   "rooms.enabled": {

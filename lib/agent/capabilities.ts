@@ -17,6 +17,8 @@ export type System =
   | "meta"
   // Track C: a cloud workspace's sandbox
   | "workspace"
+  // Track E: the person's own computer, through its daemon
+  | "device"
 
 // How a pinned input field must match a grant (DATA_MODEL §2.2)
 export type Pin = "subset" | "equals"
@@ -152,6 +154,12 @@ const FACTS: Record<string, Facts> = {
   // Track R: the room's own messages, and its notes
   room_history: kriya,
   room_note_add: kriya,
+  // Track E: no pins, so never grantable (EDD-30); all Kriya can prove is the
+  // uploaded file (TAVI_INTEGRATION §10)
+  video_edit_places: { system: "device" },
+  video_edit_status: { system: "device" },
+  video_edit_start: { system: "device", verification: "file" },
+  video_edit_revise: { system: "device", verification: "file" },
 }
 
 export const CAPABILITIES: Record<string, Capability> = Object.fromEntries(

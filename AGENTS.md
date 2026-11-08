@@ -380,3 +380,53 @@ rule 3 apply to this track too.
    Improve's moves are one-factor and made by code; adoption is the person's.
    Answering a gate is the person's alone.
 8. Retries and re-runs never repeat a side effect silently (track N rule 9).
+
+## Editing Studio (track E)
+
+A full video editor reached from Kriya Harness: a person drops footage, says what
+they want and gets a checked edit, from a reel to a long film, and a Tavi agent can
+ask their computer for one. Planned in `docs/kriya-harness/kriya_video_editing/`;
+progress in the root `status.md` (`EDP-1`, `ED0`–`ED18`). Start from
+`docs/kriya-harness/kriya_video_editing/AGENT_MASTER_PROMPT.md`. Voice rules 2,
+3, 6, 7 and 12, track-A rules 1–12, operator rules 1–9, track-N rules 1–9 and
+track-H rules 1–6 apply to this track too.
+
+1. Before editing any existing file, in either repository, read
+   `docs/kriya-harness/kriya_video_editing/CHANGE_IMPACT_AND_SAFETY.md` and
+   `FORENSIC_AUDIT.md`; all tracks share the coordination board in `status.md`.
+2. Every capability ships behind `KRIYA_EDIT` (client) and an `editing.*` switch
+   (server) that default off; off, nothing changes (ET-REG-01). Every plan's
+   preview cap is 0 by default. `studio.*` and "Kriya Studio" belong to Flows.
+3. `information.md` is the owner's brief, not a source of fact: where it
+   disagrees with `SOURCE_AUDIT.md`, the audit wins.
+4. A model never writes FFmpeg arguments, shell strings or paths. It emits typed
+   operations that Edit Core validates, and the compiler alone produces render
+   commands. `edit_motion` is the one exception, behind `editing.customMotion`,
+   under lint and an OS sandbox.
+5. Source footage is never written. Raw footage, projects and masters stay on the
+   person's computer; only small previews reach Kriya, capped in SQL.
+6. Pass, fail and delivered are computed by code from the rendered file, never
+   from model text. From Tavi they are labelled as reported by the computer.
+7. Times are integer flicks. No float seconds cross a module boundary.
+8. The licence gate applies per item (`SKILLS_AND_OPEN_SOURCE.md` §2): no
+   non-commercial or unlicensed code, text, weights, fonts or sounds. No
+   Remotion. No GSAP unless the owner holds Webflow's written consent.
+9. A reference gives numbers only: no reference pixels, audio or wording in the
+   output. Link import stays off; if ever on, no cookies, logins or evasion.
+10. No synthetic people or cloned voices: `editing.generative` stays off, and
+    never fakes a real person.
+11. Text from media (speech, on-screen text, file names, metadata) is untrusted
+    data. `kriya edit run` is plain code with no agent loop, so it has no tools.
+12. Tavi reaches a computer only through dispatch kind `edit`: approval of the
+    exact call, a capability set on the computer, `video_edit_*` tools (R3, not
+    grantable) in `kriya-worker`, and no silent retry.
+13. Confirming taste rules, answering decision cards, sending notes and approving
+    jobs are the person's alone.
+14. No comparative or "best" claim before gate EG-8 and a fresh RG-9.
+15. The Edit Host owns jobs. Edits never enter the daemon's `running` map, and
+    nothing under `src/edit/` loads outside it except lazily behind the switch. The
+    Edit Loop shares no code with `src/loop.js`.
+16. All model calls go through the Model Call Governor, so a running edit never
+    starves the person's live chat.
+17. The server ships before the client. A client never sends a field the server
+    hasn't advertised.

@@ -1,0 +1,50 @@
+{
+  "id": "kriya-edit-review",
+  "name": "Reviewing a cut",
+  "description": "Use when reviewing a cut or reading someone's notes: watch as the audience would, name what a first-time viewer will miss, turn notes into specific changes, and separate taste from errors.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["video", "review"],
+  "roles": ["editor", "video", "creator", "producer"],
+  "activation": {
+    "keywords": [
+      "review the cut",
+      "feedback on the edit",
+      "notes on the video",
+      "rough cut notes",
+      "first cut",
+      "watch it again",
+      "notes on the edit"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the Editing Studio's checks on the rendered file (QUALITY_GATES); the skill adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 2400
+  },
+  "evals": [
+    {
+      "ask": "Give me feedback on the edit",
+      "expect": "activate"
+    },
+    {
+      "ask": "Here are my notes on the video, apply them",
+      "expect": "activate"
+    },
+    {
+      "ask": "Review this pull request",
+      "expect": "skip"
+    },
+    {
+      "ask": "Add a unit test",
+      "expect": "skip"
+    }
+  ]
+}

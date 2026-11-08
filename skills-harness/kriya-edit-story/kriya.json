@@ -1,0 +1,51 @@
+{
+  "id": "kriya-edit-story",
+  "name": "Story structure",
+  "description": "Use when shaping what a video says: a hook, a build and a payoff, every part earning its place, and what to cut when everything seems good. Keep the speaker's meaning; never change it.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["video", "story"],
+  "roles": ["editor", "video", "creator", "producer"],
+  "activation": {
+    "keywords": [
+      "story structure",
+      "storyline",
+      "narrative",
+      "opening hook",
+      "the payoff",
+      "what to cut",
+      "pacing of the video",
+      "structure of the video"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the Editing Studio's checks on the rendered file (QUALITY_GATES); the skill adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 2400
+  },
+  "evals": [
+    {
+      "ask": "Help me with the story structure of my video",
+      "expect": "activate"
+    },
+    {
+      "ask": "I can't decide what to cut, it all seems good",
+      "expect": "activate"
+    },
+    {
+      "ask": "Refactor the folder structure of the repo",
+      "expect": "skip"
+    },
+    {
+      "ask": "Add a git hook for linting",
+      "expect": "skip"
+    }
+  ]
+}

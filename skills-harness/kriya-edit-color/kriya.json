@@ -1,0 +1,54 @@
+{
+  "id": "kriya-edit-color",
+  "name": "Colour",
+  "description": "Use when grading video or matching shots: balance shots against their neighbours first, match cameras by measured colour, protect skin tones, and apply a look last, at a strength the person chooses.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["video", "colour"],
+  "roles": ["editor", "video", "creator", "producer"],
+  "activation": {
+    "keywords": [
+      "color grade",
+      "colour grade",
+      "color grading",
+      "colour grading",
+      "white balance",
+      "color match",
+      "colour match",
+      "lut",
+      "skin tones",
+      "footage looks"
+    ],
+    "keywordsIntl": ["कलर ग्रेड", "కలర్ గ్రేడ్"]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the Editing Studio's checks on the rendered file (QUALITY_GATES); the skill adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 2400
+  },
+  "evals": [
+    {
+      "ask": "Color grade my wedding footage",
+      "expect": "activate"
+    },
+    {
+      "ask": "The second camera's white balance is off",
+      "expect": "activate"
+    },
+    {
+      "ask": "Change the button color to blue",
+      "expect": "skip"
+    },
+    {
+      "ask": "Grade the essay answers",
+      "expect": "skip"
+    }
+  ]
+}

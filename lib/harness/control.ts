@@ -1,14 +1,15 @@
 import { and, desc, eq, inArray, isNull, lt, sql } from "drizzle-orm"
 import type { z } from "zod"
 
-import { privileged, rowsOf, withUser } from "@/db"
+import { privileged, rowsOf, withUser, type Tx } from "@/db"
 import {
+  editJobs,
   harnessDevices,
   harnessDeviceState as state,
   harnessDispatches as dispatches,
   harnessRuns as runs,
 } from "@/db/schema"
-import type { DeviceUser } from "@/lib/auth"
+import { getSetting } from "@/lib/config"
 import {
   type DaemonHelloRequest,
   DaemonProject,
@@ -25,6 +26,9 @@ import {
 // the computer does, and only what its own daemon allows.
 
 export type DispatchKind = keyof typeof DispatchPayloads
+// The device, as authenticateDevice gives it. Not imported from lib/auth: the worker
+// loads this file (queueEdit), and lib/auth is web-only (T-IMP-01)
+type DeviceUser = { id: string; deviceId: string }
 export const ONLINE_MS = 60_000
 // A running process beats every minute (kriya-harness broadcastRun); silent this long, it's lost
 export const RUN_LOST_MS = 3 * 60_000
@@ -226,20 +230,92 @@ export async function recordRun(
 
 /* ───────────────────────────── person side ───────────────────────────── */
 
-type Capabilities = { fullAccess?: boolean; serve?: boolean; handoff?: boolean }
+type Capabilities = {
+  fullAccess?: boolean
+  serve?: boolean
+  handoff?: boolean
+  edit?: boolean
+}
 
 /**
  * Queues one action for the person's own computer, after every check: the
  * computer is theirs, signed in and online; the payload is the kind's; the
  * project is one the computer itself offered; Full access and serve only
  * where the computer allows them; a rule only one it listed; and at most
- * QUEUE_LIMIT actions in ten minutes. RLS checks ownership again.
+ * QUEUE_LIMIT actions in ten minutes. RLS checks ownership again. An edit is
+ * refused: it needs its approval and its job row, so only queueEdit() queues
+ * one (EH-06).
  */
 export async function queue(
   userId: string,
   deviceId: string,
   kind: DispatchKind,
   raw: unknown
+) {
+  if (kind === "edit")
+    throw new ControlError("not_allowed", "An edit starts from an agent or a job.")
+  return enqueue(userId, deviceId, kind, raw)
+}
+
+/**
+ * One edit, with its job row, in one transaction (EH-06). Only for code that
+ * already holds the person's approval of this exact job: the video_edit_* tools
+ * and, from ED15, the person's own actions. The capability comes from the
+ * computer, and nothing in Kriya can raise it (CC-D3).
+ */
+export async function queueEdit(
+  userId: string,
+  deviceId: string,
+  raw: unknown,
+  job: {
+    threadId: string | null
+    revisionOf?: string
+    // Inside the same transaction: throwing undoes the whole start (ET-RV-04)
+    also?: (tx: Tx) => Promise<void>
+  }
+) {
+  if ((await getSetting("editing.tavi")) !== "on")
+    throw new ControlError("not_allowed", "Editing from Kriya is off.")
+  const dailyJobs = Number(await getSetting("editing.dailyJobs"))
+  return enqueue(userId, deviceId, "edit", raw, {
+    async check(tx, caps) {
+      if (!caps.edit)
+        throw new ControlError(
+          "not_allowed",
+          "Editing from Kriya is off on that computer (Allow editing from Kriya, or kriya daemon --allow-edit)."
+        )
+      const [{ today }] = await tx
+        .select({ today: sql<number>`count(*)::int` })
+        .from(editJobs)
+        .where(sql`${editJobs.createdAt} > now() - interval '1 day'`)
+      if (today >= dailyJobs)
+        throw new ControlError(
+          "rate_limited",
+          "That's today's limit of edits from Kriya; try again tomorrow."
+        )
+    },
+    // Exactly the columns the person may set (the column grant): never a status
+    async record(tx, payload, dispatchId) {
+      await tx.execute(sql`
+        insert into kriya.edit_jobs
+          (id, user_id, device_id, dispatch_id, thread_id, project, revision_of, recipe, brief)
+        values (${payload.job}, ${userId}, ${deviceId}, ${dispatchId}, ${job.threadId},
+          ${payload.project}, ${job.revisionOf ?? null}, ${payload.recipe ?? null}, ${payload.brief})`)
+      await job.also?.(tx)
+    },
+  })
+}
+
+async function enqueue(
+  userId: string,
+  deviceId: string,
+  kind: DispatchKind,
+  raw: unknown,
+  // A kind's own check, and its own row, in the same transaction
+  extra?: {
+    check(tx: Tx, caps: Capabilities): Promise<void>
+    record(tx: Tx, payload: Record<string, unknown>, dispatchId: string): Promise<void>
+  }
 ) {
   const parsed = DispatchPayloads[kind].safeParse(raw)
   if (!parsed.success)
@@ -304,13 +380,16 @@ export async function queue(
       .where(sql`${dispatches.createdAt} > now() - interval '10 minutes'`)
     if (recent >= QUEUE_LIMIT)
       throw new ControlError("rate_limited", "Too many actions; wait a few minutes.")
+    await extra?.check(tx, caps)
     // Exactly the four columns the person may set (the column grant): never a
     // status, result, expiry or time of their own
     const inserted = await tx.execute(sql`
       insert into kriya.harness_dispatches (user_id, device_id, kind, payload)
       values (${userId}, ${deviceId}, ${kind}, ${JSON.stringify(payload)}::jsonb)
       returning id`)
-    return rowsOf<{ id: string }>(inserted)[0].id
+    const { id } = rowsOf<{ id: string }>(inserted)[0]
+    await extra?.record(tx, payload, id)
+    return id
   })
 }
 

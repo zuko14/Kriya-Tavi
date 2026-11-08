@@ -123,6 +123,7 @@ const planSchema = z.object({
   maxSteps: int(1, 200),
   maxTaskCostCents: z.coerce.number().min(0.01).max(10_000),
   workspaceMinutes: int(0, 100_000),
+  editingPreviewMib: int(0, 10_000_000),
   harnessMonthlyInr: rupeesToMicro,
   allowedTiers: z.array(z.enum(TIERS)).min(1, "Allow at least one model level."),
   overageAllowed: z.boolean(),
@@ -148,6 +149,7 @@ export async function savePlan(_: OwnerState, form: FormData): Promise<OwnerStat
     maxSteps: field(form, "maxSteps"),
     maxTaskCostCents: field(form, "maxTaskCostCents"),
     workspaceMinutes: field(form, "workspaceMinutes"),
+    editingPreviewMib: field(form, "editingPreviewMib"),
     harnessMonthlyInr: field(form, "harnessMonthlyInr"),
     allowedTiers: form.getAll("allowedTiers"),
     overageAllowed: form.get("overageAllowed") === "on",
@@ -184,6 +186,8 @@ export async function savePlan(_: OwnerState, form: FormData): Promise<OwnerStat
     maxTaskCostMicroUsd: Math.round(data.maxTaskCostCents * 10_000),
     // Cloud workspace minutes per IST month (track C, CD-14)
     workspaceMinutes: data.workspaceMinutes,
+    // Editing previews a person may keep (track E, EDD-26): entered in MiB
+    editingPreviewBytes: data.editingPreviewMib * 1_048_576,
     // Kriya Harness monthly limit (track H, HD-07): entered in ₹, stored in micro-INR
     harnessMonthlyMicroInr: data.harnessMonthlyInr,
     allowedTiers: data.allowedTiers,

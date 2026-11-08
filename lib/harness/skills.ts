@@ -6,7 +6,7 @@ import { withUser } from "@/db"
 import { agents } from "@/db/schema"
 import type { DeviceUser } from "@/lib/auth"
 import { getSetting } from "@/lib/config"
-import { HARNESS_DEFAULTS, loadDefaultSkill } from "@/lib/harness/default-skills"
+import { defaultSkillSet, loadDefaultSkill } from "@/lib/harness/default-skills"
 import { readSkill } from "@/lib/skill-engine"
 import {
   CATALOG,
@@ -38,7 +38,7 @@ export async function deviceSkills(device: DeviceUser) {
   // and an assigned library skill of the same id wins
   const disabled = parseSkillList(await getSetting("skills.disabled"))
   const have = new Set(base.skills.map((s) => s.id))
-  const defaults = HARNESS_DEFAULTS.filter(
+  const defaults = (await defaultSkillSet()).filter(
     (s) => s.status === "active" && !disabled.has(s.id) && !have.has(s.id)
   )
   const ids = new Set(defaults.map((s) => s.id))

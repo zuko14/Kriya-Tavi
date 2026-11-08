@@ -1,0 +1,51 @@
+{
+  "id": "kriya-edit-shorts",
+  "name": "Shorts from long videos",
+  "description": "Use when cutting a standalone short out of a long recording: a moment that makes sense on its own, a clean start and finish, reframed to vertical. Rank candidates for this video; never promise views.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["video", "social"],
+  "roles": ["editor", "video", "creator", "producer"],
+  "activation": {
+    "keywords": [
+      "shorts",
+      "youtube shorts",
+      "long to short",
+      "clip from",
+      "clips from",
+      "best moments",
+      "short clip"
+    ],
+    "keywordsIntl": ["शॉर्ट्स", "షార్ట్స్"]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the Editing Studio's checks on the rendered file (QUALITY_GATES); the skill adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 2400
+  },
+  "evals": [
+    {
+      "ask": "Find three youtube shorts in this lecture",
+      "expect": "activate"
+    },
+    {
+      "ask": "Cut a short clip from the interview",
+      "expect": "activate"
+    },
+    {
+      "ask": "Shorten this function",
+      "expect": "skip"
+    },
+    {
+      "ask": "Write a summary of the meeting notes",
+      "expect": "skip"
+    }
+  ]
+}

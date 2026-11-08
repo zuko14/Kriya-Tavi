@@ -9,6 +9,7 @@ import {
   createBrowserTools,
   createConnectorTools,
   createDelegateTool,
+  createEditTools,
   createGoalTools,
   createKitTools,
   createLedgerTools,
@@ -68,6 +69,7 @@ const everyTool = () => ({
   ...createProposeCallTool(env),
   ...createDelegateTool(() => ({ agentId: "a2", name: "B" })),
   ...createAssignTool(async function* () {}),
+  ...createEditTools(env),
 })
 
 describe("registry (OT-CAP-01)", () => {

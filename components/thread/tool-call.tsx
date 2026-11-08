@@ -10,6 +10,8 @@ import {
   CalendarPlusIcon,
   CalendarXIcon,
   CheckIcon,
+  ClapperboardIcon,
+  LaptopIcon,
   ChevronRightIcon,
   ClipboardListIcon,
   CircleSlashIcon,
@@ -299,6 +301,23 @@ const META: Record<string, Meta> = {
     label: "draft pull request",
     summary: (i) => str(i.title),
   },
+  // Track E: an edit made on the person's own computer
+  video_edit_places: { icon: LaptopIcon, label: "computers that can edit" },
+  video_edit_status: {
+    icon: ClapperboardIcon,
+    label: "edit status",
+    outcome: (o) => str(o.status).replace(/_/g, " "),
+  },
+  video_edit_start: {
+    icon: ClapperboardIcon,
+    label: "start an edit",
+    summary: (i) => str(i.brief),
+  },
+  video_edit_revise: {
+    icon: ClapperboardIcon,
+    label: "new cut",
+    summary: (i) => str(i.change),
+  },
   // Track R: a note for the room, unconfirmed until a member confirms it
   room_note_add: {
     icon: NotebookTextIcon,
@@ -386,11 +405,19 @@ const A8_ROWS: Record<string, (i: Record<string, unknown>) => [string, string][]
     ["Title", str(i.title)],
     ["Changes", "Exactly the files listed in the last workspace changes"],
   ],
+  video_edit_start: (i) => [
+    ["Computer", str(i.computer)],
+    ["Folder", str(i.folder)],
+    ["Effort", str(i.effort) || "best"],
+  ],
+  video_edit_revise: () => [["Last cut", "Stays as it is"]],
 }
 const A8_TEXT: Record<string, (i: Record<string, unknown>) => string> = {
   github_comment: (i) => str(i.body),
   github_create_issue: (i) => str(i.body),
   workspace_publish: (i) => str(i.body),
+  video_edit_start: (i) => str(i.brief),
+  video_edit_revise: (i) => str(i.change),
   github_open_pr: (i) =>
     Array.isArray(i.files)
       ? i.files.map((f) => `── ${str(f?.path)}\n${str(f?.content)}`).join("\n\n")
@@ -427,6 +454,10 @@ const A8_NOTES: Record<string, string> = {
     "Deletes this event from your Google Calendar. Guests aren't emailed, but it disappears from their calendars too. It can't be undone.",
   workspace_publish:
     "Kriya will create this branch and a draft pull request on GitHub as you. Nothing is merged.",
+  video_edit_start:
+    "Your computer will edit this footage and use your Kriya Harness allowance. Your files stay there; only a small preview comes back.",
+  video_edit_revise:
+    "Your computer will make a new cut and use your Kriya Harness allowance. The last cut stays as it is.",
 }
 
 export function toolName(part: ToolPart) {

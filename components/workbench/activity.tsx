@@ -113,6 +113,10 @@ const TOOL_LABELS: Record<string, string> = {
   workspace_publish: "Opened a draft pull request",
   room_history: "Read earlier messages in the room",
   room_note_add: "Added a note for the room",
+  video_edit_places: "Checked which computers can edit",
+  video_edit_status: "Checked how an edit is going",
+  video_edit_start: "Started an edit on your computer",
+  video_edit_revise: "Asked for a new cut on your computer",
 }
 
 // What each tool sets out to do, for rows still running or that failed
@@ -194,6 +198,10 @@ const TOOL_ACTIONS: Record<string, string> = {
   workspace_publish: "open a draft pull request",
   room_history: "read earlier messages in the room",
   room_note_add: "add a note for the room",
+  video_edit_places: "check which computers can edit",
+  video_edit_status: "check how an edit is going",
+  video_edit_start: "start an edit on your computer",
+  video_edit_revise: "ask for a new cut on your computer",
 }
 
 // A label that matches what happened: "Added…", "Add…" while running, "Couldn't add…"

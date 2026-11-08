@@ -1,0 +1,50 @@
+{
+  "id": "kriya-edit-motion",
+  "name": "Motion and titles",
+  "description": "Use when adding titles, lower thirds or animated text to a video: motion only where it helps, readable and on screen long enough, consistent style, and nothing that covers a face or the point.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["video", "motion"],
+  "roles": ["editor", "video", "creator", "producer"],
+  "activation": {
+    "keywords": [
+      "motion graphics",
+      "animated title",
+      "lower third",
+      "lower thirds",
+      "kinetic text",
+      "title card",
+      "animated text"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the Editing Studio's checks on the rendered file (QUALITY_GATES); the skill adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 2400
+  },
+  "evals": [
+    {
+      "ask": "Add a lower third with my name",
+      "expect": "activate"
+    },
+    {
+      "ask": "Make an animated title for the intro",
+      "expect": "activate"
+    },
+    {
+      "ask": "Add a CSS animation to the spinner",
+      "expect": "skip"
+    },
+    {
+      "ask": "Fix the audio sync",
+      "expect": "skip"
+    }
+  ]
+}

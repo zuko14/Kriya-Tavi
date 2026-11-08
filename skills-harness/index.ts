@@ -33,3 +33,46 @@ export const HARNESS_SKILL_MANIFESTS: unknown[] = [
   kriyaVerify,
   kriyaVisual,
 ]
+
+// The Editing Studio's skills (track E, SKILLS_AND_OPEN_SOURCE §4): a separate
+// export, so the default set above is unchanged. Served only with editing.skills
+// on (lib/harness/default-skills.ts). Kriya-native: no third-party wording.
+import kriyaEditCore from "./kriya-edit-core/kriya.json"
+import kriyaEditTalkingHead from "./kriya-edit-talking-head/kriya.json"
+import kriyaEditShorts from "./kriya-edit-shorts/kriya.json"
+import kriyaEditLongform from "./kriya-edit-longform/kriya.json"
+import kriyaEditPodcast from "./kriya-edit-podcast/kriya.json"
+import kriyaEditTutorial from "./kriya-edit-tutorial/kriya.json"
+import kriyaEditMontage from "./kriya-edit-montage/kriya.json"
+import kriyaEditAd from "./kriya-edit-ad/kriya.json"
+import kriyaEditCaptions from "./kriya-edit-captions/kriya.json"
+import kriyaEditSound from "./kriya-edit-sound/kriya.json"
+import kriyaEditColor from "./kriya-edit-color/kriya.json"
+import kriyaEditMotion from "./kriya-edit-motion/kriya.json"
+import kriyaEditThreeD from "./kriya-edit-3d/kriya.json"
+import kriyaEditData from "./kriya-edit-data/kriya.json"
+import kriyaEditReference from "./kriya-edit-reference/kriya.json"
+import kriyaEditHandoff from "./kriya-edit-handoff/kriya.json"
+import kriyaEditStory from "./kriya-edit-story/kriya.json"
+import kriyaEditReview from "./kriya-edit-review/kriya.json"
+
+export const HARNESS_EDIT_SKILL_MANIFESTS: unknown[] = [
+  kriyaEditCore,
+  kriyaEditTalkingHead,
+  kriyaEditShorts,
+  kriyaEditLongform,
+  kriyaEditPodcast,
+  kriyaEditTutorial,
+  kriyaEditMontage,
+  kriyaEditAd,
+  kriyaEditCaptions,
+  kriyaEditSound,
+  kriyaEditColor,
+  kriyaEditMotion,
+  kriyaEditThreeD,
+  kriyaEditData,
+  kriyaEditReference,
+  kriyaEditHandoff,
+  kriyaEditStory,
+  kriyaEditReview,
+]

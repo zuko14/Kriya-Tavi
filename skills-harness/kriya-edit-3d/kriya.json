@@ -1,0 +1,49 @@
+{
+  "id": "kriya-edit-3d",
+  "name": "3D in video",
+  "description": "Use when a video needs a 3D element such as a device mockup or a logo spin: simple scenes, steady lighting, smooth camera moves, rendered locally, and only when 3D says something 2D can't.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["video", "3d"],
+  "roles": ["editor", "video", "creator", "producer"],
+  "activation": {
+    "keywords": [
+      "3d mockup",
+      "logo spin",
+      "device mockup",
+      "3d title",
+      "product spin",
+      "3d logo"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the Editing Studio's checks on the rendered file (QUALITY_GATES); the skill adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 2400
+  },
+  "evals": [
+    {
+      "ask": "Make a 3d logo spin for the intro",
+      "expect": "activate"
+    },
+    {
+      "ask": "Put my app in a device mockup",
+      "expect": "activate"
+    },
+    {
+      "ask": "Fix the 3d physics bug in the game",
+      "expect": "skip"
+    },
+    {
+      "ask": "Add captions",
+      "expect": "skip"
+    }
+  ]
+}
