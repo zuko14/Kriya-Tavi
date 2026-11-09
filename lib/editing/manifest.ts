@@ -12,7 +12,11 @@ type Signed = { manifest: Runtime; signature: string | null }
 
 // Paste the output of `npx tsx lib/editing/sign.ts sign <key file>` here
 export const RUNTIMES: Record<string, Signed> = {
-  "2026.11.0": { manifest: runtime20261100, signature: null },
+  "2026.11.0": {
+    manifest: runtime20261100,
+    signature:
+      "UNTrNE1MTsxf6PCdnN5fJbkqK4ncz01MBIiSBmbK+q7RlWSaTx0AxJBReMgD5smiW4u3MD01Hf0kQROtA26ABQ==",
+  },
 }
 
 export const CHANNELS: Record<string, string> = {
