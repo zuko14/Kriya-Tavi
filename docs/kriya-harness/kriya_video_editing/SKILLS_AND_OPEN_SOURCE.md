@@ -80,6 +80,7 @@ implementation prompt from `motionclone`, `onetake` or
 | `remotion-dev/*` | Custom, or none | **Nothing** | All of it |
 | `austriandev/motionclone` | None | **Nothing** | All of it |
 | `yt-dlp/yt-dlp` | Unlicense | Only if EDD-22 is approved | Default path |
+| `lemomo-ai/lemo-opuscar` at `143f387` | MIT code and docs; demo films CC BY 4.0; some voices and assets excluded | EV2 only, per VISUAL_SCENES §5: the `render(t)` idea and selected styles, rewritten as `kriya-*`, credited | The plugin and `setup.sh`; voice and music tools; `DIRECTOR.md` §13's map rules (EDD-53) |
 
 Engines used as pinned runtime dependencies are in PERCEPTION_AND_INDEX §2. Also:
 OpenTimelineIO (Apache-2.0, tests), Mediabunny (MPL-2.0), Manim (MIT, pack),

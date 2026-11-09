@@ -39,6 +39,7 @@ only your own row. Rules: AGENT_MASTER_PROMPT.md §4.
 
 | Phase | Agent | Branch / worktree | Claimed (IST) | Files held | Last update |
 | ----- | ----- | ----------------- | ------------- | ---------- | ----------- |
+| EV1 | Claude Code / Opus 5.5 | server `main` in place; client worktree `../kriya-harness-edit`, branch `feat/visual-scenes` | 2026-11-09 | `lib/config.ts`, `lib/harness/contract.ts`, `docs/kriya-harness/contract.json`; client `src/edit/**`, `studio/**`, `contract/contract.json` | 2026-11-09 |
 
 ## Documents
 
@@ -14491,6 +14492,28 @@ of 2026-11-07. Every coding agent starts from
 - **Blockers:** none for ED5 or ED6. EB-09 still gates real devices.
 - **Next exact action (owner):** assign ED5 or ED6; they share no files. Nothing is committed, as instructed.
 
+## Phase EV1 — Visual scenes: beats, cutaways, ready-made scenes
+
+Spec: `docs/kriya-harness/kriya_video_editing/VISUAL_SCENES.md`.
+
+### Session plan (2026-11-09, Claude Code / Opus 5.5, server `main` in place and client worktree `../kriya-harness-edit`, branch `feat/visual-scenes` off `main` 82f5c7b, uncommitted; owner in chat)
+
+- Preconditions: the owner approved the design and EDD-51…55 in chat (Track E owner approvals) and said to proceed with Build Step 1. Board claimed. The change-impact rows are added first.
+- Server first: `editing.visuals` off, `GET /editing/features`, contract regenerated, tests.
+- Client: `engine/scenes.js`, `director/beats.js`, the solver's scene box and caption row, the recipe's scene clips, gate changes for scene tiles only, the make and preview routes, the Plan Card.
+- Checks: `npm run check` both repositories before and after; media tests for every kind in every format; a real make through the Host with a scripted model (no paid call); a browser check of the Plan Card at 360 and 1280 px, light and dark; ET-VS-REG-01 with the switch off.
+
+### Session result (2026-11-09, Claude Code / Opus 5.5, server `main` in place, client worktree `../kriya-harness-edit` branch `feat/visual-scenes`, uncommitted): EV1 and DP1–DP6
+
+- **Asked:** EV1 (owner-approved), then DP1–DP6 (EDD-56, EDD-57), "complete everything at once", one final test.
+- **Changed, server:** `lib/config.ts` (`editing.visuals`, `editing.playbooks`, `editing.mediaSearch`, all off), `lib/harness/contract.ts` (`/editing/features`, `/editing/media`, `/editing/define`), regenerated `docs/kriya-harness/contract.json`; new `lib/editing/media.ts` (Wikimedia Commons, NASA, Openverse; CC0, public domain, CC BY only, BY-SA/NC/ND/unknown refused; Wikipedia's opening sentence quoted with its link), the three routes, `tests/editing/{features,media}.test.ts`. Docs: `VISUAL_SCENES.md`, `DIRECTOR_PLAYBOOKS.md`, DECISIONS EDD-51…57, CHANGE_IMPACT rows and settings.
+- **Changed, client:** new `engine/scenes.js` (7 scene kinds, 4 themes), `director/beats.js` (phrases, grounding to the speaker's words, placement), `director/playbooks.js` (8 genres), `director/lookups.js`, `engine/found-media.js` (HTTPS, allowed hosts only, no redirects, typed, capped), `recipes/{scene-clips,programme,montage}.js`; edits to `director/plan.js`, `recipes/reel.js`, `core/{solver,layout,ops,plan}.js`, `engine/{motion,captions}.js`, `gates/{text,copy,index,picture}.js`, `loop/make.js` (no extra rounds for text-only faults), `graph/scheduler.js` (Chrome slots up to 3), `host/{projects,server,deliver}.js` (credits file), `runtime/fetch.js`, Studio Plan Card (scenes, pictures, definitions, caption look), contract copy; tests `edit-visual-scenes`, `edit-playbooks`, `edit-director-reach`, media `scenes`, `director`.
+- **Real output:** client `npm run check` 835/835 exit 0 (before the last two gate fixes; rerun pending below). Server `npm run check`: Test Files 271 passed, 5 skipped; Tests 3216 passed, 63 skipped; exit 0. Seeded text gates (EG-4): QG-08, -09, -10, -11 each 10/10 caught, 0/10 false alarms. ET-DR-M1 (two cameras) and ET-DR-M2 (montage, 11 shots on beats) delivered with notes. Live APIs: pancreas, kidney, moon and Brihadeeswarar Temple return licensed items; temple results are mostly BY-SA on Commons, so few pass.
+- **The person's own take (isolated home, scripted model, no paid call):** 5 scenes, 2 licensed pictures, 1 cited definition, credits file; render 437–1,245 s depending on machine load (first run 2,428 s). Fixed along the way: phrase-level beats (recognised "sentences" ran 29 s), lines under approved scenes kept, safe-zone inset, back-to-back scenes held, OCR seek bug, stroke counted for contrast, fast caption pages held 1.2 s (behind `editing.playbooks`, so ET-CMP-01's golden plan is unchanged), reader slips on ordinary words, clinical images filtered.
+- **Final run (after the last two gate fixes):** client `npm run check` 835/835 exit 0; media `seeded-text` and `scenes` exit 0, EG-4 10/10 each, 0 false alarms; the person's take alone: `delivered_with_notes` in 741 s, every gate passed but QG-04 and QG-14 (`not_checked`, EB-11). Under three heavy jobs at once the OCR reader returned every caption blank twice (load; it swallows Vision's errors); alone it reads them. Known limit, not fixed: QG-10 can block a make when the machine is saturated.
+- **Not tested:** a real model (paid; EB-07); the Plan Card in the browser after DP2–DP6 (EV1's card was checked at 1280 light and 360 dark, console clean); Linux/Windows.
+- **Next exact action (owner):** review, then say whether to commit; switch on `editing.visuals`, `editing.playbooks`, `editing.mediaSearch` only after deploy.
+
 ## The final cut, watched in Finish before downloading (2026-11-09, Claude Code / Opus 5.5, client branch `feat/studio-final-cut-review` off `main`, uncommitted; owner in chat)
 
 - **Asked:** why captions, the look and music show only after rendering a draft; then: put the final cut in Finish or Edit so the person can check and adjust before downloading, end to end.
@@ -15202,3 +15225,5 @@ of 2026-11-07. Every coding agent starts from
 | 2026-11-08 | EDD-28, EDD-30, EDD-46 | "Approved: dispatch kind 'edit' in SQL and worker (EDD-28); editing tools are R3 in SIDE_EFFECT_TOOLS (EDD-30); preview bucket kriya-edit-previews with 45MB cap (EDD-46)" | Owner |
 | 2026-11-08 | EDD-47 | Asked which scope ED15 should start with; the owner answered "Include watch folders". Posting stays out, as EDD-47 says | Owner |
 | 2026-11-08 | ED16 Engineering Complete, ED17 Authorization | "Approved: rough cut on plan limit accepted; ED16 engineering complete (paid Bench-R deferred to launch gate EG-8); proceed to ED17 security & scale hardening" | Owner |
+| 2026-11-09 | EDD-51…EDD-55, EV1 | "I approve the visual scenes design": code-drawn explainer animations adapted from Lemo-Opuscar with borderless maps; Wikimedia Commons, NASA and Openverse, CC0 and CC-BY only, with automated credits; AI generative video off; Balanced tier for scene code; a Plan Card to approve or swap before anything is downloaded or rendered. "Please proceed with Build Step 1: Visual beat detection, cutaway placement, and Kriya ready-made explainer scenes." | Owner |
+| 2026-11-09 | EDD-56, EDD-57, DP1…DP6 | "I have reviewed DIRECTOR_PLAYBOOKS.md and approve the phased plan (DP1 through DP6)"; "on-screen definitions of hard terms are allowed, provided they are quoted with a citation"; "ensure DP3 fixes the stroke/contrast issue on real footage like mine"; "build and verify each phase in order (DP1 → DP2 → DP3 → DP4 → DP5 → DP6) and report real test results after each" | Owner |

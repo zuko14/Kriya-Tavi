@@ -894,10 +894,35 @@ export const SETTINGS = {
     pattern: /^(on|off)$/,
     hint: "on or off",
   },
+  // The Director's playbooks (EDD-56, DIRECTOR_PLAYBOOKS.md): the plan names the
+  // video's genre and follows its rules. Off: the same plan, prompt and schema
+  "editing.playbooks": {
+    env: "KRIYA_EDITING_PLAYBOOKS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Licensed pictures and cited definitions from the internet (EDD-52, EDD-57). Off:
+  // no search words leave a computer
+  "editing.mediaSearch": {
+    env: "KRIYA_EDITING_MEDIA_SEARCH",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
   // A stock narrator and generated images (EDD-24). Never synthetic people or
   // cloned voices; off: no generative tool exists
   "editing.generative": {
     env: "KRIYA_EDITING_GENERATIVE",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Animated explainer scenes the Director proposes on the Plan Card (EDD-51,
+  // docs/kriya-harness/kriya_video_editing/VISUAL_SCENES.md). Off: the same plan,
+  // the same prompt, no extra model call, and a make drops any scene it's sent
+  "editing.visuals": {
+    env: "KRIYA_EDITING_VISUALS",
     fallback: "off",
     pattern: /^(on|off)$/,
     hint: "on or off",
