@@ -66,6 +66,13 @@ Evidence ids: `EF-…` (SOURCE_AUDIT), `EH-…` (FORENSIC_AUDIT), `EX-…`
 | EDD-48 | Speech engine per platform; language set by the person | — | ED5 |
 | EDD-49 | Hybrid matte | — | ED8 |
 | EDD-50 | One GPU device for the Studio's life, plus a watchdog | — | ED6 |
+| EDD-51 | Explainer scenes the Director proposes, drawn by Kriya's code | **Yes, approved 2026-11-09** | EV1 |
+| EDD-52 | Internet media only from Wikimedia Commons, NASA and Openverse; CC0, public domain and CC BY; credited | **Yes, approved 2026-11-09** | EV3 |
+| EDD-53 | Lemo-Opuscar's styles rewritten and pinned, its map rules refused; Kriya's maps have no borders | **Yes, approved 2026-11-09** | EV2 |
+| EDD-54 | No generated video and no synthetic people in visual scenes | **Yes, approved 2026-11-09** | EV1 |
+| EDD-55 | A Plan Card approves or swaps each scene before anything is downloaded or rendered; `balanced` tier for scene code | **Yes, approved 2026-11-09** | EV1, EV2 |
+| EDD-56 | The Director's playbooks, DP1 to DP6, built and verified in order (DIRECTOR_PLAYBOOKS.md) | **Yes, approved 2026-11-09** | DP1…DP6 |
+| EDD-57 | On-screen definitions of hard terms are allowed only as quoted text with a citation: the one exception to words on screen being the speaker's | **Yes, approved 2026-11-09** | DP6 |
 
 ## 2. Records
 
@@ -250,6 +257,9 @@ Evidence ids: `EF-…` (SOURCE_AUDIT), `EH-…` (FORENSIC_AUDIT), `EX-…`
 
 ### EDD-47 Watch folders and the content engine **(owner-gated)**
 **Decision.** TAVI_INTEGRATION §8, §9. Off, per folder, set on the computer. Only a name and a duration leave. Nothing runs until tapped. Scheduled jobs still ask each time. Posting isn't included, and needs its own decision.
+
+### EDD-51…EDD-55 Visual scenes **(owner-gated, approved 2026-11-09)**
+**Decision.** VISUAL_SCENES.md. Words on a scene come from the speaker, checked by code. EDD-52 settles the stock half of EQ-07 for these three sources: BY-SA and non-commercial are refused. Any other source, or a key-based one such as Pexels, needs its own decision.
 
 ## 3. Open questions
 

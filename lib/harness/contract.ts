@@ -280,6 +280,58 @@ export const EditingManifestResponse = z.strictObject({
     .nullable(),
 })
 
+// What this server has switched on for editing. 404 while editing.studio is off; a
+// client that gets anything but a real yes treats the feature as off
+export const EditingFeaturesResponse = z.strictObject({
+  visuals: z.boolean(),
+  playbooks: z.boolean(),
+  mediaSearch: z.boolean(),
+})
+
+// Licensed pictures and cited definitions (EDD-52, EDD-57). 404 while editing.mediaSearch is off
+const SEARCH_WORDS = z.string().trim().min(2).max(80)
+export const EditingMediaRequest = z.strictObject({
+  queries: z.array(SEARCH_WORDS).min(1).max(6),
+})
+export const EditingMediaResponse = z.strictObject({
+  results: z.array(
+    z.strictObject({
+      query: z.string(),
+      items: z.array(
+        z.strictObject({
+          id: z.string(),
+          source: z.enum(["wikimedia", "nasa", "openverse"]),
+          kind: z.enum(["image", "video"]),
+          title: z.string(),
+          url: z.string(),
+          thumb: z.string(),
+          width: z.number().nullable(),
+          height: z.number().nullable(),
+          licence: z.string(),
+          rights: z.enum(["public_domain", "licensed"]),
+          creator: z.string(),
+          page: z.string(),
+        })
+      ),
+    })
+  ),
+})
+export const EditingDefineRequest = z.strictObject({
+  terms: z.array(SEARCH_WORDS).min(1).max(6),
+})
+export const EditingDefineResponse = z.strictObject({
+  definitions: z.array(
+    z.strictObject({
+      term: z.string(),
+      title: z.string(),
+      quote: z.string(),
+      source: z.string(),
+      page: z.string(),
+      licence: z.string(),
+    })
+  ),
+})
+
 const PROJECT_ID_EARLY = z.string().regex(/^[a-f0-9]{16}$/)
 
 // A job's preview, poster, clip or report: reserved in SQL, then sent straight to
@@ -642,6 +694,27 @@ export const ROUTES = [
     auth: true,
     request: null,
     response: EditingManifestResponse,
+  },
+  {
+    method: "GET",
+    path: "/editing/features",
+    auth: true,
+    request: null,
+    response: EditingFeaturesResponse,
+  },
+  {
+    method: "POST",
+    path: "/editing/media",
+    auth: true,
+    request: EditingMediaRequest,
+    response: EditingMediaResponse,
+  },
+  {
+    method: "POST",
+    path: "/editing/define",
+    auth: true,
+    request: EditingDefineRequest,
+    response: EditingDefineResponse,
   },
   // Editing previews: 404 while editing.previews is off or the job isn't this computer's
   {
