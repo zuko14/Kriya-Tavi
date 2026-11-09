@@ -14491,6 +14491,15 @@ of 2026-11-07. Every coding agent starts from
 - **Blockers:** none for ED5 or ED6. EB-09 still gates real devices.
 - **Next exact action (owner):** assign ED5 or ED6; they share no files. Nothing is committed, as instructed.
 
+## Ask "isn't valid JSON" after the fix was merged (2026-11-09, Claude Code / Opus 5.5, client branch `fix/ask-reliability` off `main` 913f0a7, uncommitted; owner in chat with a screenshot)
+
+- **Cause:** the Host serving the Studio was started at 07:27 local, before PR #35 was merged, and a Node process keeps the code it started with. The Studio's files are read from disk per request, so the page was new while the Director was old: the journal's latest console calls still stopped at the old 800-token limit. One more call failed at 657 tokens, under the limit, so some failures were the reply's shape, not only length.
+- **Done at once:** with no job running (0 of 45 active), the person's Host was stopped; the next Studio launch starts it on `main`'s code.
+- **Changed, client:** `src/edit/host/paths.js` (`codeStamp()`: each source file's name, size and time, about 1 ms), `host/main.js` and `host/server.js` (`/internal/info` reports `stamp` and `busy`), `host/client.js` (`ensureHost` replaces a Host on older code once it's idle; a working Host is left to finish; every caller, the harness's Studio button, `kriya edit` and the daemon, goes through it), `director/ask.js` (content sent as parts is read; trailing commas tolerated; the journal's `result` says why an answer was refused, `invalid:cut_off`, `invalid:no_json`, `invalid:schema` or `invalid:meaning`, never what it said; a `clean` step per slot), `director/revise.js` (`tidyConsole`: a model's nulls for absent fields dropped, `after: null` kept; `direct: true` accepted). New: `tests/edit-ask-reliability.test.js` (4).
+- **Commands and real output:** client `npm run check`: `check exit 0`; tests 767, pass 767, fail 0. `tests/edit/media/host.test.js` and `studio.test.js`: tests 8, pass 8.
+- **Not tested:** a real call to the live `budget` model (paid; none made). The journal's new refusal kinds say which failure it is if it happens again.
+- **Next exact action (owner):** open the Studio from Kriya Harness and Ask once; if it still refuses, the journal's `result` column names the kind. Then say whether to commit and open a PR (nothing is committed).
+
 ## Studio editing ease, from use (2026-11-09, Claude Code / Opus 5.5, client branch `feat/studio-editing-ux` off `main` 3be3b60, uncommitted; owner in chat with two screenshots)
 
 - **Asked:** Ask failed with "The model's answer didn't fit, twice: isn't valid JSON"; misheard words need fixing in place; Add needs a file picker, not a typed path; a References tab to direct by a video's style; the preview shape fell back to 9:16 after Index; the shape dropdown's arrow sat on its border; downloads and indexing need visible progress; the Studio should do all of it end to end.
