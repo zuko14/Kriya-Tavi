@@ -10,5 +10,7 @@ export const GET = harnessRoute(true, async () => {
     visuals: (await getSetting("editing.visuals")) === "on",
     playbooks: (await getSetting("editing.playbooks")) === "on",
     mediaSearch: (await getSetting("editing.mediaSearch")) === "on",
+    motion: (await getSetting("editing.motion")) === "on",
+    customMotion: (await getSetting("editing.customMotion")) === "on",
   })
 })

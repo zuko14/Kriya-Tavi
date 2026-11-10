@@ -286,6 +286,10 @@ export const EditingFeaturesResponse = z.strictObject({
   visuals: z.boolean(),
   playbooks: z.boolean(),
   mediaSearch: z.boolean(),
+  // Added 2026-11-10 (EDD-58). An older client ignores them; a newer client
+  // reads a missing one as off
+  motion: z.boolean(),
+  customMotion: z.boolean(),
 })
 
 // Licensed pictures and cited definitions (EDD-52, EDD-57). 404 while editing.mediaSearch is off

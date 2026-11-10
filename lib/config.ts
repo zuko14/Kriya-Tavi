@@ -927,6 +927,16 @@ export const SETTINGS = {
     pattern: /^(on|off)$/,
     hint: "on or off",
   },
+  // The motion kit: titles, lower thirds, intro and end cards the Director proposes
+  // and chat can add, drawn by Kriya's code (EDD-58,
+  // docs/kriya-harness/kriya_video_editing/MOTION_GRAPHICS.md). Off: the same plan,
+  // prompt and console, no extra model call, and a make drops any graphic it's sent
+  "editing.motion": {
+    env: "KRIYA_EDITING_MOTION",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
   // Importing a reference from a link (EDD-22, owner-gated, counsel first).
   // Off: a person drops a file they already have
   "editing.urlImport": {

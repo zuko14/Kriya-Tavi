@@ -21,6 +21,23 @@ beforeAll(async () => {
 })
 
 describe("/editing/features", () => {
+  it("editing.motion ships off, and on it is reported with custom motion apart", async () => {
+    const defs = SETTINGS as unknown as Record<string, { fallback?: string }>
+    expect(defs["editing.motion"].fallback).toBe("off")
+    expect(defs["editing.customMotion"].fallback).toBe("off")
+    harnessEnv({ KRIYA_EDITING_STUDIO: "on", KRIYA_EDITING_MOTION: "on" })
+    expect(await (await ask()).json()).toMatchObject({
+      motion: true,
+      customMotion: false,
+    })
+    harnessEnv({ KRIYA_EDITING_MOTION: undefined, KRIYA_EDITING_CUSTOM_MOTION: "on" })
+    expect(await (await ask()).json()).toMatchObject({
+      motion: false,
+      customMotion: true,
+    })
+    harnessEnv({ KRIYA_EDITING_CUSTOM_MOTION: undefined })
+  })
+
   it("is in the contract, and editing.visuals ships off", () => {
     expect(ROUTES.some((r) => r.path === "/editing/features" && r.auth)).toBe(true)
     const defs = SETTINGS as unknown as Record<string, { fallback?: string }>
@@ -40,6 +57,8 @@ describe("/editing/features", () => {
       visuals: false,
       playbooks: false,
       mediaSearch: false,
+      motion: false,
+      customMotion: false,
     })
   })
 
@@ -49,12 +68,16 @@ describe("/editing/features", () => {
       visuals: true,
       playbooks: false,
       mediaSearch: false,
+      motion: false,
+      customMotion: false,
     })
     harnessEnv({ KRIYA_EDITING_VISUALS: undefined, KRIYA_EDITING_PLAYBOOKS: "on" })
     expect(await (await ask()).json()).toEqual({
       visuals: false,
       playbooks: true,
       mediaSearch: false,
+      motion: false,
+      customMotion: false,
     })
   })
 

@@ -73,6 +73,7 @@ Evidence ids: `EF-…` (SOURCE_AUDIT), `EH-…` (FORENSIC_AUDIT), `EX-…`
 | EDD-55 | A Plan Card approves or swaps each scene before anything is downloaded or rendered; `balanced` tier for scene code | **Yes, approved 2026-11-09** | EV1, EV2 |
 | EDD-56 | The Director's playbooks, DP1 to DP6, built and verified in order (DIRECTOR_PLAYBOOKS.md) | **Yes, approved 2026-11-09** | DP1…DP6 |
 | EDD-57 | On-screen definitions of hard terms are allowed only as quoted text with a citation: the one exception to words on screen being the speaker's | **Yes, approved 2026-11-09** | DP6 |
+| EDD-58 | A motion kit drawn by Kriya's code, proposed by the Director and added in chat, behind `editing.motion`; words on a graphic are the speaker's or the person's own; nothing is searched for and downloaded as code | **Yes, approved 2026-11-10 in chat** | MG1 |
 
 ## 2. Records
 
@@ -257,6 +258,9 @@ Evidence ids: `EF-…` (SOURCE_AUDIT), `EH-…` (FORENSIC_AUDIT), `EX-…`
 
 ### EDD-47 Watch folders and the content engine **(owner-gated)**
 **Decision.** TAVI_INTEGRATION §8, §9. Off, per folder, set on the computer. Only a name and a duration leave. Nothing runs until tapped. Scheduled jobs still ask each time. Posting isn't included, and needs its own decision.
+
+### EDD-58 Motion graphics **(owner-gated, approved 2026-11-10)**
+**Decision.** MOTION_GRAPHICS.md. Graphics are typed blocks drawn by code, so a cheap model only chooses among them. Their words come from the speaker or from what the person typed, checked by code. Open-source motion code is never fetched and run: an allowed idea is rewritten as a kit graphic and credited. Model-written animation stays MG2, behind `editing.customMotion`.
 
 ### EDD-51…EDD-55 Visual scenes **(owner-gated, approved 2026-11-09)**
 **Decision.** VISUAL_SCENES.md. Words on a scene come from the speaker, checked by code. EDD-52 settles the stock half of EQ-07 for these three sources: BY-SA and non-commercial are refused. Any other source, or a key-based one such as Pexels, needs its own decision.
