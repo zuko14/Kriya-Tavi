@@ -66,6 +66,7 @@ Everything protected by tracks A, O, N, voice, C, H, R and S, plus:
 | `lib/harness/default-skills.ts` | ED13 | Adds the set only with `editing.skills` on | Off → identical | ET-SK-02 |
 | `lib/harness/skills.ts` | ED13, **owner-approved 2026-11-08 in chat** | `deviceSkills()` takes its default set from `defaultSkillSet()` instead of the `HARNESS_DEFAULTS` constant (two lines) | Off → the same object, the same list | ET-SK-02; HT-DS-02 |
 | `lib/config.ts`, `lib/harness/contract.ts`, `docs/kriya-harness/contract.json` | EV1, **owner-approved 2026-11-09 in chat** | `editing.visuals`, `editing.playbooks`, `editing.mediaSearch`, off; routes `GET /editing/features`, `POST /editing/media`, `POST /editing/define`; regenerated | Existing keys and shapes unchanged | ET-VS-REG-01; HT-API-01 |
+| `lib/config.ts`, `lib/harness/contract.ts`, `docs/kriya-harness/contract.json`, `app/api/harness/v1/editing/features/route.ts`, `tests/editing/features.test.ts` | MG1, **owner-approved 2026-11-10 in chat** | `editing.motion`, off; `motion` and `customMotion` added to the features answer; regenerated | Existing keys unchanged; an older client ignores the two fields | ET-MG-REG-01; HT-API-01 |
 
 `tests/harness/regression.test.ts` needs no change: it filters on `harness.` (EH-31).
 
@@ -84,7 +85,7 @@ Everything protected by tracks A, O, N, voice, C, H, R and S, plus:
 | `SAFETY.md`, `README.md` | ED7, ED14 | Editing sections | Other text unchanged | — |
 | `src/daemon.js` | ED14, ED15 | ED15: passes a revision's fields; wakes the Host for a watched folder at each hello, lazily. ED14: `allowEdit` beside `allowServe`; capability sent only after `/editing/manifest` answered 200; `edit` kind hands to the Host; `editing` set checked **first** in the cancel loop; `serving` remembers its dispatch id, so with `KRIYA_EDIT` on an unknown cancel goes to the Host and never reaches `kriya serve`; `control.update` sets it | `running`, `MAX_RUNNING` and every other kind's path unchanged | ET-DMN-01…05; `daemon*.test.js` |
 | `plugins/remote/index.js`, `plugins/overview/client.js` | ED14 | **Allow editing from Kriya** beside Allow serving, same rules (RC-D1) | Existing toggles unchanged | `remote.test.js` |
-| `contract/contract.json` | ED14, ED15, EV1 | Regenerated | Existing entries unchanged | `contract.test.js` |
+| `contract/contract.json` | ED14, ED15, EV1, MG1 | Regenerated | Existing entries unchanged | `contract.test.js` |
 
 `src/doctor.js` doesn't change: `kriya edit doctor` is its own command.
 
@@ -160,6 +161,7 @@ All default off or to a safe value.
 | `editing.visuals` | off | The Director proposes animated explainer scenes (VISUAL_SCENES.md) | EV1 |
 | `editing.playbooks` | off | The Director names the genre and follows its playbook (DIRECTOR_PLAYBOOKS.md) | DP1 |
 | `editing.mediaSearch` | off | Licensed pictures and cited definitions (EDD-52, EDD-57) | DP4, DP6 |
+| `editing.motion` | off | The motion kit: the Director proposes graphics and chat adds them (MOTION_GRAPHICS.md, EDD-58) | MG1 |
 
 Every on/off key ships `off` (`tests/readiness/readiness.test.ts`).
 
