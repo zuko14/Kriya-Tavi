@@ -39,7 +39,6 @@ only your own row. Rules: AGENT_MASTER_PROMPT.md §4.
 
 | Phase | Agent | Branch / worktree | Claimed (IST) | Files held | Last update |
 | ----- | ----- | ----------------- | ------------- | ---------- | ----------- |
-| EV1 | Claude Code / Opus 5.5 | server `main` in place; client worktree `../kriya-harness-edit`, branch `feat/visual-scenes` | 2026-11-09 | `lib/config.ts`, `lib/harness/contract.ts`, `docs/kriya-harness/contract.json`; client `src/edit/**`, `studio/**`, `contract/contract.json` | 2026-11-09 |
 
 ## Documents
 
@@ -14503,7 +14502,7 @@ Spec: `docs/kriya-harness/kriya_video_editing/VISUAL_SCENES.md`.
 - Client: `engine/scenes.js`, `director/beats.js`, the solver's scene box and caption row, the recipe's scene clips, gate changes for scene tiles only, the make and preview routes, the Plan Card.
 - Checks: `npm run check` both repositories before and after; media tests for every kind in every format; a real make through the Host with a scripted model (no paid call); a browser check of the Plan Card at 360 and 1280 px, light and dark; ET-VS-REG-01 with the switch off.
 
-### Session result (2026-11-09, Claude Code / Opus 5.5, server `main` in place, client worktree `../kriya-harness-edit` branch `feat/visual-scenes`, uncommitted): EV1 and DP1–DP6
+### Session result (2026-11-09, Claude Code / Opus 5.5, committed and merged to main: server PR #33 commit 3a0c769, client PR #43 commit a9ff352, client version 0.2.4): EV1 and DP1–DP6
 
 - **Asked:** EV1 (owner-approved), then DP1–DP6 (EDD-56, EDD-57), "complete everything at once", one final test.
 - **Changed, server:** `lib/config.ts` (`editing.visuals`, `editing.playbooks`, `editing.mediaSearch`, all off), `lib/harness/contract.ts` (`/editing/features`, `/editing/media`, `/editing/define`), regenerated `docs/kriya-harness/contract.json`; new `lib/editing/media.ts` (Wikimedia Commons, NASA, Openverse; CC0, public domain, CC BY only, BY-SA/NC/ND/unknown refused; Wikipedia's opening sentence quoted with its link), the three routes, `tests/editing/{features,media}.test.ts`. Docs: `VISUAL_SCENES.md`, `DIRECTOR_PLAYBOOKS.md`, DECISIONS EDD-51…57, CHANGE_IMPACT rows and settings.
@@ -14512,9 +14511,9 @@ Spec: `docs/kriya-harness/kriya_video_editing/VISUAL_SCENES.md`.
 - **The person's own take (isolated home, scripted model, no paid call):** 5 scenes, 2 licensed pictures, 1 cited definition, credits file; render 437–1,245 s depending on machine load (first run 2,428 s). Fixed along the way: phrase-level beats (recognised "sentences" ran 29 s), lines under approved scenes kept, safe-zone inset, back-to-back scenes held, OCR seek bug, stroke counted for contrast, fast caption pages held 1.2 s (behind `editing.playbooks`, so ET-CMP-01's golden plan is unchanged), reader slips on ordinary words, clinical images filtered.
 - **Final run (after the last two gate fixes):** client `npm run check` 835/835 exit 0; media `seeded-text` and `scenes` exit 0, EG-4 10/10 each, 0 false alarms; the person's take alone: `delivered_with_notes` in 741 s, every gate passed but QG-04 and QG-14 (`not_checked`, EB-11). Under three heavy jobs at once the OCR reader returned every caption blank twice (load; it swallows Vision's errors); alone it reads them. Known limit, not fixed: QG-10 can block a make when the machine is saturated.
 - **Not tested:** a real model (paid; EB-07); the Plan Card in the browser after DP2–DP6 (EV1's card was checked at 1280 light and 360 dark, console clean); Linux/Windows.
-- **Next exact action (owner):** review, then say whether to commit; switch on `editing.visuals`, `editing.playbooks`, `editing.mediaSearch` only after deploy.
+- **Next exact action (owner):** PRs merged; switch on `editing.visuals`, `editing.playbooks`, `editing.mediaSearch` in `/owner/config` when ready.
 
-## The Edit Host's own channel on Windows: a named pipe (2026-11-10, Claude Code / Fable 5.2, client worktree `../kriya-harness-edit` branch `feat/director-revisions`; owner in chat)
+## The Edit Host's own channel on Windows: a named pipe (2026-11-10, Claude Code / Fable 5.2, committed and merged to main via client PR #44 commit 57e438f, client package bumped to 0.2.5 commit 5720384; owner in chat)
 
 - **Asked:** make the Editing Studio work on Windows: `socketPath` as a named pipe (`\\.\pipe\kriya-edit-host-…`), and guard `chmodSync` and `rmSync` on win32; then commit everything and open pull requests.
 - **Changed, client:** `src/edit/host/paths.js` (`socketPath(home, platform)`: a Unix socket as before; on win32 a named pipe named by a hash of the Kriya home, lower-cased, so each home has its own Host; `isPipe`), `src/edit/host/main.js` (the stale-socket `rmSync`, the `chmodSync` to 0600 and the `rmSync` at shutdown run only when the path isn't a pipe). New `tests/edit-host-paths.test.js`.
@@ -14522,9 +14521,9 @@ Spec: `docs/kriya-harness/kriya_video_editing/VISUAL_SCENES.md`.
 - **Not tested:** nothing here has run on Windows: there is no Windows machine in this session. The tests prove the path's shape and that every remove and mode call on the socket is guarded, and that macOS is unchanged.
 - **What this does not make work on Windows:** the motion layer (captions, graphics, scenes) still refuses there, because Chrome's OS sandbox for Windows isn't written (EQ-11, `engine/confine.js`); the signed Media Runtime manifest has only `darwin-arm64`; IMPLEMENTATION_PLAN's second platform is still open (ED17).
 - **Risk to decide:** the Unix socket is owner-only (mode 0600). A named pipe made by Node gets Windows' default access rules, and Node offers no way to set them. The Host's local channel takes commands with no token, so on a Windows computer shared by several accounts this needs an owner-only pipe (a native call) or a token on the channel before a pilot there. Recorded as a `shortcut:` in `paths.js`.
-- **Next exact action (owner):** run `kriya edit` on a Windows computer and report what the Host log says; decide the pipe's access rule before any shared-computer use.
+- **Next exact action (owner):** publish `@kriya-ai/harness@0.2.5` to npm, run `npm install -g @kriya-ai/harness@latest` on Windows, test `kriya --edit`; decide the pipe's access rule before any shared-computer use.
 
-## Phase MG1b — Transitions drawn by the compiler (2026-11-10, Claude Code / Fable 5.2, client worktree `../kriya-harness-edit` branch `feat/director-revisions`, uncommitted; owner in chat)
+## Phase MG1b — Transitions drawn by the compiler (2026-11-10, Claude Code / Fable 5.2, committed and merged to main via client PR #44 commit 57e438f; owner in chat)
 
 Spec: `docs/kriya-harness/kriya_video_editing/MOTION_GRAPHICS.md` §6. The owner approved the design in chat.
 
@@ -14535,9 +14534,9 @@ Spec: `docs/kriya-harness/kriya_video_editing/MOTION_GRAPHICS.md` §6. The owner
 - **Browser check:** none new: the only screen change is one more phrase in the Plan Card's settings line, covered by `ET-MG-UI` and `ET-REV-UI` passing in the media run above.
 - **Not built:** a picture `fade` effect is still refused by the builder (no operation sets one on footage); an eased or focused punch-in still on at the cut is left off the held frame; the preview monitor doesn't draw transitions; the handoff (OTIO, FCPXML, EDL) doesn't export them.
 - **Not tested:** a real model's choice of transition (EB-07); a real device; the full `npm run test:media`.
-- **Next exact action (owner):** with `editing.motion` on, ask for "slide transitions" in a plan, or "add a fade into this clip" in chat; then say whether to commit both repositories.
+- **Next exact action (owner):** with `editing.motion` on, ask for "slide transitions" in a plan, or "add a fade into this clip" in chat (committed and merged on `main`).
 
-## Phase MG1 — The motion kit (2026-11-10, Claude Code / Fable 5.2, server `main` in place, client worktree `../kriya-harness-edit` branch `feat/director-revisions`, uncommitted; owner in chat)
+## Phase MG1 — The motion kit (2026-11-10, Claude Code / Fable 5.2, committed and merged to main: server PR #34 commit 4948b98, client PR #44 commit 57e438f; owner in chat)
 
 Spec: `docs/kriya-harness/kriya_video_editing/MOTION_GRAPHICS.md`. Decision EDD-58.
 
@@ -14551,9 +14550,9 @@ Spec: `docs/kriya-harness/kriya_video_editing/MOTION_GRAPHICS.md`. Decision EDD-
 - **Deviations from the design approved in chat:** callouts, a progress bar and a logo bug aren't built (MOTION_GRAPHICS §4). Transitions weren't exposed in this phase because `core/ffmpeg.js` refused the effect; MG1b, above, draws them. A graphic is the size of the layout's caption box, small in 16:9.
 - **Not tested:** the Director's choice of graphics on a real model (EB-07); a real device or real speech (EB-09, EB-11); Linux and Windows (no sandbox, so no graphics there); the full `npm run test:media`.
 - **Blockers:** none for MG1. MG2 (model-written animation) needs EB-06 and EB-07.
-- **Next exact action (owner):** turn `editing.motion` on in `/owner/config` on a test server, plan a cut with "motion graphics", approve it; then say whether to commit both repositories. Then choose: MG2, or drawing transitions in the compiler.
+- **Next exact action (owner):** turn `editing.motion` on in `/owner/config` on a test server, plan a cut with "motion graphics", approve it (both repositories committed and merged on `main`). Then choose: MG2 (model-written animation), or Windows sandboxing (EQ-11).
 
-## A change after a make changes that cut, not the raw footage (2026-11-10, Claude Code / Fable 5.2, client worktree `../kriya-harness-edit`, branch `feat/director-revisions` off `main` e72658b, uncommitted; owner in chat)
+## A change after a make changes that cut, not the raw footage (2026-11-10, Claude Code / Fable 5.2, committed and merged to main via client PR #44 commit 57e438f; owner in chat)
 
 - **Asked:** analyse the Studio and Director against a top-tier editor; then, approved in chat, sub-project 1 of four: a change asked for after the video is edited must land on the edited video, not on a new one made from the original.
 - **Found:** (1) the Studio forgot the approved plan on approval, so a later whole-video request asked for a fresh plan with no `previous` (`studio/src/main.js`, `askPlan(text)`); (2) every make asked the model again for the story and the punched-in words, so the cut could change when only the music was asked for (`recipes/reel.js`); (3) the recipe deletes every clip on the picture, caption and music tracks before rebuilding, taking the person's own edits with them. Also found, not fixed here: model-written animation (`customComposition` in `engine/motion.js`) is called from nowhere; every Director call is on the `budget` tier; plan settings are partly read by English keyword patterns.
@@ -14563,9 +14562,9 @@ Spec: `docs/kriya-harness/kriya_video_editing/MOTION_GRAPHICS.md`. Decision EDD-
 - **Limits:** the whole cut still renders again (no partial re-render). An edit pointed at a clip the remake no longer has is left out and said so. A make from the panel with no approved plan keeps the story and edits but has no plan to diff against. Podcast and montage makes carry edits but have no story to keep. "Start over" is read by an English pattern.
 - **Not tested:** a real model, a real device, real speech recognition (EB-07, EB-09, EB-11); the full `npm run test:media` (soak and the rest). `reel.test.js`, `director.test.js` and `scenes.test.js` finished after this was first written: tests 12, pass 12, exit 0.
 - **Fixed the same day, found while building MG1:** `carryEdits` replayed every edit since the last make, so a title or B-roll the person added, which sits on its own track and survives a remake, would have been put on screen twice. It now replays only what a remake undoes (`replayable` in `continuity.js`: picture, caption and voice edits), and leaves out quietly an edit aimed at a clip already gone before the remake.
-- **Next exact action (owner):** try it in the Studio (make, edit by hand, ask for a whole-video change, approve); then say whether to commit and open a PR. Next sub-projects, each needing its own approval: 2 Director-written animations (`editing.customMotion`), 3 the Director as a plan-make-watch-fix loop (EB-06), 4 a Claude Code arm in KriyaEditBench (EB-07).
+- **Next exact action (owner):** try it in the Studio (make, edit by hand, ask for a whole-video change, approve). Both repositories committed and merged on `main`. Next sub-projects, each needing its own approval: 2 Director-written animations (`editing.customMotion`), 3 the Director as a plan-make-watch-fix loop (EB-06), 4 a Claude Code arm in KriyaEditBench (EB-07).
 
-## The final cut, watched in Finish before downloading (2026-11-09, Claude Code / Opus 5.5, client branch `feat/studio-final-cut-review` off `main`, uncommitted; owner in chat)
+## The final cut, watched in Finish before downloading (2026-11-09, Claude Code / Opus 5.5, committed and merged to main: server PR #32 commit a2bb6ed, client PR #35; owner in chat)
 
 - **Asked:** why captions, the look and music show only after rendering a draft; then: put the final cut in Finish or Edit so the person can check and adjust before downloading, end to end.
 - **Found:** the preview monitor plays the source files and draws only the picture (cuts, crops, zooms); captions are Chrome tiles composited by FFmpeg, and the grade, voice cleanup, music and sound effects are FFmpeg steps, all only in a render. The Studio had no way to watch a render: Finish listed render jobs by file name only.
@@ -14573,7 +14572,7 @@ Spec: `docs/kriya-harness/kriya_video_editing/MOTION_GRAPHICS.md`. Decision EDD-
 - **Commands and real output:** client `npm run check`: `check exit 0`; tests 794, pass 794, fail 0. Media `studio.test.js` and `host.test.js`: tests 8, pass 8.
 - **Real run (isolated home, synthetic clip, no model; the person's `~/.kriya` untouched):** after a make, Finish played `/projects/{id}/renders/2`: 1920×1080, 1.9 s, playing; "This is your edit as it is now. Checked, with notes."; Download's request answered 206 with `attachment; filename="Film-master-11225ced.mp4"`. After an edit the note turned to "Made before your latest changes…"; Render again made a draft that came to the front marked current. Found and fixed in the browser: a slower, older refresh put the old film back; two jobs sharing one file were listed twice; at 360 px the film picker overflowed by 48 px. 1280 light, 360 dark: no overflow, no target under 44 px, console clean.
 - **Not tested:** captions in the film itself (the isolated runtime has no Chrome; the player shows whatever the render drew); a long master's seeking (ranges are served; not timed); the live caption overlay on the preview monitor wasn't built (the final cut is the real file instead).
-- **Next exact action (owner):** after merging, make or render a draft, open Finish, watch, adjust in Edit if needed, Render again, Download; then say whether to commit and open a PR.
+- **Next exact action (owner):** PRs merged; make or render a draft, open Finish, watch, adjust in Edit if needed, Render again, Download.
 
 ## The approved plan makes what it pitched; split decimals aren't stutters; the panel follows the plan (2026-11-09, Claude Code / Opus 5.5, client branch `fix/director-plan-follows-pitch` off `main` 486b0e0, uncommitted; owner in chat with two screenshots)
 
@@ -15278,3 +15277,4 @@ Spec: `docs/kriya-harness/kriya_video_editing/MOTION_GRAPHICS.md`. Decision EDD-
 | 2026-11-08 | ED16 Engineering Complete, ED17 Authorization | "Approved: rough cut on plan limit accepted; ED16 engineering complete (paid Bench-R deferred to launch gate EG-8); proceed to ED17 security & scale hardening" | Owner |
 | 2026-11-09 | EDD-51…EDD-55, EV1 | "I approve the visual scenes design": code-drawn explainer animations adapted from Lemo-Opuscar with borderless maps; Wikimedia Commons, NASA and Openverse, CC0 and CC-BY only, with automated credits; AI generative video off; Balanced tier for scene code; a Plan Card to approve or swap before anything is downloaded or rendered. "Please proceed with Build Step 1: Visual beat detection, cutaway placement, and Kriya ready-made explainer scenes." | Owner |
 | 2026-11-09 | EDD-56, EDD-57, DP1…DP6 | "I have reviewed DIRECTOR_PLAYBOOKS.md and approve the phased plan (DP1 through DP6)"; "on-screen definitions of hard terms are allowed, provided they are quoted with a citation"; "ensure DP3 fixes the stroke/contrast issue on real footage like mine"; "build and verify each phase in order (DP1 → DP2 → DP3 → DP4 → DP5 → DP6) and report real test results after each" | Owner |
+| 2026-11-10 | EDD-58, MG1, MG1b | "Approved: motion kit switch editing.motion, transitions that never move a cut, revisions on the existing cut, Windows named pipe"; committed and merged into main (server PR #34 commit 4948b98, client PR #44 commit 57e438f, client package bumped to 0.2.5 commit 5720384) | Owner |
