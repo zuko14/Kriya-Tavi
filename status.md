@@ -14323,7 +14323,7 @@ of 2026-11-07. Every coding agent starts from
 | ED18 | Controlled pilot | NOT_STARTED | ED17 |
 | TP0 | Top-tier blueprint: gap analysis, designs, plan | IN_PROGRESS (2026-11-10: four documents written from the code as it is; EDD-59…69 proposed; nothing built or run; awaits EB-12) | — |
 | TP1 | Clip handles, bin, storyboard, mentions | COMPLETE 2026-11-11 (uncommitted in both repositories; EDD-59, -60, -62 and the `editing.assembly` row approved by the owner in chat 2026-11-10. Kriya: Test Files 271 passed, 5 skipped; Tests 3219 passed, 63 skipped; exit 0. Client: 876/876, exit 0. ET-ASM-01…08, ET-ASM-UI, ET-ASM-REG-01 and ET-TP-REG-01, -02, -04 passed; ET-TP-REG-03 only in part. No model called. Limits in the phase section) | TP0, EB-12 |
-| TP2 | Assembly make, conform, QG-15, the card's Order | NOT_STARTED (unblocked by TP1; EDD-59 and EDD-62 are approved) | TP1 |
+| TP2 | Assembly make, conform, QG-15, the card's Order | COMPLETE 2026-11-11 (client `1db980c` on local `feat/editing-assembly-tp1-tp2`, not pushed: `npm run check` 896/896, `npm run test:media` 87/87, exit 0; Kriya Test Files 271 passed, 5 skipped; Tests 3219 passed, 63 skipped; exit 0. ET-ASM-10…25, ET-ASM-M1…M5, Bench-A-M, ET-TP-REG-01, -03, -04 passed. No model called. EH-60b, EH-79, EH-80 deferred to the owner. Details in the phase section) | TP1 |
 | TP3 | True preview, partial re-render, hand edits | NOT_STARTED | TP2, TPX-01, TPX-06 |
 | TP4 | Intent in any language, "Not in this cut", questions, hold to talk | NOT_STARTED | TP2 |
 | TP5 | Effects registry, keyframes, looks | NOT_STARTED | TP0, EB-12, TPX-02 |
@@ -14538,6 +14538,24 @@ Documents: `TOP_TIER_GAP_ANALYSIS.md`, `ASSEMBLY_AND_INTENT.md`, `CRAFT_UPGRADE.
 - **Suspected, not proven, each with the preflight that settles it:** today's own B-roll may already be placed twice by a second make (EH-60a: the remake's delete list in `recipes/reel.js` doesn't name B-roll clips; if real it is an existing defect to fix first, on its own); bin search may miss corrected words (EH-77); a still image on the main picture has never been rendered (EH-78).
 - **Limits, plainly:** a reading audit can't find a fault that only shows when code runs. It lowers the risk; it doesn't remove it. What protects existing workflows from here is the tests of audit §5 run before and after each phase, each switch shipping off, and one phase per branch. A hazard not in the audit isn't thereby safe.
 - **Next exact action (owner):** unchanged: approve EDD-59, -60, -62 to start TP1, and say whether to commit these documents.
+
+## Phase TP2 — Assembly make, conform, QG-15, the card's Order
+
+Spec: `docs/kriya-harness/kriya_video_editing/ASSEMBLY_AND_INTENT.md` §5, §6, §8; `TOP_TIER_PLAN.md` §4, §5, §6; `TOP_TIER_FORENSIC_AUDIT.md` §4, §4.1.
+
+### Sign-off (2026-11-11, Claude Code / Opus 5.5, owner in chat)
+
+The session that built TP2 (2026-11-11, before this one) left its code and tests uncommitted and wrote no section here; its background `npm run check` and `npm run test:media` were killed when it ended (`[killed]`), so they never reported. This sign-off is what was verified afterwards, on that code, before any TP3 change.
+
+- **What TP2 is, as built** (client, read from the code and its tests): `src/edit/director/assembly.js` (references resolved by code: numbers, labels, roles, spoken words, placement words; two candidates left open, never guessed; who wins; `splitAt`; `assemblyProblems`), `src/edit/recipes/assembly.js` (the assembly make: parts in order, `over` parts on their word, conform of frame, loudness and colour, a story per part so a reorder asks nothing), `src/edit/gates/assembly.js` (QG-15, a note: EH-70), the `frame` effect in `core/ffmpeg.js` (`frameSteps`, `PLATE`), `place_over` and `set_frame`, the Plan Card's Order in the Studio, and the make route taking `brief.assembly` only with `editing.assembly` on. Fixed first, on its own: EH-60a (`remadeClips` in `recipes/reel.js`). Fixed in TP2: EH-82. Settled by its preflight: EH-78 (stills stay out). Recorded, **not fixed**, for the owner: EH-60b, EH-79, EH-80 (audit §4.1). A make job recorded from `main` before TP2 is the ET-TP-REG-03 fixture (`tests/edit/pre-tp2-make.golden.json`). Bench-A-M: `storyboard 40/40, mentions 40/40, words 40/40 (38 by code alone, 2 with the scripted Director); 32 films rendered, each read by QG-15` (`bench/edit/results/bench-a-m-2026-11-11.md`; a scripted model, not people).
+- **Owner's decisions this session:** EH-60b and EH-79 stay deferred in audit §4.1; nothing of them is mixed into TP3. Phases kept apart (audit §6 rule 10) by local branches, nothing pushed: client `feat/editing-assembly-tp1-tp2` at `1db980c` (TP1 and TP2 together, as they were left uncommitted together), server `feat/editing-assembly-tp1-tp2` at `9948246` (TP0, TP1 and this sign-off).
+- **Commands and real output:**
+  - Client, `npm run check` on the TP2 code → pins, seams, notices, brand passed; `tests 896, pass 896, fail 0`, exit 0 (446 s).
+  - Client, `npm run test:media` on `1db980c` → `tests 87, pass 87, fail 0, cancelled 0, skipped 0`, exit 0 (5,259 s, every file under `tests/edit/media/`, EG-6's 2-hour soak among them).
+  - Server, `env -u OPENROUTER_API_KEY npm run check` → typecheck passed; lint `0 errors, 8 warnings` (the same eight `_run`/`_results` unused-variable warnings as before); format passed; `Test Files 271 passed | 5 skipped (276)`, `Tests 3219 passed | 63 skipped (3282)`, exit 0.
+- **Exit checks:** ET-ASM-10…25 (unit), ET-ASM-M1…M5 (Engine and Host), Bench-A-M, ET-TP-REG-01, -03, -04: passed (in `npm run check` and `npm run test:media` above; the media run's six ET-ASM-M tests, Bench-A-M and ET-TP-REG-04 among the 87). ET-ASM-M1 (Host) and ET-ASM-M5, seen failing at 08:41 in the building session's own run (`QG-07 failed (black at 0.03 s.)`), pass on the code as it was left. Audit §5 rows reached, all green on this run: ET-REV 2, ET-VS 3, ET-MG 4, ET-TR 4, ET-UI 1, ET-ASM-M 6, the Studio and console browser tests, EG-6. QG-15 ships as a note (EH-70): its threshold waits for TPX-04 on natural footage (EQ-22).
+- **Caveats, plainly:** no real model was called; Bench-A-M's words are the ones the code readers were written against. QG-04 and QG-14 stay `not_checked` (no verified recogniser, EB-11). A still on the main picture doesn't render (EH-78), so a file with no length can't be a part. The TP2 browser check (ET-ASM-UI for the Order) is in `tests/edit/media/assembly.test.js` and ran inside `test:media`; no separate screenshots were kept this session.
+- **Next exact action:** TP3.
 
 ## Phase TP1 — Clip handles, bin, storyboard, mentions
 
