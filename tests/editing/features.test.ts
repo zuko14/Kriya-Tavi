@@ -38,6 +38,27 @@ describe("/editing/features", () => {
     harnessEnv({ KRIYA_EDITING_CUSTOM_MOTION: undefined })
   })
 
+  // ET-ASM-REG-01's server half (ASSEMBLY_AND_INTENT.md §10)
+  it("editing.assembly ships off, and on it is reported", async () => {
+    const defs = SETTINGS as unknown as Record<string, { fallback?: string }>
+    expect(defs["editing.assembly"].fallback).toBe("off")
+    harnessEnv({ KRIYA_EDITING_STUDIO: "on", KRIYA_EDITING_ASSEMBLY: undefined })
+    expect(await (await ask()).json()).toMatchObject({ assembly: false })
+    harnessEnv({ KRIYA_EDITING_ASSEMBLY: "on" })
+    const res = await ask()
+    expect(EditingFeaturesResponse.parse(await res.json())).toMatchObject({
+      assembly: true,
+      motion: false,
+    })
+    harnessEnv({ KRIYA_EDITING_ASSEMBLY: undefined })
+  })
+
+  it("says nothing while editing.studio is off, even with assembly on", async () => {
+    harnessEnv({ KRIYA_EDITING_STUDIO: undefined, KRIYA_EDITING_ASSEMBLY: "on" })
+    expect((await ask()).status).toBe(404)
+    harnessEnv({ KRIYA_EDITING_ASSEMBLY: undefined })
+  })
+
   it("is in the contract, and editing.visuals ships off", () => {
     expect(ROUTES.some((r) => r.path === "/editing/features" && r.auth)).toBe(true)
     const defs = SETTINGS as unknown as Record<string, { fallback?: string }>
@@ -59,6 +80,7 @@ describe("/editing/features", () => {
       mediaSearch: false,
       motion: false,
       customMotion: false,
+      assembly: false,
     })
   })
 
@@ -70,6 +92,7 @@ describe("/editing/features", () => {
       mediaSearch: false,
       motion: false,
       customMotion: false,
+      assembly: false,
     })
     harnessEnv({ KRIYA_EDITING_VISUALS: undefined, KRIYA_EDITING_PLAYBOOKS: "on" })
     expect(await (await ask()).json()).toEqual({
@@ -78,6 +101,7 @@ describe("/editing/features", () => {
       mediaSearch: false,
       motion: false,
       customMotion: false,
+      assembly: false,
     })
   })
 

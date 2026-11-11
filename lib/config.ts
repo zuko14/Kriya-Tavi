@@ -937,6 +937,16 @@ export const SETTINGS = {
     pattern: /^(on|off)$/,
     hint: "on or off",
   },
+  // Many files in one edit: clip numbers and labels, the storyboard and mentions (TP1), then
+  // the make that follows them (TP2) (EDD-59, EDD-60,
+  // docs/kriya-harness/kriya_video_editing/ASSEMBLY_AND_INTENT.md). Off: the Studio is the
+  // page it was, and a make drops any storyboard it's sent
+  "editing.assembly": {
+    env: "KRIYA_EDITING_ASSEMBLY",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
   // Importing a reference from a link (EDD-22, owner-gated, counsel first).
   // Off: a person drops a file they already have
   "editing.urlImport": {
