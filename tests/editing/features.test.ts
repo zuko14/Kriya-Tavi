@@ -59,6 +59,26 @@ describe("/editing/features", () => {
     harnessEnv({ KRIYA_EDITING_ASSEMBLY: undefined })
   })
 
+  // ET-PV-REG-01's server half (CRAFT_UPGRADE.md §2)
+  it("editing.livePreview ships off, and on it is reported", async () => {
+    const defs = SETTINGS as unknown as Record<string, { fallback?: string }>
+    expect(defs["editing.livePreview"].fallback).toBe("off")
+    harnessEnv({ KRIYA_EDITING_STUDIO: "on", KRIYA_EDITING_LIVE_PREVIEW: undefined })
+    expect(await (await ask()).json()).toMatchObject({ livePreview: false })
+    harnessEnv({ KRIYA_EDITING_LIVE_PREVIEW: "on" })
+    expect(EditingFeaturesResponse.parse(await (await ask()).json())).toMatchObject({
+      livePreview: true,
+      assembly: false,
+    })
+    harnessEnv({ KRIYA_EDITING_LIVE_PREVIEW: undefined })
+  })
+
+  it("says nothing while editing.studio is off, even with livePreview on", async () => {
+    harnessEnv({ KRIYA_EDITING_STUDIO: undefined, KRIYA_EDITING_LIVE_PREVIEW: "on" })
+    expect((await ask()).status).toBe(404)
+    harnessEnv({ KRIYA_EDITING_LIVE_PREVIEW: undefined })
+  })
+
   it("is in the contract, and editing.visuals ships off", () => {
     expect(ROUTES.some((r) => r.path === "/editing/features" && r.auth)).toBe(true)
     const defs = SETTINGS as unknown as Record<string, { fallback?: string }>
@@ -81,6 +101,7 @@ describe("/editing/features", () => {
       motion: false,
       customMotion: false,
       assembly: false,
+      livePreview: false,
     })
   })
 
@@ -93,6 +114,7 @@ describe("/editing/features", () => {
       motion: false,
       customMotion: false,
       assembly: false,
+      livePreview: false,
     })
     harnessEnv({ KRIYA_EDITING_VISUALS: undefined, KRIYA_EDITING_PLAYBOOKS: "on" })
     expect(await (await ask()).json()).toEqual({
@@ -102,6 +124,7 @@ describe("/editing/features", () => {
       motion: false,
       customMotion: false,
       assembly: false,
+      livePreview: false,
     })
   })
 

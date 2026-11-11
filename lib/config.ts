@@ -947,6 +947,16 @@ export const SETTINGS = {
     pattern: /^(on|off)$/,
     hint: "on or off",
   },
+  // The monitor draws the film (TP3, EDD-63, CRAFT_UPGRADE.md §2): the renderer's own tiles,
+  // transitions, framing, looks and sound, and a draft re-renders only the segments that
+  // changed. A preview is never evidence: the rendered file is. Off: the monitor and the
+  // timeline are what they were
+  "editing.livePreview": {
+    env: "KRIYA_EDITING_LIVE_PREVIEW",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
   // Importing a reference from a link (EDD-22, owner-gated, counsel first).
   // Off: a person drops a file they already have
   "editing.urlImport": {

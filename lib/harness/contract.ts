@@ -292,6 +292,8 @@ export const EditingFeaturesResponse = z.strictObject({
   customMotion: z.boolean(),
   // Added 2026-11-10 (TP1, EDD-59). The same rule: ignored by an older client, off when missing
   assembly: z.boolean(),
+  // Added 2026-11-11 (TP3, EDD-63). The same rule
+  livePreview: z.boolean(),
 })
 
 // Licensed pictures and cited definitions (EDD-52, EDD-57). 404 while editing.mediaSearch is off

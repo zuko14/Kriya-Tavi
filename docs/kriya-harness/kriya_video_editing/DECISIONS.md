@@ -78,7 +78,7 @@ Evidence ids: `EF-…` (SOURCE_AUDIT), `EH-…` (FORENSIC_AUDIT), `EX-…`
 | EDD-60 | Every file has one handle (number, label, role) shown the same everywhere; file names and labels are untrusted data, matched by code | — | TP1 |
 | EDD-61 | Every request becomes one intent frame; a model-filled field needs evidence quoted from the person's message, checked by code; what can't be done is listed, never dropped | **Yes** (new switch `editing.intent`) | TP4 |
 | EDD-62 | QG-15 (assembly) blocks; a question in the Studio is a choice with a default and never blocks; hold to talk uses the local recogniser only | — | TP2, TP4 |
-| EDD-63 | The monitor previews with the renderer's own tile code; a preview is never evidence, the rendered file is | **Yes** (new switch `editing.livePreview`) | TP3 |
+| EDD-63 | The monitor previews with the renderer's own tile code; a preview is never evidence, the rendered file is | **Yes, approved 2026-11-11 in chat** (new switch `editing.livePreview`) | TP3 |
 | EDD-64 | Effects are a registry of typed rows; nothing can be stored that the render can't draw; keyframes are typed points compiled by code | **Yes** (new switch `editing.craft`) | TP5, TP10 |
 | EDD-65 | Edit DNA 2: a reference's method measured locally as numbers and fixed words; a style brief with matched, nearest, cannot; gates outrank the reference; QG-16 is a note | **Yes** (new switch `editing.referenceIntent`; EQ-10) | TP6 |
 | EDD-66 | A vision model may read a reference's frames, answers as fixed words only | **Yes: proposed as off; not part of any phase until approved, with counsel on EQ-10** | — |
@@ -276,7 +276,7 @@ Evidence ids: `EF-…` (SOURCE_AUDIT), `EH-…` (FORENSIC_AUDIT), `EX-…`
 ### EDD-51…EDD-55 Visual scenes **(owner-gated, approved 2026-11-09)**
 **Decision.** VISUAL_SCENES.md. Words on a scene come from the speaker, checked by code. EDD-52 settles the stock half of EQ-07 for these three sources: BY-SA and non-commercial are refused. Any other source, or a key-based one such as Pexels, needs its own decision.
 
-### EDD-59…EDD-69 Top-tier upgrade **(proposed 2026-11-10; EDD-59, EDD-60 and EDD-62 approved by the owner 2026-11-10 in chat; the other owner-gated ones await approval by id)**
+### EDD-59…EDD-69 Top-tier upgrade **(proposed 2026-11-10; EDD-59, EDD-60 and EDD-62 approved by the owner 2026-11-10 in chat, EDD-63 on 2026-11-11 in chat; the other owner-gated ones await approval by id)**
 **Decision.** TOP_TIER_GAP_ANALYSIS.md, ASSEMBLY_AND_INTENT.md, CRAFT_UPGRADE.md, TOP_TIER_PLAN.md. The method is the motion kit's: code draws and checks, a cheap model chooses from a typed list, the person's words outrank both. Each new server switch defaults off and is a row in CHANGE_IMPACT §3 marked proposed. EDD-66 is recorded so that it is refused by default: no phase sends a reference's frame to a model. No comparative claim follows from any of this before EG-8 (rule 14).
 
 ## 3. Open questions

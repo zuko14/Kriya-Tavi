@@ -278,3 +278,71 @@ tested. `sandbox-exec` is deprecated by Apple, and still works here.
 
 Left on this machine by the spikes: `~/.cache/hyperframes` (194 MB) and a uv-managed
 Python in `~/.local/share/uv/python` (145 MB), both safe to delete.
+
+## 5. Top-tier spikes for TP3 (2026-11-11)
+
+Throwaway scripts in the session's scratch folder, run on this Mac (darwin-arm64, Node
+v24.22.0, FFmpeg 9.0.2, the installed Google Chrome headless), against the client at the
+TP2 commit (`1db980c` on `feat/editing-assembly-tp1-tp2`). No product code was changed to run them.
+
+### TPX-01 Live tiles over a scrubbing monitor
+
+The renderer's own tile documents (`captionComposition` in three looks, the `title` and
+`lower-third` blocks) in sandboxed frames (`sandbox="allow-scripts"`, the tile CSP, no network)
+over a canvas that seeks a real proxy (540×960, GOP 30, no B-frames), as the Studio's monitor
+does. Each scrub step: seek, wait for `seeked`, draw, post the time to every tile, and wait until
+**every** tile has paused its animations at that time and painted (it answers after a
+`requestAnimationFrame`). Five seconds per run; then five seconds of playback, posting the
+time on each `requestVideoFrameCallback`.
+
+| Tiles | Scrub steps a second, all tiles in step: idle machine | The same, under load | Page frames a second while scrubbing (idle) | Playback frames drawn a second, 30 fps source (idle) |
+| --- | --- | --- | --- | --- |
+| 0 | 308 | 97.5 | 60.2 | 30.0 |
+| 1 | 60.3 | 60.2 | 60.3 | 29.9 |
+| 5 | 60.2 | 60.1 | 60.2 | 29.9 |
+| 20 | 60.2 | 49.2 | 60.2 | 29.9 |
+
+"Under load": the same script while the client's `test:media` ran on the machine. With tiles,
+a step waits for the tiles' next paint, so 60 a second is the display's rate, not a limit of the
+tiles. Without the lock-step wait the scrub ran 146 to 169 steps a second at every count (under load). **Decision:**
+live tiles stay on while scrubbing; the fallback (stills while scrubbing) isn't needed. The monitor
+mounts only the tiles showing at the playhead, usually one to three.
+
+### TPX-06 Are cached draft segments exact after a change?
+
+A 30 s chart (540×960, 30 fps, a 220 Hz tone) cut whole, five `caption_style` captions each in its
+own 6 s segment, rendered as a draft; the third caption's text changed (`caption_edit`); the draft
+rendered again on the same cache; then the changed project rendered on an empty cache.
+
+| | Before TP3 (client `1db980c`) | With each segment's input naming only its own tiles |
+| --- | --- | --- |
+| Segment keys changed by the edit | 1 of 5 | 1 of 5 |
+| Segments encoded again | **5 of 5** | **1 of 5** |
+| Sound mixed again | no | no |
+| Time of the re-render | 15.9 s | 3.0 s (12.9 s on an empty cache) |
+| Decoded frames different from the full render | 0 of 900 | 0 of 900 |
+| Audio samples | identical | identical |
+| File bytes | differ (container) | differ (container) |
+
+**Found:** the plan's segment keys already changed only where a caption changed, but every draft
+segment's graph input carried the whole plan's tile list, so one caption change re-rendered the
+whole film. **Decision:** behind `editing.livePreview`, a draft segment's input names only the tiles
+it draws (`engine/index.js`, `partial`). The joined film is exact, so neighbours need not render
+again. The sound is one mix of the whole film and a master one encode, as before (EH-66).
+
+### ET-PV-01's floor, measured on the TP2 code
+
+Today's monitor (no tiles, no effects: what it draws exactly) against the rendered draft, a plain
+cut of a structured test chart, SSIM of the monitor's canvas against the rendered frame at the
+canvas's size, six samples each:
+
+| Project | Monitor canvas | Draft | Worst | Best |
+| --- | --- | --- | --- | --- |
+| 640×360 (16:9) | 640×360 | 1280×720 | 0.997354 | 0.997753 |
+| 720×1280 (9:16, from a 16:9 take) | 720×1280 | 720×1280 | 0.997464 | 0.998174 |
+
+The floor is **0.997**. Also measured for TP3's preview: FFmpeg's `xfade` on flat frames (fade
+linear; dip and flash a two-phase smoothstep mix; wipe and slide move at W·(1−p); zoom magnifies
+the held frame by 1/smoothstep(0.5, 1, P)), and `scale … force_original_aspect_ratio=decrease:
+force_divisible_by=2` rounding to the nearest even size (405 → 406), with pad and overlay flooring
+the offset to even (437 → 436). The Studio's preview follows both (`studio/src/preview.js`).

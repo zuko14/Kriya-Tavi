@@ -13,5 +13,6 @@ export const GET = harnessRoute(true, async () => {
     motion: (await getSetting("editing.motion")) === "on",
     customMotion: (await getSetting("editing.customMotion")) === "on",
     assembly: (await getSetting("editing.assembly")) === "on",
+    livePreview: (await getSetting("editing.livePreview")) === "on",
   })
 })
