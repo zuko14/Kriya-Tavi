@@ -290,6 +290,23 @@ export const EditingFeaturesResponse = z.strictObject({
   // reads a missing one as off
   motion: z.boolean(),
   customMotion: z.boolean(),
+  // Added 2026-11-10 (TP1, EDD-59). The same rule: ignored by an older client, off when missing
+  assembly: z.boolean(),
+  // Added 2026-11-11 (TP3, EDD-63). The same rule
+  livePreview: z.boolean(),
+  // Added 2026-11-11 (TP4, EDD-61). The same rule
+  intent: z.boolean(),
+  // Added 2026-11-11 (TP5, EDD-64). The same rule
+  craft: z.boolean(),
+  // Added 2026-11-11 (TP7, EDD-67). The same rule
+  typeKit: z.boolean(),
+  // Added 2026-11-11 (TP6, EDD-65). The same rule
+  referenceIntent: z.boolean(),
+  // Added 2026-11-11 (TP8, EDD-68). The same rule
+  directorLoop: z.boolean(),
+  // Added 2026-11-12 (TP11). The same rule. Only after a true here does a computer send
+  // DaemonProject.clips, or a job ask an `order` card (rule 17)
+  taviOrder: z.boolean(),
 })
 
 // Licensed pictures and cited definitions (EDD-52, EDD-57). 404 while editing.mediaSearch is off
@@ -354,7 +371,8 @@ export const EditingPreviewResponse = z.strictObject({
 // A decision card (ED15): a default and a timeout, so a person who never answers still
 // gets an edit. 404 while editing.review is off. No device route answers one
 export const EditingQuestionRequest = z.strictObject({
-  kind: z.enum(["take", "hook", "file", "name", "taste"]),
+  // "order" (TP11): which order of the clips a brief meant; only after taviOrder said true
+  kind: z.enum(["take", "hook", "file", "name", "taste", "order"]),
   prompt: z.string().min(1).max(500),
   options: z
     .array(
@@ -402,11 +420,25 @@ const PROJECT_ID = z.string().regex(/^[a-f0-9]{16}$/)
 
 // A project folder the daemon offers: tasks run only in these. `path` is for
 // the person to recognise it ("~/Documents/app"), never used to address it
+// A clip the person numbered in the folder's editing project (TP11): its number and their own
+// label, nothing else (no file name, path or words). Shown to Tavi as data from the computer
+export const DaemonClip = z.strictObject({
+  n: z.number().int().min(1).max(999),
+  label: z
+    .string()
+    .min(1)
+    .max(40)
+    .regex(/^[^\u0000-\u001f\u007f<>]+$/)
+    .optional(),
+})
 export const DaemonProject = z.strictObject({
   id: PROJECT_ID,
   name: SHORT(80),
   path: SHORT(300),
   git: z.boolean(),
+  // Optional (TP11): sent only after /editing/features answered taviOrder: true, so an
+  // older server never sees it; an older client never sends it
+  clips: z.array(DaemonClip).max(50).optional(),
 })
 // A rule kriya rules lists for a project: proposed by the loop or confirmed
 export const DaemonRule = z.strictObject({

@@ -1,7 +1,7 @@
 # Master prompt: implementing the Kriya Editing Studio (track E)
 
 Paste everything below the line into a new agent session. Replace `<PHASE>` with
-the assigned phase (`EDP-1`, `ED1`…`ED18`) or leave `NEXT`.
+the assigned phase (`EDP-1`, `ED1`…`ED18`, `TP1`…`TP12`) or leave `NEXT`.
 
 ---
 
@@ -33,7 +33,7 @@ Assigned phase: `<PHASE>`
 14. Never fabricate results, prices, speeds, limits or tool behaviour. Unknowns are written down with how they get settled. `information.md` is the owner's brief, not a source of fact: where it disagrees with SOURCE_AUDIT, the audit wins.
 15. No secrets or personal data in code, logs, fixtures or `status.md`.
 16. Conventions: AGENTS.md for this repository; for the client, DSH's rules (profiles, exact pins, ESM, Node ≥ 24.9, the `plugins/*` pattern).
-17. Never mark a phase COMPLETE unless every exit check in IMPLEMENTATION_PLAN passed and the output is recorded.
+17. Never mark a phase COMPLETE unless every exit check in IMPLEMENTATION_PLAN (for a `TP` phase, TOP_TIER_PLAN §4) passed and the output is recorded.
 18. If a spike or the code contradicts these documents, the code is the fact: record an EF id and ask. Don't quietly build around it.
 
 ## 1. Read, in this order
@@ -57,6 +57,14 @@ Assigned phase: `<PHASE>`
 | ED14, ED15 | TAVI_INTEGRATION, TOOLS_AND_CONTRACTS, DATA_MODEL §4, FORENSIC_AUDIT §1, `docs/kriya-harness/CONTROL_CENTER.md` |
 | ED16 | EVALUATION_PLAN, `docs/kriya-harness/harness_upgradation/BENCHMARK_PLAN.md` |
 | ED17 | SECURITY_AND_THREATS, OPERATIONS_RUNBOOK |
+| Every TP phase | **TOP_TIER_FORENSIC_AUDIT, whole**: its §6 rules are stop conditions, and its §5 rows are run before and after |
+| TP1, TP2, TP4 | TOP_TIER_GAP_ANALYSIS §3.1, §3.2; ASSEMBLY_AND_INTENT; TOP_TIER_PLAN §4, §5; DIRECTOR_AND_AGENT; UX_SPEC |
+| TP3 | CRAFT_UPGRADE §2; STUDIO_APP_AND_BROWSER; EDIT_ENGINE §7, §9; TOP_TIER_PLAN §3 (TPX-01, -06) |
+| TP5, TP10 | CRAFT_UPGRADE §3, §8; EDIT_ENGINE §6, §8, §10; MOTION_GRAPHICS §6 |
+| TP6 | CRAFT_UPGRADE §4; EDITOR_WORKFLOWS §4; SECURITY_AND_THREATS (reference rules) |
+| TP7, TP9 | CRAFT_UPGRADE §5, §7; MOTION_GRAPHICS; VISUAL_SCENES; SKILLS_AND_OPEN_SOURCE §2; OPERATIONS_RUNBOOK §2 |
+| TP8 | CRAFT_UPGRADE §6; EDIT_LOOP; DIRECTOR_PLAYBOOKS |
+| TP11, TP12 | CRAFT_UPGRADE §9; TAVI_INTEGRATION; EVALUATION_PLAN; TOP_TIER_PLAN §6 |
 
 Then every file you'll edit, its callers and its tests, and TEST_STRATEGY's rows
 for your phase.

@@ -633,3 +633,111 @@ describe("ET-REG-01, ED15's half", () => {
     expect(cardText(job, "p1", false)).toContain("/api/editing/preview/p1")
   })
 })
+
+// TP11 (CRAFT_UPGRADE §9, rule 17): the clips a computer advertises, and the order card
+describe("TP11: advertised clips and the order card", () => {
+  const helloWith = (projects: Out[]) =>
+    helloRoute(
+      call("POST", "/daemon/hello", {
+        token: mine.token,
+        body: {
+          daemonVersion: "0.3.0",
+          capabilities: { fullAccess: false, serve: false, handoff: true, edit: true },
+          projects,
+          rules: [],
+        },
+      })
+    )
+  const folder = { id: PROJECT, name: "Raw footage", path: "~/Raw footage", git: false }
+  const places = async () =>
+    (await createEditTools({
+      current: () => ({ id: "a1" }) as Agent,
+      userId: alice,
+      threadId: "t1",
+    }).video_edit_places.execute!({} as never, OPTIONS)) as {
+      notice?: string
+      computers: { folders: Out[] }[]
+    }
+
+  it("a hello with clips, without them, and with a field no clip has", async () => {
+    expect((await helloWith([folder])).status).toBe(200)
+    const clips = [{ n: 1, label: "Intro" }, { n: 2 }, { n: 3, label: "Demo take" }]
+    expect((await helloWith([{ ...folder, clips }])).status).toBe(200)
+    // Strict: a path, a transcript or a file name is never part of a clip
+    expect(
+      (await helloWith([{ ...folder, clips: [{ n: 1, path: "/Users/a/x.mov" }] }])).status
+    ).toBe(400)
+    expect((await helloWith([{ ...folder, clips: [{ n: 0 }] }])).status).toBe(400)
+    expect(
+      (await helloWith([{ ...folder, clips: [{ n: 1, label: "a\nb" }] }])).status
+    ).toBe(400)
+    expect(
+      (
+        await helloWith([
+          { ...folder, clips: Array.from({ length: 51 }, (_, i) => ({ n: i + 1 })) },
+        ])
+      ).status
+    ).toBe(400)
+  })
+
+  it("video_edit_places lists a folder's clips as the computer's data, only with editing.assembly on", async () => {
+    await helloWith([{ ...folder, clips: [{ n: 1, label: "Intro" }, { n: 2 }] }])
+    harnessEnv({ KRIYA_EDITING_ASSEMBLY: undefined })
+    expect((await places()).computers[0].folders).toEqual([
+      { project: PROJECT, name: "Raw footage" },
+    ])
+    harnessEnv({ KRIYA_EDITING_ASSEMBLY: "on" })
+    const on = await places()
+    expect(on.notice).toBeTruthy()
+    expect(on.computers[0].folders).toEqual([
+      {
+        project: PROJECT,
+        name: "Raw footage",
+        clips: [{ n: 1, label: "Intro" }, { n: 2 }],
+      },
+    ])
+    harnessEnv({ KRIYA_EDITING_ASSEMBLY: undefined })
+    const tools = createEditTools({
+      current: () => ({ id: "a1" }) as Agent,
+      userId: alice,
+      threadId: "t1",
+    })
+    expect(tools.video_edit_start.description).toMatch(
+      /order of them by those numbers or labels/
+    )
+  })
+
+  it("an order card is asked, reaches the person, and is answered or defaults like the others", async () => {
+    const { job } = await runningJob()
+    const order = {
+      kind: "order",
+      prompt: "Which order did you mean?",
+      options: [
+        { label: "Clip 2, then clip 1, then clip 3" },
+        { label: "Clip 3, then clip 1, then clip 2" },
+      ],
+      defaultOption: 0,
+      timeoutSeconds: 300,
+    }
+    const res = await askCard(job, mine.token, order)
+    expect(res.status).toBe(200)
+    const { id } = (await res.json()) as { id: string }
+    expect((await getInbox(alice)).editCards.map((c) => [c.id, c.kind])).toEqual([
+      [id, "order"],
+    ])
+    expect(await answerEditQuestion(id, 1)).toEqual({ ok: true })
+    expect(await (await answerOf(id)).json()).toEqual({ status: "answered", option: 1 })
+    const second = (await (await askCard(job, mine.token, order)).json()) as {
+      id: string
+    }
+    await pg.query(
+      "update kriya.edit_questions set expires_at = now() - interval '1 second'"
+    )
+    expect(await (await answerOf(second.id)).json()).toEqual({
+      status: "defaulted",
+      option: 0,
+    })
+    // Another person's computer can't ask on this job
+    expect((await askCard(job, other.token, order)).status).toBe(404)
+  })
+})

@@ -150,3 +150,17 @@ Nothing is searched for and downloaded as code. The licence gate
 person's computer. A project is read by a person or an agent, checked against the gate,
 and what is allowed is rewritten as a kit graphic and credited, as §5 of VISUAL_SCENES.md
 does for Lemo-Opuscar.
+
+## 7. MG2 and drawn callouts, as built (TP9, 2026-11-12)
+
+- **MG2:** chat's `custom_motion` (only with `editing.customMotion` on) is written by its own slot on
+  `balanced`, only when Kriya lists that tier (EH-65), as data: CSS, allow-listed elements and Web
+  Animations keyframes (`engine/custom.js`). Kriya builds the document, `customComposition` lints it and
+  puts the CSP first, and the words go into slots last, escaped. The tile is rendered confined and must
+  pass QG-08…11 (`gates/tile.js`) before the card shows it; it lands only on Approve. Two calls at most,
+  then the nearest kit graphic is named. Off, a stored block stays in the project and out of the film.
+- **Drawing on the frame:** Box, Ring, Arrow on the monitor (`studio/src/draw.js`); the Host checks the
+  numbers (`cleanMark`); `use_mark` becomes a callout round exactly that box (`mark`), a region blur or
+  mask (`region` on `add_effect` / `add_adjustment`, new effect `mask`), or a centred punch-in.
+- Limits: §4's "callouts aren't built" no longer holds for a drawn box; the monitor doesn't draw custom
+  tiles or region effects (the render does); a real model's composition waits on EB-06 and EB-07.

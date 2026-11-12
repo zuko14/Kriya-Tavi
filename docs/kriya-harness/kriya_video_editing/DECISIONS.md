@@ -74,6 +74,17 @@ Evidence ids: `EF-…` (SOURCE_AUDIT), `EH-…` (FORENSIC_AUDIT), `EX-…`
 | EDD-56 | The Director's playbooks, DP1 to DP6, built and verified in order (DIRECTOR_PLAYBOOKS.md) | **Yes, approved 2026-11-09** | DP1…DP6 |
 | EDD-57 | On-screen definitions of hard terms are allowed only as quoted text with a citation: the one exception to words on screen being the speaker's | **Yes, approved 2026-11-09** | DP6 |
 | EDD-58 | A motion kit drawn by Kriya's code, proposed by the Director and added in chat, behind `editing.motion`; words on a graphic are the speaker's or the person's own; nothing is searched for and downloaded as code | **Yes, approved 2026-11-10 in chat** | MG1 |
+| EDD-59 | Many files in one edit: one typed assembly, made by drag, by pointing or by words; the person's placement always outranks the Director's (ASSEMBLY_AND_INTENT.md) | **Yes** (new switch `editing.assembly`) | TP1, TP2 |
+| EDD-60 | Every file has one handle (number, label, role) shown the same everywhere; file names and labels are untrusted data, matched by code | — | TP1 |
+| EDD-61 | Every request becomes one intent frame; a model-filled field needs evidence quoted from the person's message, checked by code; what can't be done is listed, never dropped | **Yes, approved 2026-11-11 in chat** (new switch `editing.intent`) | TP4 |
+| EDD-62 | QG-15 (assembly) blocks; a question in the Studio is a choice with a default and never blocks; hold to talk uses the local recogniser only | — | TP2, TP4 |
+| EDD-63 | The monitor previews with the renderer's own tile code; a preview is never evidence, the rendered file is | **Yes, approved 2026-11-11 in chat** (new switch `editing.livePreview`) | TP3 |
+| EDD-64 | Effects are a registry of typed rows; nothing can be stored that the render can't draw; keyframes are typed points compiled by code | **Yes, approved 2026-11-11 in chat** (new switch `editing.craft`) | TP5, TP10 |
+| EDD-65 | Edit DNA 2: a reference's method measured locally as numbers and fixed words; a style brief with matched, nearest, cannot; gates outrank the reference; QG-16 is a note | **Yes, approved 2026-11-11 in chat** (new switch `editing.referenceIntent`; EQ-10 still open for counsel; TP6 built) | TP6 |
+| EDD-66 | A vision model may read a reference's frames, answers as fixed words only | **Refused, and stays off (the owner, 2026-11-11 in chat, with TP6's approval): no reference frame is ever sent to a model.** TP6's reading of a reference is local code only; `tests/edit-reference2.test.js` holds the measuring code and the brief to no model call | — |
+| EDD-67 | Fonts ship in the signed Media Runtime, each licence-checked per item; script picks the font; type kit, style packs | **Yes, approved 2026-11-11 in chat** (new switch `editing.typeKit`; runtime `2026.11.1` carries `pack-fonts` unsigned until the owner signs it offline, EB-09) | TP7 |
+| EDD-68 | The Director watches its draft by code first, fixes with typed changes, keeps only a higher score; a stronger tier in two named places only | **Yes, approved 2026-11-11 in chat** (new switch `editing.directorLoop`; escalation only to a tier the server lists, so with EB-06 open nothing escalates; TP8 built) | TP8 |
+| EDD-69 | Sound Kriya adds stays code-made until EQ-07 is decided; beds are arranged to the cut | — (approved 2026-11-11 in chat) | TP10 |
 
 ## 2. Records
 
@@ -265,6 +276,9 @@ Evidence ids: `EF-…` (SOURCE_AUDIT), `EH-…` (FORENSIC_AUDIT), `EX-…`
 ### EDD-51…EDD-55 Visual scenes **(owner-gated, approved 2026-11-09)**
 **Decision.** VISUAL_SCENES.md. Words on a scene come from the speaker, checked by code. EDD-52 settles the stock half of EQ-07 for these three sources: BY-SA and non-commercial are refused. Any other source, or a key-based one such as Pexels, needs its own decision.
 
+### EDD-59…EDD-69 Top-tier upgrade **(proposed 2026-11-10; EDD-59, EDD-60 and EDD-62 approved by the owner 2026-11-10 in chat, EDD-63, EDD-61, EDD-64, EDD-69, EDD-67, EDD-65 and EDD-68 on 2026-11-11 in chat; EDD-66 refused; the other owner-gated ones await approval by id)**
+**Decision.** TOP_TIER_GAP_ANALYSIS.md, ASSEMBLY_AND_INTENT.md, CRAFT_UPGRADE.md, TOP_TIER_PLAN.md. The method is the motion kit's: code draws and checks, a cheap model chooses from a typed list, the person's words outrank both. Each new server switch defaults off and is a row in CHANGE_IMPACT §3 marked proposed. EDD-66 is recorded so that it is refused by default: no phase sends a reference's frame to a model. No comparative claim follows from any of this before EG-8 (rule 14).
+
 ## 3. Open questions
 
 | Id | Question | Settled by | Blocks |
@@ -284,3 +298,10 @@ Evidence ids: `EF-…` (SOURCE_AUDIT), `EH-…` (FORENSIC_AUDIT), `EX-…`
 | EQ-13 | Is a recorded model version enough for reproducibility when an upstream provider changes a model? | Note in EX-08 | Bench claims |
 | EQ-14 | Would anyone want a fully offline Director on a local model? | Pilot feedback | A later pack |
 | EQ-15 | Are PSF-2.0 (`typing-extensions`), CNRI-Python (`regex`), Zlib and 0BSD (parts of `numpy`) fine in the Media Runtime? The owner allowed them for the alpha only | Counsel | Public release |
+| EQ-16 | Which filters of CRAFT_UPGRADE §3.2 does the signed runtime's FFmpeg have? | Spike TPX-02 | Those effects only |
+| EQ-17 | Which scripts does the OCR helper read, and what stands in on Windows and Linux? | **Settled 2026-11-11 by TPX-05 (SPIKES §7):** on macOS 27.2 the reader reads Latin (`en-US`) and Devanagari (`hi-IN`), 12 of 12 each; Telugu, Tamil, Kannada, Malayalam, Bengali, Gujarati and Gurmukhi are carried by the glyph check. Windows and Linux have no reader: the glyph check is all of QG-10 there (unmeasured until EQ-11) | — |
+| EQ-18 | Each candidate font's licence at its pinned version | **Settled 2026-11-11 (TP7):** fourteen fonts read per item at `google/fonts@5bb2873` (`METADATA.pb` `license: "OFL"`, `OFL.txt` SIL OFL 1.1, each copyright line recorded), pinned by sha256 in `manifest.2026.11.1.json` and listed in the client's THIRD_PARTY_NOTICES; ET-LIC-01 | — |
+| EQ-19 | How well does code read transitions and text regions on real references? | **Settled 2026-11-11 for references Kriya makes (TPX-03, SPIKES §8):** 46 of 46 joins by kind (cut, fade, dip, flash, wipe, slide, zoom) at 0.2 to 0.8 s, none made up; caption band, size, plate, highlight and pages a minute; graphics; grain, corners, bars; a bed and a drummed tempo. Not readable, so not in an Edit DNA 2: words on a page, an outline, music's share and level under the voice, non-speech hits, faces. **Still open for real references:** unmeasured until EB-05's cleared set | Trusting those traits on real footage; QG-16 beyond a note |
+| EQ-20 | Do live tiles hold a usable frame rate while scrubbing? | Spike TPX-01 | Tiles while scrubbing |
+| EQ-21 | The intent fields' and the `assembly` slot's accuracy per language on the `budget` model | Bench-A-R (EB-07) | Language promises |
+| EQ-22 | The frame-match threshold for QG-15 | Spike TPX-04 | QG-15 blocking rather than noting |

@@ -74,12 +74,18 @@ flowchart LR
 | [DECISIONS.md](DECISIONS.md) | EDD-01…50, open questions EQ-… |
 | [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md) | Turning it on, runtimes, support, incidents |
 | [REAUDIT.md](REAUDIT.md) | The consistency check of this set |
+| [TOP_TIER_GAP_ANALYSIS.md](TOP_TIER_GAP_ANALYSIS.md) | **Where the Studio stands against a professional's craft list; gaps TG-01…28** |
+| [ASSEMBLY_AND_INTENT.md](ASSEMBLY_AND_INTENT.md) | Many files in one edit: clip handles, storyboard, mentions, the assembly, QG-15; intent in any language |
+| [CRAFT_UPGRADE.md](CRAFT_UPGRADE.md) | True preview, effects and keyframes, Edit DNA 2, fonts and motion kit 2, the Director's watch loop, sound |
+| [TOP_TIER_PLAN.md](TOP_TIER_PLAN.md) | Phases TP0–TP12, spikes TPX-01…06, tests, switches, Bench-A, what the owner decides |
+| [TOP_TIER_FORENSIC_AUDIT.md](TOP_TIER_FORENSIC_AUDIT.md) | **Hazards EH-54…78 of the top-tier plan, with evidence and guards; ten standing rules; the proof per existing workflow. Read before any TP phase** |
 | [AGENT_MASTER_PROMPT.md](AGENT_MASTER_PROMPT.md) | The prompt for implementing agents |
 
 ## Reading order
 
 - **The owner:** this page, FORENSIC_AUDIT §1, DECISIONS §1 and §3, IMPLEMENTATION_PLAN.
 - **An implementing agent:** AGENT_MASTER_PROMPT.
+- **What comes next:** TOP_TIER_GAP_ANALYSIS §3, then TOP_TIER_PLAN §1.
 - **Someone curious about the ideas:** VISION_AND_SCENARIOS §2, EDIT_LOOP §4 and §5, EDIT_ENGINE §5 and §6, UX_SPEC §4.
 
 ## How progress is tracked
@@ -93,6 +99,8 @@ only when every exit check passed.
 | Prefix | Meaning | Where |
 | --- | --- | --- |
 | `ED…` | Phases | IMPLEMENTATION_PLAN |
+| `TP…`, `TPX-` | Top-tier phases and their spikes | TOP_TIER_PLAN |
+| `TG-` | Gaps against a professional's craft list | TOP_TIER_GAP_ANALYSIS |
 | `EX-` | Spikes | IMPLEMENTATION_PLAN §2 |
 | `EDD-` | Decisions | DECISIONS |
 | `EQ-` | Open questions | DECISIONS §3 |

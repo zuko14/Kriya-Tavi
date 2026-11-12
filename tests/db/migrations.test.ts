@@ -185,6 +185,7 @@ describe("migrations", () => {
     // profiles (A6); obligations reference goals
     // The self-hosted fabric (SH1) widens the provider checks and references workspaces
     // Track E sorts after everything and references the Control Center: first out
+    await pg.exec(read("rollback", "20271104000000_editing_order.down.sql"))
     await pg.exec(read("rollback", "20271103000000_editing_review.down.sql"))
     await pg.exec(read("rollback", "20271102000000_editing_tables.down.sql"))
     await pg.exec(read("rollback", "20271101000000_harness_dispatch_edit.down.sql"))
@@ -242,6 +243,7 @@ describe("migrations", () => {
     await pg.exec(read("migrations", "20271101000000_harness_dispatch_edit.sql"))
     await pg.exec(read("migrations", "20271102000000_editing_tables.sql"))
     await pg.exec(read("migrations", "20271103000000_editing_review.sql"))
+    await pg.exec(read("migrations", "20271104000000_editing_order.sql"))
   })
 
   it("rolls the A8 providers and undo columns back and applies them again", async () => {
@@ -956,6 +958,7 @@ describe("migrations", () => {
     // Tracks R (R1) and H (H1) sort after it and are rolled back first, newest first
     // The self-hosted fabric (SH1) widens the provider checks and references workspaces
     // Track E sorts after everything and references the Control Center: first out
+    await pg.exec(read("rollback", "20271104000000_editing_order.down.sql"))
     await pg.exec(read("rollback", "20271103000000_editing_review.down.sql"))
     await pg.exec(read("rollback", "20271102000000_editing_tables.down.sql"))
     await pg.exec(read("rollback", "20271101000000_harness_dispatch_edit.down.sql"))
@@ -999,6 +1002,7 @@ describe("migrations", () => {
     await pg.exec(read("migrations", "20271101000000_harness_dispatch_edit.sql"))
     await pg.exec(read("migrations", "20271102000000_editing_tables.sql"))
     await pg.exec(read("migrations", "20271103000000_editing_review.sql"))
+    await pg.exec(read("migrations", "20271104000000_editing_order.sql"))
     expect(await added()).toBe(16)
     expect(await shape()).toEqual(before)
   })
@@ -1021,6 +1025,7 @@ describe("migrations", () => {
       "insert into kriya.resource_usage (request_key, kind, quantity) values ('fd:1', 'flow_design', 1), ('br:1', 'browser_seconds', 1)"
     )
     // Track E sorts after everything and references the Control Center: first out
+    await pg.exec(read("rollback", "20271104000000_editing_order.down.sql"))
     await pg.exec(read("rollback", "20271103000000_editing_review.down.sql"))
     await pg.exec(read("rollback", "20271102000000_editing_tables.down.sql"))
     await pg.exec(read("rollback", "20271101000000_harness_dispatch_edit.down.sql"))
@@ -1041,6 +1046,7 @@ describe("migrations", () => {
     await pg.exec(read("migrations", "20271101000000_harness_dispatch_edit.sql"))
     await pg.exec(read("migrations", "20271102000000_editing_tables.sql"))
     await pg.exec(read("migrations", "20271103000000_editing_review.sql"))
+    await pg.exec(read("migrations", "20271104000000_editing_order.sql"))
     await pg.query(
       "insert into kriya.resource_usage (request_key, kind, quantity) values ('fd:3', 'flow_design', 1)"
     )
@@ -1127,6 +1133,7 @@ describe("migrations", () => {
     // Track R (R1) sorts after it and is rolled back first
     // The self-hosted fabric (SH1) widens the provider checks and references workspaces
     // Track E sorts after everything and references the Control Center: first out
+    await pg.exec(read("rollback", "20271104000000_editing_order.down.sql"))
     await pg.exec(read("rollback", "20271103000000_editing_review.down.sql"))
     await pg.exec(read("rollback", "20271102000000_editing_tables.down.sql"))
     await pg.exec(read("rollback", "20271101000000_harness_dispatch_edit.down.sql"))
@@ -1164,6 +1171,7 @@ describe("migrations", () => {
     await pg.exec(read("migrations", "20271101000000_harness_dispatch_edit.sql"))
     await pg.exec(read("migrations", "20271102000000_editing_tables.sql"))
     await pg.exec(read("migrations", "20271103000000_editing_review.sql"))
+    await pg.exec(read("migrations", "20271104000000_editing_order.sql"))
     expect(await added()).toBe(11)
     expect(await shape()).toEqual(before)
   })
@@ -1580,6 +1588,7 @@ describe("20270501000000_cloud_fabric (track C extension, SH1)", () => {
        ($1, $2, 'doctor'), ($1, $2, 'edit')`,
       [user, device]
     )
+    await pg.exec(read("rollback", "20271104000000_editing_order.down.sql"))
     await pg.exec(read("rollback", "20271103000000_editing_review.down.sql"))
     await pg.exec(read("rollback", "20271102000000_editing_tables.down.sql"))
     await pg.exec(read("rollback", "20271101000000_harness_dispatch_edit.down.sql"))
@@ -1601,6 +1610,7 @@ describe("20270501000000_cloud_fabric (track C extension, SH1)", () => {
     await pg.exec(read("migrations", "20271101000000_harness_dispatch_edit.sql"))
     await pg.exec(read("migrations", "20271102000000_editing_tables.sql"))
     await pg.exec(read("migrations", "20271103000000_editing_review.sql"))
+    await pg.exec(read("migrations", "20271104000000_editing_order.sql"))
     await pg.query(
       `insert into kriya.harness_dispatches (user_id, device_id, kind) values ($1, $2, 'edit')`,
       [user, device]

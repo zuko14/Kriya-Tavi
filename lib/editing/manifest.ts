@@ -1,6 +1,7 @@
 import { sign } from "node:crypto"
 
 import runtime20261100 from "./runtime/manifest.2026.11.0.json"
+import runtime20261101 from "./runtime/manifest.2026.11.1.json"
 
 // The Media Runtime manifest (DECISIONS EDD-05, OPERATIONS_RUNBOOK §2). Each
 // version is pinned by hand in lib/editing/runtime/ and signed offline with a
@@ -17,6 +18,9 @@ export const RUNTIMES: Record<string, Signed> = {
     signature:
       "UNTrNE1MTsxf6PCdnN5fJbkqK4ncz01MBIiSBmbK+q7RlWSaTx0AxJBReMgD5smiW4u3MD01Hf0kQROtA26ABQ==",
   },
+  // TP7 (EDD-67, EB-09): 2026.11.0 plus platforms.<id>.packs["pack-fonts"], nothing else
+  // moved. Unsigned until the owner signs it offline; no channel names it until then
+  "2026.11.1": { manifest: runtime20261101, signature: null },
 }
 
 export const CHANNELS: Record<string, string> = {
