@@ -14,5 +14,15 @@ export const GET = harnessRoute(true, async () => {
     customMotion: (await getSetting("editing.customMotion")) === "on",
     assembly: (await getSetting("editing.assembly")) === "on",
     livePreview: (await getSetting("editing.livePreview")) === "on",
+    intent: (await getSetting("editing.intent")) === "on",
+    craft: (await getSetting("editing.craft")) === "on",
+    typeKit: (await getSetting("editing.typeKit")) === "on",
+    referenceIntent: (await getSetting("editing.referenceIntent")) === "on",
+    directorLoop: (await getSetting("editing.directorLoop")) === "on",
+    // TP11: Tavi may name an order across clips, the computer may send its clip numbers, and the
+    // order card exists; only with both editing.tavi and editing.assembly on (rule 17)
+    taviOrder:
+      (await getSetting("editing.tavi")) === "on" &&
+      (await getSetting("editing.assembly")) === "on",
   })
 })

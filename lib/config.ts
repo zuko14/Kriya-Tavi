@@ -957,6 +957,52 @@ export const SETTINGS = {
     pattern: /^(on|off)$/,
     hint: "on or off",
   },
+  // Every request becomes one intent frame (TP4, EDD-61, ASSEMBLY_AND_INTENT.md §7): fields read in
+  // the call that already happens, each kept only when its words are in the person's message; what
+  // can't be done is listed; at most two questions, each with a default; hold to talk with the local
+  // recogniser only. Off: the code readers alone, as before
+  "editing.intent": {
+    env: "KRIYA_EDITING_INTENT",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Effects as typed rows of a registry, keyframes, named moves, looks, the skin guard (TP5, and the
+  // sound of TP10; EDD-64, CRAFT_UPGRADE.md §3). Nothing can be stored that the render can't draw.
+  // Off: the Host takes no effect operation and chat offers none
+  "editing.craft": {
+    env: "KRIYA_EDITING_CRAFT",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Fonts shipped in the Media Runtime's pack-fonts, the type kit and brand colours, more caption
+  // looks, motion kit 2 and style packs (TP7, EDD-67, CRAFT_UPGRADE.md §5). A project keeps its look
+  // until the person chooses a kit or a pack. Off: system fonts, five looks, today's kinds
+  "editing.typeKit": {
+    env: "KRIYA_EDITING_TYPE_KIT",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Edit DNA 2: a reference's method measured on the person's computer as numbers and fixed words,
+  // the style brief and QG-16 as a note (TP6, EDD-65, CRAFT_UPGRADE.md §4). No model sees a
+  // reference (EDD-66 stays off). Off: ED13's measure and the references as they work today
+  "editing.referenceIntent": {
+    env: "KRIYA_EDITING_REFERENCE_INTENT",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // The Director watches its own draft by code over five-second windows, fixes it with typed
+  // changes inside the make's existing rounds and keeps a fix only when the score rises; escalation
+  // only to a tier the server lists (TP8, EDD-68, CRAFT_UPGRADE.md §6). Off: the make as before
+  "editing.directorLoop": {
+    env: "KRIYA_EDITING_DIRECTOR_LOOP",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
   // Importing a reference from a link (EDD-22, owner-gated, counsel first).
   // Off: a person drops a file they already have
   "editing.urlImport": {

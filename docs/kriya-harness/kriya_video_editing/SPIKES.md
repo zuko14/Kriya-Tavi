@@ -346,3 +346,215 @@ linear; dip and flash a two-phase smoothstep mix; wipe and slide move at W·(1�
 the held frame by 1/smoothstep(0.5, 1, P)), and `scale … force_original_aspect_ratio=decrease:
 force_divisible_by=2` rounding to the nearest even size (405 → 406), with pad and overlay flooring
 the offset to even (437 → 436). The Studio's preview follows both (`studio/src/preview.js`).
+
+## 6. TPX-02 for TP5 (2026-11-11): which filters does the runtime's FFmpeg have?
+
+The signed Media Runtime on this Mac (`~/.kriya/media/2026.11.0`) ships Chrome, Python and the models,
+**not FFmpeg**: Kriya uses the computer's own, here Homebrew's FFmpeg 9.0.2 (`engine/capabilities.js`
+reads its `-filters`). Present: `gblur`, `boxblur`, `unsharp`, `vignette`, `noise`, `curves`, `hue`, `eq`,
+`colorchannelmixer`, `colorize`, `colorbalance`, `negate`, `hflip`, `rgbashift`, `crop`, `scale`, `pad`,
+`drawbox`, `fade`, `deshake`, `reverse`, `split`, `blend`, `lut3d`, `zoompan`, `geq`, `pseudocolor`,
+`lutrgb`. **Absent: `vidstabdetect`, `vidstabtransform`.**
+
+Decisions: every registry row in `core/effects.js` names only present filters (ET-FX-02 pins the
+list); a stored `stabilize` is drawn with `deshake`, not vid.stab. On another computer the row of a
+missing filter is left out at compile with a note, never faked. Also measured on this FFmpeg for the
+tests: an effect's output is the same decoded frames twice (ET-FX-M1, all 21 rows); an encode alone
+moves about 0.2 % of a coloured barcode frame's pixels by more than 8 levels, which ET-FX-M1 uses as its
+noise floor.
+
+## 7. TPX-05 and the TP7 preflights (2026-11-11): fonts in the sandbox, which scripts the reader reads
+
+Throwaway code in the session's scratch folder; the runtime's Chrome 152.0.7977.30 (headless shell)
+inside the macOS sandbox profile `engine/confine.js` writes, the tile's own CSP
+(`font-src 'self' data:`), and the candidate fonts downloaded from `github.com/google/fonts` at commit
+`5bb28733cec313b63fbd415b574b5ae35c8aa8b8`, each checked against its `METADATA.pb` (`license: "OFL"`)
+and `OFL.txt` (SIL OFL 1.1) and hashed. macOS 27.2 (26B123), Apple silicon.
+
+**A font file loads inside the sandboxed tile (TP7 preflight).** One Telugu caption, three ways, each
+`document.fonts` status and the fonts DevTools says drew the glyphs (`CSS.getPlatformFontsForNode`):
+
+| `@font-face src` | Status | Drawn with |
+| --- | --- | --- |
+| `file://` path into the runtime's `packs/pack-fonts/` | loaded | Noto Sans Telugu (custom), 16 glyphs |
+| relative path from the tile's folder | loaded | Noto Sans Telugu (custom), 16 glyphs |
+| `data:font/ttf;base64,…` | loaded | Noto Sans Telugu (custom), 16 glyphs |
+| `file://` path outside the sandbox's read list (control) | **error** | Kohinoor Telugu (system), Courier |
+
+No CSP report in the console for any of them: for a `file://` tile Chrome treats `file:` as `'self'`.
+**Decision:** fonts go in as `data:` (`engine/fonts.js` `withFonts`), put in by the renderer, not the
+composition. Only `data:` works in all three places a tile is drawn: Chrome on a `file://` page, the
+HyperFrames path (served over loopback HTTP) and the Studio's tile preview (`/tile-preview`, HTTP).
+The composition names a font only by id (`url("kriya-font:<id>")`), so tile keys stay path-free.
+
+**Which scripts the OCR helper reads (TPX-05, EQ-17).** Vision's `supportedRecognitionLanguages` on
+this Mac: en, fr, it, de, es, pt-BR, zh-Hans/Hant, yue, ko, ja, ru, uk, th, vi, ar, ars, tr, id, cs,
+da, nl, no, nn, nb, ms, pl, ro, sv, fi, **hi-IN, mr-IN**. One rendered caption per script (64 px bold,
+white on grey, the Noto face), read by `gates/text.swift`:
+
+| Script | With `en-US` (today's QG-10) | With `hi-IN,en-US` |
+| --- | --- | --- |
+| Latin | exact, c = 1.0 | exact, c = 0.5 |
+| Devanagari | nothing read | **exact**, c = 0.5 |
+| Telugu, Tamil, Kannada, Malayalam, Bengali, Gujarati, Gurmukhi | nothing read | garbage in Devanagari or Latin letters, c = 0.3 |
+
+A second batch, 6 phrases × 2 sizes (64 and 46 px): Latin 12 of 12 exact with `en-US` (c = 1.0);
+Devanagari 12 of 12 exact with `hi-IN` (c always 0.5, under QG-10's `UNSURE` 0.8, so its words count as
+"unsure", which the judge already tolerates). **Settled (EQ-17):** the reader carries QG-10 for Latin
+and Devanagari; the glyph check of CRAFT §5.1 carries Telugu, Tamil, Kannada, Malayalam, Bengali,
+Gujarati and Gurmukhi. Windows and Linux have no OCR helper at all (`ocrHelper` says so), so the glyph
+check is the only QG-10 there; the motion layer itself is still macOS-only (EQ-11), so that is unmeasured.
+
+**What the glyph check can see, found while building it.**
+- DevTools' platform fonts alone are not enough: a code point no font has (a noncharacter U+FDD1, or the
+  Kawi letter U+11F04) is drawn with the *first* shipped font's empty box and reported as that font
+  ("Inter"), never as LastResort. The check therefore also draws each grapheme cluster on a canvas in
+  its element's own font and compares the pixels with U+FDD0's (a noncharacter no font maps): identical
+  means an empty box. Seeded: both found; a Kannada line clean; Arabic (no shipped font) found as
+  drawn with Arial, not the shipped fonts.
+- Inter has glyphs in the Private Use Area (U+E000…), so a private-use character is not a missing one.
+- Cluster counts use `Intl.Segmenter` in the same Chrome: "మీకు స్వాగతం" is 5 clusters, "క్ష" one.
+- Not detectable this way: a cluster the shaper draws with a dotted circle (broken shaping inside a
+  font that has every glyph). Written down as a limit.
+
+**Line heights.** Each shipped font's box (hhea ascent + descent + gap, over units per em), measured from
+the pinned files: Inter 1.210, Oswald 1.482, Montserrat 1.219, Lora 1.280, JetBrains Mono 1.320,
+Caveat 1.260, Noto Sans Devanagari 1.304, Telugu 1.352, Tamil 1.240, Kannada 1.349, Malayalam 1.247,
+Bengali 1.325, Gujarati 1.304, Gurmukhi 1.304. Chrome counts a box past the line as overflow (a
+Devanagari word at 134 px in a 1.18 line: scrollHeight 160 against 158; Oswald at 60 px in a 1.2
+line: 80 against 72), which QG-08 reads as clipped. Each font's `line` in `engine/fonts.js` is this
+number rounded up, and a kit tile's lines are never shorter than the fonts it uses need.
+
+**The previous client reads the new manifest (EH-68 preflight).** `src/edit/runtime/manifest.js` at
+`0eb1d69` (TP3, the last committed client; byte-identical to the file TP7 leaves) opened
+`lib/editing/runtime/manifest.2026.11.1.json`, signed for the test by an ephemeral Ed25519 key, with
+no error, and `install` (unchanged since `0eb1d69`, sha256 `48802a51…`) installed its core from the
+same shape on loopback, leaving `packs/` untouched; `installPack("pack-fonts")` then installed all
+fourteen (`tests/edit-type.test.js`, ET-TY-REG-02). An older client simply ignores a pack it doesn't
+know: `packStatus` iterates its own `PACKS`.
+
+## 8. TPX-03 for TP6 (2026-11-11): can code tell a cut from a dissolve, a dip, a wipe and a zoom, and find text?
+
+Run on this Mac (darwin-arm64, macOS 27.2, Node v24.22.0, Homebrew FFmpeg 9.0.2, the runtime's Chrome
+152.0.7977.30 for caption and graphic tiles). **The references were made by Kriya itself**, so the truth
+is what Kriya placed and no one else's video was used (EB-05 is not needed for this part): scenes of
+plain colour (a soft ramp, a slow bright box, light noise, a voice of tone bursts) cut and joined by the
+Engine (`tests/edit/media/reference-made.js`) with its own six transitions, punch-ins, caption looks,
+graphics, effects and code-made beds. Six references, 24 to 34 s each, 540×960 and 960×540:
+
+| Reference | What was placed |
+| --- | --- |
+| joins | 9 joins at 0.4 s: cut, fade, dip, flash, wipe, slide, zoom, cut, fade |
+| joins2 (wide) | 9 joins at 0.6 s, under 2.39:1 bars, a 0.8 vignette and grain 20 |
+| joins3 | 9 joins, 0.2 s (the shortest Kriya makes) and 0.8 s (the longest), alternating |
+| styled | 3 slides and 4 cuts; `karaoke` captions two words a page (16 pages); a name strap and a title; two ×1.25 punch-ins; an `upbeat` bed (112 bpm) |
+| clean (wide) | 5 cuts; `clean` (outlined) captions four words a page (6 pages); one eased ×1.3 punch-in |
+| bare | 7 cuts; a `calm` bed and no voice |
+
+**Method.** Three bounded passes through a pipe, frames and samples dropped as they are read: grey
+frames 96 px on the long side at 15 a second (motion); RGB frames 480 px at 4 a second (text, colour);
+mono sound at 11,025 Hz. A join's kind is read by fitting the frames inside it to four models (a
+least-squares mix, a straight moving edge, a push, a zoom into the outgoing picture mixing to the
+incoming one); through black and through white are read from brightness alone. A punch-in is a frame
+that is the frame before it, scaled.
+
+**Joins: 46 of 46, by kind, none missed and none made up.**
+
+| Kind | Placed | Found as that kind | Found as another | Made up |
+| --- | --- | --- | --- | --- |
+| Hard cut | 19 | 19 | 0 | 0 |
+| Fade (dissolve) | 5 | 5 | 0 | 0 |
+| Dip to black | 4 | 4 | 0 | 0 |
+| Flash (through white) | 4 | 4 | 0 | 0 |
+| Wipe | 4 | 4 | 0 | 0 |
+| Slide | 7 | 7 | 0 | 0 |
+| Zoom | 3 | 3 | 0 | 0 |
+
+Precision and recall are 1.0 for every kind **on these references**, at 0.2, 0.4, 0.6 and 0.8 s. Every
+join was found within 0.07 s (one sample) of where the plan put it. The winning model left 0.1 % to
+5.7 % of the join unexplained (mean absolute difference over the difference between the two pictures);
+the next model left 2.8 % to 43 %. A zoom join is fitted as a dissolve with one more freedom, so it must
+beat the dissolve by a factor (`JOIN_FIT.zoomEdge` 0.7): real fades read 0.9 to 1.4 % as a fade and 2.8
+to 6.8 % as a zoom; real zooms read 2 to 13.6 % as a zoom and 10.5 to 57.6 % as a fade.
+
+Thresholds set from this, all in `src/edit/engine/dna2.js`: a frame is changing above a mean difference
+of 1.2 grey levels; a one-frame change of 6 or more that moves a quarter of the picture is a cut; a
+model must leave 30 % or less unexplained or the join is **unread**; darker than half of both ends is
+through black; 60 % of the way to white is through white; a scale must explain 55 % of a change to be a
+zoom; under 10 samples a second (a reference longer than 12 minutes) the kinds of joins are not read at
+all.
+
+**Found on the way, and what was done:**
+
+- A 0.6 s dip sat on black long enough to look finished, and was read as a cut and a fade. The reader
+  now holds a join open while the frame is black or white.
+- A caption page changing with a cut made the cut look gradual, and a page changing alone was a tenth of
+  the size of a cut. A join must now move a quarter of the picture; a change carried by one frame is a
+  cut whatever else moves with it.
+- A zoom join out of a letterboxed, vignetted picture brightens (the bars leave the frame) and was read
+  as a flash at the first threshold (35 % of the way to white). Raised to 60 %; a real flash at 15
+  samples a second reaches 67 % or more.
+- A scale fit is thrown by a caption changing at the same moment; each pixel's difference now counts up
+  to 24 levels.
+
+**Text regions.** Cells of 8×8 pixels where sharp vertical strokes of both polarities crowd together
+(a box's edge has one polarity and is not text), joined across a word gap.
+
+| Trait | Truth | Read |
+| --- | --- | --- |
+| Captions present | styled, clean: yes; the other four: no | 6 of 6 |
+| Caption band (top to bottom, share of height) | drawn at 0.84 to 0.88 | 0.840 to 0.883; 0.837 to 0.881 |
+| Caption height | `karaoke` 4.6 % font, `clean` 4.2 % | 4.17 %, 4.07 % (the letters measure about 0.93 of the font size) |
+| Pages a minute | 35.3 (16 in 27.2 s); 15.0 (6 in 24 s) | 35.2; 15.0 |
+| Plate | `karaoke`: a plate; `clean`: an outline, no plate | box; none |
+| Word-by-word highlight | `karaoke` yes; `clean` no | yes; no |
+| Graphics | styled: 2 (a strap lower left, a title); others 0 | 2, strap found lower left; 0 everywhere else |
+| Text where there is none (four references) | 0 regions | 0 |
+
+**Could not be read, and so is not in an Edit DNA 2 at all** (never guessed):
+
+- **Words on a caption page.** Counting gaps between words gave 3, 1 and 2 for four words (`clean`,
+  letters 11 px tall at analysis size) and 1 for two (`karaoke`). Not reliable at any size tried.
+- **An outline.** A one-pixel outline can't be told from no outline; only a plate is read. On a dark
+  picture a plate and no plate look the same, so the plate is then unread (`null`).
+- **Music's share of the time, its level under the voice, and hits that aren't speech.** These need the
+  voice apart from the rest. What is read instead: what is left in the gaps against the loud parts
+  (voice only −45 dB; voice over a bed −19 dB; a bed alone −7 dB; a bed counts above −30 dB).
+- **Faces in the shots.** The face helper reads files on disk; a reference's frames are never written.
+
+**Tempo.** Read only where tracked beats have hits on them (`pulseOf`). Eight of Kriya's ten beds
+score 0.96 to 0.99 and read within 0.1 bpm; `upbeat` under a voice scores 0.89 (112.0 read for 112);
+`calm` and `dreamy` have no drums, score 0.11 to 0.12 and are **not read**, though their tempo happened
+to come out right (79.9 for 80, 71.3 for 70). A voice alone scored 0.33 to 0.59 against a floor of 0.7:
+the margin is thin on these fixtures, whose "speech" is tone bursts.
+
+**The look.**
+
+| Trait | Plain references | With the effect |
+| --- | --- | --- |
+| Grain (mean distance of a pixel from its neighbours on flat picture, grey levels) | 0.18 to 0.26 | 3.15 (grain 20) |
+| Corner falloff | −0.02 to 0.06 | 0.43 (vignette 0.8) |
+| Bars (share of the height) | 0 | 0.252 (0.256 for 2.39:1 on 16:9) |
+
+A trait counts as there above 0.8, 0.2 and 0.04 (`PRESENT` in `core/style-brief.js`).
+
+**Punch-ins.** 3 of 3 found at the right moment; scale read as 1.25, 1.25 and 1.25 for 1.25, 1.25 and
+1.3. Whether a punch-in is eased or snapped is **not reliable** (the eased one was read as snapped):
+the field is kept but nothing uses it.
+
+**Cost.** One measure of a 27 to 34 s reference takes 1.0 to 1.5 s here (5.2 s under grain, which keeps
+every frame "changing"). Work is bounded: at most 7,200 motion frames, 1,200 detail frames and 600 s of
+sound, however long the reference. An Edit DNA 2 is about 1.8 kB of numbers and fixed words.
+
+**What this settles (EQ-19, for references Kriya makes) and what it does not.** On Kriya-made references
+every kind of join, punch-ins, caption band, size, plate, highlight and cadence, graphics, grain,
+corners, bars, a bed and a drummed tempo are read within tolerance. **Nothing here says how the reader
+does on real footage**: these pictures are clean, their joins are FFmpeg's own, and their captions are
+Kriya's. Hand-held movement, busy backgrounds, other tools' transitions, light or coloured caption
+plates and dark footage are unmeasured until EB-05's cleared set. That is why every trait carries a
+confidence, an unread join is counted as unread, and QG-16 is a note.
+
+**Also found (existing behaviour, not TP6's, not changed): EH-88.** Two caption pages with the same
+words and look are drawn once: the second never shows. Seen while building these references (every shot
+said "Start small keep going", and only the first shot was captioned); with different words on every
+page, all show. Recorded in TOP_TIER_FORENSIC_AUDIT §4.1.

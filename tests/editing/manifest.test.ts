@@ -8,7 +8,13 @@ vi.mock("server-only", () => ({}))
 
 import { GET } from "@/app/api/harness/v1/editing/manifest/route"
 import { SETTINGS } from "@/lib/config"
-import { CHANNELS, RUNTIMES, servedManifest, signManifest } from "@/lib/editing/manifest"
+import {
+  CHANNELS,
+  manifestText,
+  RUNTIMES,
+  servedManifest,
+  signManifest,
+} from "@/lib/editing/manifest"
 import {
   DaemonHelloRequest,
   EditingManifestResponse,
@@ -169,6 +175,86 @@ describe("ET-API-04: only approved, pinned versions", () => {
     ).toBe(false)
   })
 
+  it("every channel names a signed version, so an unsigned one is never served", () => {
+    for (const version of Object.values(CHANNELS))
+      expect(RUNTIMES[version].signature).toMatch(/^[A-Za-z0-9+/]{86}==$/)
+  })
+})
+
+// TP7 (EDD-67, EH-68): fonts ship as a capability pack in a new version; the signed
+// 2026.11.0 stays what every channel serves until the owner signs 2026.11.1 offline.
+describe("ET-TY-REG-02's server half, ET-LIC-01: the font pack", () => {
+  const before = RUNTIMES["2026.11.0"].manifest
+  const after = RUNTIMES["2026.11.1"].manifest as unknown as {
+    version: string
+    platforms: Record<
+      string,
+      { packs?: Record<string, { artifacts: Record<string, unknown>[] }> }
+    >
+  }
+
+  it("2026.11.1 is 2026.11.0 plus pack-fonts and its version, nothing else moved", () => {
+    const copy = structuredClone(after)
+    expect(Object.keys(copy.platforms)).toEqual(Object.keys(before.platforms))
+    for (const platform of Object.values(copy.platforms)) {
+      expect(Object.keys(platform.packs ?? {})).toEqual(["pack-fonts"])
+      delete platform.packs
+    }
+    expect({ ...copy, version: before.version }).toEqual(before)
+    expect(after.version).toBe("2026.11.1")
+    expect(RUNTIMES["2026.11.1"].signature).toBeNull()
+    expect(CHANNELS).toEqual({ stable: "2026.11.0", beta: "2026.11.0" })
+  })
+
+  it("each font is pinned: a commit, a sha256, a size, OFL-1.1, a plain file name", () => {
+    const fonts = after.platforms["darwin-arm64"].packs!["pack-fonts"].artifacts
+    expect(fonts.length).toBe(14)
+    const ids = fonts.map((font) => font.id as string)
+    expect(new Set(ids).size).toBe(ids.length)
+    for (const font of fonts) {
+      expect(font.id).toMatch(/^font-[a-z0-9-]+$/)
+      expect(font.url).toMatch(
+        /^https:\/\/raw\.githubusercontent\.com\/google\/fonts\/[0-9a-f]{40}\/ofl\//
+      )
+      expect(font.sha256).toMatch(/^[0-9a-f]{64}$/)
+      expect(font.bytes).toBeGreaterThan(10_000)
+      expect(font.unpack).toBe("none")
+      expect(font.entry).toMatch(/^[A-Za-z0-9]+\.ttf$/)
+      expect(font.licence).toBe("OFL-1.1")
+      expect(font.version).toMatch(/^\d+\.\d+$/)
+    }
+    for (const script of [
+      "devanagari",
+      "telugu",
+      "tamil",
+      "kannada",
+      "malayalam",
+      "bengali",
+      "gujarati",
+      "gurmukhi",
+    ])
+      expect(ids).toContain(`font-noto-sans-${script}`)
+  })
+
+  it("an ephemeral key's signature verifies over exactly the 2026.11.1 bytes", () => {
+    const { publicKey, privateKey } = generateKeyPairSync("ed25519")
+    const pem = privateKey.export({ type: "pkcs8", format: "pem" }).toString()
+    const text = manifestText(RUNTIMES["2026.11.1"].manifest)
+    const signature = signManifest(text, pem)
+    expect(EditingManifestResponse.safeParse({ manifest: text, signature }).success).toBe(
+      true
+    )
+    expect(
+      verify(null, Buffer.from(text), publicKey, Buffer.from(signature, "base64"))
+    ).toBe(true)
+    const signedBefore = manifestText(before)
+    expect(
+      verify(null, Buffer.from(signedBefore), publicKey, Buffer.from(signature, "base64"))
+    ).toBe(false)
+  })
+})
+
+describe("ET-API-04, continued", () => {
   it("no private key sits in the repository's editing code", () => {
     const dir = path.join(ROOT, "lib/editing")
     const files = fs.readdirSync(dir, { recursive: true, encoding: "utf8" })

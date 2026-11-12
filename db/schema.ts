@@ -2742,7 +2742,9 @@ export const editQuestions = kriya.table("edit_questions", {
   userId: uuid().notNull(),
   deviceId: uuid().notNull(),
   jobId: uuid(),
-  kind: text({ enum: ["take", "hook", "file", "name", "taste", "found"] }).notNull(),
+  kind: text({
+    enum: ["take", "hook", "file", "name", "taste", "found", "order"],
+  }).notNull(),
   prompt: text().notNull(),
   options: jsonb().notNull(),
   defaultOption: smallint(),

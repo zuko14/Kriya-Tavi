@@ -169,6 +169,7 @@ describe("HT-CC-DB-03: the migration rolls back and forward", () => {
       "create schema if not exists supabase_migrations; create table if not exists supabase_migrations.schema_migrations (version text primary key)"
     )
     // Track E references the Control Center: first out, last in
+    await db.exec(read("rollback", "20271104000000_editing_order.down.sql"))
     await db.exec(read("rollback", "20271103000000_editing_review.down.sql"))
     await db.exec(read("rollback", "20271102000000_editing_tables.down.sql"))
     await db.exec(read("rollback", "20271101000000_harness_dispatch_edit.down.sql"))
@@ -179,5 +180,6 @@ describe("HT-CC-DB-03: the migration rolls back and forward", () => {
     await db.exec(read("migrations", "20271101000000_harness_dispatch_edit.sql"))
     await db.exec(read("migrations", "20271102000000_editing_tables.sql"))
     await db.exec(read("migrations", "20271103000000_editing_review.sql"))
+    await db.exec(read("migrations", "20271104000000_editing_order.sql"))
   })
 })

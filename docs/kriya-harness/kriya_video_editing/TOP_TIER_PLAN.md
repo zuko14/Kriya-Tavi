@@ -241,6 +241,12 @@ headless Chrome on an isolated home with a fake Kriya. No test calls a real mode
 | **ET-TP-REG-03** | A job recorded before TP1 replays to the end: no slot is asked that its recording lacks (EH-58) |
 | **ET-TP-REG-04** | A project with a stored storyboard, made by a Tavi job, a watch folder, the command line and the bench: each makes what it makes today (EH-63) |
 | ET-SD-01…06 | Effects' peaks; beds arranged to joins; ambience from the take's own quiet; beat joins never move a word; J and L cuts; determinism |
+| ET-MG2-01 | Custom motion only with `editing.customMotion` on, an OS that confines Chrome, and `balanced` listed by `GET /models`; otherwise no call at all and the nearest kit graphic named; off, the console's schema and prompt are the objects they were (EH-65) |
+| ET-MG2-02 | A model's design is data (CSS, allow-listed elements, animations as keyframes): no script, handler, address, import, font, clock, randomness or GSAP passes; Kriya's CSP is first in `<head>` and the whole document is linted (`customComposition`) |
+| ET-MG2-03 | Every word on screen arrives through a slot, grounded in the speaker's or the person's words, escaped by code (ET-SEC-02) |
+| ET-MG2-04 | Two calls at most (an answer and one repair), through the Governor and counted; a refused tier is answered once; then a clean refusal and the nearest kit graphic |
+| ET-MG2-05 | The tile renders confined and passes QG-08…11 before it is offered; the card previews it sandboxed; it lands in the project only on Approve, can be placed again with no call, and is drawn only while the switch is on (a note otherwise) |
+| ET-PT-01…03 | A drawn box, ring or arrow: checked by the Host (whole thousandths inside the frame, whole flicks); reaches a callout, a region blur, a mask and a zoom as typed operations placed by code; the model never sees a coordinate |
 
 ## 6. Bench-A: can a person say it once?
 

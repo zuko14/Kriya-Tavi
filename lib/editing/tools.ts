@@ -12,6 +12,7 @@ import {
   harnessDeviceState as state,
 } from "@/db/schema"
 import { FOREIGN, type ToolEnv } from "@/lib/agent/tools"
+import { getSetting } from "@/lib/config"
 import { DaemonProject } from "@/lib/harness/contract"
 import { ONLINE_MS, queueEdit } from "@/lib/harness/control"
 
@@ -28,7 +29,7 @@ export function createEditTools(env: ToolEnv) {
   return {
     video_edit_places: tool({
       description:
-        "List the person's computers that are online and allow editing from Kriya, with the folders each offers. Call this first: a folder must come from here, never from a path anyone typed. It lists no files.",
+        "List the person's computers that are online and allow editing from Kriya, with the folders each offers. Call this first: a folder must come from here, never from a path anyone typed. It lists no files. A folder may list its clips by number and the person's own label, as that computer reports them.",
       inputSchema: z.object({}),
       execute: async () => {
         const rows = await withUser(env.userId, (tx) =>
@@ -44,6 +45,9 @@ export function createEditTools(env: ToolEnv) {
             .innerJoin(state, eq(state.deviceId, harnessDevices.id))
             .where(isNull(harnessDevices.revokedAt))
         )
+        // TP11: each folder's clips (number and the person's label), only with editing.assembly on too;
+        // they come from the computer, so they are data under FOREIGN, never instructions
+        const order = (await getSetting("editing.assembly")) === "on"
         const computers = rows
           .filter(
             (r) =>
@@ -56,7 +60,17 @@ export function createEditTools(env: ToolEnv) {
             name: r.name,
             folders: (r.projects ?? []).flatMap((p) => {
               const ok = DaemonProject.safeParse(p)
-              return ok.success ? [{ project: ok.data.id, name: ok.data.name }] : []
+              if (!ok.success) return []
+              const clips =
+                order && ok.data.clips?.length
+                  ? {
+                      clips: ok.data.clips.map((c) => ({
+                        n: c.n,
+                        ...(c.label && { label: c.label }),
+                      })),
+                    }
+                  : {}
+              return [{ project: ok.data.id, name: ok.data.name, ...clips }]
             }),
           }))
         return computers.length
@@ -70,7 +84,7 @@ export function createEditTools(env: ToolEnv) {
 
     video_edit_start: tool({
       description:
-        "Start one edit on the person's computer: their footage stays there, and only a small preview comes back. Say in the brief which recording, in words, and what they want. The person approves this exact call. When it finishes, a card appears in this thread by itself, so don't wait for it or check repeatedly.",
+        "Start one edit on the person's computer: their footage stays there, and only a small preview comes back. Say in the brief which recording, in words, and what they want. When the folder lists clips, the brief may name an order of them by those numbers or labels (\"clip 2, then clip 1\"); the computer asks the person if it isn't sure. The person approves this exact call. When it finishes, a card appears in this thread by itself, so don't wait for it or check repeatedly.",
       inputSchema: z.object({
         device: z.uuid().describe("A computer from video_edit_places"),
         project: z

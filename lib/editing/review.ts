@@ -34,7 +34,7 @@ export async function askQuestion(
   device: Device,
   jobId: string,
   body: {
-    kind: "take" | "hook" | "file" | "name" | "taste"
+    kind: "take" | "hook" | "file" | "name" | "taste" | "order"
     prompt: string
     options: { label: string; clip?: string }[]
     defaultOption: number
