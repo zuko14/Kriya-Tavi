@@ -1,0 +1,32 @@
+{
+  "id": "kriya-role-sdet",
+  "role": "sdet",
+  "owns": [],
+  "reads": [],
+  "gates": ["G-FLAKE"],
+  "detectors": [
+    {
+      "id": "SD-SLEEP",
+      "severity": "error"
+    },
+    {
+      "id": "SD-XPATH",
+      "severity": "warn"
+    }
+  ],
+  "judgement": [
+    {
+      "id": "runtime",
+      "ask": "Does the suite stay within the runtime ceiling the plan states?",
+      "severity": "minor"
+    }
+  ],
+  "maxPromptChars": 4000,
+  "globs": [
+    "**/playwright.config.*",
+    "**/vitest.config.*",
+    "**/jest.config.*",
+    "**/fixtures/**",
+    "**/factories/**"
+  ]
+}

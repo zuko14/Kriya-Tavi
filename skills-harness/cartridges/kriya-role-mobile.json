@@ -1,0 +1,26 @@
+{
+  "id": "kriya-role-mobile",
+  "role": "mobile",
+  "owns": [],
+  "reads": ["api", "design_tokens", "component_states"],
+  "gates": ["G-SIM", "G-UI", "G-DETECT"],
+  "detectors": [
+    {
+      "id": "MB-SYNC-IO",
+      "severity": "error"
+    },
+    {
+      "id": "MB-HARDCODE-DIM",
+      "severity": "warn"
+    }
+  ],
+  "judgement": [
+    {
+      "id": "thumb",
+      "ask": "Are touch targets at least 44 points, and does every gesture have a visible alternative?",
+      "severity": "major"
+    }
+  ],
+  "maxPromptChars": 4000,
+  "globs": ["**/*.swift", "**/*.kt", "**/*.dart", "ios/**", "android/**"]
+}

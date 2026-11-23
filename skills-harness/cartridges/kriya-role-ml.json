@@ -1,0 +1,26 @@
+{
+  "id": "kriya-role-ml",
+  "role": "ml",
+  "owns": [],
+  "reads": [],
+  "gates": ["G-EVAL", "G-DETECT"],
+  "detectors": [
+    {
+      "id": "ML-FIT-TEST",
+      "severity": "error"
+    },
+    {
+      "id": "ML-SEED",
+      "severity": "warn"
+    }
+  ],
+  "judgement": [
+    {
+      "id": "honest-report",
+      "ask": "Does the report state the comparison, its interval and what the metric misses?",
+      "severity": "major"
+    }
+  ],
+  "maxPromptChars": 4000,
+  "globs": ["**/*.ipynb", "**/train*.py", "**/eval*.py", "**/prompts/**"]
+}

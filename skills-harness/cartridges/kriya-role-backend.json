@@ -1,0 +1,45 @@
+{
+  "id": "kriya-role-backend",
+  "role": "backend",
+  "owns": [],
+  "reads": ["api", "schema", "auth_matrix", "threat_model"],
+  "gates": ["G-API", "G-STACK", "G-DETECT"],
+  "detectors": [
+    {
+      "id": "BE-SQL-INTERP",
+      "severity": "error"
+    },
+    {
+      "id": "BE-EMPTY-CATCH",
+      "severity": "error"
+    },
+    {
+      "id": "BE-NO-TIMEOUT",
+      "severity": "warn"
+    },
+    {
+      "id": "BE-LOG-SECRET",
+      "severity": "error"
+    }
+  ],
+  "judgement": [
+    {
+      "id": "typed-errors",
+      "ask": "Are error responses typed and free of internal details?",
+      "severity": "major"
+    },
+    {
+      "id": "layering",
+      "ask": "Do business rules live in the service layer, not in route handlers?",
+      "severity": "minor"
+    }
+  ],
+  "maxPromptChars": 4000,
+  "globs": [
+    "**/api/**",
+    "**/routes/**",
+    "**/server/**",
+    "**/handlers/**",
+    "**/services/**"
+  ]
+}

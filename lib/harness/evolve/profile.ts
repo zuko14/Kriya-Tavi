@@ -13,14 +13,22 @@ import { BASELINE, HarnessProfile } from "./profile-schema"
 export { BASELINE, HarnessProfile }
 
 const KEYS = Object.keys(BASELINE).sort() as (keyof HarnessProfile)[]
-// Fields added after profiles were first recorded
-const ADDED = new Set<string>([
-  "loopGuard",
-  "strictLoop",
-  "defensive",
-  "recon",
-  "jitTools",
-])
+// Fields added after profiles were first recorded, each with the value that
+// leaves it out of the id (its default), so recorded ids and lessons stay valid
+const ADDED: Partial<Record<keyof HarnessProfile, unknown>> = {
+  loopGuard: false,
+  strictLoop: false,
+  defensive: false,
+  recon: false,
+  jitTools: false,
+  // Harness 2.0 W10
+  cartridges: false,
+  orchestra: false,
+  gates: false,
+  critic: false,
+  milestones: false,
+  escalateAfter: 2,
+}
 
 /**
  * A content hash of the profile: the same settings give the same id. A field
@@ -29,7 +37,9 @@ const ADDED = new Set<string>([
 export const profileId = (p: HarnessProfile) =>
   createHash("sha256")
     .update(
-      JSON.stringify(KEYS.filter((k) => !ADDED.has(k) || p[k]).map((k) => [k, p[k]]))
+      JSON.stringify(
+        KEYS.filter((k) => !(k in ADDED) || p[k] !== ADDED[k]).map((k) => [k, p[k]])
+      )
     )
     .digest("hex")
     .slice(0, 12)
@@ -52,12 +62,19 @@ export const toEnv = (p: HarnessProfile): Record<string, string> => ({
   ...(p.defensive && { KRIYA_DEFENSIVE: "on" }),
   ...(p.recon && { KRIYA_RECON: "on" }),
   ...(p.jitTools && { KRIYA_JIT_TOOLS: "on" }),
+  ...(p.cartridges && { KRIYA_CARTRIDGES: "on" }),
+  ...(p.orchestra && { KRIYA_ORCHESTRA: "on" }),
+  ...(p.gates && { KRIYA_GATES: "on" }),
+  ...(p.critic && { KRIYA_CRITIC: "on" }),
+  ...(p.milestones && { KRIYA_MILESTONES: "on" }),
+  // The client reads it in the loop (src/orchestra.js escalateAfterFromEnv)
+  ...(p.escalateAfter !== 2 && { KRIYA_ESCALATE_AFTER: String(p.escalateAfter) }),
 })
 
 // Flags beat the environment in the client (switchEnv), so a run pinned to
 // a profile must not carry them
 export const SWITCH_FLAG =
-  /^--(no-)?(loop|loop-v2|loop-guard|strict-loop|defensive|recon|jit-tools|budget|anchor)$/
+  /^--(no-)?(loop|loop-v2|loop-guard|strict-loop|defensive|recon|jit-tools|budget|anchor|cartridges|orchestra|gates|critic|milestones)$/
 
 /** The fields two profiles differ in, with both values */
 export const profileDiff = (a: HarnessProfile, b: HarnessProfile) =>

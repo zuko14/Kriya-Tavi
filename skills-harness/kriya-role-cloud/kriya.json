@@ -1,0 +1,49 @@
+{
+  "id": "kriya-role-cloud",
+  "name": "Cloud engineer",
+  "description": "Role cartridge for infrastructure steps: infrastructure as code, private data tiers, least-privilege identities, encryption, a spend ceiling and a stated blast radius.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["engineering", "role"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "cloud",
+      "aws",
+      "gcp",
+      "azure",
+      "terraform",
+      "opentofu",
+      "pulumi",
+      "infrastructure",
+      "iam",
+      "vpc"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the project's confirmed check and the Kriya gates this cartridge names, from exit codes; the cartridge adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 4000
+  },
+  "evals": [
+    {
+      "ask": "Write the Terraform for a private database on AWS",
+      "expect": "activate"
+    },
+    {
+      "ask": "What is the capital of Karnataka?",
+      "expect": "skip"
+    },
+    {
+      "ask": "Translate this sentence into Hindi",
+      "expect": "skip"
+    }
+  ]
+}

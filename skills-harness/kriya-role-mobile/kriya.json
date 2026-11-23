@@ -1,0 +1,48 @@
+{
+  "id": "kriya-role-mobile",
+  "name": "Mobile engineer",
+  "description": "Role cartridge for mobile steps: local-first writes with an idempotent sync queue, lifecycle-aware code, safe areas, permission-denied paths and nothing slow on the main thread.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["engineering", "role"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "mobile",
+      "ios",
+      "android",
+      "react native",
+      "flutter",
+      "swiftui",
+      "kotlin",
+      "app store",
+      "offline"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the project's confirmed check and the Kriya gates this cartridge names, from exit codes; the cartridge adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 4000
+  },
+  "evals": [
+    {
+      "ask": "Make the iOS app save notes while offline",
+      "expect": "activate"
+    },
+    {
+      "ask": "What is the capital of Karnataka?",
+      "expect": "skip"
+    },
+    {
+      "ask": "Translate this sentence into Hindi",
+      "expect": "skip"
+    }
+  ]
+}

@@ -15,6 +15,7 @@ import { checkEnvironment } from "@/lib/env"
 import { log } from "@/lib/log"
 import { claimFile, extractFile, modelReader } from "@/lib/extract"
 import { runFactJob } from "@/lib/facts"
+import { scoutStep } from "@/lib/harness/scout/run"
 import { guardCanary } from "@/lib/improve"
 import { recheckDeliveries } from "@/lib/delivery/recheck"
 import { roomAgentsOn } from "@/lib/rooms/agents"
@@ -140,6 +141,10 @@ async function janitor() {
   await privileged.delete(taskEvents).where(inArray(taskEvents.taskId, finished))
   await privileged.execute(
     sql`delete from kriya.rate_limits where window_start < now() - interval '1 day'`
+  )
+  // Harness 2.0 Scout: changed paragraphs are kept 30 days (upgrade_2.0/SELF_EVOLUTION.md §2.3)
+  await privileged.execute(
+    sql`update kriya.harness_scout_snapshots set changed_text = null where changed_text is not null and fetched_at < now() - interval '30 days'`
   )
   // Finished maintenance jobs are kept a week (DATA_MODEL §5)
   await privileged.execute(
@@ -269,6 +274,15 @@ async function schedulerLoop() {
       }
     } catch (error) {
       log.error("radar or facts step failed", { error })
+    }
+    // Harness 2.0 W7: the Scout, one unit of work a tick, never longer than a minute here
+    try {
+      if ((await getSetting("harness.scout")) === "on") {
+        const outcome = await scoutStep()
+        if (outcome !== "idle" && outcome !== "off") log.info("scout", { outcome })
+      }
+    } catch (error) {
+      log.error("scout step failed", { error })
     }
     // A12: a canary whose guard metrics worsen is rolled back (AD-25)
     try {

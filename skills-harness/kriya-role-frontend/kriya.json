@@ -1,0 +1,49 @@
+{
+  "id": "kriya-role-frontend",
+  "name": "Frontend engineer",
+  "description": "Role cartridge for frontend steps: every screen as a state machine with five states, design tokens only, keyboard access, no layout shift, rendered and checked at phone and desktop widths.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["engineering", "role"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "frontend",
+      "front end",
+      "component",
+      "react",
+      "vue",
+      "svelte",
+      "css",
+      "ui",
+      "page",
+      "screen"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the project's confirmed check and the Kriya gates this cartridge names, from exit codes; the cartridge adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 4000
+  },
+  "evals": [
+    {
+      "ask": "Build the settings page component in React",
+      "expect": "activate"
+    },
+    {
+      "ask": "What is the capital of Karnataka?",
+      "expect": "skip"
+    },
+    {
+      "ask": "Translate this sentence into Hindi",
+      "expect": "skip"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "id": "kriya-role-qa",
+  "name": "QA engineer",
+  "description": "Role cartridge for test-design steps: tests from the specification, equivalence classes and boundaries, interrupted journeys, one named test per acceptance criterion.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["engineering", "role"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "qa",
+      "test cases",
+      "test plan",
+      "acceptance criteria",
+      "edge cases",
+      "boundary",
+      "regression",
+      "test coverage"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the project's confirmed check and the Kriya gates this cartridge names, from exit codes; the cartridge adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 4000
+  },
+  "evals": [
+    {
+      "ask": "Write test cases for every acceptance criterion and edge cases",
+      "expect": "activate"
+    },
+    {
+      "ask": "What is the capital of Karnataka?",
+      "expect": "skip"
+    },
+    {
+      "ask": "Translate this sentence into Hindi",
+      "expect": "skip"
+    }
+  ]
+}

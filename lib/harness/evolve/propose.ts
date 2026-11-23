@@ -1,4 +1,5 @@
 import type { TaskResult } from "../bench/run"
+import { ROLE_SEEDS } from "../bench/seed"
 import { HarnessProfile, profileDiff, profileId } from "./profile"
 
 // KRHE's Propose stage (RECURSIVE_HARNESS_EVOLUTION.md §4). Candidates are
@@ -33,7 +34,21 @@ type Signals = {
   blocked: number
   falseVerified: number
   heavyContext: number
+  // Harness 2.0 W10: the same, on the per-role seed sets (`--level role-<role>`)
+  // only, so evidence from the other levels proposes exactly what it did before
+  role: {
+    failed: number
+    passed: number
+    blocked: number
+    timedOut: number
+    unfinished: number
+    falseVerified: number
+  }
 }
+
+const ROLE_TASKS = new Set(
+  Object.values(ROLE_SEEDS).flatMap((tasks) => tasks.map((t) => t.id))
+)
 
 const MOVES: Move[] = [
   {
@@ -121,11 +136,79 @@ const MOVES: Move[] = [
     signal: (s) => (s.costly ? s.passed : 0),
     overhead: "none; fewer schema tokens when on",
   },
+  // Harness 2.0 (W10): the workforce switches and escalateAfter, each one
+  // factor, each on top of the loop. Their signals come only from role-set
+  // runs; the gate (paired sign test) decides per role, run on that role's set
+  {
+    name: "cartridges-on",
+    apply: (p) => (p.loop ? { ...p, cartridges: true } : p),
+    hypothesis:
+      "A builder with its discipline's guidance fails fewer of that role's tasks",
+    signal: (s) => s.role.failed * 2,
+    overhead:
+      "the cartridge's text in each builder's prompt (cached across a role's builders)",
+  },
+  {
+    name: "gates-on",
+    apply: (p) => (p.loop ? { ...p, gates: true } : p),
+    hypothesis:
+      "Deterministic gates after the person's check catch passes the hidden grader fails",
+    signal: (s) => s.role.falseVerified * 4,
+    overhead: "the gates' runs after each passing check",
+  },
+  {
+    name: "orchestra-on",
+    apply: (p) => (p.loop ? { ...p, orchestra: true } : p),
+    hypothesis:
+      "Builders on the worker tier with the head taking over when stuck pass as much for less",
+    signal: (s) => s.role.blocked * 2 + (s.costly ? s.role.passed : 0),
+    overhead: "head-tier attempts on stuck steps; worker-tier builders otherwise",
+  },
+  {
+    name: "escalate-earlier",
+    // Only with the orchestra: without it escalateAfter changes nothing
+    apply: (p) =>
+      p.orchestra && p.escalateAfter > 0
+        ? { ...p, escalateAfter: p.escalateAfter - 1 }
+        : p,
+    hypothesis:
+      "The head tier taking over one attempt sooner turns blocked role steps into passes",
+    signal: (s) => s.role.blocked * 3 + s.role.timedOut * 2,
+    overhead: "more head-tier attempts: more spend per hard step",
+  },
+  {
+    name: "escalate-later",
+    apply: (p) =>
+      p.orchestra && p.escalateAfter < 4
+        ? { ...p, escalateAfter: p.escalateAfter + 1 }
+        : p,
+    hypothesis:
+      "The worker tier keeping one more attempt costs less for the same role passes",
+    signal: (s) => (s.costly && s.role.failed === 0 ? s.role.passed : 0),
+    overhead: "fewer head-tier attempts; a stuck step may take one attempt longer",
+  },
+  {
+    name: "critic-on",
+    apply: (p) => (p.loop ? { ...p, critic: true } : p),
+    hypothesis: "A read-only review after a pass earns polish the grader rewards",
+    // Unmeasured: offered only when nothing else is
+    signal: () => 0,
+    overhead: "one head-tier review per passed step; at most one polish attempt",
+  },
+  {
+    name: "milestones-on",
+    apply: (p) => (p.loop ? { ...p, milestones: true } : p),
+    hypothesis: "Long role tasks left unfinished finish as a ledger of bounded plans",
+    signal: (s) => s.role.unfinished * 2,
+    overhead: "one more tool for the head; a milestone file per project",
+  },
 ]
 
 function signals(reports: Report[]): Signals {
   const rows = reports.flatMap((r) => r.results.filter((t) => t.status !== "invalid"))
   const failed = rows.filter((t) => t.status === "failed")
+  const roleRows = rows.filter((t) => ROLE_TASKS.has(t.id))
+  const roleFailed = roleRows.filter((t) => t.status === "failed")
   const costs = rows
     .map((t) => t.costMicroInr)
     .filter((c): c is bigint => typeof c === "bigint")
@@ -142,6 +225,14 @@ function signals(reports: Report[]): Signals {
     falseVerified: failed.filter((t) => t.trajectory?.status === "verified").length,
     // shortcut: a fixed line for a builder's peak context; per-model limits come with real runs
     heavyContext: rows.filter((t) => (t.trajectory?.peakTokens ?? 0) > 100_000).length,
+    role: {
+      failed: roleFailed.length,
+      passed: roleRows.length - roleFailed.length,
+      blocked: roleRows.filter((t) => (t.trajectory?.blocked ?? 0) > 0).length,
+      timedOut: roleFailed.filter((t) => t.agentTimedOut).length,
+      unfinished: roleRows.filter((t) => (t.trajectory?.open ?? 0) > 0).length,
+      falseVerified: roleFailed.filter((t) => t.trajectory?.status === "verified").length,
+    },
   }
 }
 

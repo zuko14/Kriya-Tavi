@@ -1,0 +1,36 @@
+{
+  "id": "kriya-role-devops",
+  "role": "devops",
+  "owns": [],
+  "reads": ["schema"],
+  "gates": ["G-IAC", "G-SECRETS", "G-STACK"],
+  "detectors": [
+    {
+      "id": "OPS-LATEST",
+      "severity": "error"
+    },
+    {
+      "id": "OPS-SECRET-ENV",
+      "severity": "error"
+    },
+    {
+      "id": "OPS-MIGRATE-LOCK",
+      "severity": "warn"
+    }
+  ],
+  "judgement": [
+    {
+      "id": "rollback",
+      "ask": "Is the rollback one command, and is it written next to the change?",
+      "severity": "major"
+    }
+  ],
+  "maxPromptChars": 4000,
+  "globs": [
+    "**/Dockerfile",
+    "**/*.dockerfile",
+    ".github/workflows/**",
+    "**/docker-compose*.yml",
+    "**/render.yaml"
+  ]
+}

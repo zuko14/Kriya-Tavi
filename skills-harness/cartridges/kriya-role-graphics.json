@@ -1,0 +1,56 @@
+{
+  "id": "kriya-role-graphics",
+  "role": "graphics",
+  "owns": [],
+  "reads": ["scene_direction", "design_tokens"],
+  "gates": ["G-3D", "G-UI", "G-A11Y", "G-DETECT"],
+  "detectors": [
+    {
+      "id": "GX-COLOR",
+      "severity": "error"
+    },
+    {
+      "id": "GX-ALLOC-LOOP",
+      "severity": "warn"
+    },
+    {
+      "id": "GX-NO-DISPOSE",
+      "severity": "warn"
+    },
+    {
+      "id": "GX-DPR",
+      "severity": "error"
+    },
+    {
+      "id": "FE-ASSET-LICENCE",
+      "severity": "error"
+    }
+  ],
+  "judgement": [
+    {
+      "id": "focal-point",
+      "ask": "Is there one clear focal point, and does the light reveal its form?",
+      "severity": "major"
+    },
+    {
+      "id": "materials",
+      "ask": "Do the materials read as their substance, and does motion have weight (eased, no linear snaps)?",
+      "severity": "major"
+    },
+    {
+      "id": "not-an-example",
+      "ask": "Is the loading moment designed, and does nothing look like an unmodified example scene?",
+      "severity": "minor"
+    }
+  ],
+  "maxPromptChars": 4000,
+  "globs": [
+    "**/*.glsl",
+    "**/*.frag",
+    "**/*.vert",
+    "**/scene/**",
+    "**/three/**",
+    "**/*.gltf",
+    "**/*.glb"
+  ]
+}

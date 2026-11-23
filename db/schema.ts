@@ -599,6 +599,8 @@ export const resourceUsage = kriya.table("resource_usage", {
       "flow_design",
       // Editing Studio previews kept in Storage (track E)
       "edit_preview_bytes",
+      // Harness 2.0 Scout model calls (harness.scout, upgrade_2.0/SELF_EVOLUTION.md §5)
+      "scout_model",
     ],
   }).notNull(),
   quantity: micro().notNull(),
@@ -2269,6 +2271,171 @@ export const harnessLiveEvents = kriya.table(
     at: at().notNull(),
   },
   (table) => [primaryKey({ columns: [table.sessionId, table.seq] })]
+)
+
+/* ──────────── Harness 2.0 Scout (W7, upgrade_2.0/SELF_EVOLUTION.md) ──────────── */
+
+export const SCOUT_DISCIPLINES = [
+  "frontend",
+  "designer",
+  "backend",
+  "fullstack",
+  "mobile",
+  "game",
+  "devops",
+  "cloud",
+  "systems",
+  "data",
+  "ml",
+  "security",
+  "qa",
+  "sdet",
+  "database",
+] as const
+export const SCOUT_SOURCE_KINDS = [
+  "changelog",
+  "advisory",
+  "standard",
+  "paper_feed",
+  "guideline",
+] as const
+export const SCOUT_FINDING_KINDS = [
+  "practice",
+  "deprecation",
+  "vulnerability_class",
+  "tool_change",
+  "idea",
+] as const
+
+export const harnessScoutSources = kriya.table("harness_scout_sources", {
+  id: uuid().primaryKey().defaultRandom(),
+  discipline: text({ enum: SCOUT_DISCIPLINES }).notNull(),
+  url: text().notNull().unique(),
+  kind: text({ enum: SCOUT_SOURCE_KINDS }).notNull(),
+  active: boolean().notNull().default(true),
+  lastHash: text(),
+  lastParagraphs: text().array().notNull().default([]),
+  lastFetchedAt: at(),
+  createdBy: uuid(),
+  createdAt: createdAt(),
+})
+
+export const harnessScoutRuns = kriya.table("harness_scout_runs", {
+  id: uuid().primaryKey().defaultRandom(),
+  status: text({ enum: ["running", "done", "failed", "cap_reached", "frozen"] })
+    .notNull()
+    .default("running"),
+  startedAt: createdAt(),
+  finishedAt: at(),
+  sourcesFetched: integer().notNull().default(0),
+  findings: integer().notNull().default(0),
+  error: text(),
+})
+
+export const harnessScoutSnapshots = kriya.table(
+  "harness_scout_snapshots",
+  {
+    runId: uuid().notNull(),
+    sourceId: uuid().notNull(),
+    hash: text(),
+    changedText: text(),
+    stage: text({ enum: ["fetched", "unchanged", "distilled", "failed", "skipped"] })
+      .notNull()
+      .default("fetched"),
+    fetchedAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.runId, t.sourceId] })]
+)
+
+export const harnessScoutFindings = kriya.table("harness_scout_findings", {
+  id: uuid().primaryKey().defaultRandom(),
+  runId: uuid().notNull(),
+  sourceId: uuid().notNull(),
+  discipline: text().notNull(),
+  kind: text({ enum: SCOUT_FINDING_KINDS }).notNull(),
+  claim: text().notNull(),
+  quote: text().notNull(),
+  quoteHash: text().notNull(),
+  firstSeenAt: createdAt(),
+  confirmedAt: at(),
+  corroborated: boolean().notNull().default(false),
+  status: text({ enum: ["new", "confirmed", "drafted", "idea", "dropped"] })
+    .notNull()
+    .default("new"),
+})
+
+export const HARNESS_CANDIDATE_STATUSES = [
+  "discarded",
+  "awaiting_bench",
+  "benched",
+  "proposed",
+  "held",
+  "rejected",
+  "approved",
+] as const
+
+// Harness 2.0 W9: a linted replacement for one role cartridge (SELF_EVOLUTION §2–4)
+export const harnessCartridgeCandidates = kriya.table("harness_cartridge_candidates", {
+  id: uuid().primaryKey().defaultRandom(),
+  cartridgeId: text().notNull(),
+  baseVersion: text().notNull(),
+  body: text().notNull(),
+  judgement: jsonb()
+    .$type<{ id: string; ask: string; severity: "major" | "minor" }[]>()
+    .notNull()
+    .default([]),
+  addedGates: text().array().notNull().default([]),
+  addedDetectors: text().array().notNull().default([]),
+  addedKeywords: text().array().notNull().default([]),
+  diff: text().notNull(),
+  bodySha256: text().notNull(),
+  findingIds: uuid().array().notNull(),
+  lint: jsonb().$type<unknown>().notNull(),
+  status: text({ enum: HARNESS_CANDIDATE_STATUSES }).notNull(),
+  verdict: jsonb().$type<unknown>(),
+  evidence: jsonb().$type<unknown>(),
+  decidedBy: uuid(),
+  decidedAt: at(),
+  reason: text(),
+  createdAt: createdAt(),
+})
+
+export const HARNESS_VERSION_STATUSES = [
+  "approved",
+  "canary",
+  "active",
+  "rolled_back",
+  "superseded",
+] as const
+
+// Harness 2.0 W11: an approved candidate as an immutable, servable version
+export const harnessCartridgeVersions = kriya.table("harness_cartridge_versions", {
+  id: uuid().primaryKey().defaultRandom(),
+  cartridgeId: text().notNull(),
+  version: text().notNull(),
+  candidateId: uuid().notNull().unique(),
+  body: text().notNull(),
+  manifest: jsonb().$type<Record<string, unknown>>().notNull(),
+  status: text({ enum: HARNESS_VERSION_STATUSES }).notNull().default("approved"),
+  canaryPct: integer().notNull().default(0),
+  createdAt: createdAt(),
+  activatedAt: at(),
+})
+
+// Counts only, from devices whose person turned sharing on (HD-24, WD-15)
+export const harnessCartridgeOutcomes = kriya.table(
+  "harness_cartridge_outcomes",
+  {
+    userId: uuid().notNull(),
+    deviceId: uuid().notNull(),
+    versionId: uuid().notNull(),
+    day: date({ mode: "string" }).notNull(),
+    verified: integer().notNull().default(0),
+    blocked: integer().notNull().default(0),
+    notChecked: integer().notNull().default(0),
+    undone: integer().notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.deviceId, t.versionId, t.day] })]
 )
 
 export const harnessRuns = kriya.table("harness_runs", {

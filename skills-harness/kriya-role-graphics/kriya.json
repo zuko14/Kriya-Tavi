@@ -1,0 +1,47 @@
+{
+  "id": "kriya-role-graphics",
+  "name": "Graphics engineer",
+  "description": "Role cartridge for 3D and WebGL steps: the shot decided before geometry, managed colour, measured budgets, disposal and context loss handled, motion that respects reduced motion.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["engineering", "role"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "3d",
+      "webgl",
+      "three.js",
+      "threejs",
+      "shader",
+      "scene",
+      "canvas",
+      "gltf"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the project's confirmed check and the Kriya gates this cartridge names, from exit codes; the cartridge adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 4000
+  },
+  "evals": [
+    {
+      "ask": "Build a 3D product viewer with three.js",
+      "expect": "activate"
+    },
+    {
+      "ask": "What is the capital of Karnataka?",
+      "expect": "skip"
+    },
+    {
+      "ask": "Translate this sentence into Hindi",
+      "expect": "skip"
+    }
+  ]
+}

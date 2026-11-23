@@ -1,0 +1,49 @@
+{
+  "id": "kriya-role-game",
+  "name": "Game developer",
+  "description": "Role cartridge for game steps: a frame budget, a fixed-timestep deterministic simulation apart from rendering, pools instead of per-frame allocation, and designed game feel.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["engineering", "role"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "game",
+      "gameplay",
+      "physics",
+      "sprite",
+      "level",
+      "player",
+      "enemy",
+      "game loop",
+      "unity",
+      "godot"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the project's confirmed check and the Kriya gates this cartridge names, from exit codes; the cartridge adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 4000
+  },
+  "evals": [
+    {
+      "ask": "Add jumping physics to the player in the game",
+      "expect": "activate"
+    },
+    {
+      "ask": "What is the capital of Karnataka?",
+      "expect": "skip"
+    },
+    {
+      "ask": "Translate this sentence into Hindi",
+      "expect": "skip"
+    }
+  ]
+}

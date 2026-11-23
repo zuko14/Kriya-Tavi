@@ -16,6 +16,7 @@ import {
   FlaskConicalIcon,
   PackageCheckIcon,
   PlugIcon,
+  SproutIcon,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -40,6 +41,8 @@ const NAV = [
   { href: "/owner/cloud", label: "Cloud", icon: CodeXmlIcon },
   // R9: room reports and the numbers to watch for scale
   { href: "/owner/rooms", label: "Rooms", icon: MessagesSquareIcon },
+  // Harness 2.0 W7: the R&D Scout's sources, runs and findings
+  { href: "/owner/harness", label: "Evolve", icon: SproutIcon },
   { href: "/owner/audit", label: "Audit", icon: ScrollTextIcon },
 ]
 

@@ -1,0 +1,30 @@
+{
+  "id": "kriya-role-database",
+  "role": "database",
+  "owns": ["schema", "auth_matrix"],
+  "reads": [],
+  "gates": ["G-STACK", "G-TENANT", "G-DETECT"],
+  "detectors": [
+    {
+      "id": "DB-NO-RLS",
+      "severity": "error"
+    },
+    {
+      "id": "DB-FK-NOINDEX",
+      "severity": "warn"
+    },
+    {
+      "id": "DB-DROP",
+      "severity": "warn"
+    }
+  ],
+  "judgement": [
+    {
+      "id": "small-migrations",
+      "ask": "Is each migration small and named for what it does?",
+      "severity": "minor"
+    }
+  ],
+  "maxPromptChars": 4000,
+  "globs": ["**/*.sql", "**/migrations/**", "**/schema.prisma", "**/drizzle/**"]
+}

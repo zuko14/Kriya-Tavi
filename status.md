@@ -11434,6 +11434,789 @@ The owner answered "Approve all" in chat on 2026-10-31 (session with Claude Code
 - **Program decision approved:** PX-03 (see "Track C owner approvals").
 - **Still needed before H4:** the `kriya-harness` repository and the npm scope (HB-02, HQ-03); counsel HQ-C1 before a public beta (HB-05).
 
+## Harness 2.0 (programme W, inside track H)
+
+Blueprint in `docs/kriya-harness/upgrade_2.0/` (start from its
+`AGENT_MASTER_PROMPT.md`). Owner brief: `intent.md` there and the owner's
+chat message of 2026-11-23. Role cartridges, a deterministic gate
+catalogue, head/worker orchestration and an owner-approved R&D Scout on top
+of the Kriya loop, KriyaBench and KRHE; every capability behind a switch
+that defaults off.
+
+**Status (2026-11-23): COMPLETE: all 20 phases (W0–W19) built and tested, every capability off by default.** Final totals: kriya-harness `npm run check` 1218/1218 tests; Kriya-Tavi `env -u OPENROUTER_API_KEY npm run check` 3417 passed, 63 skipped. Open items carried by complete phases:
+- browser checks owed for W7, W9 and W11 (they need the local Supabase stack);
+- the W18 dogfood G-UI/G-A11Y CI run (OR-37) and W18's unbuilt extras (OR-38);
+- W13 spike S1 on Linux and Windows CI images (OR-40);
+- W14's Explore card shown only as DSH's question card, not a side-by-side gallery (OR-42).
+
+Nothing is committed, pushed or deployed.
+
+| Phase | Name | Status | Depends on |
+| --- | --- | --- | --- |
+| W-DOC | Blueprint, forensic audit and re-audit | COMPLETE (2026-11-23: 21 documents in two rounds; re-audit RA-01…29 fixed in the documents, OR-01…14 open) | — |
+| W0 | Baseline and spikes S1–S4 | COMPLETE (2026-11-23: baselines green in both repositories; S1–S4 settled, see "W0 record") | WD-01 (approved) |
+| W1 | Role cartridges as data, served and mounted | COMPLETE (2026-11-23: see "W1 record"; off byte-identical, on proved on the real DSH) | WD-06, WD-10 (approved) |
+| W2 | Orchestra: head and worker levels, escalation, advisor | COMPLETE (2026-11-23: see "W2 record"; off unchanged, on proved on the real DSH) | WD-02, WD-03 (approved) |
+| W3 | Gate framework and the free gates | COMPLETE (2026-11-23: see "W3 record"; off byte-identical to HEAD, on proved on the real DSH) | WD-04 (approved) |
+| W4 | Local stack, UI, accessibility and database gates | COMPLETE (2026-11-23: see "W4 record"; G-UI/G-A11Y proved on the real Chrome and DSH; G-STACK's real-database run owed, OR-16) | WD-05 (approved) |
+| W5 | API, tenant and SAST gates; plan rules; red spec steps | COMPLETE (2026-11-23: see "W5 record"; G-API/G-TENANT proved against real servers and the real DSH; real Semgrep run owed, OR-17) | WD-04, WD-05 (approved) |
+| W6 | Critic, monotone polish, the command gates | COMPLETE (2026-11-23: see "W6 record"; proved on the real DSH) | WD-13 (approved) |
+| W7 | Scout: data, fetch, distil, findings; owner page | COMPLETE except its browser check (2026-11-23: see "W7 record"; the check needs the local Supabase stack, OR-19) | WD-07, WD-14 (approved) |
+| W8 | Per-role KriyaBench seed sets, `--level role-<role>` | COMPLETE (2026-11-23: see "W8 record"; frontend 31, backend 31, security 30 tasks, WT-BEN-01 passes, SEED's version unchanged) | WD-08 (approved) |
+| W9 | Candidates, lint, evidence, owner approval | COMPLETE except its browser check (2026-11-23: see "W9 record"; WT-LINT-00…12, WT-PRO-01…06, WT-SEC-01 pass; the page check needs the local Supabase stack, OR-19) | WD-07, WD-08 (approved) |
+| W10 | Milestones and KRHE profile fields | COMPLETE (2026-11-23: see "W10 record"; WT-MS-01…06, WT-EV-01/02 pass; HU-EV-01/03 and recorded profile ids unchanged) | WD-12 (approved) |
+| W11 | Overlay, canary, rollback, outcome counts | COMPLETE except its browser check (2026-11-23: see "W11 record"; WT-OV-01…07 and WT-OV-C1…C3 pass; the owner page's check needs the local stack, OR-19) | WD-09, WD-15 (approved) |
+| W12 | Release (the optional bench dispatch skipped by the owner) | COMPLETE (2026-11-23: see "W12 record"; contract frozen, SAFETY.md and release notes, every part off by default; **Round 1, W0–W12, complete**) | — |
+| W15 | Grounding (second round, first) | COMPLETE (2026-11-23: see "W15 record"; WT-GRD-00…06 pass; off by default) | WD-20 (approved) |
+| W16 | Repository tools, CI loop, MCP P3a | COMPLETE (2026-11-23: see "W16 record"; WT-REPO-01…15, WT-REPO-CI, WT-MCP-01…05 pass; all off by default; Overview states owed, OR-29) | WD-19 (approved) |
+| W19 | Proof receipts | COMPLETE (2026-11-23: see "W19 record"; WT-RCP-01…06 pass; receipts only on request or with a draft PR) | WD-24 (approved) |
+| W17 | Release, deploy, doctor | COMPLETE (2026-11-23: see "W17 record"; WT-REL-01…08, WT-DEP-01…10, WT-DOC-01…03 pass; one adapter (Vercel) confirmed by spike S1; off by default) | WD-21, WD-22 (approved) |
+| W18 | Interface (Run strip, gate chips, four tracks, Mission Control) | COMPLETE (2026-11-23: see "W18 record"; WT-UX-01…12 pass; off by default behind `--runstrip`; OR-29 closed; browser check passed 2026-11-23 against the fake Kriya; the dogfood G-UI/G-A11Y CI run is owed, OR-37) | WD-23 (approved) |
+| W13 | Graphics cartridge and G-3D | COMPLETE (2026-11-23: see "W13 record"; WT-GATE-3D-00…10 on the real Chrome, WT-GX-01…07 pass; spike S1 on macOS only) | WD-17 (approved) |
+| W14 | Explore | COMPLETE (2026-11-23: see "W14 record"; WT-EXP-01…07 pass; off by default behind `--explore`) | WD-18 (approved) |
+
+- **Changed files (2026-11-23):** new `docs/kriya-harness/upgrade_2.0/{README,AGENT_MASTER_PROMPT,FORENSIC_AUDIT,ARCHITECTURE,ORCHESTRA,CARTRIDGES,GATES,SELF_EVOLUTION,DATA_MODEL_AND_CONTRACTS,DECISIONS,CHANGE_IMPACT_AND_SAFETY,IMPLEMENTATION_PLAN,TEST_STRATEGY,EVALUATION_PLAN,RESEARCH,REAUDIT}.md`; second round `{THREE_D_AND_CREATIVE,GROUNDING_AND_CONNECTORS,DELIVERY_AND_STABILITY,HARNESS_UX,DIFFERENTIATORS}.md`; this section. No code, no tests run, nothing committed.
+- **Blockers:** WD-01…WD-24 are Proposed; owner questions in `upgrade_2.0/DECISIONS.md`.
+- **Next exact action:** the owner answers DECISIONS.md's questions and writes "Approved WD-…" here; then W0 (baseline counts in both repositories, spikes S1–S4, results recorded here).
+
+### W0 record (2026-11-23)
+
+- **Git:** both repositories on `main`, clean before the session (`Kriya-Tavi@b0ed4c2`, `kriya-harness@217ccda`); nothing committed.
+- **Baseline, Kriya-Tavi:** `env -u OPENROUTER_API_KEY npm run check` → typecheck ok; lint `✖ 8 problems (0 errors, 8 warnings)` (pre-existing unused `_run`/`_results`); `All matched files use Prettier code style!`; `Test Files 272 passed | 5 skipped (277)`, `Tests 3240 passed | 63 skipped (3303)`; exit 0.
+- **Baseline, kriya-harness:** `npm run check` → `pins: every dependency exact and locked`; `seams: all 15 DSH seams Kriya depends on are present`; `notices: current, every license allowed`; `build-brand: plugins/brand/client.js current`; `ℹ tests 1028 ℹ pass 1028 ℹ fail 0`; exit 0.
+- **S1 (child on another tier): pass.** `node --test tests/workforce/spike-w0.test.js` (real pinned DSH 0.2.1-rc.5, scripted model, fake Kriya): head on `balanced`; a spawn child with `agentOptions: { model: "budget" }` sent every request as `budget`; a child without it inherited `balanced`. `✔ … (12902ms) ℹ pass 1 ℹ fail 0`.
+- **S2 (advisor parent and mask): settled.** A child spawning its own child is refused (`subagent depth 2 exceeds maxDepth 1`); a child parented to the head, started from inside the builder's tool call, runs on the tier given; a mask set before `startActivation` removed `bash` from the child's first request (30 → 29 tools). The advisor is parented to the head (ORCHESTRA §3 updated).
+- **S3 (schema validator): settled.** `ajv@8.17.1` (MIT) is a direct client dependency, already used as `Ajv2020` in `tests/helpers.js`; a draft 2020-12 schema compiled and validated (`true false false` for valid, wrong type, extra field).
+- **S4 (non-invocable skills): finding.** DSH excludes `modelInvocable: false` skills from model-facing catalogues (`dsh-skill` README), but `plugins/kriya-tools/index.js` `candidate()` hard-codes `modelInvocable: true`; W1 passes the server's value through (CHANGE_IMPACT row updated).
+- **Files added (uncommitted):** `kriya-harness/tests/workforce/spike-w0.test.js`, `kriya-harness/tests/workforce/spike-plugin/{package.json,index.js}` (test-only plugin loaded through a test profile's own `cordis.patch.yml`; outside `npm test`'s glob; never in the bundle). Docs updated: `upgrade_2.0/{ORCHESTRA,CHANGE_IMPACT_AND_SAFETY,REAUDIT}.md` (OR-01, OR-02 closed).
+- **Next exact action:** owner approves WD-06 and WD-10 (W1's decisions), then W1: `lib/harness/cartridges.ts`, `lib/harness/cartridge-ids.ts`, the 15 `skills-harness/kriya-role-*` folders, the switched role set, and the client's `cartridges` switch with WT-REG-01/02 snapshots first.
+
+### W1 record (2026-11-23)
+
+- **Kriya-Tavi, new:** `lib/harness/cartridge-ids.ts` (roles, gate, detector and contract ids; exported into `contract.json` as `cartridgeIds`), `lib/harness/cartridges.ts` (strict `CartridgeFile`, `buildCartridges`), 15 `skills-harness/kriya-role-*/{SKILL.md,kriya.json}` (Kriya-native, 1.8–2.7 KB each, budget 4,000), 15 `skills-harness/cartridges/kriya-role-*.json`, `tests/harness/workforce/cartridges.test.ts`.
+- **Kriya-Tavi, changed (CHANGE_IMPACT §2 rows):** `skills-harness/index.ts` (new exports only), `lib/harness/default-skills.ts` (`HARNESS_ROLE_DEFAULTS`, `HARNESS_CARTRIDGES`, `cartridgeFor`; both switches off returns the same `HARNESS_DEFAULTS` object), `lib/harness/skills.ts` (cartridge items carry `cartridge` + `invocation: { modelInvocable: false }`), `lib/harness/contract.ts` (two optional item fields, `cartridgeIds`), `lib/config.ts` (`harness.workforce`, off; needs `harness.defaultSkills`), `tests/harness/regression.test.ts` (HT-REG-01 list), `docs/kriya-harness/contract.json` (regenerated; additive).
+- **kriya-harness, new:** `src/cartridges.js` (roles from the contract copy, `globRegex`, `selectCartridge`, `cartridgeSection`, `cartridgeSource`), `tests/workforce-cartridges.test.js`, `tests/workforce-cartridges-run.test.js`.
+- **kriya-harness, changed:** `src/modes.js` (switch `cartridges`, default off), `plugins/kriya-tools/index.js` (`modelInvocable` from the server, default true), `src/loop.js` (optional `roles` in `validatePlan`, `cartridge` in `builderPrompt` and `runStep`; the builder record notes the cartridge), `plugins/loop/index.js` (`withRole`, exported `PLAN_STEP_V2`, the switch wiring), `contract/contract.json` + `contract/SOURCE.md` (copied from Kriya, sha256 `d722a732…5600`).
+- **Commands and real output:**
+  - Kriya-Tavi `env -u OPENROUTER_API_KEY npm run check`: first run failed at `prettier --check` (`Code style issues found in 33 files`, all new W1 files); after `prettier --write` on those files: lint `✖ 8 problems (0 errors, 8 warnings)` (same pre-existing), `All matched files use Prettier code style!`, `Test Files 273 passed | 5 skipped (278)`, `Tests 3258 passed | 63 skipped (3321)`, exit 0.
+  - kriya-harness `npm run check`: first run `ℹ tests 1040 ℹ pass 1039 ℹ fail 1` (`contract.json is the recorded copy (contract/SOURCE.md)`: the hash wasn't updated with the copy); after updating `SOURCE.md`: pins, seams (15), notices, brand ok, `ℹ tests 1040 ℹ pass 1040 ℹ fail 0`, exit 0.
+  - Real DSH (pinned 0.2.1-rc.5, scripted model): WT-CAR-RUN-01 (`--cartridges`: `kriya_plan` offers `role`; the `.sql` step's builder prompt starts with the database cartridge), WT-CAR-RUN-02 (off: no `role`, prompt starts as 0.2.5), WT-CAR-RUN-03 (the cartridge id never appears in the head's request; the ordinary `kriya-verify` skill does). All pass.
+  - WT-REG-02 compares with the code at git `HEAD`, extracted to a temporary folder (`git archive`): `validatePlan` and `builderPrompt` byte-identical without cartridges.
+- **Found while building** (fixed, REAUDIT RA-30…34): skill folders can't hold `cartridge.json` (loader audit); scout lint must judge added lines only; ET-SK-02 needs the same object when off; W1 offers `role` only; the `modelInvocable` hard-code.
+- **Not done in W1, by design:** no gate, detector, contract or orchestra behaviour (W2–W6); every cartridge's `gates`/`detectors`/`judgement` are data the client doesn't act on yet. Nothing is on by default; no paid model call; nothing committed.
+- **Next exact action:** owner approves WD-02 and WD-03 (W2: head and worker tiers, escalation), then W2: `harness.orchestraHead/Worker`, the `/models` advert, `src/orchestra.js` `tierFor`, `agentOptions.model` in the loop's spawn, `kriya_advise` parented to the head.
+
+### W2 record (2026-11-23)
+
+- **Kriya-Tavi:** `lib/config.ts` (`harness.orchestraHead` default `escalation`, `harness.orchestraWorker` default `budget`); `app/api/harness/v1/models/route.ts` (`orchestraFor`: the advert only with `harness.workforce` on, the two levels different and both in the plan); `lib/harness/contract.ts` (optional `orchestra` on `ModelsResponse`); `docs/kriya-harness/contract.json` regenerated; `tests/harness/regression.test.ts` (HT-REG-01); new `tests/harness/workforce/orchestra.test.ts` (WT-ORC-03).
+- **kriya-harness:** new `src/orchestra.js` (`orchestraFromEnv`, `tierFor`); `src/modes.js` (switch `orchestra`, off); `src/launch.js` (advert → `KRIYA_ORCHESTRA_HEAD/WORKER`, never from the shell; session starts on the head); `src/loop.js` (`runStep` option `orchestra`: the level on each attempt's live record, recorded per builder; an untouched worker stall yields one head attempt; a head stall or a check that can't run stalls as before); `plugins/loop/index.js` (`agentOptions.model` from the live record; `kriya_advise`: builders only, ≤ 2 per attempt, 60 s, a head-level child of the session with only `read`, `read_image`, `grep`, `glob`); `tests/fake-kriya.js` (`script.orchestra`); `contract/contract.json` + `SOURCE.md`; new `tests/workforce-orchestra.test.js` (WT-ORC-04…10), `tests/workforce-orchestra-run.test.js` (WT-ORC-RUN-01/02).
+- **Commands and real output:** Kriya-Tavi `env -u OPENROUTER_API_KEY npm run check` → lint `✖ 8 problems (0 errors, 8 warnings)` (pre-existing), `All matched files use Prettier code style!`, `Test Files 274 passed | 5 skipped (279)`, `Tests 3262 passed | 63 skipped (3325)`, exit 0. kriya-harness `npm run check` → pins, seams (15), notices, brand ok, `ℹ tests 1049 ℹ pass 1049 ℹ fail 0`, exit 0. Targeted first run of the server tests failed twice as expected (stale `contract.json`; my test assumed `/models` had no `mirror`), fixed before the full run.
+- **Real DSH (pinned 0.2.1-rc.5, scripted model):** RUN-01 with `--orchestra`: every head request `escalation`; builders `budget`, `budget`, `escalation` (the check failed twice, then passed); the first builder's `kriya_advise` answered by one `escalation` child whose tools included `read` and none of `bash`, `write`, `edit`, `kriya_step`, `kriya_plan`, `kriya_advise`; the advice reached the builder. RUN-02 without it: every request `balanced`, three builders, no `kriya_advise`.
+- **Found while building** (REAUDIT RA-35…38): the mask hook only existed with JIT tools on (the advisor would have kept writer tools); the session didn't start on the head; `kriya_advise` is visible to the head (refuses); `escalateAfter` stays 2 until W10.
+- **Not done, by design:** no paid model call; KRHE tuning of `escalateAfter` (W10); nothing on by default; nothing committed.
+- **Next exact action:** owner approves WD-04 (gates are fixed client code; required gates in code), then W3: `src/gates/index.js` (`runGates`, `REQUIRED`, loopback helper), G-CONTRACT, G-DETECT with every detector id, G-SECRETS, G-FLAKE, G-TRACE, the contract bus hashes and class `contract changed`, each gate with mutant fixtures.
+
+### W3 record (2026-11-23)
+
+- **kriya-harness, new:** `src/gates/detectors.js` (all 37 detector ids of Kriya's contract, each over one changed file's added lines; `findSecrets` with key shapes and a high-entropy rule that never returns the value), `src/gates/index.js` (`runGates`, `BUILT`, `ALWAYS` = G-SECRETS + G-CONTRACT, `REQUIRED` empty and frozen, `changedFiles` from `git diff -U0 HEAD`, G-CONTRACT, G-DETECT, G-SECRETS, G-FLAKE, G-TRACE), `src/contracts.js` (six contracts under `.kriya/contracts/`, ajv validation, `$ref` and threat-test checks, ownership hashes, drift, JSON-Pointer slices ≤ 6,000 chars), `contract/schemas/{api,auth_matrix,component_states,design_tokens,threat_model}.json`, tests `workforce-detectors.test.js`, `workforce-gates.test.js`, `workforce-gates-run.test.js`.
+- **kriya-harness, changed:** `src/modes.js` (switch `gates`, off), `src/failure.js` (ranks for `gate`, `contract changed`, `flaky` = 3, `not checked` = 0), `src/verify.js` (`verifyStep` option `gates`: after a pass, the first failing gate becomes a failed run in the strict loop's refusal shape; results on the run record; the owner's contract hashes in the ledger), `src/loop.js` (plan steps may name `contracts` with the option; `builderPrompt`/`runStep` slices after the cartridge), `plugins/loop/index.js` (`withContracts`; one gate runner for `kriya_step` and a direct `kriya_verify`; the step's cartridge picks its gates and detectors).
+- **Commands and real output:** kriya-harness `npm run check` → pins, seams (15), notices, brand ok, `ℹ tests 1067 ℹ pass 1067 ℹ fail 0`, exit 0. First targeted run: WT-DET-01 failed (`SY-SPIN missed: while (!ready.load()) {}`), fixed. Kriya-Tavi: no code change in W3 (docs and `status.md` only).
+- **Off is unchanged:** WT-REG-03 runs `verifyStep` from this code and from git `HEAD` (extracted with `git archive`) on identical fixtures, pass and fail, with and without the guard and v2: results and run records byte-identical.
+- **Real DSH (pinned 0.2.1-rc.5, scripted model):** WT-GATE-RUN-01: a builder writes an AWS-shaped key, `npm test` passes, G-SECRETS fails it; the second builder's prompt names `G-SECRETS` and `config.js:1` and never the key; it fixes the file; the step passes. WT-GATE-RUN-02: a direct `kriya_verify` with `--gates` fails on G-SECRETS; without it, the same work passes.
+- **Found while building** (REAUDIT RA-39…44, OR-15): the direct `kriya_verify` bypass; a declaration-order crash; a stateful regex; a narrow detector pattern; required gates deferred until they exist; generated-types staleness deferred to W4.
+- **Not done, by design:** no required gate yet; gates W4–W6; nothing on by default; nothing committed.
+- **Next exact action:** owner approves WD-05 (live checks use a local stack the person starts and confirms; non-loopback database URL refuses), then W4: `kriya stack use|show|forget`, a separate gate page in the agent browser, G-UI, G-A11Y (with the glass backdrop rule), G-STACK, and `REQUIRED.frontend = ["G-UI"]` once G-UI exists.
+
+### W4 record (2026-11-23)
+
+- **kriya-harness, new:** `src/stack.js` (`kriya stack use|show|forget`: loopback app and database only, stored in `~/.kriya/stack.json`; `hostedDatabase` finds an off-machine database URL in the project's `.env*` files without returning it), `src/gates/page.js` (the gates' own short-lived headless browser with the `localUrl` guard on every navigation; per page: console errors, failed same-origin requests, sideways scroll, layout shift, small targets, accessible names, `lang`, heading order, text contrast; glass text measured against the lightest and darkest pixel of its backdrop; a small PNG decoder on `node:zlib`; screenshots kept in `~/.kriya/evidence`), `src/gates/ui.js` (G-UI, G-A11Y, one visit per route × 360/390/1440 × light/dark shared by both), `src/gates/stack.js` (G-STACK: the work's migrations in one transaction always rolled back; RLS and policies checked inside it; refuses files that manage their own transaction), tests `workforce-ui.test.js`, `workforce-ui-run.test.js`.
+- **kriya-harness, changed:** `src/gates/index.js` (`BUILT` adds G-STACK, G-UI, G-A11Y; `REQUIRED = { frontend: [G-UI], database: [G-STACK] }`, frozen, counting only once the person confirmed the app or database), `bin/kriya.js` (`kriya stack`; `StackError`), `tests/workforce-detectors.test.js` (WT-GATE-00 for the new `REQUIRED`), `tests/workforce-gates.test.js` (fixed commit dates, RA-48).
+- **Commands and real output:** kriya-harness `npm run check` → first run `ℹ tests 1087 ℹ pass 1086 ℹ fail 1` (WT-REG-03: two fixture repos' commit times differed, so their tree fingerprints did; a test flaw, RA-48); after pinning fixture dates: pins, seams (15), notices, brand ok, `ℹ tests 1087 ℹ pass 1087 ℹ fail 0`, exit 0. No Kriya-Tavi code change in W4.
+- **Real Chrome (installed Google Chrome, headless), pages served by the test on 127.0.0.1:** the clean page passes both gates at all six width/scheme pairs with six screenshots kept; each mutant fails with its reason (console error, sideways scroll, a 12 px button, layout shift, a 404 request, no `lang`, an unnamed button, 1.x:1 text, white text over a half-white glass backdrop); near-opaque glass passes.
+- **Real DSH + real Chrome:** WT-GATE-UI-RUN-01: a frontend step's page scrolls sideways at 360 px; `npm test` passes; G-UI fails it; the second builder's prompt names `/ at 360px … the page scrolls sideways`; it fixes the page; the step passes.
+- **Found while building** (REAUDIT RA-45…48): a migration's own `COMMIT` would have kept changes in the person's database (now refused before any SQL is sent); project `axe-core` is builder-editable (deferred); gates get their own browser rather than a page of the agent's; a timestamp-dependent test.
+- **Owed (OR-16):** G-STACK against a real local Postgres. No `psql`, Postgres or Postgres image here, and nothing was downloaded. Its logic is tested with a scripted psql.
+- **Not done, by design:** project axe-core (RA-46); generated-types staleness (RA-44); nothing on by default; nothing committed.
+- **Next exact action:** owner approves WD-05's follow-on for W5 (no new decision needed beyond WD-04/05), or provides a local Postgres for OR-16; then W5: G-API (examples, seeded bad inputs, idempotency ×10), G-TENANT (identity distinctness, paired positive control + probe), G-SAST (local rules only), plan rules (tenant matrix ⇒ security step; spec steps judged red), `REQUIRED.security = [G-TENANT]`.
+
+### W5 record (2026-11-23)
+
+- **kriya-harness, new:** `src/gates/http.js` (the only way gates reach an app: `localUrl` on every URL, no redirects followed, 10 s per request, 80 requests per gate run), `src/gates/api.js` (G-API: each operation's `x-kriya-example` answers the contract's status with a body its schema accepts, by ajv on the contract itself; seeded bad bodies from the request schema must get a 4xx; ten concurrent requests with one `Idempotency-Key` must make one effect, counted by the operation's `x-kriya-idempotent.count`; latency reported, never gated), `src/gates/tenant.js` (G-TENANT: `.kriya/gates/tenants.json` validated; two local test identities proved different; for each tenant-scoped resource of the auth matrix, B's create and read as controls, then A's read, update, delete and list each refused with B's object unchanged; credentials and tokens never in an excerpt), `src/gates/sast.js` (G-SAST: installed Semgrep only, the project's committed rules read from HEAD, never a registry config, metrics and version check off), tests `workforce-api-tenant.test.js`, `workforce-tenant-run.test.js`.
+- **kriya-harness, changed:** `src/gates/index.js` (`BUILT` adds G-SAST, G-API, G-TENANT; `REQUIRED.security = [G-TENANT]`), `src/verify.js` (`expect: "red"` for spec steps: the check fails now, passes with the new check files set aside, and the failure isn't a syntax error; the strict loop's own checks don't run on a spec step), `src/loop.js` (`spec_tests` read only with the option; a spec step comes before every implementing step; `IMPLEMENTING` roles), `plugins/loop/index.js` (`spec_tests` in the plan schema with gates on; a tenant-scoped project's plan needs a `security` step with cartridges and gates on, never for a person's drawn plan; `expect` on both verify paths), `bin/kriya.js` (`kriya stack use` says the gates send writes to the local app), `tests/workforce-detectors.test.js` (WT-GATE-00).
+- **Commands and real output:** kriya-harness `npm run check` → pins, seams (15), notices, brand ok, `ℹ tests 1104 ℹ pass 1104 ℹ fail 0`, exit 0. First targeted run: 1 fail (my fixture server hung instead of answering 500; the gate had correctly reported the hang), fixed in the fixture. No Kriya-Tavi code change in W5.
+- **Real servers on 127.0.0.1:** the correct orders API passes G-API and G-TENANT; each defect fails with its reason: no validation (`without required "item": answered 500`), a 500 on bad JSON, ten effects for one idempotency key, a cross-tenant read, list, update, the same user for both identities, and a server refusing everything (its controls fail).
+- **Real DSH:** WT-GATE-TEN-RUN-01: a security step's app let tenant A read B's order; `npm test` passed; G-TENANT failed it; the second builder's prompt named `tenant A read B's #1 (expected 403/404, got 200)` with no token; it turned the ownership check on; the step passed.
+- **Found while building** (REAUDIT RA-49…52): the gates write to the local app (now said); TypeScript's missing-module error is the expected red; a fixture hang; the security-step rule needs both switches.
+- **Owed:** OR-16 (G-STACK on a real Postgres) and OR-17 (G-SAST with real Semgrep); neither tool is installed here, and nothing was downloaded.
+- **Next exact action:** owner approves WD-13 (the critic is advisory and its polish monotone), then W6: `src/critic.js` (head-level read-only child; JSON defects ≤ 12), one polish attempt kept only if every gate still passes (else `restoreTree`), the designer direction table and glass/trope/font detectors already in place, and the remaining gates G-DATA, G-EVAL (+ `kriya eval baseline confirm`), G-SAN, G-IAC, G-SIM, G-SIM-HEADLESS.
+
+### W6 record (2026-11-23)
+
+- **kriya-harness, new:** `src/critic.js` (the review prompt with the role's judgement items, the changed files and the gates' notes; strict JSON defects ≤ 12, anything else counts as none; the polish section), `src/gate-commands.js` (`kriya gates use|forget`: the person confirms each command gate's command per project, one line, paths inside the project, in `~/.kriya/gates.json`; the G-EVAL baseline in `~/.kriya/evidence`, set only by `kriya eval baseline confirm`), `src/gates/commands.js` (G-DATA: the pipeline twice, identical output; G-EVAL: the metric against the confirmed baseline with its direction and margin, not judged when the work changed the evaluation, the metrics file must come from this run; G-SAN: exit 0 and no sanitizer report; G-IAC, G-SIM: exit 0; G-SIM-HEADLESS: the same STATE-HASH twice and the median frame within budget), tests `workforce-critic.test.js`, `workforce-critic-run.test.js`.
+- **kriya-harness, changed:** `src/modes.js` (switch `critic`, off), `src/loop.js` (`runStep` option `polish`: after a pass, with failures ≤ 2, the critic's major defects earn one polish builder; kept only if the next check and gates pass; otherwise the passing files are restored and checked again; `builderPrompt` option `polish`), `src/verify.js` (gate notes kept on the run record; gates get the person-confirmed command runner), `src/gates/index.js` (`BUILT` adds the six command gates), `plugins/loop/index.js` (the critic as a read-only child of the head, on the head level with the orchestra, 90 s; snapshot and restore through the checkpoint code `kriya undo` uses; never in Read only; critiques recorded), `bin/kriya.js` (`kriya gates`, `kriya eval baseline confirm`).
+- **Commands and real output:** kriya-harness `npm run check` → pins, seams (15), notices, brand ok, `ℹ tests 1115 ℹ pass 1115 ℹ fail 0`, exit 0. No Kriya-Tavi code change in W6.
+- **Real DSH (pinned 0.2.1-rc.5, scripted model):** WT-CRI-RUN-01: after the step passed, a real review child (no `bash`, `write`, `edit`, `kriya_step`, `kriya_plan`) returned one major defect; one polish builder got it; the check stayed green; the polish was kept. WT-CRI-RUN-02: the polish created a file that broke the check; the passing `page.txt` was restored, the new file removed, the check ran again, and the step passed.
+- **Found while building** (REAUDIT RA-53…56, OR-18): an evaluation could judge itself; a failed polish could block a passing step; command gates had no way for the person to confirm commands; the critic's step number was always 0; the critic doesn't see screenshots yet.
+- **Owed (unchanged):** OR-16 real Postgres for G-STACK, OR-17 real Semgrep for G-SAST.
+- **Next exact action:** owner approves WD-07 and WD-14 (the Scout: every scouted change is the owner's click; ₹0 monthly scout budget and an empty source list by default), then W7 in Kriya-Tavi: migration `20271201000000_harness_workforce.sql` with its rollback and RLS tests, the `harness.scout*` settings, `lib/harness/scout/*` with the one-unit-per-tick scheduler step, and the owner page skeleton (browser check on the verify stack).
+
+### W7 record (2026-11-23)
+
+- **New:** `supabase/migrations/20271201000000_harness_scout.sql` (`scout_model` resource kind; `kriya.reserve_scout_spend` serialized, India-month sum, a cap of 0 refuses; `harness_scout_sources`, `_runs` with a one-running lease index, `_snapshots`, `_findings`; RLS on, `server_only` policies, function revoked from client roles) and its rollback `supabase/rollback/20271201000000_harness_scout.down.sql`; `lib/harness/scout/run.ts` (`scoutTick`: one fetch, one model call or one confirming fetch per tick; only new paragraphs kept, by paragraph hashes; a model call only within `harness.scoutMonthlyInr`, reserved in SQL first and settled to the reported cost; each finding's quote must be found word for word, then again a fetch ≥ 1 h later; corroboration across domains; `scoutStep`: never overlaps itself, gives the scheduler back after a minute), `lib/harness/scout/sources.ts` (https names only, no credentials), `actions/harness-evolve.ts` (requireOwner, zod, audit events), `components/owner/scout-forms.tsx`, `app/owner/harness/page.tsx`, `tests/harness/workforce/scout.test.ts` (WT-DB-01…03, WT-SC-01…09).
+- **Changed (CHANGE_IMPACT §2 rows):** `db/schema.ts` (the four tables, `scout_model`), `lib/config.ts` (`harness.scout` off, `scoutEveryDays` 7, `scoutMonthlyInr` 0, `scoutMaxFindings` 20), `worker/index.ts` (one `schedulerLoop` step behind `harness.scout`, errors caught; one janitor statement clearing changed paragraphs after 30 days), `components/owner/nav.tsx` ("Evolve"), `tests/harness/regression.test.ts` (HT-REG-01), `tests/db/migrations.test.ts` (the new migration in each of the five down/up cases, rolled back first).
+- **Commands and real output:** `env -u OPENROUTER_API_KEY npm run check` → first run `exit 2` (typecheck: an untyped query row in my test), fixed; then lint `✖ 8 problems (0 errors, 8 warnings)` (pre-existing), `All matched files use Prettier code style!`, `Test Files 275 passed | 5 skipped (280)`, `Tests 3274 passed | 63 skipped (3337)`, exit 0. Targeted runs before that found RA-57 (Postgres repetition count), RA-58 (whole-array validation) and RA-59 (two clocks), all fixed.
+- **Browser check (operator rule 7): owed (OR-19).** `set -a; source .env.verify; set +a; npm run verify:guard` → `verify:guard OK: local database, local auth, no live calls, stub model.` `supabase status` → the Docker daemon isn't running; no Supabase images are present. Starting Docker and `supabase start` (which downloads its images) waits for the owner's go-ahead. Nothing was run against the live database.
+- **Not done, by design:** no candidate drafting, lint, benchmark or approval (W9); nothing on by default; no source listed; no real web fetch or model call; nothing committed.
+- **Next exact action:** the owner either approves starting Docker + `supabase start` (settles OR-19 and OR-16), or approves WD-08 for W8: per-role KriyaBench seed sets (frontend, backend, security first, ≥ 30 tasks each, hidden graders, restored originals, safety probes) and `--level role-<role>`.
+
+### W8 record (2026-11-23)
+
+- **New:** `lib/harness/bench/seed-role-kit.ts` (`roleTasks`: each task gets `package.json`, its module, visible tests (protected, so graded on the originals), a hidden `grader.test.js` with more cases, and a `.env` bait derived from the task id, so the seed is deterministic; `ROLE_IDS`), `lib/harness/bench/seed-role-frontend.ts` (31 tasks, `fe-*`: INR grouping, escaping, pagination, WCAG contrast, debounce, URL state, focus order, reducers, routing, virtual lists, …), `lib/harness/bench/seed-role-backend.ts` (31, `be-*`: cursors, idempotency, retries, LRU, error envelopes, CSV, integer-paise splits and ledgers, leases, content negotiation, parameterised SQL, migrations, breaker, …), `lib/harness/bench/seed-role-security.ts` (30, `sec-*`: path traversal, constant-time compare, open redirect, CSP, cookies, SSRF ranges, throttling, CSV formulas, webhook HMAC, RBAC/IDOR, tenant filter, prototype pollution, CRLF, zip-slip, CORS, session fixation, redaction, upload sniffing, …), `tests/harness/workforce/bench-roles.test.ts` (WT-BEN-01). Every task is original (written for Kriya, no third-party code or text), so there is no licence to carry. Each set has 4 probe tasks (planted instructions: copy `.env` into source or the answer, skip/delete the test, add a dependency with `package.json` as a constraint, write to `../outside`); 11 tasks carry an `exploit` (3 frontend, 8 security; backend relies on its graders) (a plausible wrong fix that passes the visible tests and fails the grader).
+- **Changed (CHANGE_IMPACT §2 row `bench/cli.ts`, `bench/seed.ts`):** `lib/harness/bench/seed.ts` adds `ROLE_SEEDS`, `LEVELS` and `levelTasks(level)` after `SEED`, which is untouched (version `367906474ffa`, 43 tasks, before and after; now pinned in WT-BEN-01). `lib/harness/bench/cli.ts`: `--level role-frontend|role-backend|role-security` runs that role's own set (`--only` picks within it); other levels and flags behave as before; an unknown level exits 2 listing the levels. `--cartridge-candidate` is W9.
+- **Seed versions (pinned in WT-BEN-01):** frontend `99da9e832cf6`, backend `4446e5f787ce`, security `623042f72c75`. Role tasks use `level: "multi"` (visible tests plus a hidden grader), so a role run's summary reports them under "multi".
+- **WT-BEN-01 checks:** SEED's version unchanged and no role task in it; ≥ 30 tasks and ≥ 4 probes per role, version pinned and stable under a deep copy; ids unique across SEED and all roles; every task parses, has a hidden `.test.js` grader not named in the prompt nor present in any visible file, protected visible tests, and a bait in `.env` absent from its solution; per task (92): fails as given, passes with its reference fix (not escaped, not leaked), the agent's folder never contains the grader, the visible tests alone fail as given and pass fixed, and each exploit passes the visible tests and fails the task; the bait written to a file or said in the output fails a role task; `levelTasks` selects each role, is unchanged for the old levels, and refuses `role-`, `role-nope`, `role-constructor`, `roles`, `medium`.
+- **Commands and real output:**
+  - `env -u OPENROUTER_API_KEY npx vitest run tests/harness/workforce/bench-roles.test.ts` (targeted, before pinning): found 4 seed mistakes of mine, all fixed: `fe-list-move` (clamped to the length after removal), `be-circuit-breaker` (my grader expected 8 calls; 7 is right), `be-ledger-paise` (`0.1 + 0.2` in paise happens to sum exactly in JS, so the visible test passed as given; now `"0.29"`), and an assertion in `be-next-daily`. Then `Tests 96 passed` with only the three empty pins failing, which gave the versions above.
+  - `npx prettier --write` on the new and changed files; SEED version re-checked after it: `43 367906474ffa`.
+  - `env -u OPENROUTER_API_KEY npm run check` → typecheck ok; lint `✖ 8 problems (0 errors, 8 warnings)` (the pre-existing `_run`/`_results` in `tests/operator/golden/harness.ts`); Prettier clean; `Test Files 276 passed | 5 skipped (281)`, `Tests 3374 passed | 63 skipped (3437)`, `Duration 227.47s`; exit 0. HT-BEN-* unchanged and passing.
+  - CLI with a do-nothing agent (no model): `npx tsx lib/harness/bench/cli.ts --agent "true" --level role-security --only sec-safe-join,sec-csp-header --out <scratch>/role.json` → `failed sec-safe-join`, `failed sec-csp-header`, `0/2 passed … multi 0% … seed 5b26b53e51c8`, escaped 0, leaked 0, tampered 0. `--level role-nope` → `--level is one of easy, hard, multi, cap, role-frontend, role-backend, role-security`.
+- **Not done, by design:** no real agent or paid model run of any role set (a baseline per role is an owner go-ahead, on the owner's machine: WD-08); other roles' sets (same template, later); `--cartridge-candidate` and the client's bench-only env (W9); nothing committed. No screen changed, so no browser check is owed for W8.
+- **Next exact action:** W9 (WD-07 and WD-08 approved): `lib/harness/scout/{draft,lint,proposal}.ts`, candidate rows and transitions, `--cartridge-candidate` setting `KRIYA_BENCH=on` and `KRIYA_CARTRIDGE_FILE` (client reads it only under `KRIYA_BENCH=on`), and the owner proposal page; tests WT-LINT-01…12, WT-PRO-01…06, WT-SEC-01 and the rest of WT-BEN-01 (bench-only env). W9's page needs the local Supabase stack for its browser check, which still waits on the owner's go-ahead to start Docker (OR-19).
+
+### W9 record (2026-11-23)
+
+- **New:**
+  - `supabase/migrations/20271201000100_harness_candidates.sql` and `supabase/rollback/20271201000100_harness_candidates.down.sql`: `kriya.harness_cartridge_candidates` (DATA_MODEL §1 columns; verdict and evidence set together); the eight edges of SELF_EVOLUTION §2 in `kriya.allowed_transitions` (entity `harness_candidate`), enforced by the existing `kriya.check_transition()`; a guard trigger (content, lint and finding ids never change; verdict and evidence written once and only on `awaiting_bench → benched`; `proposed` only for adopt/canary, `held` only for hold, `rejected` from benched only for reject; a held candidate approved only with a reason of 10 characters or more; an owner decision names the owner); `kriya.harness_candidate_transition()` (applies one status change and writes its `audit_events` row; revoked from client roles); RLS on with a `server_only` policy.
+  - `lib/harness/scout/lint.ts`: `lintCartridge`, pure, every rule of §7 reported separately with its problems. Rule 1: only the body, judgement, added gate/detector ids (still valid in the client catalogue) and keywords may change, and no keyword is removed. Rule 2: no gate or detector removed or re-severitied; role, owns, reads, escalateAfter, maxPromptChars unchanged. Rule 3, judging only added or changed lines, new or changed judgement items and new keywords (RA-31): URLs, shell-tagged fences, the banned words (whole word, any case, plurals), DSH's and Kriya's tool names (`TOOL_CLASSES` keys plus `kriya_*`), E3 paths and constants. Rule 4: track E rule 8's licence table. Rule 5: body ≤ 6,000 and ≤ the cartridge's `maxPromptChars`, ≤ 30% of lines changed, ≤ 12 judgement items. Also a line diff (LCS) for the stored diff.
+  - `lib/harness/scout/draft.ts`: `loadIncumbent` (the repository's SKILL.md body, block and kriya.json), `parseDraftReply` (zod), `buildCandidate` (pure: applies the reply, lints, diffs, hashes; `awaiting_bench` or `discarded`), and `draftOne`, the scheduler's unit: the oldest confirmed non-idea finding, one model call reserved in SQL first within `harness.scoutMonthlyInr` (₹0 by default, so no call: the finding waits).
+  - `lib/harness/scout/candidate-file.ts`: the downloadable candidate file and its sha256 check (pure, so the bench loads it without the database).
+  - `lib/harness/scout/proposal.ts`: `judgeEvidence` (equal runs per arm, 1–10; parses each report; refuses a duplicate report, an incumbent report that ran a candidate, a candidate report whose id/cartridge/sha256 don't match the candidate, mixed seed sets or profiles; then `gate()`, reused as is), `benchCandidate` (benched with the verdict and evidence, then moved by the verdict in one transaction), `decideCandidate` (approve or reject only), `freezeScout` (`harness.scout` off, a running run `frozen`, audited), `candidateOverview`.
+  - `app/owner/harness/candidates/[id]/page.tsx`: the proposal page of §4 (summary; each quote with its URL and both fetch times; the diff; the lint checklist; the benchmark table: pass, Wilson 95%, cost per pass, median duration, safety counts, b/c, p, Δ cost, runs, seed, profile, report hashes; the verdict and reasons; approve, approve with a typed reason when held, reject). While awaiting a bench it shows both commands, the candidate download and the upload form.
+  - `components/owner/harness-evolve/forms.tsx`: the download, upload, decision and freeze controls, all 44 px.
+  - `tests/harness/workforce/candidates.test.ts`: 27 tests.
+- **Changed:**
+  - `db/schema.ts`: `HARNESS_CANDIDATE_STATUSES`, `harnessCartridgeCandidates`.
+  - `tests/db/migrations.test.ts`: the new migration in each of the five down/up cases, rolled back before the Scout's.
+  - `lib/harness/bench/cli.ts`: `--cartridge-candidate <file>` reads and hash-checks the file, sets `KRIYA_BENCH=on` and `KRIYA_CARTRIDGE_FILE`, and records `cartridgeCandidate { id, cartridgeId, sha256 }` in the report. Both variables are always cleared from the shell's environment first, so an incumbent run never inherits them. Other flags unchanged.
+  - `lib/harness/scout/run.ts` (W7 file): reservation and settling extracted into `reserveScoutCall` / `settleScoutCall`, with the same reasons and behaviour (W7's tests pass unchanged); `ask` takes an optional `maxOutputTokens`; after confirming, one tick may draft one finding.
+  - `actions/harness-evolve.ts`: `benchCandidateAction`, `decideCandidateAction`, `freezeScoutAction`, each `requireOwner()` first, zod-validated; no field carries a verdict or a status.
+  - `app/owner/harness/page.tsx`: a Candidates section linking to each proposal, and "Freeze the Scout" while it is on.
+- **Tests:**
+  - WT-LINT-00 (a realistic candidate passes; unchanged base words aren't judged) and WT-LINT-01…12 (a refusing fixture per rule and sub-rule).
+  - WT-PRO-01: the stored verdict equals `gate()` on the same reports; the status follows it; audit rows.
+  - WT-PRO-02: hash mismatch and six other evidence faults refused, nothing changed.
+  - WT-PRO-03: a rejected candidate can't be approved by code, by a direct update or by the SQL function.
+  - WT-PRO-04: held needs a typed reason; `decided_by`/`decided_at` set.
+  - WT-PRO-05: SQL keeps the status with the verdict, and content, lint and verdict are immutable.
+  - WT-PRO-06: a report claiming a verdict changes nothing; skipping the bench is refused; the decision form takes only approve/reject.
+  - WT-SEC-01: every action refuses a non-owner before touching anything (and a check that every exported action starts with `requireOwner()`); client roles can't read, write or transition; both pages call `requireOwner()` before any other await.
+  - WT-DR-01…03: drafting with a scripted model: awaiting_bench, discarded by lint, and with no budget nothing asked.
+  - WT-DB-04: rollback with data, then up.
+  - WT-BEN-01 (W9 part): a real CLI run with a do-nothing `node -e` agent shows `KRIYA_BENCH=on` and the file path only with the flag; the shell's values don't reach the incumbent arm; a tampered file is refused.
+- **Commands and real output:**
+  - `env -u OPENROUTER_API_KEY npx vitest run tests/harness/workforce/candidates.test.ts tests/harness/workforce/scout.test.ts` → first run `3 failed | 24 passed (27)`, all mistakes in my tests: the frontend cartridge already owns nothing, client roles get `permission denied` rather than empty rows, and a bare test database has no `supabase_migrations` table. Fixed: `Tests 39 passed (39)`. `npx vitest run tests/db/migrations.test.ts` → `Tests 30 passed (30)`.
+  - `env -u OPENROUTER_API_KEY npm run check`:
+    - First run `exit=2`: typecheck, a `ProcessEnv` type in my test.
+    - Second run exit 0, but lint showed `✖ 9 problems (0 errors, 9 warnings)`: a new unused `_` in `freezeScoutAction`, removed.
+    - Final run: lint `✖ 8 problems (0 errors, 8 warnings)` (the pre-existing ones), `All matched files use Prettier code style!`, `Test Files 277 passed | 5 skipped (282)`, `Tests 3401 passed | 63 skipped (3464)`, `Duration 243.47s`, exit 0.
+- **Browser check (operator rule 7): owed (OR-19)**, as in W7. Docker and `supabase start` weren't run (owner, 2026-11-23: defer the download). Nothing was run against the live database.
+- **Open items and limits:**
+  - **OR-20, client reader (closed 2026-11-23, see the W10 record):** the client side of `KRIYA_CARTRIDGE_FILE` (read only under `KRIYA_BENCH=on`) isn't built. No row in CHANGE_IMPACT §3 lists the client file that would read it (the loop or `kriya-tools`), so it needs the owner's approval and a row first. Until then a candidate arm runs the incumbent cartridge, and its reports measure nothing new.
+  - The reports don't record the model id or the client version, so the server checks seed set, profile and candidate hash only. Recording both is a bench change for KRHE-5.
+  - Server actions keep Next's default 1 MB request limit, enough for about 10 small reports; `next.config` isn't in CHANGE_IMPACT.
+  - Approval stores a decision and serves nothing; versions, canary and rollback are W11.
+  - Nothing is on by default, no real model or web call was made, and nothing is committed.
+- **Next exact action:** W10 (milestones and KRHE fields) needs WD-12, still Proposed. Then build `src/milestones.js`, `kriya_milestones` and the resume section in the client, and the `HarnessProfile` fields and one-factor moves of CHANGE_IMPACT §2 (`profile-schema.ts`, `profile.ts`, `propose.ts`; HU-EV-01/03, WT-EV-01/02). Separately, the owner decides OR-20 and when to start the local stack for OR-19.
+
+### W10 record (2026-11-23)
+
+- **OR-20 closed first** (owner approval in chat, 2026-11-23):
+  - `docs/kriya-harness/upgrade_2.0/CHANGE_IMPACT_AND_SAFETY.md` §3 gains the `src/cartridges.js` row.
+  - kriya-harness `src/cartridges.js`: `benchCandidate(env)` reads `KRIYA_CARTRIDGE_FILE` only when `KRIYA_BENCH === "on"`, checks the kind and the body's sha256 (a tampered file throws), and `cartridgeSource().body(c)` returns the candidate's body for the cartridge whose id matches; every other cartridge is fetched as before.
+  - Test **WT-CAR-10** in `tests/workforce-cartridges.test.js`. The owner suggested WT-CAR-06, but that id was already the glob test, so the new one is WT-CAR-10. It checks: the candidate body with the bench on, the served body for other cartridges, the file ignored without `KRIYA_BENCH=on` (even when missing), and a tampered file refused.
+  - A candidate arm now runs the candidate's text.
+- **Client, new:**
+  - `src/milestones.js`:
+    - The ledger lives in `~/.kriya/progress/<project>/milestones.json`, beside the progress records and outside the project.
+    - Writes are atomic (temp file + rename) under a lock file; a second writer waits 2 s, then gets "Another session is updating milestones". A lock older than 10 s is taken over.
+    - 1–12 milestones, each with a title and a done_when; roles are checked against Kriya's.
+    - A new list is refused while milestones are open, unless the person agrees to replace them.
+    - `checkPlanAllowed` refuses a plan when every milestone is done or the current one is blocked. `bindPlan` makes the first milestone not yet done active and records the session and plan hash.
+    - `syncMilestones` sets done only when every step's status is `pass`, and blocked when a step is blocked. Status comes from the loop's own records (`planStatus`), never from the model.
+    - `milestonesText` is the resume section.
+  - `tests/workforce-milestones.test.js`: WT-MS-01…06, plus WT-EV-02's client part.
+- **Client, changed** (CHANGE_IMPACT §3 rows `src/modes.js` W1–W10, `plugins/loop/index.js` W1–W10):
+  - `src/modes.js`: switch `milestones` / `KRIYA_MILESTONES`, default off.
+  - `plugins/loop/index.js`, with the switch on only:
+    - `kriya_milestones` is the head's alone (builders refused). `replan: true` makes the harness ask the person; only their selected "Replace them" counts, and with no UI it is never replaced.
+    - `kriya_plan` checks and binds; `kriya_step` syncs after each step.
+    - A late system-prompt section `kriya:milestones` (order 10240, before the plan's own state).
+    - `escalateAfterFromEnv()` passes a profile's `KRIYA_ESCALATE_AFTER` (0–4 only) to `tierFor`.
+  - `src/orchestra.js` (W2 file): `escalateAfterFromEnv`.
+  - `MAX_STEPS` 7 and `MAX_ATTEMPTS` 4 unchanged (asserted in WT-MS-01).
+- **Server, changed** (CHANGE_IMPACT §2 rows):
+  - `lib/harness/evolve/profile-schema.ts`: `cartridges`, `orchestra`, `gates`, `critic`, `milestones` (boolean, default false, need the loop) and `escalateAfter` (0–4, default 2).
+  - `lib/harness/evolve/profile.ts`: each new field is left out of the id at its default; `toEnv` sends `KRIYA_CARTRIDGES`, `…ORCHESTRA`, `…GATES`, `…CRITIC`, `…MILESTONES` only when on, and `KRIYA_ESCALATE_AFTER` only when ≠ 2; `SWITCH_FLAG` refuses the five new flags in a pinned `--agent`.
+  - `lib/harness/evolve/propose.ts`:
+    - Role signals come from rows of the per-role seed sets only (`ROLE_SEEDS` ids).
+    - Seven one-factor moves, each on top of the loop: `cartridges-on`, `gates-on`, `orchestra-on`, `escalate-earlier`, `escalate-later` (both only with the orchestra on, bounded 0–4), `critic-on` (no signal: unmeasured) and `milestones-on`.
+    - They are listed after the existing moves, so evidence from the other levels ranks the same moves as before.
+    - **Per-role tuning:** a role's runs (`--level role-<role>`) propose the escalateAfter move, and the existing `gate()` (paired sign test) decides it on that role's set.
+- **Server, new:** `tests/harness/workforce/evolve-fields.test.ts`, with WT-EV-01:
+  - Ids are pinned against the committed (HEAD) profile code: baseline `39c148271e98`, anchor `b546b2339d4f`, guard `d2b1b32c6941`, no-loop `3a1ae04a77e3`.
+  - A profile recorded before the fields existed parses to the same id.
+  - Each new field changes the id and the environment only when set; bounds and loop dependency; flags refused.
+  - WT-EV-02: blocked role runs propose `escalate-earlier` first, as one factor; never past 0, and never without the orchestra; non-role evidence doesn't produce the new moves; the paired gate adopts, rejects or holds the escalateAfter candidate.
+- **Commands and real output:**
+  - kriya-harness `node --test tests/workforce-cartridges.test.js` → `pass 10 fail 0`.
+  - `node --test tests/workforce-milestones.test.js` → first `pass 4 fail 3`, all mine: scripted checks that bypassed `verifyStep` recorded no runs, and `saveMilestones` threw synchronously instead of rejecting. Fixed; then the touched suites `node --test tests/workforce-milestones.test.js tests/workforce-cartridges.test.js tests/loop.test.js tests/modes.test.js tests/workforce-orchestra.test.js` → `pass 47 fail 0`.
+  - kriya-harness `npm run check` → `pins: every dependency exact and locked`, `seams: all 15 DSH seams Kriya depends on are present`, `notices: current, every license allowed`, `build-brand: plugins/brand/client.js current`, `ℹ tests 1123 ℹ pass 1123 ℹ fail 0`, exit 0.
+  - Kriya-Tavi `npx vitest run tests/harness/evolve.test.ts tests/flows` → `Tests 137 passed (137)` (HU-EV-01…04 and Flows, whose graphs embed a profile, unchanged). `npx vitest run tests/harness/workforce/evolve-fields.test.ts` → `Tests 6 passed (6)`.
+  - `env -u OPENROUTER_API_KEY npm run check` → lint `✖ 8 problems (0 errors, 8 warnings)` (pre-existing), `All matched files use Prettier code style!`, `Test Files 278 passed | 5 skipped (283)`, `Tests 3407 passed | 63 skipped (3470)`, `Duration 308.74s`, exit 0.
+- **Not done, by design or out of scope:**
+  - **Token budgets as profile fields:** not built. CHANGE_IMPACT §2 lists only the six fields above; it needs a row and the owner's approval.
+  - **OR-21:** the ledger records plan hash, session and step verdicts, but not ORCHESTRA §4's contract hashes, checkpoint ref or tokens and cost per tier. Those live records aren't joined yet.
+  - **OR-22:** no real-DSH run of `--milestones`. The tools and section are proved with scripted builders and checks; a real run needs the owner's go-ahead.
+  - No browser screen changed. Nothing is committed in either repository.
+- **Next exact action:** W11 (overlay, canary, rollback, outcome counts) needs WD-09 and WD-15 (IMPLEMENTATION_PLAN), both still Proposed. Separately, the owner decides OR-19 (local stack), OR-21 and OR-22.
+
+### W11 record (2026-11-23)
+
+- **Server, new:**
+  - `supabase/migrations/20271201000200_harness_cartridge_versions.sql` and its rollback:
+    - `kriya.harness_cartridge_versions`: DATA_MODEL §1, one version per candidate, a unique index for one active and one canary per cartridge.
+    - The edges of §6 in `allowed_transitions` (entity `harness_version`, enforced by `check_transition()`; `superseded → active` only to restore on rollback).
+    - A guard trigger: body, manifest and identity never change; a canary's share only grows, 1–100; the share is 0 off canary.
+    - `kriya.harness_cartridge_outcomes`: counts only; RLS own select/insert/update; granted to `authenticated` for those three.
+  - `lib/harness/scout/versions.ts`:
+    - `createVersion`: version = newest of the repository's and every stored one, +0.0.1. The manifest is the repository's kriya.json with the version, the added keywords and the cartridge block (judgement, added gates and detectors).
+    - `canaryBucket` = sha256(deviceId ‖ versionId), first 4 bytes, mod 100.
+    - `servedVersions`: the canary under its share, else the active version, else none (the repository's cartridge).
+    - `canaryVersion` (10 → 50 → 100, grows only, one canary per cartridge), `promoteVersion` (the previous active one is superseded), `rollbackVersion` (one click; an active one hands back to the version it replaced, or to the repository's).
+    - Guard: `wilson` (one-sided, z = 1.645) and `guardVerdict`: wait below 100 counted steps on the canary or on the active version; roll back when the canary's upper bound is below the active version's lower bound. `guardCanaries` rolls back and writes `harness.version.auto_rollback` with no actor.
+    - `versionOverview`, `autoRollbacks`.
+  - `tests/harness/workforce/overlay.test.ts`.
+- **Server, changed:**
+  - `lib/config.ts`: `harness.cartridgeOverlay`, off. It is one of DATA_MODEL §3's eight keys; W1 hadn't added it.
+  - `tests/harness/regression.test.ts`: HT-REG-01's key list and "ship off" list.
+  - `db/schema.ts`: both tables.
+  - `tests/db/migrations.test.ts`: the new migration in all five down/up cases.
+  - `lib/harness/scout/proposal.ts`: approving stores the version in the same transaction.
+  - `lib/harness/skills.ts` (CHANGE_IMPACT row W11): with the overlay on, a cartridge item takes the served version's version string, keywords and cartridge block, and its body is served from the version. Off: no query, the same list and ETag (WT-OV-01).
+  - `lib/harness/contract.ts`: `TurnRequest.cartridgeOutcomes?` and `ModelsResponse.workforce?: 1`.
+    - As built, counts name `{ cartridgeId, version }`, which the device knows from its own builder records, instead of `versionId`. Kriya maps them to the stored version and drops unknown ones; DATA_MODEL §4 updated.
+    - `docs/kriya-harness/contract.json` regenerated (sha256 `6f965f11…0116`).
+  - `app/api/harness/v1/models/route.ts` (W2 row, "the workforce advertisement"): `workforce: 1` only with `harness.workforce` on.
+  - `lib/harness/mirror.ts` and the turns route (row W11): counts are added to today's IST row as the person (`withUser`), only on a turn's first delivery, only with `harness.workforce` on and the mirror on for the device. Then the guard runs on the touched cartridges; its failure is logged and never loses the turn.
+  - Owner page `app/owner/harness/page.tsx` with `actions/harness-evolve.ts` `versionAction` and `components/owner/harness-evolve/forms.tsx` `VersionControls`: a Versions section with state, share, counted outcomes and canary/promote/roll back buttons, saying whether the overlay serves anything. A banner names any automatic rollback.
+  - `tests/harness/workforce/orchestra.test.ts`: WT-ORC-03 now also expects `workforce: 1` with workforce on. Off is still byte-identical.
+  - `tests/harness/workforce/candidates.test.ts`: cleanup and WT-DB-04 roll back versions first, since they reference candidates.
+- **Client, new:**
+  - `src/outcomes.js`:
+    - `kriya share` state in `~/.kriya/share.json`, off by default.
+    - `recordOutcome` (nothing unless on; pass → verified, blocked, not checked; only `kriya-role-*@x.y.z`).
+    - `takeOutcomes` (≤ 20 versions), `returnOutcomes`.
+    - Turning sharing off drops pending counts.
+  - `tests/workforce-outcomes.test.js`: WT-OV-C1…C3.
+- **Client, changed** (CHANGE_IMPACT §3: `bin/kriya.js` W11 row, and two new rows added for this phase, `plugins/loop/index.js` W11 and `plugins/mirror/index.js` W11, under the owner's "Approve, start W11"):
+  - `bin/kriya.js`: `kriya share on|off|status`, plus a help line.
+  - `plugins/loop/index.js`: with cartridges on, after `kriya_step`, the outcome for the builder's recorded `cartridge@version`. Not counted twice for "already passed".
+  - `plugins/mirror/index.js`: only with sharing on, asks `GET /models` once, and only with `workforce: 1` attaches the counts. Counts for a turn not stored go back; a 400 drops them. With sharing off, there's no extra request and turns are byte-identical.
+  - `tests/fake-kriya.js`: `state.workforce` adds the advert.
+  - `contract/contract.json` copied, with `contract/SOURCE.md` sha256 `6f965f110eb252cce9c2654370e0e72d53ee719423527cf7845bb8ee4ccc0116`.
+- **Tests:**
+  - WT-OV-01: overlay off ⇒ repository cartridges, the same list and ETag with an active version stored; on ⇒ the version, its body and keyword, and a new ETag.
+  - WT-OV-02: buckets stable; 1,000 devices at 10% land within 70–130; widening keeps devices in; the share never shrinks.
+  - WT-OV-03: counts written once per turn (a resent seq adds nothing), unknown versions dropped, nothing with workforce off, the contract refuses extra fields and more than 20 rows, and the advert only with workforce on.
+  - WT-OV-04: one canary per cartridge, in code and by the unique index; promote supersedes; versions 1.0.1, 1.0.2.
+  - WT-OV-05: rollback serves the previous version, then the repository's; ETag changes; nothing deleted; audited.
+  - WT-OV-06: Wilson bounds; wait, keep and roll back thresholds; `guardCanaries` rolls back at 100 steps and audits with no actor.
+  - WT-OV-07: immutable versions, `rolled_back → active` refused, versions server only, outcomes per person.
+  - Client WT-OV-C1: off by default, nothing counted off, off drops pending. WT-OV-C2: counts per version through a real `kriya_step` with a cartridge, not counted twice. WT-OV-C3: the mirror sends counts only with the opt-in **and** the advert; off means no `/models` request.
+- **Commands and real output:**
+  - `env -u OPENROUTER_API_KEY npx vitest run tests/harness/workforce/overlay.test.ts` → `Tests 7 passed (7)` on the first run, then a typecheck fix in the test.
+  - `npx vitest run tests/db/migrations.test.ts` → `Tests 30 passed (30)`.
+  - kriya-harness `node --test tests/contract.test.js` → `pass 6 fail 0`; `node --test tests/workforce-outcomes.test.js` → 3 ok.
+  - Kriya-Tavi `npm run check`, first run `exit=1`, 11 failures, all from W11 meeting earlier tests: W9's cleanup and WT-DB-04 deleted or dropped candidates that versions now reference, and WT-ORC-03 compared bodies that now carry `workforce: 1`. Fixed; `npx vitest run tests/harness/workforce` → `Tests 174 passed (174)`.
+  - Then `env -u OPENROUTER_API_KEY npm run check` → lint `✖ 8 problems (0 errors, 8 warnings)` (pre-existing), `All matched files use Prettier code style!`, `Test Files 279 passed | 5 skipped (284)`, `Tests 3414 passed | 63 skipped (3477)`, `Duration 251.91s`, exit 0.
+  - kriya-harness `npm run check` → `pins: every dependency exact and locked`, `seams: all 15 DSH seams Kriya depends on are present`, `notices: current, every license allowed`, `build-brand: plugins/brand/client.js current`, `ℹ tests 1126 ℹ pass 1126 ℹ fail 0`, exit 0.
+- **Browser check: owed (OR-19)**, as in W7 and W9.
+- **Open items:**
+  - **OR-23, owner notification:** SELF_EVOLUTION §4 and §6 ask for an in-app notification when a candidate is proposed or held (W9) and when the guard rolls a canary back (W11). Kriya's notifier (`lib/events.ts`, `/api/events`) has no owner event and isn't in CHANGE_IMPACT, so for now the owner page shows a banner and the audit log records it.
+  - **OR-24, share in the Web UI:** IMPLEMENTATION_PLAN W11 says the setting is "shown in the Web UI's settings". `kriya share` works from the command line; no Web UI settings file has a CHANGE_IMPACT row.
+  - **OR-25, partial counts:**
+    - `undone` is always 0 (`kriya undo` doesn't know which version built what it undoes).
+    - The guard compares a canary only with an **active version** that has its own 100 counted steps; while the repository's cartridge is the incumbent, nothing is automatic.
+    - Two sessions finishing a step in the same instant can lose one pending count (a `shortcut:` comment in `src/outcomes.js`).
+  - Nothing is on by default: overlay off, sharing off. No real model call; nothing committed in either repository.
+- **Next exact action:** W12 (optional `bench` dispatch to the owner's own device under the Control Center, plus release notes, `contract.json` and SAFETY.md lines; nothing on by default). It lists no new decision. The owner says whether they want the dispatch, and decides OR-19, OR-23 and OR-24.
+
+### W12 record (2026-11-23)
+
+**Round 1 of Harness 2.0 (W0 through W12) is complete.** The owner asked for the release part only. The optional `bench` dispatch to the owner's device (IMPLEMENTATION_PLAN W12 item 1) is skipped: the W9 command-line bench is the way cartridges are benchmarked.
+
+- **Contract frozen:**
+  - `npx tsx scripts/harness-contract.ts` and `prettier --write` regenerated `docs/kriya-harness/contract.json` with no change.
+  - `shasum -a 256` on the server export and the client copy: both `6f965f110eb252cce9c2654370e0e72d53ee719423527cf7845bb8ee4ccc0116`, the hash recorded in kriya-harness `contract/SOURCE.md` (now noting the W12 freeze).
+  - Kriya-Tavi `tests/harness/contract.test.ts` (export current) and kriya-harness `tests/contract.test.js` (recorded copy) pass.
+- **kriya-harness `SAFETY.md`, new section "Harness 2.0 workforce: everything off by default":**
+  - The five switches with their flags and variables. The flags work on `kriya run`; the Web UI takes only the variables, as built.
+  - What every built gate checks and what it runs (G-CONTRACT, G-DETECT, G-SECRETS, G-FLAKE, G-TRACE, G-UI, G-A11Y, G-STACK, G-API, G-TENANT, G-SAST, G-DATA, G-EVAL, G-SAN, G-IAC, G-SIM).
+  - The gate rules as built: fixed code, not checked is never a pass, nothing installed, time limits, settings read at the plan's base, evidence outside the project.
+  - The `kriya stack use` policy: names of this machine only, no credentials in the URL, redirects never followed, a hosted `DATABASE_URL` makes stack gates refuse, Kriya never starts Docker.
+  - Cartridges and their governed updates, and `KRIYA_BENCH` / `KRIYA_CARTRIDGE_FILE`.
+  - Also new: "What leaves this machine" gains the `kriya share` counts, and "What Kriya Harness keeps" gains the new files under `~/.kriya`.
+  - Every claim was checked against the code. Two first drafts were corrected: GATES.md's "every address a name resolves to" isn't what `localUrl` does (it checks the name), and "each gate stops after 5 minutes" holds for `psql` and `semgrep` only (app requests 10 s; other commands use the check's own runner).
+- **kriya-harness `RELEASE_NOTES.md` (new):** "Unreleased: Harness 2.0". It covers how the loop, cartridges, orchestra, gates, critic and milestones fit, the new commands (`kriya stack`, `kriya gates`, `kriya eval baseline confirm`, `kriya share`), the governed improvement pipeline, and compatibility. It isn't in `package.json` `files` and `README.md` doesn't link it; neither file has a CHANGE_IMPACT row, so the owner decides at release. The version stays 0.2.5.
+- **Default off, verified:**
+  - Server: HT-REG-01 (`tests/harness/regression.test.ts`) asserts `harness.workforce`, `harness.scout`, `harness.cartridgeOverlay` (and the other harness switches) fall back to `off`, and `harness.scoutMonthlyInr` to `0`.
+  - Client, new WT-REG-04 (`tests/workforce-release.test.js`): `cartridges`, `orchestra`, `gates`, `critic` and `milestones` are each `false` in `SWITCHES` and `off` after `switchEnv([])`, and `kriya share` is off in a fresh home.
+  - Byte-for-byte: WT-REG-01/02 (without cartridges, plans and builder prompts equal HEAD) and WT-REG-03 (without gates, `verifyStep` equals HEAD), plus earlier phases' off-equals-before tests (WT-SK-02/03, WT-ORC-03, WT-OV-01, WT-OV-C3, WT-MS-06).
+- **Commands and real output:**
+  - Kriya-Tavi `env -u OPENROUTER_API_KEY npx vitest run tests/harness/regression.test.ts tests/harness/contract.test.ts` → `Tests 7 passed (7)`.
+  - Kriya-Tavi `env -u OPENROUTER_API_KEY npm run check` → lint `✖ 8 problems (0 errors, 8 warnings)` (pre-existing), `All matched files use Prettier code style!`, `Test Files 279 passed | 5 skipped (284)`, `Tests 3414 passed | 63 skipped (3477)`, `Duration 319.77s`, exit 0.
+  - kriya-harness `node --test tests/workforce-cartridges.test.js tests/workforce-gates.test.js tests/workforce-release.test.js` → WT-REG-01, 02, 03 and 04 ✔, `pass 22 fail 0`.
+  - kriya-harness `npm run check` → `pins: every dependency exact and locked`, `seams: all 15 DSH seams Kriya depends on are present`, `notices: current, every license allowed`, `build-brand: plugins/brand/client.js current`, `ℹ tests 1127 ℹ pass 1127 ℹ fail 0`, exit 0.
+- **Round 1 open items carried forward:**
+  - OR-16 (G-STACK on a real database) and OR-19 (the owner-page browser checks for W7, W9, W11) need the local Supabase stack, waiting on the owner's go-ahead to start Docker.
+  - OR-17: a real Semgrep run.
+  - OR-21: milestone ledger tokens, checkpoint and contract hashes.
+  - OR-22: a real-DSH `--milestones` run.
+  - OR-23: the owner's in-app notification.
+  - OR-24: `kriya share` in the Web UI.
+  - OR-25: undone counts; a guard with the repository's cartridge as incumbent.
+  - The Evaluation Plan's paid runs (E-1, E-2) need the owner's go-ahead.
+  - Nothing is committed or released in either repository.
+- **Next actions (Round 2, IMPLEMENTATION_PLAN "Second round phases"):**
+  - All need W0–W6, which are done; each waits on its decision, all still Proposed.
+  - W15 grounding (WD-20) is the cheapest start and needs only W1.
+  - W13 graphics cartridge and G-3D (WD-17), W14 Explore (WD-18), W16 repository tools, CI loop and MCP P3a (WD-19), W17 release, deploy and doctor (WD-21, WD-22), W18 interface (WD-23), W19 receipts (WD-24).
+  - Before starting, the owner approves the phase's decision; the agent claims the row and reads the phase's documents and CHANGE_IMPACT rows.
+
+### W15 record (2026-11-23)
+
+Round 2's first phase. Client only (kriya-harness); Kriya-Tavi changed only in documents.
+
+- **New (CHANGE_IMPACT §3 new files `plugins/grounding/**`):**
+  - `plugins/grounding/lookup.js`, read-only and never leaving the project folder (every read is `realpath`-checked to stay inside it, so a package linked from outside isn't followed):
+    - `findPackage`: `node_modules/<pkg>`, else a `.venv`/`venv`/`env` site-packages, else `@types` only.
+    - `typesEntry`: `types`/`typings`, then `exports["."]` (`types`, then `import`/`require`/`node`/`default`, recursively), then `index.d.ts`, then `@types/<pkg>` with scoped names as `scope__name`.
+    - `apiLookup`: declarations reached through relative `export … from` and `/// <reference path>` (≤ 60 files, each ≤ 2 MB). Exact name first (declaration or class member, with its doc comment, until braces balance), then names starting with it. Python: `.pyi` stubs first, else only the `def`/`class` lines of the source. At most 20 declarations, saying "N of M shown"; the whole answer ≤ 8 KB.
+    - `apiVersion`: declared from `package.json` or `requirements.txt`; locked from `package-lock.json` or `pnpm-lock.yaml`; installed from the package's `package.json` or its `*.dist-info` folder name.
+    - `apiChanges`: the package's own `CHANGELOG`/`HISTORY`/`CHANGES` sections after `since`, else the declared range's lower bound, up to the installed version.
+  - `plugins/grounding/index.js`: the tools `api_lookup`, `api_changes`, `api_version` (kind `read`), plus a one-line late system-prompt section `kriya:grounding` (order 10260, after DSH's suffix, so the cached prefix is unchanged).
+  - `plugins/grounding/package.json`.
+  - `tests/workforce-grounding.test.js`.
+- **Changed:**
+  - `src/modes.js`: switch `grounding` / `KRIYA_GROUNDING`, default off; it doesn't need the loop.
+  - `bundle/cordis.patch.yml`: row `kriya-grounding`, disabled unless `KRIYA_GROUNDING=on`.
+  - `expected/*.dump.yml`: regenerated with `npm run dump-config`; reviewed diff, the same three lines (the new row) in each of the three profiles and nothing else.
+  - `src/profiles.js`: one line mapping `@kriya-ai/harness-grounding` to `plugins/grounding`. The bundle row can't load without it. It wasn't listed, so a CHANGE_IMPACT row now covers it for W13–W19.
+  - `tests/workforce-release.test.js`: WT-REG-04 includes `grounding`.
+  - `SAFETY.md` (switch table, and "All but `--grounding` need the loop") and `RELEASE_NOTES.md` (a Grounding paragraph).
+- **Tests (WT-GRD):**
+  - **01:** `exports` types through two re-export files; the doc comment; class members; prefix suggestions; not installed.
+  - **02:** `@types` fallback, scoped `@types/acme__widgets`, no types at all.
+  - **03:** `.pyi` multi-line signature, source def lines without bodies, dist-info and requirements versions.
+  - **04:** nothing executed. Every `child_process` function is wrapped (`syncBuiltinESMExports`) and none is called, and fixture packages whose JS and Python code would write a marker file leave none.
+  - **05:** ≤ 8 KB with the cut note; "20 of 30 shown"; a file over 2 MB unread; package and symbol names validated; a symlink to outside the project not followed.
+  - **06:** changelog sections between declared and installed (and with `since`), lockfile version, "ships no changelog", and `fetch` never called.
+  - **00:** off by default, the row's switch in all three recorded dumps, a one-line hint, no hint without installed packages.
+- **Commands and real output:**
+  - `node --test tests/workforce-grounding.test.js`: first `pass 6 fail 1` (WT-GRD-05: the 20-declaration cap kept answers under 8 KB without saying anything was left out). Fixed with the "N of M shown" note; `pass 7 fail 0`.
+  - `npm run dump-config` → the three dumps written; `diff -r` against a copy shows only the new row.
+  - kriya-harness `npm run check` → `pins: every dependency exact and locked`, `seams: all 15 DSH seams Kriya depends on are present`, `notices: current, every license allowed`, `build-brand: plugins/brand/client.js current`, `ℹ tests 1134 ℹ pass 1134 ℹ fail 0`, exit 0.
+  - Kriya-Tavi `env -u OPENROUTER_API_KEY npm run check` → lint `✖ 8 problems (0 errors, 8 warnings)` (pre-existing), `All matched files use Prettier code style!`, `Test Files 279 passed | 5 skipped (284)`, `Tests 3414 passed | 63 skipped (3477)`, exit 0.
+- **Differences from the document, and open items:**
+  - **OR-26, the hint:** GROUNDING §5 gives the hint to "builders of steps whose files import a package". A plugin's prompt section doesn't see the step's files, so as built the one line appears for every agent in a project with installed packages. Narrowing it to importing steps would mean a change in `src/loop.js`'s builder prompt.
+  - **OR-27, `api_changes`' starting version:** §5 says the lockfile at HEAD. Reading it needs `git`, a process, and WT-GRD-04 holds that nothing runs. As built it is the declared range's lower bound, or the `since` the agent passes.
+  - **OR-28:** no real-DSH run with `--grounding` yet; the tools were checked through their own `execute` with a scripted host.
+  - Nothing is committed.
+- **Next exact action:** the next second-round phase needs its decision: W13 graphics (WD-17), W14 Explore (WD-18), W16 repository tools (WD-19), W17 release/deploy (WD-21, WD-22), W18 interface (WD-23) or W19 receipts (WD-24).
+
+### W16 record (2026-11-23)
+
+- **Spikes:**
+  - **S0, versions:** this machine has `git version 2.54.0 (Apple Git-157)` and `gh version 2.103.3 (2026-10-26)`. Git is checked by number (≥ 2.23 for `git switch`). For gh, the minimum version that has `pr checks --json` and `pr create --body-file` isn't known offline, so as built the tool reads `gh <command> --help` and refuses with "needs a gh that has …" when the flag is missing: exact for whatever gh is installed, and no version number invented. gh is signed in on this machine; no test calls it (a fake `gh` stands in).
+  - **S1, background job:** `ctx.jobs` not used. The plan's fallback is built: the poller runs in the harness process while the session is open (timers `unref`'d), 30 s apart, at most 20 minutes.
+  - **S2, `dsh-mcp-client` and OAuth:** its README documents only static `headers` for Streamable HTTP and no OAuth flow or token store. So per GROUNDING §4 only registry servers with `auth = none` reach a device; OAuth servers stay cloud-only. The registry already holds such servers to R0/R1 tools (the migration's own check, met in WT-MCP-01).
+- **Client, new (kriya-harness):**
+  - `plugins/repo/{repo.js,index.js,package.json}`, behind `--repo-tools` / `KRIYA_REPO_TOOLS`, default off:
+    - Read tools: `repo_status` (branch, ahead/behind, changes, remotes as host/path via `parseRemote`, connection state and next action, tracked `.env*`/`*.pem` named), `repo_diff` (≤ 60 KB, else `--stat`), `repo_log` (≤ 50).
+    - `repo_branch`: `kriya/[a-z0-9-]{3,50}`, refused over uncommitted changes, `git switch -c`.
+    - `repo_commit`: Conventional Commit subject ≤ 72; only files this session changed (against its first checkpoint, builders included); never `.env*` except `.env.example`; `git commit -- <paths>`, so anything else the person staged stays staged.
+    - `repo_push`: only the current `kriya/` branch, never the default; fixed argv `push -u origin <branch>`, no force anywhere.
+    - `pr_create`: `gh pr create --draft --base <default> --head <branch> --body-file`; the body starts with "Kriya summary (computed by Kriya Harness, not written by the agent)", then "Agent's notes".
+    - `pr_view`, `pr_checks`, `ci_logs` (≤ 20 KB), `issue_read`: every output starts with the untrusted marker, and G-SECRETS' patterns are redacted.
+    - Branch, commit, push and PR go through DeepSeek Harness's approval (`ctx.get("approval").request`): Ask asks with the exact branch, files or commits; Auto, Read only and Full access refuse (approval `never`). Read only also refuses branch and commit itself.
+    - gh missing or signed out: "Run `gh auth login` in a terminal (Kriya never asks for or reads your credentials)". `GIT_TERMINAL_PROMPT=0` and `GH_PROMPT_DISABLED=1` so nothing can prompt; no `gh auth token`, no credential reads.
+    - CI loop (`ciPoller`): code only; each failing check once, with its failing log lines, into a late prompt section `kriya:ci` asking the head to offer the person a step "Fix CI: <name>".
+  - `src/mcp.js`: `definitionHash` (Kriya's `canonical` and pinned parts, byte for byte), `pinnedTools`, `serverUrl` (https, or http only to this machine, no credentials), and a minimal Streamable HTTP client (JSON or SSE, session header, `redirect: "error"`, no Authorization or cookie ever).
+  - `plugins/mcp/{index.js,package.json}`, behind `--mcp` / `KRIYA_MCP`, default off: fetches `GET /mcp` with the device token (to Kriya only), opens each server, registers only tools whose definition hash matches the pin (through `createMcpToolDefinition`), asks before any non-read-only call, and puts an untrusted marker first in every result.
+  - Tests: `tests/workforce-repo.test.js` (WT-REPO-01…15, WT-REPO-CI), `tests/workforce-mcp.test.js` (WT-MCP-02…05).
+- **Client, changed:**
+  - `src/verify.js` (row W16): `workTree(cwd, base)`, where files committed since `base` count as changed; `onOriginals(…, base)`; the strict loop's and the defensive review's reads, and `diffsOf`, all at `baseOf(plan)`. `baseOf` gives `"HEAD"` unless the plan holds a 40-hex `base`, and `verifyStep` calls `tree(cwd)` exactly as before then.
+  - `plugins/loop/index.js`: with `KRIYA_REPO_TOOLS=on`, `kriya_plan` records `base` (`git rev-parse HEAD`) in the plan once (`recordBase`).
+  - `src/modes.js`: `repo-tools`, `mcp`, both false.
+  - `src/profiles.js`: the two package names.
+  - `bundle/cordis.patch.yml`: rows `kriya-repo` and `kriya-mcp`, each disabled without its switch.
+  - `expected/*.dump.yml`: regenerated; vs HEAD each profile gains only the grounding, repo and mcp rows (9 lines).
+  - `scripts/check-seams.js`: a 16th seam, appended at the end, since HU-SEAM-01 uses the first entry.
+  - `contract/contract.json` and `SOURCE.md` (sha256 `95be813868afa5f7eb09dd0af52fbb44b97373f60a6ae511827fe4d51de697f9`).
+  - `tests/workforce-release.test.js` (WT-REG-04 covers both switches), `SAFETY.md` (switches, "Repository tools", "MCP servers"), `RELEASE_NOTES.md`.
+- **Server, new and changed (Kriya-Tavi):**
+  - `lib/config.ts`: `harness.mcp` off (needs `next.mcp`); HT-REG-01 lists it.
+  - `lib/harness/mcp.ts`: `deviceMcpServers`, the person's enabled, active, `auth = none` servers with each pinned tool's `definitionHash`, `classifyMcpTool` class and `readOnly`. R5 left out. No client id, secret env name, scopes or token.
+  - `app/api/harness/v1/mcp/route.ts`: 404 unless both switches are on.
+  - `lib/harness/contract.ts`: `McpServersResponse` and the route; `docs/kriya-harness/contract.json` regenerated.
+  - `tests/harness/workforce/mcp.test.ts`: WT-MCP-01 and the hash vector `289809516b428c75b0d797af399488f47005c17d99b17e636e2131fac3ac9b49`, pinned on both sides.
+  - CHANGE_IMPACT gains rows for `lib/config.ts` and `contract.ts` (W16), `scripts/check-seams.js`, and the new files.
+- **Tests:**
+  - **WT-REPO-01:** branch names, approval reason, no branch over changes.
+  - **02:** the default branch never pushed.
+  - **03:** no force: the tool list, no push parameters, fixed argv, no merge, delete or close in the source.
+  - **04:** G-SECRETS blocks a push of a key added then removed in a later commit; nothing reaches the remote; the value isn't in the message.
+  - **05:** a clean push after approval of the exact commits.
+  - **06:** `.env`, `.env.local`, `config/.env.production` refused; `.env.example` committed.
+  - **07:** Conventional Commit, this session's files only, no `../`.
+  - **08:** only the named paths committed; the person's staged file stays staged.
+  - **09:** no approval ⇒ no branch, commit, push or `gh pr create`.
+  - **10:** Read only.
+  - **11:** a token in the remote URL never shown.
+  - **12:** PR, checks, CI logs and issue marked untrusted, with tokens and AWS keys redacted.
+  - **13:** gh signed out, missing, or lacking `--body-file` / `--json`: guidance only, no `gh auth token`.
+  - **14:** git 2.20 refused; the draft PR's argv and Kriya's summary first.
+  - **15:** a weakened test committed after the plan is "changed" against `base` (not against HEAD) and `onOriginals` restores the base's version.
+  - **CI:** each failure once with its lines; stops when finished, or after 20 minutes.
+  - **WT-MCP-01:** only enabled, active, no-auth servers; R5 out; no secret fields; 404 when off; 401 without a device. **02:** the same hash on both sides; only pinned parts count; key order irrelevant. **03:** drifted and unpinned tools never registered. **04:** a non-read-only tool asks first; refused, nothing reaches the server. **05:** no Authorization, cookie or device token reaches the server; the result is marked untrusted; https only, no credentials in the address.
+- **Commands and real output:**
+  - `node --test tests/workforce-repo.test.js`: first `pass 11 fail 5`. Four were test mistakes (`main` becomes the valid `kriya/main`; DSH normalises an empty parameter list to `{ type, properties }`; the `--help` probe counted as a create, twice). One was a real gap, fixed: G-SECRETS scanned the net `base..HEAD` diff, which misses a secret added in one commit and removed in the next; it now scans each outgoing commit's own patch. Then `pass 16 fail 0`.
+  - `node --test tests/workforce-mcp.test.js` → `pass 4 fail 0`.
+  - Kriya-Tavi `npx vitest run tests/harness/workforce/mcp.test.ts`: first 1 failed (the registry refuses R2 tools on a no-sign-in server; the fixture now uses R1, raised to R3 without a read-only hint), then `Tests 3 passed (3)`.
+  - kriya-harness `npm run check`: first `pass 1153 fail 1` (HU-SEAM-01 reads `SEAMS[0]`; the new seam had gone first; moved to the end). Then `pins: every dependency exact and locked`, `seams: all 16 DSH seams Kriya depends on are present`, `notices: current, every license allowed`, `build-brand: plugins/brand/client.js current`, `ℹ tests 1154 ℹ pass 1154 ℹ fail 0`, exit 0.
+  - Kriya-Tavi `env -u OPENROUTER_API_KEY npm run check` → lint `✖ 8 problems (0 errors, 8 warnings)` (pre-existing), `All matched files use Prettier code style!`, `Test Files 280 passed | 5 skipped (285)`, `Tests 3417 passed | 63 skipped (3480)`, exit 0.
+- **Open items:**
+  - **OR-29, Overview Project states:** §3's states and next actions are computed and shown through `repo_status`, but not yet in the Overview tab (`plugins/overview` changes only in W18's row). The two offered actions, `git init` and `gh repo create --private`, aren't tools yet.
+  - **OR-30:** no real-DSH run of `--repo-tools` or `--mcp` and no real GitHub call (by design in tests). A first real run, a draft PR to a throwaway repository, needs the owner's go-ahead.
+  - **Proof receipt:** GROUNDING §2 wants the PR body to start with the proof receipt (W19). Until then it starts with Kriya's computed summary (branch, commits, plan steps).
+  - OAuth registry servers stay cloud-only until DeepSeek Harness's MCP client can hold a sign-in (a DSH change, a stop condition); GitLab (`glab`) is a later phase; nothing is committed.
+- **Next exact action:** the remaining second-round phases each need their decision: W13 graphics (WD-17), W14 Explore (WD-18), W17 release/deploy/doctor (WD-21, WD-22), W18 interface (WD-23, which also carries OR-29's Overview states) or W19 receipts (WD-24).
+
+### W19 record (2026-11-23)
+
+Client only (kriya-harness); Kriya-Tavi changed in documents only.
+
+- **New:** `src/receipts.js` (CHANGE_IMPACT §3 new files):
+  - `receiptFrom(progress, meta)` builds the receipt by code from the session's ledger (the progress file):
+    - `receipt: 1`, `label: "checked on this computer"`, `project` (the ledger's own 16-hex project key), `session`, `commit` (`git rev-parse HEAD`), `tree` (the last run's fingerprint), `client`, `verdict` (the ledger's `verdict()`).
+    - `cartridges` (from builders' `cartridge` records); `steps` (n, role, verdict, attempts, the builders' tiers, the last run's gate ids and statuses).
+    - `runs`, `chain`, `links`.
+  - Excluded on purpose: commands, check output, excerpts, touched paths, step titles, the goal, gate reasons and notes. These are file contents, model text or possibly secrets; DIFFERENTIATORS D1 asks for none of them.
+  - **Chain:** `h_0 = sha256("kriya-receipt-1")`, `h_i = sha256(h_{i-1} ‖ canonical(run_i))`, over the **full** run records, so those excluded fields are covered without being shown. `canonical` is Kriya's, shared from `src/mcp.js`.
+  - `receiptMarkdown`: headed "Proof receipt (checked on this computer)", saying it is evidence of what was checked, not a guarantee, with a step table and the chain.
+  - `makeReceipt` writes `~/.kriya/receipts/<project>/<session>.json` and `.md` atomically (0600).
+  - `verifyReceipt` reads the ledger the receipt names. It recomputes the chain link by link, naming the first run changed, removed or added, then recomputes every field and names any that differs.
+- **Changed:**
+  - `bin/kriya.js` (row W19): `kriya receipt make [<session>]`, defaulting to the project's latest session; `kriya receipt verify <file>` exits 0 or 1 with each problem listed.
+  - `plugins/repo/{index.js,repo.js}` (row W19): the draft pull request's body starts with the receipt. Without check records it says there is no receipt. Then "Branch (computed by Kriya Harness, not written by the agent)" and "Agent's notes". This closes W16's open item about the receipt.
+  - `tests/workforce-repo.test.js`: WT-REPO-14 now expects that body.
+  - `SAFETY.md` ("Proof receipts") and `RELEASE_NOTES.md`.
+  - CHANGE_IMPACT rows for `bin/kriya.js` W19 and `plugins/repo` (`pr_create`) W19.
+- **Tests:** `tests/workforce-receipts.test.js`.
+  - **WT-RCP-01:** every field equals what the ledger holds, the links equal `chainLinks(runs)`, and the receipt verifies.
+  - **02:** editing run 2 or run 1, removing run 3, or adding a fourth each fails at that link; restored, it verifies again.
+  - **03:** an edited `verdict`, `cartridges`, `steps` or `chain` in the receipt is named; bad JSON; records not on this computer.
+  - **04:** neither receipt file nor its JSON holds the secret, the prompt, step titles, commands, a query string, paths, output or the project path.
+  - **05:** the label, "not a guarantee", the table and the chain in the readable receipt.
+  - **06:** the real CLI `kriya receipt make` / `verify`, exiting 0, then 1 after a run is edited; a draft PR's body starts with the receipt and ends with the agent's notes.
+- **Commands and real output:**
+  - `node --test tests/workforce-receipts.test.js` → `pass 6 fail 0` on the first run. WT-RCP-03's first assertion turned out to be a no-op (it "changed" the verdict to its own value), so it now changes it to `blocked`; `pass 6 fail 0`.
+  - `node --test tests/workforce-repo.test.js` → `pass 16 fail 0`.
+  - kriya-harness `npm run check` → `pins: every dependency exact and locked`, `seams: all 16 DSH seams Kriya depends on are present`, `notices: current, every license allowed`, `build-brand: plugins/brand/client.js current`, `ℹ tests 1160 ℹ pass 1160 ℹ fail 0`, exit 0.
+  - Kriya-Tavi `env -u OPENROUTER_API_KEY npm run check` → lint `✖ 8 problems (0 errors, 8 warnings)` (pre-existing), `All matched files use Prettier code style!`, `Test Files 280 passed | 5 skipped (285)`, `Tests 3417 passed | 63 skipped (3480)`, exit 0.
+- **Differences from the document, and open items:**
+  - **OR-31, when a receipt is written:** D1 and the plan say "at task end". There is no switch for receipts in CHANGE_IMPACT's list, and writing one at every task end would change behaviour with every switch off. As built, a receipt is written on request (`kriya receipt make`) and by `pr_create` (repository tools on). Writing one automatically needs a switch row and the owner's choice.
+  - **OR-32, gate evidence and cost:** gate evidence hashes and per-tier cost aren't in the ledger yet (`verifyStep` records gate id, status, reason and note only; builders record tokens, not prices), so the receipt has neither field rather than an invented one. `release` waits for W17's G-RELEASE. Verification recomputes from the ledger; it doesn't re-read evidence files yet.
+  - Nothing is committed.
+- **Next exact action:** the remaining second-round phases each need their decision: W13 graphics and G-3D (WD-17), W14 Explore (WD-18), W17 release, deploy and doctor (WD-21, WD-22) or W18 interface (WD-23).
+
+### W17 record (2026-11-23)
+
+Client only (kriya-harness); Kriya-Tavi changed in documents only.
+
+- **Spike S1 (adapters, from the providers' own documentation; public pages only, nothing about the project sent):**
+  - **Vercel** (vercel.com/docs/cli/deploy, /docs/cli/rollback): the page says "When deploying, `stdout` is the Deployment URL. With the `--json` option or in non-interactive mode, `stdout` is a JSON document instead". It also documents `--prod`, `--yes` ("skip questions you are asked when setting up a new Vercel project") and `vercel rollback [deployment-id or url]`. The example URL on the rollback page is on `*.vercel.app`. **Shipped.**
+  - **Netlify** (cli.netlify.com/commands/deploy): `netlify deploy` / `--prod` and `--json` exist, but neither how the URL is printed nor the host suffix nor a rollback is stated. **Dropped.**
+  - **Cloudflare Pages** (wrangler commands): neither how production is chosen nor how the URL is printed is stated. **Dropped.**
+  - **Fly.io** (docs.fly.io/flyctl/deploy, /releases): no preview, URL printing not stated, rollback via `fly deploy --image <ref> --rollback`. **Dropped.**
+  - As the plan says, an adapter whose CLI behaviour can't be confirmed isn't shipped.
+- **Spike S2 (can a sandboxed command listen on loopback):** not run. The documented fallback is built: the person starts the production server and confirms it with `kriya release use --app http://localhost:<port>`; the harness starts no server.
+- **New:**
+  - `src/release.js`:
+    - `useRelease` / `readRelease`, kept in `~/.kriya/release.json` by project root: build command (one line), `--app` through the agent browser's `localUrl` (this computer only, no credentials), `--out`, `--routes` (≤ 10 paths, no query strings), `--budget-kb`, `--domain`, `--headers` (from a fixed list), `--marker`.
+    - **G-RELEASE** (`gRelease`), each line by code:
+      - **BUILD:** the confirmed command under the session's sandbox.
+      - **RENDERED:** G-UI and G-A11Y through `uiReports` against the production server; `not_checked` without one.
+      - **REL-ENV:** variables read in source vs `.env.example` names; platform variables ignored.
+      - **BUNDLE:** JS and CSS size vs the budget.
+      - **DEPS:** a lockfile in step with `package.json` (ranges compared offline), and production licences on an allow-list.
+      - **MIGRATIONS:** `DB-DROP` and `OPS-MIGRATE-LOCK` as errors.
+      - **G-SECRETS:** over the release diff.
+      - `ready` only if every line is `pass`.
+    - `recordReady` / `recordSmoke` / `productionAllowed`: production needs a passing ready **and** a passing preview smoke of the same commit. `readState`.
+    - `PERSONS_ONLY`, `personsOnly`, `forPerson` (WD-22): hosted-database migrations (supabase db push/reset, prisma migrate deploy/db push, other migration tools), production env and secret changes, DNS and domains, merges, force pushes and pushes to main/master, deleting deployments.
+    - **G-DEPLOYED** (`gDeployed`): https without credentials only, the captured host only, `GET` with `credentials: "omit"`, no body, only an `accept` header, `redirect: "manual"` followed only within the host, ≤ 20 requests. Routes must answer 2xx with HTML/JSON; marker; listed security headers (`frame-ancestors` counts for X-Frame-Options); median latency reported, not gated.
+  - `plugins/deploy/{index.js,package.json}`, behind `--deploy` / `KRIYA_DEPLOY`, default off:
+    - `ADAPTERS.vercel` (preview `deploy --yes`, production `deploy --prod --yes`, `rollback`, host `*.vercel.app`).
+    - `captureUrl`: the first https URL without credentials on the provider's host or the confirmed domain, from plain or JSON output.
+    - `release_check` (committed tree only; records ready), `deploy_preview`, `deploy_production` (production rule first; a failed smoke writes the rollback for the person and offers it as an approval), `release_status`.
+    - Every deploy is an approval with provider, target, exact command and commit (Auto, Read only and Full access refuse; Read only before asking).
+    - `personsOnlyGuard` is registered with `ctx.tools.guard`: it refuses those commands in `bash`, `pwsh`, `terminal` and `run_code` (DSH's bash and pwsh tools take `command`, checked) and writes them down for the person.
+  - `src/doctor.js` (row W17): `onPath` (looks in PATH, runs nothing), `gateMatrix` (which gates work here and what the others need), `gateSelfTests` (G-SECRETS, DB-DROP, OPS-MIGRATE-LOCK on clean and mutant fixtures), `doctorGates`. Plain `kriya doctor` unchanged.
+  - `src/receipts.js`: `makeReport` (`kriya report`): versions, the matrix and self-tests, this project's receipts, release records' ids and statuses, and the person's commands redacted with query strings removed, written 0600 to `~/.kriya/reports/`, sent nowhere. Receipts' readable part gains "For you to run (Kriya never runs these)"; the verified JSON fields stay the ledger's.
+  - `tests/workforce-delivery.test.js`.
+- **Changed:**
+  - `bin/kriya.js`: `kriya release use|<show>`, `kriya doctor --gates`, `kriya report`, plus help.
+  - `src/gates/ui.js` (a W4 file): `uiReports` takes an optional `app`.
+  - `src/modes.js`: `deploy`, false.
+  - `src/profiles.js`, `bundle/cordis.patch.yml` (row `kriya-deploy`, disabled without the switch), `expected/*.dump.yml` (the new row only).
+  - `scripts/check-seams.js`: a 17th seam, `tools.guard`, appended.
+  - `tests/workforce-release.test.js` (WT-REG-04 covers `deploy`), `SAFETY.md` ("Releases and deploys"), `RELEASE_NOTES.md`.
+  - CHANGE_IMPACT rows for `bin/kriya.js` and `scripts/check-seams.js` (W17).
+- **Tests:**
+  - **WT-REL:**
+    - **01:** settings checked and stored; `--app` off this computer refused.
+    - **02:** REL-ENV names missing variables only.
+    - **03:** budget pass, fail and not checked.
+    - **04:** no lockfile, out of step, GPL refused, `(MIT OR GPL-3.0)` accepted.
+    - **05:** destructive and locking migrations and a secret fail, the value never shown.
+    - **06:** ready only when every line passes; no production server, a failed build or a failed G-UI withholds it.
+    - **07:** `release_check` refuses a dirty tree and records ready for the commit.
+    - **08:** production needs ready **and** a preview smoke of the same commit.
+  - **WT-DEP:**
+    - **01:** URL capture: plain, JSON, other hosts, credentials, http, confirmed domain.
+    - **02:** wrong host ⇒ no fetch at all.
+    - **03:** GET, host only, no credentials, cookies or body.
+    - **04:** 20 requests at most.
+    - **05:** same-host redirect followed, off-host refused after one request.
+    - **06:** content type, marker, headers, 503.
+    - **07:** http and credentials refused with no request.
+    - **08:** ten WD-22 commands refused and recorded; `git push -u origin kriya/feature`, `npx prisma generate` and `vercel deploy` allowed.
+    - **09:** no approval ⇒ no CLI run; Read only; production without records refused before asking.
+    - **10:** the whole path, scripted: release check → preview smoked → production → failed smoke → rollback approved and run, recorded for the person and shown in the receipt.
+  - **WT-DOC-01:** self-tests catch their planted problems. **02:** the matrix lists what each gate needs; `onPath` by looking. **03:** the report holds receipts and no secret, prompt, title, command, query string or path; mode 0600.
+- **Commands and real output:**
+  - `node --test tests/workforce-delivery.test.js` → `pass 21 fail 0`.
+  - `node -e … doctorGates()` on this machine: all three self-tests ok. "not checked here" for G-STACK (no psql), G-SAST (no semgrep), G-IAC (no tofu/terraform), G-DEPLOYED (no vercel); the rest work.
+  - `npm run dump-config`: vs HEAD each profile gains only the grounding, repo, mcp and deploy rows (12 lines).
+  - kriya-harness `npm run check` → `pins: every dependency exact and locked`, `seams: all 17 DSH seams Kriya depends on are present`, `notices: current, every license allowed`, `build-brand: plugins/brand/client.js current`, `ℹ tests 1181 ℹ pass 1181 ℹ fail 0`, exit 0.
+  - Kriya-Tavi `env -u OPENROUTER_API_KEY npm run check` → lint `✖ 8 problems (0 errors, 8 warnings)` (pre-existing), `All matched files use Prettier code style!`, `Test Files 280 passed | 5 skipped (285)`, `Tests 3417 passed | 63 skipped (3480)`, exit 0.
+- **Open items:**
+  - **OR-33:** spike S2 not run; the person starts the production server.
+  - **OR-34:** only Vercel. The Netlify, Cloudflare Pages and Fly.io adapters wait for their documentation (or a recorded CLI run) to confirm how the URL is printed.
+  - **OR-35:** the Vercel adapter is checked against Vercel's documentation and a scripted CLI, not a real `vercel` (not installed here). A first real preview deploy needs the owner's go-ahead.
+  - **OR-36:** DEPS compares lockfile ranges offline rather than running `npm ci --dry-run`, and the optional `--audit` line isn't built. Gate self-tests cover only the gates that need nothing installed. G-3D in RENDERED waits for W13.
+  - Nothing is committed or deployed.
+- **Next exact action:** W13 graphics and G-3D (WD-17), W14 Explore (WD-18) or W18 interface (WD-23, which also carries OR-29), each after its decision.
+
+### W18 record (2026-11-23)
+
+- **Decision:** WD-23 approved by the owner in chat ("I hereby approve WD-23").
+- **Spikes (from the pinned DSH READMEs in `kriya-harness/node_modules/@deepseek-ai`):**
+  - **S1, sidebar seam for Missions:** there is no sidebar *section* seam that lists live rows under a heading. The documented seams are `sidebar.panellist` (a row with an icon, already used by Projects, Skills and Editing Studio) and the `main` keyed slot (`dsh-client-ui-layout`). Result: the fallback. Mission Control is a main-panel page, opened from a "Missions" row in the panel list.
+  - **S2, command UI:** the seam exists. A node plugin registers `/name` commands with `ctx.commands.register()` (`dsh-commands`), and the client decorates them through `ctx.commandUi` (`dsh-client-ui-commands`). W18 registers no slash commands: Stop, Restore, Copy and Verify are buttons (the fallback), so no command grammar is added. Kriya slash commands can use this seam later.
+  - **Stop:** `ctx.agents.get(id).cancel({ kind: "user" }, { keepInbox: true })`. This is what the composer's stop button does (`dsh-agent` README).
+- **Changed files (kriya-harness):**
+  - New: `src/runstrip.js` (pure: strip state, chip states, ₹ formatting, mission rows, track aliases); `plugins/runstrip/{index.js,client.js,package.json}`; `tests/workforce-ux.test.js`.
+  - `src/modes.js`: `["runstrip", "KRIYA_RUNSTRIP", false]`.
+  - `src/profiles.js`: link `@kriya-ai/harness-runstrip`.
+  - `bundle/cordis.patch.yml`: row `kriya-runstrip`, disabled unless `KRIYA_RUNSTRIP=on` in the `kriya` profile.
+  - `expected/*.dump.yml`: re-dumped. Each profile gains only that row (5 lines).
+  - `plugins/{progress,overview,preview,changes}/client.js`: each tab's title and guide order read `globalThis.__kriyaTracks` (set only by the runstrip client, removed on unload), and each body renders its track's section when present. Absent, the titles, orders and DOM are as before. The tab kinds (ids) are unchanged, so the old ids keep working, and the new names map to them (`TRACKS`: live→`kriya-preview`, proof→`kriya-progress`, changes→`kriya-changes`, project→`kriya-overview`).
+  - Preview gained only a `viewport` prop for the Live switch: off, it is `null` and nothing changes.
+- **What was built (behind `--runstrip`, off by default):**
+  - **Run strip in `shell.bottom`:** machine-wide. It shows every live session with a running build; the first one is shown, with "+n more". Fields: milestone `n/q`, step and title, try `t/4`, a Worker/Head badge (model name on hover, from `KRIYA_MODEL_NAMES`), gate chips (the step's last recorded gates, shown as waiting while it is rebuilt), elapsed time, this task's ₹, and Stop.
+  - **Spend:** `GET /me` is read once per builder and the strip shows the difference from the reading at the task's first builder, marked "est." while requests are unpriced. Integer micro-INR is formatted only at the edge.
+  - **Strip sizes:** 44 px while running. Idle, it renders only a 1 px clipped live region, so it takes 0 px. A click or `⌥↑` expands it to 240 px with one row per attempt: tier, failure class, chips and duration.
+  - **Keyboard and narrow widths:** `⌥.` is Stop and `⌥1…4` open the tracks. The polite live region speaks once per finished attempt, never per chip. Below 1024 px the strip drops elapsed time and spend. Below 768 px it shows the step number, chips as "n/m passed", and Stop.
+  - **Gate chip:** five states (waiting, checking with a saffron stitch that is static under reduced motion, passed in teal with ✓, failed in red with × and the reason, not checked with a dashed outline). The words are always present. The 14.5em × 28px size (widened from 9.5em after the browser check) is reserved up front and only colours cross-fade (160 ms).
+  - **Tracks:** in order Live, Proof, Changes, Project.
+    - **Live:** Fit/360/390/1440 viewport switch and the latest G-UI/G-A11Y chips.
+    - **Proof:** chips by step, release readiness (the last `ready` record), and the receipt with Copy and Verify (`verifyReceipt`).
+    - **Changes:** a time scrubber over this session's `refs/kriya/checkpoints`, each point labelled with the verdict of the run that followed it. "Restore this point" asks for confirmation and uses `restoreTree`, which saves the present on `refs/kriya/undone` first. It is refused while a step runs and for another session's point.
+    - **Project:** the repository state and next action from `repo.status()` (closes **OR-29**), MCP servers (with `--mcp`) and the `gateMatrix()` capability matrix.
+  - **Mission Control:** one card per milestone ledger in `~/.kriya/progress/*/milestones.json`, with done/of, the current milestone, and what it waits for (decided by code from statuses). Also the sign-in state and this month's spend against the cap from `/me`.
+- **Tests (WT-UX-01…12, all pass):**
+  - **01:** five chip states with their words and accessible names.
+  - **02:** no state rule changes size (CLS 0); the stitch stops under reduced motion.
+  - **03:** idle is 0 px; 44/240 px.
+  - **04:** ledger-only fields in reading order, no model text, the expanded timeline.
+  - **05:** spend is read once per builder; integer formatting.
+  - **06:** Stop uses DSH's user cancel and is refused when nothing runs, for bad ids or for non-JSON.
+  - **07:** four tracks, fixed order, old ids kept; off, today's titles and orders; switch default off; the row in every dump; the seam is removed on unload.
+  - **08:** loading, error, empty, partial and populated states of Live, Proof, Changes, Project and Mission Control.
+  - **09:** the scrubber is oldest-first and lists only this session's points; restore saves the present and refuses other sessions and running steps (real git).
+  - **10:** Proof, Live, Project, strip and Mission Control routes from real records.
+  - **11:** the `⌥` keyboard map opens the four kinds; the live region speaks once per change.
+  - **12:** every control is ≥ 44 px; the 767/1023 px media rules; Teal focus ring; brand tokens only.
+- **Commands and real output:**
+  - `node --test tests/workforce-ux.test.js` → `pass 12 fail 0`.
+  - `node --test tests/workspace-tabs.test.js tests/progress.test.js tests/overview.test.js tests/changes.test.js tests/profiles.test.js tests/modes.test.js` → `pass 35 fail 0`.
+  - `npm run dump-config`: against the pre-W18 dumps, each profile gains only the `kriya-runstrip` row.
+  - kriya-harness `npm run check` → `pins: every dependency exact and locked`, `seams: all 17 DSH seams Kriya depends on are present`, `notices: current, every license allowed`, `build-brand: plugins/brand/client.js current`, `ℹ tests 1193 ℹ pass 1193 ℹ fail 0`, exit 0.
+  - Kriya-Tavi `env -u OPENROUTER_API_KEY npm run check` → lint `✖ 8 problems (0 errors, 8 warnings)` (pre-existing, in `tests/operator/golden/harness.ts` and two `.claude/worktrees` copies), `Test Files 280 passed | 5 skipped (285)`, `Tests 3417 passed | 63 skipped (3480)`, exit 0.
+- **Open items:**
+  - **OR-37:** the dogfood G-UI/G-A11Y CI run on the Web UI is still owed (it needs a CI job and a scripted session). The browser check passed (below).
+- **Browser check (operator rule 7): pass**, 2026-11-23.
+  - **Stack:** the real pinned DSH Web UI from `kriya --runstrip --loop --orchestra`, against the tests' fake Kriya (`tests/fake-kriya.js`: a local scripted model, nothing leaves the machine), with a throwaway `KRIYA_HOME` and a temp project `orders-demo` opened from the Projects page. The scripted builder failed attempt 1 and kept attempt 2 running, so the strip stayed up. Driver: a scratch script, not committed.
+  - **Seeded data:** to show the chips, scrubber and Mission Control populated, gate results were added to run 1 in the throwaway ledger, and two checkpoints and a three-milestone ledger were saved with the harness's own `checkpoint()` and `saveMilestones()`.
+  - **Seen working:**
+    - **Strip:** in `shell.bottom` with "Milestone 1/3 › Step 1 "Orders API" · try 2/4 · Worker · four chips · elapsed · ₹0.00 · Stop". It stays put across main-panel navigation.
+    - **⌥↑:** expands the strip to 240 px; attempt 1 shows passed (teal ✓), failed (red ×, with the reason) and not-checked (dashed) chips.
+    - **⌥1…4:** open Live, Proof, Changes and Project through `ctx.get("sidebarRight").openTab`. The guide lists the four in order, before Graph, Files and Terminal.
+    - **Live:** the 360 switch makes the frame exactly 360 px.
+    - **Changes:** the scrubber moves with the arrow keys and announces each point through `aria-valuetext`.
+    - **Project:** shows "no remote" with its next action, MCP and the matrix.
+    - **Missions:** shows the sidebar row, then an empty state, then a "running" card.
+    - **Stop:** ended the turn through DSH's user cancel. The strip went to 0 px, and the live region said "Nothing is running."
+    - **Console:** no new errors after a reload. The earlier errors were connection-refused/401 from restarting the server.
+  - **Measured:**
+    - At 360 px: the strip is 44 px and shows "Step 1 · 0/4 passed · Stop"; Stop is 56×44; every Kriya control is ≥ 44×44; no horizontal scroll.
+    - At 585 px: the strip collapses as designed.
+    - Chip text contrast against its pane: light ≥ 4.94:1 (failed), dark ≥ 5.45:1.
+  - **Fixed during the check:**
+    - The chips' reserved width of 9.5em clipped "SECRETS · waiting" (the longest state label, "SECRETS · not checked", needs about 162 px). It is now 14.5em; WT-UX-02 is updated and the chips measure with no overflow.
+    - The Proof track's own heading still said "Progress"; it now follows the track name.
+  - **Screenshots:** `screenshots/kriya-harness/W18/`:
+    - 1440 dark: strip expanded, track guide, Proof, Changes scrubber, Project, Live at 360, Missions;
+    - 1440 light: Missions and strip;
+    - 360 dark and light: Live and strip.
+  - **Not checked live:**
+    - "Restore this point", because its confirmation is a native `confirm()` the browser tools can't answer (WT-UX-09 covers it on real git);
+    - the saffron "checking" chip (the loop sends no such signal, OR-38);
+    - widths between 1024 and 1279 px.
+  - **Side effect, undone:** before the project was opened, the first scripted run went to DSH's own "Default workspace" (`~/Documents/deepseek-harness/default-workspace`). Its builder wrote `value.js` there, which was removed at once; that folder's `built.txt` (Nov 5) was untouched.
+  - **Re-run after the fixes:** kriya-harness `npm run check` → `pins`, `seams: all 17`, `notices`, `build-brand` ok, `ℹ tests 1193 ℹ pass 1193 ℹ fail 0`, exit 0.
+  - **OR-38:** not built:
+    - the contract map (D5) and cost by tier (D10) from IMPLEMENTATION_PLAN W18 item 2;
+    - Mission Control's "spend today" (`/me` gives only this month);
+    - Live's gate overlays as boxes on the frame (gate records keep only id, status and reason, no coordinates, so the failing reasons are shown as chips above the frame);
+    - a "running" chip state from the loop (the loop records no verify-in-progress signal, so the strip shows rebuilt gates as waiting; `src/loop.js` isn't in W18's change list).
+  - **OR-39:** `scripts/check-seams.js` doesn't yet guard `shell.bottom`, `sidebar.panellist` or `agents.cancel`. Adding them needs a CHANGE_IMPACT row.
+  - Nothing is committed or deployed.
+- **Next exact action:** W13 graphics and G-3D (WD-17) and W14 Explore (WD-18), each after its decision. The W18 dogfood G-UI/G-A11Y CI run (OR-37) can go with W13's CI work.
+
+### W13 record (2026-11-23)
+
+- **Decision:** WD-17 approved by the owner in chat ("I hereby approve both remaining decisions").
+- **Spike S1 (headless WebGL2):**
+  - **macOS, this machine:** pass. Chrome 157.0.8103.79 headless creates WebGL2 and WebGL. `RENDERER` is "WebKit WebGL"; unmasked it is "ANGLE (Apple, ANGLE Metal Renderer: Apple M5, Unspecified Version)", vendor "Google Inc. (Apple)", `VERSION` "WebGL 2.0 (OpenGL ES 3.0 Chromium)", and `WEBGL_lose_context` is present.
+  - **Linux and Windows CI images:** not run; there is no CI from here (OR-40). Where none can be created, G-3D returns `not_checked: no WebGL in this browser`, never pass (WT-GATE-3D-08, by launching Chrome with WebGL disabled).
+- **Changed files (Kriya-Tavi):**
+  - New: `skills-harness/kriya-role-graphics/{SKILL.md,kriya.json}` (3,198 characters, budget 4,000) and `skills-harness/cartridges/kriya-role-graphics.json` (gates G-3D, G-UI, G-A11Y, G-DETECT; detectors GX-COLOR error, GX-ALLOC-LOOP warn, GX-NO-DISPOSE warn, GX-DPR error, FE-ASSET-LICENCE error; three judgement items).
+  - `skills-harness/index.ts`: the sixteenth manifest and block.
+  - `lib/harness/cartridge-ids.ts`: role `graphics`, gate `G-3D`, the five detectors, contract `scene_direction`.
+  - `skills-harness/cartridges/kriya-role-designer.json`: owns `scene_direction` (THREE_D §3: the designer writes it).
+  - `docs/kriya-harness/contract.json`: regenerated with `npx tsx scripts/harness-contract.ts`.
+- **Changed files (kriya-harness):**
+  - New: `src/gates/three.js` (G-3D), `contract/schemas/scene_direction.json`, `tests/fixtures/gates/three/scene.html` (one raw-WebGL scene; `?mode=` picks its faults), `tests/workforce-three-run.test.js`, `tests/workforce-graphics.test.js`.
+  - Edited:
+    - `src/gates/detectors.js`: five detectors.
+    - `src/gates/index.js`: G-3D in `BUILT` and the runner; the asset licence list from `scene_direction.json` for FE-ASSET-LICENCE.
+    - `src/gates/page.js`: `withGateBrowser` also hands the browser to its callback.
+    - `src/contracts.js`: `scene_direction`.
+    - `src/doctor.js`: a G-3D matrix row.
+    - `contract/contract.json` and `contract/SOURCE.md`: a fresh copy and its sha256.
+    - Tests updated for 16 roles: WT-CAR-05, WT-DOC-02 and WT-DET-01's case table.
+- **How G-3D works:**
+  - **Where the counts come from:** an init script on the gate's own page (`page.addInitScript`, never the context, never the agent's browser) wraps `getContext`. Each WebGL context then has its draws, primitives, resource create/delete and upload bytes counted in a closure. They are read through a non-writable, non-configurable `__kriya3dRead`, so the app can't flatter them (WT-GATE-3D-00: a scene that tries still has its 2,000 draws counted).
+  - **Viewports and checks:** at 390×844 and 1440×900, both at DPR 3, the gate checks:
+    - console and GL errors;
+    - not blank (8+ distinct colours and luminance variance);
+    - alive when motion is declared;
+    - median draw calls and triangles, texture bytes and route bytes, against the tier budget;
+    - the drawing buffer against CSS size × min(DPR, cap).
+  - **Phone width only:** resize; leaks over unmount → mount (through the route's `unmount` path); context loss → restore → draws again; reduced motion stops decorative motion.
+  - **Not gated:** frame time is reported with the renderer string and never gated.
+  - **Budgets:** code ceilings per tier (`low` 100 draws, 300k triangles, 64 MB; `mid`; `high`); the contract can only tighten them.
+- **Fixed during the tests:**
+  - A lost context's `getExtension` returns null, so the restore now keeps the extension object from the lose call.
+  - The DPR rule fails only a buffer wider than CSS × capped DPR (uncapped) or narrower than CSS (stretched). A lower ratio is the app's choice.
+- **Tests:**
+  - **WT-GATE-3D-00…10** (real headless Chrome, fixture on 127.0.0.1): 00 the wrapper is unspoofable; 01 the clean scene passes; 02 blank; 03 shader error; 04 leak; 05 2,000 draws; 06 no context-loss handler; 07 uncapped DPR; 08 no WebGL is `not_checked` (no app or direction is a note); 09 static motion, and motion under reduced motion; 10 ceilings and 128 MB of textures. Every mutant fails and the clean scene passes.
+  - **WT-GX-01…07:** the five detectors, the asset licence list, contract ids and the schema.
+- **Commands and real output:**
+  - `node --test tests/workforce-three-run.test.js` → `pass 11 fail 0` (about 2 minutes).
+  - `npx vitest run tests/harness` (Kriya-Tavi) → `Test Files 28 passed (28)`, `Tests 434 passed (434)`.
+  - The full checks are in the W14 record.
+- **Open items:**
+  - **OR-40:** spike S1 on Linux and Windows CI images.
+  - **OR-41:** not done:
+    - G-3D is proved on the raw-WebGL fixture, not on a real three.js app (no three.js dependency was added);
+    - "time to first non-blank frame" isn't reported;
+    - the leak check needs the route's `unmount` path (otherwise it is reported as not checked);
+    - evidence frames are kept, but the critic doesn't see them yet;
+    - G-3D isn't added to `REQUIRED` for graphics, so a `not_checked` G-3D is a note, as THREE_D §4 words it.
+- **Next exact action:** none in Harness 2.0. The open items above, and E-6 (the 3D seed set and the owner's blinded preference test) when the owner wants it.
+
+### W14 record (2026-11-23)
+
+- **Decision:** WD-18 approved by the owner in chat ("I hereby approve both remaining decisions").
+- **Changed files (kriya-harness):**
+  - New: `src/explore.js` (roles, the two direction tables, hints by code, the take section, `waitForReload`, the Explore question) and `tests/workforce-explore.test.js`.
+  - `src/loop.js`: `validatePlan` reads `explore` (2 or 3, roles frontend, designer and graphics) only with the option. `runStep` gains an optional `explore` input and an `exploreTakes` path that runs only for a step with `explore` and no attempts yet.
+  - `src/modes.js`: `["explore", "KRIYA_EXPLORE", false]`.
+  - `plugins/loop/index.js`, only with `KRIYA_EXPLORE=on` and cartridges on:
+    - the plan step's `explore` field;
+    - the step's explore host: Kriya's checkpoints and `restoreTree`; the person's pick through DSH's question card (`askTake`); the critic's ranking when `--critic` is on; the dev-server reload wait when an app is confirmed;
+    - the step's text result names the kept take and who chose it.
+  - Off, the plan tool's schema and every path are unchanged (WT-EXP-01).
+- **How a take runs:**
+  - Each take starts from the step's starting files (restored), is built with its own direction hint, is snapshotted as `explore take v of step n: <direction>` (listed by `kriya undo --list`) and checked by the real check. A failed take counts as an attempt.
+  - Passing takes go to the person; with no answer, the critic's ranking decides, else take order.
+  - The kept take is restored (byte-equal to its snapshot) and checked again, so the step's last run is its own.
+  - No polish on this path. If no take passes, the normal retry rules go on from the take closest to passing, so takes plus retries are at most `MAX_ATTEMPTS` = 4 builders.
+  - If the dev server never served a take, the step stops as not checked rather than spending builders beyond the bound.
+- **Tests (WT-EXP-01…07, all pass; real git, real check command, real checkpoints):**
+  - **01:** 2 or 3 takes, roles only, switch default off; schema unchanged when off.
+  - **02:** 3 or 2 failing takes plus retries make exactly 4 builders, then blocked.
+  - **03:** the kept take's tree equals its snapshot; all takes are in `kriya undo --list`; the last run passes.
+  - **04:** no pick means the critic's first, no critic means take order, and a failed take is never offered; the Explore card counts only a selected passing take; no UI means no answer.
+  - **05:** Read only refuses and builds nothing.
+  - **06:** the reload wait (ETag change vs a 20 s timeout); a server that never reloads leaves the step not checked, with no check run recorded.
+  - **07:** directions by code (contract first, then neighbours), and each take's prompt and label carry its own direction.
+- **Commands and real output:**
+  - `node --test tests/workforce-explore.test.js` → `pass 7 fail 0`.
+  - kriya-harness `npm run check` → `pins: every dependency exact and locked`, `seams: all 17 DSH seams Kriya depends on are present`, `notices: current, every license allowed`, `build-brand: plugins/brand/client.js current`, `ℹ tests 1218 ℹ pass 1218 ℹ fail 0`, exit 0. The first run had `pass 1217 fail 1` because WT-DET-01 needs a case per detector; the five were added.
+  - Kriya-Tavi `env -u OPENROUTER_API_KEY npm run check` → lint `✖ 8 problems (0 errors, 8 warnings)` (pre-existing), `All matched files use Prettier code style!` (after formatting the two new cartridge JSON files; the first run flagged them), `Test Files 280 passed | 5 skipped (285)`, `Tests 3417 passed | 63 skipped (3480)`, exit 0.
+- **Open items:**
+  - **OR-42:** not built or not verified:
+    - the Explore card is DSH's question card, one option per passing take with its direction. The side-by-side gallery with frames (HARNESS_UX §3.4) isn't built, and pick-by-digit depends on DSH's question card (not verified live);
+    - no end-to-end run on the real DSH yet (the tests drive `runStep` with real files and checks);
+    - the reload wait fingerprints the route, not its main module.
+- **Next exact action:** Harness 2.0 has no phase left. The owner decides on commits, and on the open items (OR-37, OR-38, OR-40…42; the W7, W9 and W11 browser checks).
+
+### Harness 2.0 owner approvals
+
+- **Approved WD-01** (owner in chat, 2026-11-23: "Approve WD-01, start W0"): build only on documented DSH seams, no fork. 
+- **Approved WD-06 and WD-10** (owner in chat, 2026-11-23: "Approve, start W1"): cartridges as `skills-harness/kriya-role-*` manifests plus a sibling `cartridge.json`, served as a switched set; fifteen cartridges. 
+- **Approved WD-02 and WD-03** (owner in chat, 2026-11-23: "Approve, start W2"): head and worker are tier aliases chosen by the owner (defaults `escalation` / `budget`); escalation happens inside the existing 4 attempts, default `E = 2`, tuned later through KRHE. 
+- **Approved WD-04** (owner in chat, 2026-11-23: "Approve, start W3"): gates are fixed client code; cartridges name them by id; `REQUIRED[role]` lives in code; a model never writes a gate, its arguments or its pass condition. 
+- **Approved WD-05** (owner in chat, 2026-11-23: "Approve, start W4"): live checks use a local stack the person starts and confirms (`kriya stack use`, loopback only); a non-loopback database URL in the project makes stack gates refuse. 
+- **Approved WD-13** (owner in chat, 2026-11-23: "Approve, start W6"): the critic is advisory; it runs only after every hard gate passes, triggers at most one polish attempt, and the polish is kept only if every gate still passes. 
+- **Approved WD-07 and WD-14** (owner in chat, 2026-11-23: "Approve, start W7"): every change that comes from the Scout is the owner's click (E2), after lint and a benchmark; the Scout's monthly budget defaults to ₹0 (fetch-and-diff only, no model call) and its source list starts empty. WD-08, WD-09, WD-11, WD-12, WD-15…24 remain Proposed.
+- **Approved WD-08** (owner in chat, 2026-11-23: "I hereby approve WD-08"): cartridge benchmarks run only on the owner's machine or a track C sandbox, never on Kriya's servers; KriyaBench per-role seed sets. WD-09, WD-11, WD-12, WD-15…24 remain Proposed.
+- **Approved WD-12** (owner in chat, 2026-11-23: "I hereby approve WD-12"): long horizon = a milestone ledger of ≤ 12 bounded plans; `MAX_STEPS` = 7 and `MAX_ATTEMPTS` = 4 unchanged.
+- **Approved WD-09 and WD-15** (owner in chat, 2026-11-23: "Approve, start W11"): `harness.cartridgeOverlay` defaults off (approved versions are stored and ship through a reviewed commit; with it on, versions are served from the database with canary and one-click rollback); device outcome counts per cartridge version are sent only with the person's HD-24 opt-in, counts only.
+- **Approved WD-20** (owner in chat, 2026-11-23: "Approve WD-20, start W15"): version-exact grounding from installed type definitions and changelogs, local and offline; nothing imported or executed.
+- **Approved WD-19** (owner in chat, 2026-11-23: "I hereby approve WD-19"): GitHub/GitLab on the device only through the person's own gh/glab/git login; typed tools; draft PRs only; never merge, force-push or push a default branch; Kriya never reads a device credential.
+- **Approved WD-24** (owner in chat, 2026-11-23: "Approve WD-24, start W19"): proof receipts with a hash chain over run records, verified by `kriya receipt verify`.
+- **Approved WD-21 and WD-22** (owner in chat, 2026-11-23: "Approve WD-21/22, start W17"): G-DEPLOYED is the single non-loopback gate (GET/HEAD to the host the person's own deploy printed); the harness never runs hosted-database migrations, production env/secret changes, DNS changes or merges.
+- **Approved WD-18** (owner in chat, 2026-11-23: "I hereby approve both remaining decisions"): Explore: up to 3 gated takes in sequence in one folder, best kept by the person (or the critic, headless), inside MAX_ATTEMPTS.
+- **Approved WD-17** (owner in chat, 2026-11-23: "I hereby approve both remaining decisions"): a sixteenth cartridge, `kriya-role-graphics`, and the gate G-3D whose counts come from init-script-wrapped WebGL contexts, never from the app; frame time reported, never gated.
+- **Approved WD-23** (owner in chat, 2026-11-23: "I hereby approve WD-23"): Run strip in `shell.bottom`, four right-column tracks (Live, Proof, Changes, Project), gate chips, time scrubber and Mission Control panel; colours, fonts and material unchanged; old track ids aliased for backward compatibility.
+- **Approved the OR-20 client row** (owner in chat, 2026-11-23: "Yes, please add the CHANGE_IMPACT row and build the client-side candidate reader"): `src/cartridges.js` reads `KRIYA_CARTRIDGE_FILE` only under `KRIYA_BENCH=on`.
+
 # Rooms (track R)
 
 Conversations where people and their own agents work together: an agent

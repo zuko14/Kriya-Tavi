@@ -1,0 +1,26 @@
+{
+  "id": "kriya-role-game",
+  "role": "game",
+  "owns": [],
+  "reads": [],
+  "gates": ["G-SIM-HEADLESS", "G-DETECT"],
+  "detectors": [
+    {
+      "id": "GM-ALLOC-TICK",
+      "severity": "warn"
+    },
+    {
+      "id": "GM-DT-MISSING",
+      "severity": "warn"
+    }
+  ],
+  "judgement": [
+    {
+      "id": "feel",
+      "ask": "Does every player action get immediate, eased feedback?",
+      "severity": "major"
+    }
+  ],
+  "maxPromptChars": 4000,
+  "globs": ["**/game/**", "**/scenes/**", "**/*.gd"]
+}

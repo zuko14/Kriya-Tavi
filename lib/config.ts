@@ -714,6 +714,79 @@ export const SETTINGS = {
     pattern: /^(on|off)$/,
     hint: "on or off",
   },
+  // Harness 2.0 (docs/kriya-harness/upgrade_2.0, W1): the kriya-role-*
+  // cartridges join the default set, each with its cartridge block; served
+  // only while harness.defaultSkills is also on. Off: nothing changes
+  "harness.workforce": {
+    env: "KRIYA_HARNESS_WORKFORCE",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off; needs harness.defaultSkills",
+  },
+  // Harness 2.0 W2 (upgrade_2.0/ORCHESTRA.md): the model level that plans,
+  // writes contracts, advises and takes over (head), and the one that builds
+  // (worker). Offered to a device only with harness.workforce on, the two
+  // different, and both in the person's plan; the client sends aliases only
+  "harness.orchestraHead": {
+    env: "KRIYA_HARNESS_ORCHESTRA_HEAD",
+    fallback: "escalation",
+    pattern: /^(budget|balanced|escalation)$/,
+    hint: "budget, balanced or escalation",
+  },
+  "harness.orchestraWorker": {
+    env: "KRIYA_HARNESS_ORCHESTRA_WORKER",
+    fallback: "budget",
+    pattern: /^(budget|balanced|escalation)$/,
+    hint: "budget, balanced or escalation; the same as the head means no split",
+  },
+  // Harness 2.0 W11 (WD-09): serve approved cartridge versions (active, or a
+  // canary to a share of devices) instead of the repository's. Off: approved
+  // versions are stored only, and ship through a reviewed commit
+  // Harness 2.0 W16, MCP P3a: devices get the owner's registry servers that need
+  // no sign-in (and that the person enabled), tools pinned by hash; never a
+  // token. Needs next.mcp. Off: GET /mcp answers 404
+  "harness.mcp": {
+    env: "KRIYA_HARNESS_MCP",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off; needs next.mcp",
+  },
+  "harness.cartridgeOverlay": {
+    env: "KRIYA_HARNESS_CARTRIDGE_OVERLAY",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off; needs harness.workforce",
+  },
+  // Harness 2.0 W7, the R&D Scout (upgrade_2.0/SELF_EVOLUTION.md; WD-07, WD-14):
+  // reads the owner's listed sources on a schedule, keeps verbatim quotes of
+  // what changed, and proposes nothing by itself. Off: nothing runs
+  "harness.scout": {
+    env: "KRIYA_HARNESS_SCOUT",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // A run starts when the last finished one is at least this many days old
+  "harness.scoutEveryDays": {
+    env: "KRIYA_HARNESS_SCOUT_EVERY_DAYS",
+    fallback: "7",
+    pattern: /^([1-9]|[12]\d|30)$/,
+    hint: "1 to 30 days",
+  },
+  // The Scout's model spend per calendar month, in rupees; 0 means it reads and
+  // compares pages but never calls a model (WD-14). Enforced in SQL
+  "harness.scoutMonthlyInr": {
+    env: "KRIYA_HARNESS_SCOUT_MONTHLY_INR",
+    fallback: "0",
+    pattern: /^(0|[1-9]\d{0,5})$/,
+    hint: "0 to 999999 rupees a month; 0 = no model calls",
+  },
+  "harness.scoutMaxFindings": {
+    env: "KRIYA_HARNESS_SCOUT_MAX_FINDINGS",
+    fallback: "20",
+    pattern: /^([1-9]|[1-9]\d|100)$/,
+    hint: "1 to 100 findings per run",
+  },
   // Device sessions mirrored into threads (each device opts in too)
   "harness.mirror": {
     env: "KRIYA_HARNESS_MIRROR",

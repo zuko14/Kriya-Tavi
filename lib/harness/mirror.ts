@@ -1,13 +1,22 @@
-import { and, eq, sql } from "drizzle-orm"
+import { and, eq, inArray, sql } from "drizzle-orm"
 import type { z } from "zod"
 
 import { privileged, withUser } from "@/db"
-import { harnessDevices, harnessSessions, messages, threads } from "@/db/schema"
+import {
+  harnessCartridgeOutcomes,
+  harnessCartridgeVersions,
+  harnessDevices,
+  harnessSessions,
+  messages,
+  threads,
+} from "@/db/schema"
 import type { DeviceUser } from "@/lib/auth"
 import { getSetting } from "@/lib/config"
 import { previewText } from "@/lib/events"
 import type { SessionCreateRequest, TurnRequest } from "@/lib/harness/contract"
 import { mirrorLabel } from "@/lib/harness/mirror-context"
+import { log } from "@/lib/log"
+import { guardCanaries } from "@/lib/harness/scout/versions"
 
 // The session mirror (H6, HD-09): a device session becomes one thread of
 // the device's agent, titled "<device> · <project>", and each turn one
@@ -148,6 +157,53 @@ export function turnText(mode: Mode, turn: Turn) {
     .join("\n\n")
 }
 
+// The calendar day in India, for outcome rows
+const istDay = (now: Date) =>
+  new Date(now.getTime() + 330 * 60_000).toISOString().slice(0, 10)
+
+/**
+ * Harness 2.0 W11 (WD-15): a turn's cartridge outcome counts, by stored
+ * version, added to today's row of this person and device. Counts for a
+ * version Kriya never stored are dropped. Only when harness.workforce is on.
+ */
+async function outcomeRows(device: DeviceUser, outcomes: Turn["cartridgeOutcomes"]) {
+  if (!outcomes?.length || (await getSetting("harness.workforce")) !== "on") return []
+  const versions = await privileged
+    .select({
+      id: harnessCartridgeVersions.id,
+      cartridgeId: harnessCartridgeVersions.cartridgeId,
+      version: harnessCartridgeVersions.version,
+    })
+    .from(harnessCartridgeVersions)
+    .where(
+      inArray(
+        harnessCartridgeVersions.cartridgeId,
+        outcomes.map((o) => o.cartridgeId)
+      )
+    )
+  const day = istDay(new Date())
+  return outcomes.flatMap((o) => {
+    const v = versions.find(
+      (x) => x.cartridgeId === o.cartridgeId && x.version === o.version
+    )
+    return v
+      ? [
+          {
+            userId: device.id,
+            deviceId: device.deviceId,
+            versionId: v.id,
+            day,
+            verified: o.verified,
+            blocked: o.blocked,
+            notChecked: o.notChecked,
+            undone: o.undone,
+            cartridgeId: v.cartridgeId,
+          },
+        ]
+      : []
+  })
+}
+
 export async function appendTurn(device: DeviceUser, sessionId: string, turn: Turn) {
   const mirror = await modeOf(device)
   if (!mirror) return null
@@ -155,6 +211,7 @@ export async function appendTurn(device: DeviceUser, sessionId: string, turn: Tu
   const [found] = await sessionOf(device, eq(harnessSessions.id, sessionId))
   if (!found) return null
   const text = turnText(mirror, turn)
+  const counts = await outcomeRows(device, turn.cartridgeOutcomes)
   // The message id is the seq: a turn sent twice is stored once
   const inserted = await withUser(device.id, async (tx) => {
     const rows = await tx
@@ -182,8 +239,35 @@ export async function appendTurn(device: DeviceUser, sessionId: string, turn: Tu
         .update(threads)
         .set({ preview: previewText(turn.text) || null, activeAt: new Date() })
         .where(eq(threads.id, found.threadId))
+    // Counted once: only with the turn's first delivery (a resent seq adds nothing)
+    if (rows.length)
+      for (const { cartridgeId, ...row } of counts) {
+        void cartridgeId
+        await tx
+          .insert(harnessCartridgeOutcomes)
+          .values(row)
+          .onConflictDoUpdate({
+            target: [
+              harnessCartridgeOutcomes.userId,
+              harnessCartridgeOutcomes.deviceId,
+              harnessCartridgeOutcomes.versionId,
+              harnessCartridgeOutcomes.day,
+            ],
+            set: {
+              verified: sql`${harnessCartridgeOutcomes.verified} + ${row.verified}`,
+              blocked: sql`${harnessCartridgeOutcomes.blocked} + ${row.blocked}`,
+              notChecked: sql`${harnessCartridgeOutcomes.notChecked} + ${row.notChecked}`,
+              undone: sql`${harnessCartridgeOutcomes.undone} + ${row.undone}`,
+            },
+          })
+      }
     return rows.length > 0
   })
+  // The guard (SELF_EVOLUTION §6) on the canaries these counts touched; its failure never loses the turn
+  if (inserted && counts.length)
+    await guardCanaries([...new Set(counts.map((c) => c.cartridgeId))]).catch((error) =>
+      log.error("cartridge guard failed", { error: (error as Error)?.name ?? "error" })
+    )
   if (inserted)
     await privileged
       .update(harnessSessions)

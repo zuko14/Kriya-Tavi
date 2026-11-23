@@ -1,0 +1,30 @@
+{
+  "id": "kriya-role-security",
+  "role": "security",
+  "owns": ["threat_model"],
+  "reads": ["api", "schema", "auth_matrix"],
+  "gates": ["G-TENANT", "G-SAST", "G-SECRETS"],
+  "detectors": [
+    {
+      "id": "SEC-BODY-ID",
+      "severity": "warn"
+    },
+    {
+      "id": "SEC-EVAL",
+      "severity": "error"
+    },
+    {
+      "id": "BE-SQL-INTERP",
+      "severity": "error"
+    }
+  ],
+  "judgement": [
+    {
+      "id": "threat-coverage",
+      "ask": "Does every row of the threat model have a control and a test?",
+      "severity": "major"
+    }
+  ],
+  "maxPromptChars": 4000,
+  "globs": ["**/auth/**", "**/middleware*", "**/policies/**", "**/*policy*"]
+}

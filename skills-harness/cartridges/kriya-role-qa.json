@@ -1,0 +1,26 @@
+{
+  "id": "kriya-role-qa",
+  "role": "qa",
+  "owns": [],
+  "reads": ["api", "auth_matrix", "threat_model", "component_states"],
+  "gates": ["G-TRACE"],
+  "detectors": [
+    {
+      "id": "QA-ONLY",
+      "severity": "error"
+    },
+    {
+      "id": "QA-SKIP",
+      "severity": "warn"
+    }
+  ],
+  "judgement": [
+    {
+      "id": "reproducible",
+      "ask": "Does every reported bug carry exact reproduction steps?",
+      "severity": "minor"
+    }
+  ],
+  "maxPromptChars": 4000,
+  "globs": ["**/*.test.*", "**/*.spec.*", "**/tests/**", "**/__tests__/**"]
+}

@@ -6,7 +6,12 @@ import { withUser } from "@/db"
 import { agents } from "@/db/schema"
 import type { DeviceUser } from "@/lib/auth"
 import { getSetting } from "@/lib/config"
-import { defaultSkillSet, loadDefaultSkill } from "@/lib/harness/default-skills"
+import {
+  cartridgeFor,
+  defaultSkillSet,
+  loadDefaultSkill,
+} from "@/lib/harness/default-skills"
+import { servedVersions, type CartridgeVersion } from "@/lib/harness/scout/versions"
 import { readSkill } from "@/lib/skill-engine"
 import {
   CATALOG,
@@ -42,19 +47,47 @@ export async function deviceSkills(device: DeviceUser) {
     (s) => s.status === "active" && !disabled.has(s.id) && !have.has(s.id)
   )
   const ids = new Set(defaults.map((s) => s.id))
+  // Harness 2.0 W11 (WD-09): with the overlay on, an approved cartridge
+  // version replaces the repository's for this device (active, or a canary
+  // by the device's bucket). Off: no query, the same list and ETag as before
+  const overlay =
+    (await getSetting("harness.cartridgeOverlay")) === "on" &&
+    defaults.some((s) => cartridgeFor(s.id))
+      ? await servedVersions(device.deviceId)
+      : new Map<string, CartridgeVersion>()
   return {
     skills: [
-      ...defaults.map((s) => ({
-        id: s.id,
-        name: s.name,
-        version: s.version,
-        description: s.description,
-        activation: { always: s.activation.always, keywords: [...s.activation.keywords] },
-      })),
+      ...defaults.map((s) => {
+        // Harness 2.0 role cartridges (only in the set with harness.workforce
+        // on): their block, and kept out of the model's own skill catalogue,
+        // because the loop mounts one per builder (upgrade_2.0/CARTRIDGES.md §5)
+        const cartridge = cartridgeFor(s.id)
+        const served = cartridge ? overlay.get(s.id) : undefined
+        const manifest = served?.manifest as
+          | { activation?: { keywords?: string[] }; cartridge?: typeof cartridge }
+          | undefined
+        return {
+          id: s.id,
+          name: s.name,
+          version: served?.version ?? s.version,
+          description: s.description,
+          activation: {
+            always: s.activation.always,
+            keywords: [...(manifest?.activation?.keywords ?? s.activation.keywords)],
+          },
+          ...(cartridge && {
+            cartridge: manifest?.cartridge ?? cartridge,
+            invocation: { modelInvocable: false as const },
+          }),
+        }
+      }),
       ...base.skills,
     ],
-    load: ((id, version) =>
-      ids.has(id) ? loadDefaultSkill(id, version) : base.load(id, version)) as Loader,
+    load: ((id, version) => {
+      const served = overlay.get(id)
+      if (served && served.version === version) return served.body
+      return ids.has(id) ? loadDefaultSkill(id, version) : base.load(id, version)
+    }) as Loader,
   }
 }
 

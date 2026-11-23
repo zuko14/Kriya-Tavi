@@ -1,0 +1,26 @@
+{
+  "id": "kriya-role-cloud",
+  "role": "cloud",
+  "owns": [],
+  "reads": [],
+  "gates": ["G-IAC"],
+  "detectors": [
+    {
+      "id": "CL-IAM-STAR",
+      "severity": "error"
+    },
+    {
+      "id": "CL-PUBLIC",
+      "severity": "error"
+    }
+  ],
+  "judgement": [
+    {
+      "id": "blast-radius",
+      "ask": "Does the plan state what breaks when each component fails?",
+      "severity": "major"
+    }
+  ],
+  "maxPromptChars": 4000,
+  "globs": ["**/*.tf", "**/*.tfvars", "**/Pulumi.*", "**/cdk/**"]
+}

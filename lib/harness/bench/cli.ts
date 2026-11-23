@@ -3,13 +3,15 @@ import path from "node:path"
 import { parseArgs } from "node:util"
 
 import { HarnessProfile, pinnedEnv, profileId } from "../evolve/profile"
+import { readCandidateFile } from "../scout/candidate-file"
 import { commandAgent } from "./agent"
 import { runBench } from "./run"
-import { SEED } from "./seed"
+import { LEVELS, levelTasks } from "./seed"
 
 // npx tsx lib/harness/bench/cli.ts --agent "kriya run --mode auto" \
-//   [--only fix-range-sum,feature-rupees | --level easy|hard|multi|cap] [--out bench.json] [--keep]
+//   [--only fix-range-sum,feature-rupees | --level easy|hard|multi|cap|role-<role>] [--out bench.json] [--keep]
 //   [--meter "kriya usage --json"] [--status "kriya verify status --json"] [--profile profile.json]
+//   [--cartridge-candidate candidate-<id>.json]
 //
 // --profile (KRHE, RECURSIVE_HARNESS_EVOLUTION.md): the run is pinned to a
 // harness profile: its switches and limits go to the agent's environment,
@@ -30,11 +32,13 @@ const { values } = parseArgs({
     // e.g. "kriya verify status --json": each task's own record of the run
     status: { type: "string" },
     profile: { type: "string" },
+    // Harness 2.0 W9: the candidate arm of a cartridge benchmark
+    "cartridge-candidate": { type: "string" },
   },
 })
 if (!values.agent) {
   console.error(
-    'Usage: --agent "kriya run --mode auto" [--only ids | --level easy|hard|multi] [--out file] [--keep]'
+    'Usage: --agent "kriya run --mode auto" [--only ids | --level easy|hard|multi|cap|role-<role>] [--out file] [--keep]'
   )
   process.exit(2)
 }
@@ -50,14 +54,32 @@ if (values.profile) {
     process.exit(2)
   }
 }
+// The client reads KRIYA_CARTRIDGE_FILE only under KRIYA_BENCH=on, which only
+// this runner sets (SELF_EVOLUTION §3): never inherited from the shell, so the
+// incumbent arm can't run a candidate by accident
+delete process.env.KRIYA_BENCH
+delete process.env.KRIYA_CARTRIDGE_FILE
+let candidate: { id: string; cartridgeId: string; sha256: string } | undefined
+if (values["cartridge-candidate"]) {
+  const file = path.resolve(values["cartridge-candidate"])
+  try {
+    const c = readCandidateFile(await fs.readFile(file, "utf8"))
+    candidate = { id: c.candidateId, cartridgeId: c.cartridgeId, sha256: c.sha256 }
+  } catch (error) {
+    console.error(`--cartridge-candidate: ${(error as Error).message}`)
+    process.exit(2)
+  }
+  process.env.KRIYA_BENCH = "on"
+  process.env.KRIYA_CARTRIDGE_FILE = file
+}
 const only = values.only?.split(",")
-if (values.level && !["easy", "hard", "multi", "cap"].includes(values.level)) {
-  console.error("--level is easy, hard, multi or cap")
+// role-<role> (W8) is that role's own set, apart from SEED; --only picks within the level
+const pool = levelTasks(values.level)
+if (!pool) {
+  console.error(`--level is one of ${LEVELS.join(", ")}`)
   process.exit(2)
 }
-const tasks = SEED.filter(
-  (t) => (!only || only.includes(t.id)) && (!values.level || t.level === values.level)
-)
+const tasks = pool.filter((t) => !only || only.includes(t.id))
 if (only && tasks.length !== only.length) {
   console.error(`Unknown task id in --only: ${values.only}`)
   process.exit(2)
@@ -75,6 +97,7 @@ const text = JSON.stringify(
   {
     ...report,
     ...(profile && { profile, profileId: profileId(profile) }),
+    ...(candidate && { cartridgeCandidate: candidate }),
     finishedAt: new Date().toISOString(),
   },
   (_, v) => (typeof v === "bigint" ? v.toString() : v),

@@ -1,0 +1,49 @@
+{
+  "id": "kriya-role-backend",
+  "name": "Backend engineer",
+  "description": "Role cartridge for backend steps: failure modes first, idempotent writes, timeouts, boundary validation, parameterised queries, layered handlers and structured logs without secrets.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["engineering", "role"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "backend",
+      "back end",
+      "api",
+      "endpoint",
+      "server",
+      "handler",
+      "route",
+      "service",
+      "webhook",
+      "rest"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the project's confirmed check and the Kriya gates this cartridge names, from exit codes; the cartridge adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 4000
+  },
+  "evals": [
+    {
+      "ask": "Add an API endpoint that creates an order",
+      "expect": "activate"
+    },
+    {
+      "ask": "What is the capital of Karnataka?",
+      "expect": "skip"
+    },
+    {
+      "ask": "Translate this sentence into Hindi",
+      "expect": "skip"
+    }
+  ]
+}

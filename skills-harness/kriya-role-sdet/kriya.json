@@ -1,0 +1,48 @@
+{
+  "id": "kriya-role-sdet",
+  "name": "SDET",
+  "description": "Role cartridge for test-infrastructure steps: hermetic tests, fixed clocks and seeds, waits on conditions, data factories, property tests, no flakes and no blind retries.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["engineering", "role"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "flaky",
+      "flake",
+      "test infrastructure",
+      "test harness",
+      "fixtures",
+      "e2e",
+      "playwright",
+      "test runner",
+      "property based"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the project's confirmed check and the Kriya gates this cartridge names, from exit codes; the cartridge adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 4000
+  },
+  "evals": [
+    {
+      "ask": "Fix the flaky e2e tests in the test runner",
+      "expect": "activate"
+    },
+    {
+      "ask": "What is the capital of Karnataka?",
+      "expect": "skip"
+    },
+    {
+      "ask": "Translate this sentence into Hindi",
+      "expect": "skip"
+    }
+  ]
+}

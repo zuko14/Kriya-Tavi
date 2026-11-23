@@ -2,10 +2,12 @@ import { eq } from "drizzle-orm"
 
 import { privileged } from "@/db"
 import { models, TIERS, type Tier } from "@/db/schema"
+import { getSetting } from "@/lib/config"
 import { getPlan } from "@/lib/entitlements"
 import { modelLimits } from "@/lib/harness/model-limits"
 import { BODY_ENCODINGS, harnessRoute, ok } from "@/lib/harness/route"
 import { modelForTier } from "@/lib/models"
+import { isTier } from "@/lib/tiers"
 
 // The model levels this person's plan allows, as OpenAI lists models, each
 // with the name of the model the owner routes it to (/owner/config
@@ -41,10 +43,29 @@ async function levelInfo(tier: Tier) {
   }
 }
 
+/**
+ * Harness 2.0 W2 (upgrade_2.0/ORCHESTRA.md §1): the owner's head and worker
+ * levels, only with harness.workforce on, the two different and both in the
+ * plan; otherwise nothing, and the client runs on one level as before.
+ */
+export async function orchestraFor(allowed: readonly Tier[]) {
+  if ((await getSetting("harness.workforce")) !== "on") return undefined
+  const [head, worker] = await Promise.all([
+    getSetting("harness.orchestraHead"),
+    getSetting("harness.orchestraWorker"),
+  ])
+  if (!isTier(head) || !isTier(worker) || head === worker) return undefined
+  if (!allowed.includes(head) || !allowed.includes(worker)) return undefined
+  return { head, worker }
+}
+
 export const GET = harnessRoute(true, async (_request, device) => {
   const plan = await getPlan(device.id)
   const allowed = TIERS.filter((tier) => plan.allowedTiers.includes(tier))
-  const found = await Promise.all(allowed.map(levelInfo))
+  const [found, orchestra] = await Promise.all([
+    Promise.all(allowed.map(levelInfo)),
+    orchestraFor(allowed),
+  ])
   return ok({
     object: "list",
     data: allowed.map((id, i) => ({
@@ -56,5 +77,7 @@ export const GET = harnessRoute(true, async (_request, device) => {
       ...(found[i].images && { images: true as const }),
     })),
     bodyEncodings: [...BODY_ENCODINGS],
+    ...(orchestra && { orchestra }),
+    ...((await getSetting("harness.workforce")) === "on" && { workforce: 1 as const }),
   })
 })

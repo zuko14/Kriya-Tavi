@@ -1,6 +1,10 @@
 import { CAP, CAP_RETIRED } from "./seed-cap"
 import { HARD } from "./seed-hard"
 import { MULTI } from "./seed-multi"
+import { ROLE_BACKEND } from "./seed-role-backend"
+import { ROLE_FRONTEND } from "./seed-role-frontend"
+import { ROLE_IDS, type RoleId } from "./seed-role-kit"
+import { ROLE_SECURITY } from "./seed-role-security"
 import type { BenchTask } from "./task"
 
 // KriyaBench seed set (H13). Each task fails as given and passes with its
@@ -603,3 +607,28 @@ export function greet(name) {
   ...CAP,
   ...CAP_RETIRED,
 ]
+
+// Per-role sets (Harness 2.0 W8), kept out of SEED so its version is unchanged:
+// a role is benched on its own set, `--level role-<role>`
+export const ROLE_SEEDS: Record<RoleId, BenchTask[]> = {
+  frontend: ROLE_FRONTEND,
+  backend: ROLE_BACKEND,
+  security: ROLE_SECURITY,
+}
+
+export const LEVELS = [
+  "easy",
+  "hard",
+  "multi",
+  "cap",
+  ...ROLE_IDS.map((r) => `role-${r}`),
+]
+
+// The tasks a --level names (all of SEED without one), or null for an unknown level
+export function levelTasks(level?: string): BenchTask[] | null {
+  if (!level) return SEED
+  const role = level.slice(5)
+  if (level.startsWith("role-"))
+    return Object.hasOwn(ROLE_SEEDS, role) ? ROLE_SEEDS[role as RoleId] : null
+  return LEVELS.includes(level) ? SEED.filter((t) => t.level === level) : null
+}

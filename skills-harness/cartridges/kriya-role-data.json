@@ -1,0 +1,22 @@
+{
+  "id": "kriya-role-data",
+  "role": "data",
+  "owns": [],
+  "reads": ["schema"],
+  "gates": ["G-DATA", "G-DETECT"],
+  "detectors": [
+    {
+      "id": "DT-INSERT-NOKEY",
+      "severity": "warn"
+    }
+  ],
+  "judgement": [
+    {
+      "id": "lineage",
+      "ask": "Is the source of each output column stated?",
+      "severity": "minor"
+    }
+  ],
+  "maxPromptChars": 4000,
+  "globs": ["**/dags/**", "**/models/**/*.sql", "**/pipelines/**", "**/etl/**"]
+}

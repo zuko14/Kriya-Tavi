@@ -1,0 +1,45 @@
+{
+  "id": "kriya-role-fullstack",
+  "name": "Full-stack engineer",
+  "description": "Role cartridge for full-stack slices: one source of truth for every type across the wire, generated not copied, identity on the server, a vertical slice proven by a real round trip.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["engineering", "role"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "full stack",
+      "fullstack",
+      "full-stack",
+      "end to end",
+      "vertical slice",
+      "feature"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the project's confirmed check and the Kriya gates this cartridge names, from exit codes; the cartridge adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 4000
+  },
+  "evals": [
+    {
+      "ask": "Build the full stack feature for saving drafts",
+      "expect": "activate"
+    },
+    {
+      "ask": "What is the capital of Karnataka?",
+      "expect": "skip"
+    },
+    {
+      "ask": "Translate this sentence into Hindi",
+      "expect": "skip"
+    }
+  ]
+}

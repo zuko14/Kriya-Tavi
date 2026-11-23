@@ -1,0 +1,52 @@
+{
+  "id": "kriya-role-frontend",
+  "role": "frontend",
+  "owns": [],
+  "reads": ["api", "design_tokens", "component_states"],
+  "gates": ["G-UI", "G-A11Y", "G-DETECT"],
+  "detectors": [
+    {
+      "id": "FE-HEX",
+      "severity": "error"
+    },
+    {
+      "id": "FE-PX",
+      "severity": "warn"
+    },
+    {
+      "id": "FE-IMG-ALT",
+      "severity": "error"
+    },
+    {
+      "id": "FE-CLICK-DIV",
+      "severity": "error"
+    },
+    {
+      "id": "FE-FETCH-EFFECT",
+      "severity": "warn"
+    },
+    {
+      "id": "FE-TROPE",
+      "severity": "warn"
+    }
+  ],
+  "judgement": [
+    {
+      "id": "hierarchy",
+      "ask": "Does the visual hierarchy read in one glance, with one primary action per view?",
+      "severity": "major"
+    },
+    {
+      "id": "next-step",
+      "ask": "Do empty and error states tell the person what to do next?",
+      "severity": "major"
+    },
+    {
+      "id": "motion-purpose",
+      "ask": "Does every motion explain a change rather than decorate?",
+      "severity": "minor"
+    }
+  ],
+  "maxPromptChars": 4000,
+  "globs": ["**/*.tsx", "**/*.jsx", "**/*.vue", "**/*.svelte", "**/*.css", "**/*.scss"]
+}

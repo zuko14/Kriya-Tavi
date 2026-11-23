@@ -1,0 +1,44 @@
+{
+  "id": "kriya-role-designer",
+  "role": "designer",
+  "owns": ["design_tokens", "component_states", "scene_direction"],
+  "reads": [],
+  "gates": ["G-CONTRACT", "G-A11Y"],
+  "detectors": [
+    {
+      "id": "FE-GLASS-CONTENT",
+      "severity": "warn"
+    },
+    {
+      "id": "FE-GLASS-FALLBACK",
+      "severity": "error"
+    },
+    {
+      "id": "FE-FONT-LICENCE",
+      "severity": "error"
+    },
+    {
+      "id": "FE-TROPE",
+      "severity": "warn"
+    }
+  ],
+  "judgement": [
+    {
+      "id": "direction",
+      "ask": "Is one named direction applied consistently across tokens and screens?",
+      "severity": "major"
+    },
+    {
+      "id": "restraint",
+      "ask": "Is the design restrained: few typefaces, few radii, colour used for meaning?",
+      "severity": "major"
+    },
+    {
+      "id": "rhythm",
+      "ask": "Do spacing and type sizes follow the scale so the page has a steady rhythm?",
+      "severity": "minor"
+    }
+  ],
+  "maxPromptChars": 4000,
+  "globs": ["**/tokens.json", "**/design-tokens.json", "**/theme.*", "**/globals.css"]
+}

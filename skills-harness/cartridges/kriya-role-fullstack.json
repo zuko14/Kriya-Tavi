@@ -1,0 +1,26 @@
+{
+  "id": "kriya-role-fullstack",
+  "role": "fullstack",
+  "owns": [],
+  "reads": ["api", "schema", "auth_matrix", "design_tokens", "component_states"],
+  "gates": ["G-CONTRACT", "G-STACK", "G-UI", "G-API"],
+  "detectors": [
+    {
+      "id": "FS-DTO-DUP",
+      "severity": "warn"
+    },
+    {
+      "id": "BE-SQL-INTERP",
+      "severity": "error"
+    }
+  ],
+  "judgement": [
+    {
+      "id": "no-leaks",
+      "ask": "Does the interface avoid raw column names, needless internal ids and stack traces?",
+      "severity": "major"
+    }
+  ],
+  "maxPromptChars": 4000,
+  "globs": []
+}

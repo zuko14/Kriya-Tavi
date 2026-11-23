@@ -1,0 +1,26 @@
+{
+  "id": "kriya-role-systems",
+  "role": "systems",
+  "owns": [],
+  "reads": [],
+  "gates": ["G-SAN", "G-DETECT"],
+  "detectors": [
+    {
+      "id": "SY-UNSAFE-NOCOMMENT",
+      "severity": "warn"
+    },
+    {
+      "id": "SY-SPIN",
+      "severity": "warn"
+    }
+  ],
+  "judgement": [
+    {
+      "id": "invariants",
+      "ask": "Does every unsafe block state the invariant that makes it safe?",
+      "severity": "major"
+    }
+  ],
+  "maxPromptChars": 4000,
+  "globs": ["**/*.rs", "**/*.c", "**/*.cc", "**/*.cpp", "**/*.h", "**/*.hpp"]
+}

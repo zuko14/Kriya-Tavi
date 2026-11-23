@@ -1,5 +1,13 @@
 import { z } from "zod"
 
+import {
+  CARTRIDGE_ROLES,
+  CONTRACT_NAMES,
+  DETECTOR_IDS,
+  GATE_IDS,
+} from "@/lib/harness/cartridge-ids"
+import { CartridgeFile } from "@/lib/harness/cartridges"
+
 // The Kriya Harness API's wire contract (track H, API_AND_CONTRACTS):
 // defined once here, validated on every route, exported to
 // docs/kriya-harness/contract.json for the client repository (HD-03).
@@ -123,6 +131,17 @@ export const ModelsResponse = z.strictObject({
   // (lib/harness/route.ts readBody; owner, 2026-11-04: harness bodies go
   // gzip+base64 past the host's firewall). Absent on an older Kriya
   bodyEncodings: z.array(z.literal("gzip+base64")).optional(),
+  // Harness 2.0 W2: the owner's head and worker levels, both in the plan and
+  // different; absent unless harness.workforce is on (upgrade_2.0/ORCHESTRA.md §1)
+  orchestra: z
+    .strictObject({
+      head: z.enum(["budget", "balanced", "escalation"]),
+      worker: z.enum(["budget", "balanced", "escalation"]),
+    })
+    .optional(),
+  // Harness 2.0 W11: this Kriya takes TurnRequest.cartridgeOutcomes; absent
+  // unless harness.workforce is on, so a client never sends what isn't taken
+  workforce: z.literal(1).optional(),
 })
 
 // H5: a local action waiting for the person (API_AND_CONTRACTS §4). The input
@@ -194,6 +213,22 @@ export const TurnRequest = z.strictObject({
       message: "full is over 64 KB",
     })
     .optional(),
+  // Harness 2.0 W11 (WD-15): counts per cartridge version since the last
+  // turn, sent only when the person turned sharing on (kriya share) and
+  // /models advertised `workforce: 1`. Counts only, never content
+  cartridgeOutcomes: z
+    .array(
+      z.strictObject({
+        cartridgeId: z.string().regex(/^kriya-role-[a-z]{2,20}$/),
+        version: z.string().regex(SEMVER),
+        verified: z.number().int().min(0).max(10_000),
+        blocked: z.number().int().min(0).max(10_000),
+        notChecked: z.number().int().min(0).max(10_000),
+        undone: z.number().int().min(0).max(10_000),
+      })
+    )
+    .max(20)
+    .optional(),
 })
 
 // H7: the device agent's skills and memory (API_AND_CONTRACTS §6, HD-10).
@@ -210,6 +245,30 @@ export const SkillsResponse = z.strictObject({
         always: z.boolean(),
         keywords: z.array(z.string()),
       }),
+      // Harness 2.0 W1: present only on kriya-role-* cartridges, only with
+      // harness.workforce on (upgrade_2.0/DATA_MODEL_AND_CONTRACTS.md §4)
+      cartridge: CartridgeFile.omit({ id: true }).optional(),
+      invocation: z.strictObject({ modelInvocable: z.literal(false) }).optional(),
+    })
+  ),
+})
+
+// Harness 2.0 W16, MCP P3a: registry servers that need no sign-in, each tool
+// with its pinned definition hash and class. No token, client id or secret name
+export const McpServersResponse = z.strictObject({
+  servers: z.array(
+    z.strictObject({
+      id: z.string().min(1).max(100),
+      name: z.string().min(1).max(200),
+      url: z.string().url().max(2000),
+      tools: z.array(
+        z.strictObject({
+          name: z.string().min(1).max(200),
+          definitionHash: z.string().regex(/^[a-f0-9]{64}$/),
+          risk: z.enum(["R0", "R1", "R2", "R3", "R4"]),
+          readOnly: z.boolean(),
+        })
+      ),
     })
   ),
 })
@@ -681,6 +740,13 @@ export const ROUTES = [
   },
   // ETag and If-None-Match (304)
   { method: "GET", path: "/skills", auth: true, request: null, response: SkillsResponse },
+  {
+    method: "GET",
+    path: "/mcp",
+    auth: true,
+    request: null,
+    response: McpServersResponse,
+  },
   // text/markdown: the instructions of that version
   {
     method: "GET",
@@ -854,5 +920,12 @@ export function contractJson() {
       request: route.request && z.toJSONSchema(route.request),
       response: route.response && z.toJSONSchema(route.response),
     })),
+    // Harness 2.0: the ids a role cartridge may name (lib/harness/cartridge-ids.ts)
+    cartridgeIds: {
+      roles: [...CARTRIDGE_ROLES],
+      gates: [...GATE_IDS],
+      detectors: [...DETECTOR_IDS],
+      contracts: [...CONTRACT_NAMES],
+    },
   }
 }

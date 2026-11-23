@@ -1,0 +1,49 @@
+{
+  "id": "kriya-role-devops",
+  "name": "DevOps engineer",
+  "description": "Role cartridge for build and release steps: reproducible multi-stage builds, pinned images, health checks, expand-migrate-contract migrations and a written rollback.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["engineering", "role"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "devops",
+      "docker",
+      "dockerfile",
+      "ci",
+      "pipeline",
+      "deploy",
+      "deployment",
+      "release",
+      "github actions",
+      "container"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the project's confirmed check and the Kriya gates this cartridge names, from exit codes; the cartridge adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 4000
+  },
+  "evals": [
+    {
+      "ask": "Write a Dockerfile and CI pipeline for this service",
+      "expect": "activate"
+    },
+    {
+      "ask": "What is the capital of Karnataka?",
+      "expect": "skip"
+    },
+    {
+      "ask": "Translate this sentence into Hindi",
+      "expect": "skip"
+    }
+  ]
+}

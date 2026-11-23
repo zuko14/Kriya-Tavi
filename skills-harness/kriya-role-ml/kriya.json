@@ -1,0 +1,49 @@
+{
+  "id": "kriya-role-ml",
+  "name": "ML and AI engineer",
+  "description": "Role cartridge for machine-learning and AI steps: a recorded baseline, leakage-free splits, versioned data and prompts, fixed seeds, budgets, and schema-validated model output.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["engineering", "role"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "machine learning",
+      "ml",
+      "model",
+      "training",
+      "evaluation",
+      "dataset",
+      "prompt",
+      "llm",
+      "embedding",
+      "classifier"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the project's confirmed check and the Kriya gates this cartridge names, from exit codes; the cartridge adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 4000
+  },
+  "evals": [
+    {
+      "ask": "Train a classifier and compare it to the baseline",
+      "expect": "activate"
+    },
+    {
+      "ask": "What is the capital of Karnataka?",
+      "expect": "skip"
+    },
+    {
+      "ask": "Translate this sentence into Hindi",
+      "expect": "skip"
+    }
+  ]
+}

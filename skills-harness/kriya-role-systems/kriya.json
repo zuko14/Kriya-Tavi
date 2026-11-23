@@ -1,0 +1,49 @@
+{
+  "id": "kriya-role-systems",
+  "name": "Systems engineer",
+  "description": "Role cartridge for systems and embedded steps: explicit ownership, bounded buffers and time, a fixed lock order, warnings as errors and sanitizers clean.",
+  "version": "1.0.0",
+  "status": "active",
+  "trust": "curated",
+  "license": "MIT",
+  "source": [],
+  "categories": ["engineering", "role"],
+  "roles": ["engineer", "developer", "coder", "code"],
+  "activation": {
+    "keywords": [
+      "rust",
+      "c++",
+      "embedded",
+      "firmware",
+      "kernel",
+      "memory",
+      "concurrency",
+      "systems",
+      "driver",
+      "real-time"
+    ]
+  },
+  "tools": {
+    "all": [],
+    "any": [],
+    "uses": []
+  },
+  "verification": "Pass or fail comes only from the project's confirmed check and the Kriya gates this cartridge names, from exit codes; the cartridge adds no tool, approval or setting.",
+  "limits": {
+    "maxChars": 4000
+  },
+  "evals": [
+    {
+      "ask": "Fix the memory leak in the Rust parser",
+      "expect": "activate"
+    },
+    {
+      "ask": "What is the capital of Karnataka?",
+      "expect": "skip"
+    },
+    {
+      "ask": "Translate this sentence into Hindi",
+      "expect": "skip"
+    }
+  ]
+}
