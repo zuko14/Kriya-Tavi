@@ -2131,6 +2131,21 @@ export const harnessDeviceCodes = kriya.table("harness_device_codes", {
 })
 
 // One row per gateway request: reported cost, estimate and charge apart
+// Own models (docs/kriya-harness/OWN_MODELS.md): counts from the person's own
+// API keys; the provider's reported cost only, never a Kriya charge
+export const harnessOwnUsage = kriya.table("harness_own_usage", {
+  id: bigint({ mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  userId: uuid().notNull(),
+  deviceId: uuid().notNull(),
+  provider: text().notNull(),
+  model: text().notNull(),
+  requests: integer().notNull().default(1),
+  inputTokens: bigint({ mode: "number" }).notNull().default(0),
+  outputTokens: bigint({ mode: "number" }).notNull().default(0),
+  reportedCostMicroUsd: micro(),
+  at: timestamp({ withTimezone: true }).notNull().defaultNow(),
+})
+
 export const harnessUsage = kriya.table("harness_usage", {
   id: uuid().primaryKey().defaultRandom(),
   requestKey: text().notNull(),

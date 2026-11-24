@@ -16,12 +16,15 @@ import { Devices } from "@/components/account/devices"
 import { Command } from "@/components/harness/command"
 import { ControlCenter } from "@/components/harness/control-center"
 import { LiveList } from "@/components/harness/live"
+import { OwnUsage } from "@/components/harness/own-usage"
 import { HarnessApproval } from "@/components/inbox/harness-approval"
-import { requireUser } from "@/lib/auth"
+import { appUrl, requireUser } from "@/lib/auth"
 import { getSetting } from "@/lib/config"
 import { getPlan } from "@/lib/entitlements"
 import { controlCenter } from "@/lib/harness/control"
+import { installLine } from "@/lib/harness/install"
 import { liveSessions } from "@/lib/harness/live"
+import { ownUsageThisMonth } from "@/lib/harness/own-usage"
 import { log } from "@/lib/log"
 import { harnessSpend } from "@/lib/harness/devices"
 import { formatInr } from "@/lib/money"
@@ -246,6 +249,15 @@ export default async function HarnessPage() {
   // Track S: a plan drawn in Flows runs here through the same daemon
   const flows = center && (await on("studio.flows")) && (await on("studio.deviceFlows"))
   const install = await getSetting("harness.installCommand")
+  // Own models: this month's calls through the person's own keys (counts only)
+  const own = (await on("harness.ownModels"))
+    ? await ownUsageThisMonth(user.id).catch((error) => {
+        log.error("own usage read failed", { error: String(error) })
+        return null
+      })
+    : null
+  // S-2: the one-line installer, which also opens the sign-in (docs/kriya-harness/INSTALLER.md)
+  const oneLine = (await on("harness.installScript")) ? installLine(appUrl()) : null
   const beta = (await getSetting("harness.releaseStage")) !== "ga"
   const cap = Number(plan.harnessMonthlyMicroInr)
   const signedIn = devices.length > 0
@@ -297,7 +309,24 @@ export default async function HarnessPage() {
       <ol className="glass flex flex-col divide-y overflow-hidden rounded-[20px]">
         <li className="flex flex-col gap-2.5 px-4 py-3.5">
           <span className="text-[13.5px] font-medium">1. Install Kriya Harness</span>
-          {install ? (
+          {oneLine ? (
+            <>
+              <Command command={oneLine} />
+              <span className="text-[12.5px] leading-relaxed text-muted-foreground">
+                One line in Terminal. It installs everything Kriya Harness needs into
+                ~/.kriya, without touching your own Node or npm, and opens the sign-in.
+                macOS and Linux; on Windows, run it inside WSL.
+              </span>
+              {install && (
+                <>
+                  <span className="text-[12.5px] text-muted-foreground">
+                    Or with npm (Node 24.9 or later):
+                  </span>
+                  <Command command={install} />
+                </>
+              )}
+            </>
+          ) : install ? (
             <Command command={install} />
           ) : (
             <span className="text-[13px] leading-relaxed text-muted-foreground">
@@ -429,6 +458,15 @@ export default async function HarnessPage() {
               handoffOn={handoff && cloudOn}
               serveOn={world}
             />
+          </Section>
+        )}
+
+        {own && (
+          <Section
+            title="Your own models"
+            description="Calls Kriya Harness made through your own API keys this month. Kriya didn't pay for these; costs are your provider's own figures."
+          >
+            <OwnUsage rows={own} />
           </Section>
         )}
 

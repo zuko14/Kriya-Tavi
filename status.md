@@ -12196,6 +12196,333 @@ Client only (kriya-harness); Kriya-Tavi changed in documents only.
     - the reload wait fingerprints the route, not its main module.
 - **Next exact action:** Harness 2.0 has no phase left. The owner decides on commits, and on the open items (OR-37, OR-38, OR-40…42; the W7, W9 and W11 browser checks).
 
+### Client CI fix record (2026-11-23)
+
+- **What failed:** GitHub Actions run 45201431754 on `main` (commit `ef72506`) failed 10 tests on `check (ubuntu-latest)` (1208/1218) and 2 on `check (macos-latest)` (1216/1218).
+- **Already failing before Harness 2.0** (Ubuntu run 42800075273 on 2026-11-10, macOS run 43188223168 on 2026-11-12): ET-IDX-01, ET-IDX-02, "word and shot anchors", "handoff: FCPXML", ES-05 and ET-ASM-08.
+- **Root causes and fixes** (kriya-harness; no product behaviour changed except the two named product fixes):
+  - **ET-ASM-08** (both OSes): the test ran `git show 08e5945:…`, but CI checks out one commit. Fix: the six pre-TP1 core files are frozen byte for byte in `tests/edit/pre-tp1-core/` (with a README); `cmp` against `git show` showed them identical.
+  - **ET-IDX-01, ET-IDX-02, anchors** (Ubuntu): these tests fake every tool, but the face layer read the real `process.platform`, so off macOS it was "unavailable". Fix: `createIndexer` takes an optional `platform` (default `process.platform`, product unchanged), passed to `faceHelper`; the tests fake macOS and ET-IDX-02 now also checks the Linux notice.
+  - **ES-05** (Ubuntu): the macOS profile test passed `/private/var/tmp`, which doesn't exist on Linux, and read the real disk for bwrap. Fix: a real temp path, and `confinement("linux", () => false)`.
+  - **handoff: FCPXML** (Ubuntu): `xmllint` isn't on Ubuntu runners. Fix: tolerate a missing `xmllint`, as `edit-core-compile` already did. macOS CI, which ships `xmllint`, still validates the XML.
+  - **ST-RUN-04** (Ubuntu): the scenario's builder wrote `// $$`. DSH's bwrap runs with `--unshare-pid` (in `dsh-sandbox-local/lib/index.js`), so `$$` is the same each attempt, the second attempt wrote identical bytes, and the loop guard correctly stopped the step after 2 attempts rather than 4. Fix: the scripted model counts its builders and writes `// attempt N`.
+  - **WT-GATE-UI-RUN-01** (Ubuntu): the builder ran `cp <host /tmp>/wide.html index.html`. bwrap mounts `--tmpfs /tmp`, so the file wasn't there, `index.html` was never written, and the app answered 404. Fix: the page is written inline (a heredoc).
+  - **WT-GATE-3D-00, WT-GATE-3D-05** (Ubuntu, 120 s timeouts): runners have no GPU, so Chrome draws WebGL in software (SwiftShader), and the 2,000-draw scene ran at about 3 fps. Reproduced locally with `--use-angle=swiftshader`: 72.5 s on an M5, and at 1440 px a screenshot timed out and the gate wrongly said "blank".
+    - Product fixes in `src/gates/three.js`: frame waits are bounded by wall time (3 s); 1440 px uses DPR 2; a screenshot that can't be taken is "not checked", never "blank"; and the whole gate has a 60 s budget, after which unreached checks are "not checked", never passed.
+    - Tests: WT-GATE-3D-11 (an over-budget scene isn't passed) and WT-GATE-3D-12 (the 2,000-draw scene on SwiftShader still fails on its budget in bounded time); the run timeout is now 240 s.
+  - **edit-tp11 "the Host's channel…"** (macOS): a real race. `stopHost` returned once the Host stopped answering, but the Host deletes its token after closing its channel. A loop of `ensureHost` and `stopHost` saw a stale token 1/20 times on the old code. Fix: `stopHost` reads the Host's pid first and waits (bounded, 5 s) for the process to exit: 0/60 after.
+- **Not changed:** `.github/workflows/ci.yml` (no apt install; its "no network beyond npm" holds) and every other test.
+- **Commands and real output:**
+  - `node --test tests/workforce-three-run.test.js` → `pass 13 fail 0`.
+  - `node --test tests/workforce-ui-run.test.js tests/strict-run.test.js` → `pass 7 fail 0`.
+  - `node --test tests/edit-index.test.js tests/edit-assembly.test.js` → `pass 22 fail 0`; the same index file with `process.platform` forced to `linux` → `pass 9 fail 0`.
+  - `tests/edit-motion.test.js tests/edit-longform.test.js` → `pass 31 fail 0`; ES-05 as Linux, and FCPXML with no `xmllint` on PATH, both pass.
+  - kriya-harness `npm run check` → `pins`, `seams: all 17`, `notices`, `build-brand` ok, `ℹ tests 1220 ℹ pass 1220 ℹ fail 0`, exit 0.
+- **Not verified:** a real Ubuntu run. The Linux causes are confirmed from DSH's sandbox code and reproduced by simulation (SwiftShader, forced platform, no `xmllint`), not on a Linux machine. The next push's CI run is the proof. Nothing is committed or pushed.
+- **Seen, not changed:** the 2026-11-12 Ubuntu jobs ran 6 h until GitHub cancelled them; the job has no `timeout-minutes`.
+
+### Owner settings reach the harness (2026-11-23)
+
+- **Reported:** the owner turned Harness 2.0 on in `/owner/config` (escalation routed to gemini-4-neon), but the Kriya Harness Web UI showed no orchestration.
+- **What was checked:**
+  - **Production** (`kriya-web.onrender.com`, read-only with the owner's device): `GET /models` lists budget and balanced (DeepSeek V4.1 Flash 1017) and escalation (gemini-4-neon), with `orchestra: { head: "escalation", worker: "budget" }` and `workforce: 1`.
+  - **Skills:** `GET /skills` serves 52 skills, including all 16 `kriya-role-*` cartridges (graphics among them), each with its block.
+  - **MCP:** `GET /mcp` answers, with 0 servers registered.
+  - The server side was correct.
+- **Root cause (client):** the running harness (`kriya`, no flags, client 2.0.0) had every Harness 2.0 switch `off` (`KRIYA_ORCHESTRA=off`, `KRIYA_CARTRIDGES=off`, `KRIYA_GATES=off`…; read from its process). The switches were local launch flags defaulting off, and nothing read Kriya's advert into them. Orchestra was used only with `--orchestra`.
+- **Fix (kriya-harness):**
+  - `src/modes.js`: `switchEnv` records the switches the person set (a flag, or the variable in their shell) in `KRIYA_SWITCHES_SET`. A new `applyWorkforce(env, advertised)` turns on `WORKFORCE_SWITCHES` (cartridges, orchestra, gates, critic, milestones, grounding, explore, runstrip, mcp) where the person set none, only when Kriya advertises `workforce: 1`.
+  - `src/launch.js`: `planTiers` carries `workforce`; `runDsh` applies it before choosing the start level (so with orchestra on, the session starts on the head) and prints one line naming what came from the owner settings and how to turn one off.
+  - The person's `--no-<name>` or `KRIYA_<NAME>=off` always wins.
+  - Repository tools and deploys stay per-device opt-in (`--repo-tools`, `--deploy`): they act on the person's own GitHub and hosting logins. The Editing Studio keeps its own switch.
+  - **Without the advert, nothing changes.**
+  - `plugins/runstrip`: the Project track's new "Harness 2.0" section shows the head and worker models by name and each switch on or off.
+- **Tests:**
+  - **WT-WF-01:** the person's choices win; no advert, no change; repository tools, deploy and edit are never turned on.
+  - **WT-WF-02:** `planTiers` carries the advert.
+  - **WT-WF-03** (real DSH, fake Kriya): plain `kriya run` with the advert prints the line, runs on `escalation` and offers `kriya_milestones` and `api_lookup`; with `--no-orchestra` it doesn't start on the head.
+  - **WT-WF-04:** without the advert, there is no line, no head and no 2.0 tools.
+  - **WT-UX-10** now checks the Project track's Harness 2.0 section.
+- **Commands and real output:**
+  - `node --test tests/workforce-launch.test.js` → 4 pass.
+  - A dry run against production with the owner's device: "plain kriya would turn on: cartridges, orchestra, gates, critic, milestones, grounding, mcp, explore, runstrip; start level: escalation (gemini-4-neon), worker: budget".
+  - kriya-harness `npm run check` → `ℹ tests 1224 ℹ pass 1224 ℹ fail 0`, exit 0.
+  - CI run 45214004490 (the earlier CI fixes): `check (macos-latest)` success, `dsh-compatibility` success, `release-gate` success; `check (ubuntu-latest)` was still running when this was written.
+- **To take effect:** commit and push the client, then restart `kriya` (the running process started before the change). No MCP server is registered in the owner's registry yet, so MCP adds no tools.
+
+### Orchestration as a choice in the model picker (2026-11-23)
+
+- **Asked:** a selectable "Orchestration" entry in the harness's model picker (as other agent apps offer modes), not only a head level chosen silently at launch.
+- **Built (kriya-harness):**
+  - **Picker entry:** with the owner's orchestra advertised and the local relay on, the Kriya provider lists **"Orchestration · <head> leads, <worker> builds"** first. For you that is gemini-4-neon leads, DeepSeek V4.1 Flash 1017 builds. It has the head's context limits, images and compaction headroom, and new sessions start on it.
+  - **Choosing:** picking it splits a session's steps (worker builders, head takeover, advisor, head critic). Picking a single model runs everything on that model.
+  - **Server unchanged:** the id `orchestra` exists only on this computer. `src/gateway-proxy.js` `aliased()` rewrites a JSON `/chat/completions` body's `model` to the head tier before encoding; every other byte passes untouched. Kriya only ever sees its own tier names (track H rule 4).
+  - **Without the relay** (`KRIYA_RELAY=off`) there is no choice, and the session starts on the head as before.
+  - **Files:**
+    - `src/launch.js`: `orchestraName`, and `launchEnv`'s `pick` argument, which sets `KRIYA_ORCHESTRA_PICK`, `KRIYA_ORCHESTRA_NAME` and `KRIYA_START_TIER=orchestra` (never from the shell);
+    - the relay gets `aliases`;
+    - `bundle/cordis.patch.yml`: the `llm-pi-ai` models list and the compaction policies;
+    - `src/orchestra.js` `sessionOrchestrated`;
+    - `plugins/loop/index.js`: step orchestra, critic level and advising only for sessions that chose it.
+  - `expected/*.dump.yml` re-dumped: only the two rows changed.
+- **Tests:**
+  - **WT-WF-05:** the rewrite is exact and nothing else changes; the name; the env with and without the relay; the session rule.
+  - **WT-WF-06** (real DSH): every request the fake Kriya received named a plan tier, and the session's was the head; the same with the relay off.
+  - The existing orchestra run tests (WT-ORC-RUN-*) pass through the new path.
+- **Browser check** (real DSH Web UI from a plain `kriya`, fake Kriya with workforce and orchestra; screenshot `screenshots/kriya-harness/orchestration/picker-fake-kriya.jpg`):
+  - the composer starts on "Orchestration · Head model (fake) leads, Worker model (fake) builds";
+  - the picker lists it first (checked), then Balanced, Worker and Head;
+  - choosing Head switched the session, and the choice can be switched back.
+- **Commands and real output:**
+  - `node --test tests/workforce-launch.test.js` → `pass 6 fail 0`.
+  - kriya-harness `npm run check` → `ℹ tests 1226 ℹ pass 1226 ℹ fail 0`, exit 0.
+- **To see it:** restart `kriya`. Nothing is committed or pushed.
+
+### Workspace chooser opens in ~/Developer (2026-11-24)
+
+- **Reported:** in the Web UI, "Select Workspace Directory" didn't show the Developer folder.
+- **Root cause:** ~/Developer isn't hidden (`ls -lO` shows no flag; `NSURLIsHiddenKey` is false). DSH's macOS panel (`dsh-host-directory-picker-native`) sets no `directoryURL`, so it opens where the last panel was (Downloads), and ~/Developer is in no sidebar. The Studio's own picker (Edit Host `/browse`, rooted at home) already lists it.
+- **Fix (kriya-harness), on documented seams only:**
+  - New `plugins/directory-picker` (`@kriya-ai/harness-directory-picker`). It replaces the `directory-picker` row (disabled) with `kriya-directory-picker`, which makes the same decision as DSH's auto chooser and mounts the same packages, except on macOS native, where it mounts `./native`.
+  - `./native` calls DSH's own `pickNativeDirectory` through its `run` hook. It adds one line that sets `directoryURL` from `argv[1]`, so the folder is passed as an argument, not as source. The panel opens next to the last folder picked, else in ~/Developer, else in home. If a DSH update moves the line, the panel runs exactly as DSH ships it.
+  - `scripts/check-seams.js`: 2 new seams (19 in total). `src/profiles.js`: the link. `expected/*.dump.yml` re-dumped (only these rows changed).
+- **Tests:** `tests/directory-picker.test.js` KH-DIR-01…04 (package choice per platform; start folder; DSH's real script gets the folder as an argument; other calls pass unchanged).
+- **Commands and real output:**
+  - `node --test tests/directory-picker.test.js` → `pass 4 fail 0`.
+  - `npm run check:seams` → `seams: all 19 DSH seams Kriya depends on are present`.
+  - A JXA check that doesn't open the panel: setting `directoryURL` to ~/Developer reads back `/Users/…/Developer`.
+  - kriya-harness `npm run check` → `ℹ tests 1230 ℹ pass 1230 ℹ fail 0`, exit 0.
+- **Not verified:** a click on "Choose folder" in a restarted `kriya` (it opens a real panel). Nothing is committed or pushed.
+
+### Strategic intents: owner decisions (2026-11-24)
+
+The source is `docs/kriya-harness/STRATEGIC_INTENTS_SOVEREIGN_COMPUTE_AND_ONBOARDING.md`, now marked internal.
+
+- **SI-01:** S-1 local models are hybrid and signed in. Kriya's head plans and reviews (metered, track H rule 4 unchanged); a local Ollama, LM Studio or vLLM model does builder steps. The switch is `harness.localModels`, off by default. No signed-out offline mode.
+- **SI-02:** S-2 is a one-line installer first (a private Node runtime under ~/.kriya, then pairing in the browser). The menu-bar app is a later phase.
+- **SI-03:** the doc's comparisons, prices and speeds stay internal and unverified until RG-9.
+- **What exists:** S-3's relay is mostly H10 (`kriya daemon`, `/dispatch/next`). S-1 and S-2 have no code yet.
+- **Next exact action:** write the phase plan for S-1 (a local endpoint as the orchestra worker, probed by the launcher, egress only to loopback or LAN addresses the person names) with its CHANGE_IMPACT rows, then build it behind the switch. **Done; see the S-1 record below.**
+
+### S-1 Local models (2026-11-24, owner in chat: "Yes, start S-1")
+
+- **Plan:** `docs/kriya-harness/LOCAL_MODELS.md`; a CHANGE_IMPACT §3 row was added.
+- **What it does:** with the owner's `harness.localModels` on (and the orchestra offered), `kriya --local-model` finds Ollama (11434) or LM Studio (1234), or takes a loopback or private URL. That model builds the orchestra's worker steps. Kriya's head leads, advises, critiques and takes over as before.
+- **Server (Kriya-Tavi):**
+  - `lib/config.ts`: `harness.localModels` (off).
+  - `app/api/harness/v1/models/route.ts`: `localModels: 1` only with the switch on and an orchestra offered.
+  - `lib/harness/contract.ts` and the regenerated `docs/kriya-harness/contract.json`.
+  - `tests/harness/regression.test.ts`.
+  - New `tests/harness/local-models.test.ts` HT-LM-01.
+- **Client (kriya-harness):**
+  - New `src/local-model.js`: the address rule, the probe, the flags, and the decision with its one-line notes.
+  - `src/gateway-proxy.js`: a chat request for the model `local` goes to the local server with its real name. Only the body and content type go there, never the device token or Kriya's headers. A down server is a plain 502, never a Kriya request.
+  - `src/orchestra.js`: the worker may be `local` only with `KRIYA_LOCAL_MODEL_ID`.
+  - `src/launch.js`: `planTiers` carries `localModels`. `launchEnv` sets the local worker only with a found server and the relay, and drops the shell's values. `runDsh` probes and passes the server to the relay.
+  - `bundle/cordis.patch.yml`: a "Local · <model>" entry on the `kriya` route, with a context window (default 32,768, clamped 16k–1M) and a compaction headroom of a quarter of it, only when found.
+  - `bin/kriya.js`: the flags and help.
+  - `tests/fake-kriya.js`: the `localModels` advert.
+  - `contract/contract.json` and `SOURCE.md`: the recopy and its hash.
+  - `expected/*.dump.yml`: re-dumped.
+  - The loop plugin is unchanged: `local` is just a model id.
+- **Tests:**
+  - `tests/local-model.test.js` LM-01…10: addresses, model choice, the probe, flags, gating, launchEnv, orchestra, and the relay's routing with no token.
+  - `tests/local-model-run.test.js` LM-RUN-01 and 02, real DSH: the local model built attempts 1 and 2 and Kriya's head built attempt 3. No token or Kriya header reached the local server, and Kriya never saw `local`. Without the owner's offer the person is told so, and everything runs on Kriya as before.
+- **Commands and real output:**
+  - `node --test tests/local-model.test.js` → `pass 10 fail 0`.
+  - `node --test tests/local-model-run.test.js` → `pass 2 fail 0`.
+  - kriya-harness `npm run check` → `ℹ tests 1242 ℹ pass 1241 ℹ fail 1`. The failure was the contract hash in `contract/SOURCE.md`, updated after the recopy; then `node --test tests/contract.test.js` → `pass 6 fail 0`. The full client suite wasn't re-run after that one-line hash change.
+  - Kriya-Tavi `env -u OPENROUTER_API_KEY npm run check` → `Test Files 281 passed | 5 skipped (286)`, `Tests 3420 passed | 63 skipped (3483)`, exit 0 (after `prettier --write` on the two new or changed files).
+- **Not verified:**
+  - a real local model (Ollama with a 14B coder): tool-call quality and the 4,096-token Ollama default are unknowns in LOCAL_MODELS.md;
+  - the Web UI picker entry in a browser.
+  - Nothing is committed, pushed or deployed, and `harness.localModels` is off in production.
+- **Next exact action:** the owner decides on commits. Then one real run with Ollama (`OLLAMA_CONTEXT_LENGTH=32768 ollama serve`, `ollama pull qwen2.5-coder:14b`, `kriya --local-model`) on the verify stack, with `harness.localModels` on there. Then S-2 (the one-line installer). **S-2 is done; see the record below.**
+
+### S-2 One-line installer (2026-11-24, owner in chat: "start the next phase")
+
+- **Plan:** `docs/kriya-harness/INSTALLER.md`; a CHANGE_IMPACT §3 row was added, and the new files are listed.
+- **What it does:** `curl -fsSL <KRIYA_APP_URL>/install.sh | sh` installs a private Node 24.22.0 and `@kriya-ai/harness@2.0.1` under `~/.kriya`. Node is checked against sha256 values embedded in the script. Nothing global is touched. It writes a `kriya` wrapper, adds one PATH line, and opens `kriya login` for the Kriya that served it, unless the computer is already signed in.
+- **Client (kriya-harness):**
+  - New `install.sh`, POSIX sh: everything runs in `main` on the last line; Windows is pointed to WSL; `KRIYA_NO_MODIFY_PATH` and `KRIYA_NO_LOGIN` are honoured; `~/.kriya` is mode 700.
+  - New `tests/install-script.test.js` IN-01…06: the real script with fake curl, uname and npm. The test sets the embedded hash itself; the product script has no bypass.
+  - **Found and fixed while testing:** where `/dev/tty` exists but can't be opened (no terminal), the sign-in silently didn't run. The script now tries to open it, and falls back to `/dev/null`.
+- **Server (Kriya-Tavi):**
+  - `lib/config.ts`: `harness.installScript` (off, needs `harness.api`).
+  - New `app/install.sh/route.ts`: 404 unless both switches are on; `no-store`, `nosniff`; the address comes from `KRIYA_APP_URL` only, never the Host header.
+  - New `lib/harness/install.ts`: only a plain https or localhost URL is filled in.
+  - New `lib/harness/install-script.ts`: generated by the new `scripts/harness-install-script.ts`, with its sha256.
+  - `app/(workspace)/harness/page.tsx`: step 1 shows the one line, and npm as the alternative, only with the switch on.
+  - `tests/harness/regression.test.ts` and the new `tests/harness/install-script.test.ts` HT-INS-01…03 (it also checks that the copy equals the sibling repository's file).
+- **Commands and real output:**
+  - `node --test tests/install-script.test.js` → `pass 6 fail 0`.
+  - `npx vitest run tests/harness/install-script.test.ts tests/harness/regression.test.ts` → `Tests 8 passed`.
+  - Kriya-Tavi `env -u OPENROUTER_API_KEY npm run check` → `Test Files 282 passed | 5 skipped (287)`, `Tests 3425 passed | 63 skipped (3488)`, exit 0.
+  - kriya-harness `npm run check` → `ℹ tests 1248 ℹ pass 1248 ℹ fail 0`, exit 0. This includes S-1's contract-hash fix, so S-1 is now fully green too.
+- **Not verified:**
+  - the browser check of the Harness page (360/1280, light/dark). The verify stack couldn't start: Docker isn't running, so local Supabase is down;
+  - a real install (a real Node download and npm install).
+  - Nothing is committed, pushed or deployed. `harness.installScript` is off.
+- **Next exact action:** start Docker. Then run the browser check on `web-verify` with `KRIYA_HARNESS_INSTALL_SCRIPT=on`, and one real install into a temporary `KRIYA_HOME`. Then S-3 (web-triggered local runs on the H10 relay).
+- **Real install (owner in chat, 2026-11-24: "Install in any separate folder and delete it"):**
+  - `KRIYA_HOME=<scratchpad>/real-install.vhAn/kriya KRIYA_NO_MODIFY_PATH=1 KRIYA_NO_LOGIN=1 sh install.sh` → Node 24.22.0 downloaded and its checksum matched; `added 618 packages in 2m`; "Done. Kriya Harness 2.0.1 is installed."
+  - The wrapper: `kriya --version` → `kriya 2.0.1 (… DeepSeek Harness 0.2.1-rc.5)`. `kriya doctor`: every check `ok` (Node 24.22.0, Kriya Harness 2.0.1, the three profiles compose, the agent's browser) except `FAIL signed in`, which was skipped on purpose. The home folder is mode 700.
+  - **Isolation:** before and after, `~/.kriya` had no file with a new mtime or ctime (newest: `verify.json` 11:05, before the install). `~/.zshrc` and `~/.zprofile` md5 were unchanged. `which kriya` was unchanged (the fnm one). The only home-folder change was `~/.claude.json`, written by Claude Code.
+  - **Not deleted:** the 1 GB test folder. The owner's guardrail blocks recursive deletes; the delete command was given to the owner.
+
+### S-3 Task proof (2026-11-24, owner in chat: "start the phase 3 end-to-end production level")
+
+- **Owner decisions** (in chat, the same day): the proof card shows files and line counts only, with no code leaving the computer; no commit or PR from the web in S-3.
+- **Plan:** `docs/kriya-harness/TASK_PROOF.md`; a CHANGE_IMPACT §3 row was added.
+- **Server (Kriya-Tavi):**
+  - `lib/config.ts`: `harness.taskProof` (off).
+  - `lib/harness/contract.ts`: the run payload's `proof` (set only by `queue()`; a browser's is dropped), a strict `RunProof`, and `runProof` in `contractJson()`.
+  - `lib/harness/control.ts`: `queue()` sets `proof`; `controlCenter()` adds a parsed `proof` per run row (null when off or unparsable).
+  - New `components/harness/proof-card.tsx`, rendered in `components/harness/control-center.tsx`.
+  - `docs/kriya-harness/contract.json` regenerated; `tests/harness/regression.test.ts`; new `tests/harness/task-proof.test.ts` HT-PRF-01, 02.
+- **Client (kriya-harness):**
+  - New `src/proof.js`: `stepsProof` from the loop's ledger, and `baseline` and `changesSince` with Kriya's own index (names and counts only).
+  - `src/loop.js` `writeSnapshot` adds the proof with `KRIYA_TASK_PROOF=on`.
+  - `src/daemon.js` gives a proof run a progress file, the before and after snapshots, and `result.proof`.
+  - `bin/kriya.js`: `kriya daemon --local-model [url]` / `--local-model-name` (kept by `daemon install`).
+  - `contract/contract.json` and `SOURCE.md` recopied with the new hash; `expected/*.dump.yml` re-dumped.
+  - New `tests/task-proof-run.test.js` PR-RUN-01, 02 and PR-01. PR-RUN-01 is a real DSH run through the real daemon: the real output validates against the contract's `runProof`, and the test file's content is in no report.
+- **Commands and real output:**
+  - `node --test tests/task-proof-run.test.js tests/contract.test.js` → `pass 9`.
+  - `npx vitest run tests/harness/task-proof.test.ts tests/harness/control.test.ts tests/harness/regression.test.ts` → `Tests 16 passed`.
+  - Kriya-Tavi `env -u OPENROUTER_API_KEY npm run check` → `Test Files 283 passed | 5 skipped (288)`, `Tests 3428 passed | 63 skipped (3491)`, exit 0.
+  - kriya-harness `npm run check` → `ℹ tests 1251 ℹ pass 1251 ℹ fail 0`, exit 0.
+- **Not verified:**
+  - the browser check of `/harness` with the proof card, and of S-2's install line. Docker isn't running, so the local Supabase verify stack is down;
+  - a task from production Kriya to a real computer.
+  - Nothing is committed, pushed or deployed. `harness.taskProof`, `harness.installScript` and `harness.localModels` are off.
+- **Next exact action:** with the owner's go-ahead, start Docker, `supabase start`, then the `web-verify` stack with `KRIYA_HARNESS_CONTROL_CENTER`, `KRIYA_HARNESS_TASK_PROOF` and `KRIYA_HARNESS_INSTALL_SCRIPT` on. Queue one task to a local `kriya daemon` and check `/harness` at 360 and 1280 px, light and dark, with a clean console. Then the owner decides on commits. **Done; see the browser check below.**
+
+### S-2 and S-3 browser check (2026-11-24, owner in chat: "Yes, start Docker")
+
+- **Stack:**
+  - Docker was started. `boi-taiyo`'s local Supabase (another project) came up with it and held port 54322; the owner stopped it. A separate stack I had started on 553xx was stopped again (data kept).
+  - `supabase start` for Kriya-Tavi; `verify:guard` → `OK: local database, local auth, no live calls, stub model`; `db:migrate` applied 4 newer migrations. Then the `web-verify` launch config, unchanged.
+- **Owner path:** a local test account, `s3-verify@kriya.test` (local stack only; signed up through the UI, `owner:grant`). In `/owner/config` it saved `harness.api`, `harness.controlCenter`, `harness.taskProof`, `harness.installScript` = on and `harness.installCommand`; read back from `kriya.platform_settings`.
+- **S-2:**
+  - `/harness` step 1 shows `curl -fsSL http://127.0.0.1:6796/install.sh | sh`, with "Or with npm" under it.
+  - `curl -D - /install.sh` → `200`, `content-type: text/x-shellscript; charset=utf-8`, `cache-control: no-store`, `X-Content-Type-Options: nosniff`. The body has `KRIYA_URL_DEFAULT="http://127.0.0.1:6796"`, and `sh -n` parses it.
+- **S-3, real path:**
+  - A test device was signed in with its own `KRIYA_HOME` in the scratchpad (never `~/.kriya`), approved on `/connect/device`.
+  - A real `kriya daemon --folder <scratch verify-project>`. A task was queued in the UI in that folder only, not the offered `kriya-harness` repository.
+  - The row's payload had `proof: true` (set by the server).
+  - The daemon ran it. Because `harness.gateway` is off locally, the run ended `AUTH: 403 "harness_off"`, and it reported `proof.changes` with `count 0`, taken from real before and after snapshots.
+  - The card says "No plan was run, so nothing was checked by code" and "No files changed".
+- **S-3, full card:**
+  - A scratchpad stand-in (`fake-computer.mjs`) used the test device's token on the real device routes. It said hello, claimed the second UI-queued task, reported a live state, then "done".
+  - Its reports have the shape the real daemon produced in PR-RUN-01, with a local-model step and gates. The server parsed them as `RunProof`.
+- **Found and fixed:**
+  - While a task runs, the "Checking…" pill used the failed (red) colour of the interim verdict, and a step retrying after a failed try showed a red ✗.
+  - Now running is neutral: a rigel "Checking…", and "↻ trying again" on such a step. `components/harness/proof-card.tsx`.
+- **Checks:**
+  - 360×800 and 1280×800, dark (the default) and light (next-themes `theme`): the card, the gate chips, "on your computer", the open file list (A/M, +/−) and the "names and line counts only" line are all legible.
+  - The file list stays open through the 3 s polling (checked with `details.open` before and after 8 s).
+  - Console errors: none. No horizontal scroll at 1280 (`scrollWidth 1280`). The summary target is 44 px on phones and 32 px from `sm` up (`min-h-11 sm:min-h-8`, the house pattern). Neighbours (Activity, Your computers, Get started) are unchanged.
+- **Screenshots:** `screenshots/kriya-harness/task-proof/`
+  - `360-dark-real-daemon-failed.jpg`, `360-dark-running.png`, `360-dark-verified.jpg`, `360-dark-verified-files-open.png`, `360-light-verified.jpg`, `1280-dark-verified.jpg`, `1280-light-verified.jpg`.
+- **After the fix:** Kriya-Tavi `env -u OPENROUTER_API_KEY npm run check` → `Test Files 283 passed | 5 skipped (288)`, `Tests 3428 passed | 63 skipped (3491)`, exit 0.
+- **Not verified:** a run that reaches a model on this stack (it needs `harness.gateway`, a plan cap and the stub model scripted for `kriya_plan`/`kriya_step`). That path is covered by the client's real DSH test PR-RUN-01.
+- **Left running:** the local Supabase stack and the `web-verify` server. Test data stays in the local database only.
+- **Next exact action:** the owner decides on commits for S-1, S-2 and S-3 in both repositories.
+
+### Developer cockpit (2026-11-24, owner in chat: GitHub not showing, connectors for Supabase and Render, developer features, UI/UX check)
+
+- **Owner decisions** (in chat, the same day): connectors through each provider's own CLI first, with remote MCP signing in on the device later; the GitHub panel, running servers, project health and a polish pass; for Supabase and Render, reads free and writes approved.
+- **Plan:** `docs/kriya-harness/DEVELOPER_COCKPIT.md`; a CHANGE_IMPACT §3 row was added.
+- **Why GitHub didn't show:** repository tools were on only with `--repo-tools`, and nothing in the UI said so. Overview's repository row was text only (GROUNDING_AND_CONNECTORS §3 was never built). MCP has only the empty owner registry.
+- **Server (Kriya-Tavi):**
+  - `lib/config.ts`: `harness.cockpit` (off).
+  - `/models`: `cockpit: 1` only with it on.
+  - The contract and the regenerated `contract.json`; `tests/harness/regression.test.ts`; new `tests/harness/cockpit.test.ts` HT-CKP-01.
+- **Client (kriya-harness):**
+  - New `src/cockpit.js`: connections, GitHub web sign-in, servers via lsof, project health, `.gitignore` for secret files only.
+  - New `plugins/cockpit` (node routes and the Developer tab), shown only with `KRIYA_COCKPIT=on`.
+  - New `plugins/providers`: six Supabase and Render tools, only with `KRIYA_PROVIDER_TOOLS=on`.
+  - `src/modes.js`: the `cockpit` and `provider-tools` switches; `repo-tools` and `provider-tools` saved per computer in `~/.kriya/switches.json`, under the person's flags.
+  - `src/launch.js`: the owner's advert turns on `cockpit` unless `--no-cockpit`.
+  - `src/profiles.js`, `bundle/cordis.patch.yml`, `expected/*.dump.yml`, and `contract/` recopied with its hash.
+- **Found and fixed during the browser check:**
+  - Native `confirm()` dialogs replaced by an inline confirmation bar; they block automation and can be suppressed in embedded views.
+  - CLI versions showed whole lines ("gh version 2.103.3 (2026-10-26)"), not "2.103.3".
+  - The primary button failed contrast in dark mode (2.13:1); it's now accent text on a tint: 9.0:1 dark, 5.07:1 light.
+  - The sign-in state kept the one-time code after it finished.
+- **Browser check** (a real harness UI from the repository, with a test `KRIYA_HOME` signed in to the local verify Kriya, in the scratchpad `verify-project`; port 3091, separate from the owner's 3080):
+  - The tab lists real data: gh 2.103.3 signed in; Supabase 2.121.0 signed in; Render and Vercel not installed, with install commands.
+  - "Stop" on a dummy server (`:3191`), after the inline Confirm: port 3191 is closed and the panel says "No server is running in this folder."
+  - "Add to .gitignore": `.gitignore` now has `# Secrets (added by Kriya Harness)` and `/.env`, and the panel says "No secret files exposed to git."
+  - The Repository tools switch wrote `{"repo-tools": true}` (mode 600) in the test home only (`~/.kriya/switches.json` doesn't exist) and shows "Restart Kriya Harness to apply this."
+  - **Not clicked, on purpose:** "Create on GitHub" (the owner's real gh is signed in; it would create a real repository) and "Sign in to GitHub". Both are covered by tests with fakes.
+  - 1280 dark and light, and 390 on touch (inputs and buttons 44 px; the switches' hit area is extended to 44 px as in Overview). No horizontal overflow (0 px). The console errors seen were the test server's own restarts (connection refused, socket reconnects), not the tab.
+  - **Screenshots:** `screenshots/kriya-harness/developer-tab/` (`1280-dark.jpg`, `1280-light.jpg`, `390-light.jpg`, `1440-light-confirm-stop.jpg`).
+- **Tests:**
+  - `tests/cockpit.test.js` CK-01…08, PV-01, 02: real git for health; fake CLIs and processes; the exact argv of every provider call; the local write refused in Read only and without approval, with nothing run; the exact tool list.
+  - `tests/providers-run.test.js` PV-RUN-01, real DSH: the six tools are offered only with `--provider-tools`.
+- **Commands and real output:**
+  - `node --test tests/cockpit.test.js tests/providers-run.test.js` → `pass 11 fail 0`.
+  - Kriya-Tavi `env -u OPENROUTER_API_KEY npm run check` → `Test Files 284 passed | 5 skipped (289)`, `Tests 3429 passed | 63 skipped (3492)`, exit 0.
+  - kriya-harness `npm run check` → `ℹ tests 1262 ℹ pass 1262 ℹ fail 0`, exit 0.
+- **Not verified:**
+  - the Render CLI on a real machine (not installed here; the docs' usage examples didn't render, so exact invocations are unconfirmed);
+  - a real `gh auth login --web` run;
+  - the "dsh web authentication required" 401 page, hard-coded in `dsh-client-connection` with no seam (HD-02). It's kept as a known limit.
+  - Nothing is committed, pushed or deployed. `harness.cockpit` is off.
+- **Left running:** the local Supabase stack and `web-verify` (6796), and the test harness UI on 3091. The test files are in the scratchpad only.
+- **Next exact action:** the owner decides on commits for S-1…S-3 and the cockpit. Then the next phase: remote MCP servers that sign in on the device (spike W15 S1), from the owner's reviewed registry.
+
+### Own models: own API keys and own orchestration (2026-11-24, owner in chat: "they can create their own orchestration mode… through their own apis")
+
+- **Owner decisions** (in chat, the same day): counts to Kriya (no prompts, code or keys); the OpenAI-compatible provider set; pricing and plans later.
+- **Plan:** `docs/kriya-harness/OWN_MODELS.md`; a CHANGE_IMPACT §3 row was added, and the new files are listed.
+- **Server (Kriya-Tavi):**
+  - `harness.ownModels` (off); `/models` `ownModels: 1`.
+  - Migration `20271202000000_harness_own_usage.sql` with its rollback: counts only; RLS lets the person read their own rows; no grant to write, update or delete.
+  - `db/schema.ts` `harnessOwnUsage`.
+  - `POST /own-usage` (404 when off; strict schema, at most 50 entries).
+  - `lib/harness/own-usage.ts`: record (privileged, scoped to the device's person), per-person month totals (`withUser`), owner totals with no person named.
+  - `/harness` "Your own models" and Owner → Harness "Own-key usage this month", only with the switch on.
+  - The contract, and `contract.json` (and the client copy) regenerated.
+- **Client (kriya-harness):**
+  - New `src/own-models.js`: the store, file mode 600; the masked view; provider model lists; launch setup with keys in launcher memory only.
+  - New `src/own-usage.js`: the batched reporter.
+  - `src/gateway-proxy.js`: S-1's local route generalised into a route table (own and local). The Orchestration alias is resolved first; the person's key goes only to their provider; counts come from the answer's usage figures; a provider refusing `stream_options` gets one retry without it.
+  - `src/launch.js`: the person's orchestration, own models in the picker, key hashes for DSH, and the reporter flushed at exit.
+  - `src/orchestra.js`: own ids are valid levels.
+  - New `plugins/keyguard`: tool results redacted by key hash; tool calls naming the key file refused.
+  - `plugins/cockpit`: the "Your models" section and its actions.
+  - The bundle's model list and compaction policies; profiles; `expected/` re-dumped; fake Kriya; `contract/`.
+- **Found and fixed while testing:**
+  - A YAML tag clash (`!!js !process…`) broke the whole bundle; caught by the real-DSH run.
+  - Duplicate Kriya tier names in the head and worker lists.
+  - The head and worker selects had no accessible name.
+  - The saved line was truncated.
+  - Model names were too long in the picker ("Custom (OpenAI-compatible)" became "Custom").
+- **Browser check** (the local verify stack, with `harness.ownModels` saved through `/owner/config`; the test harness UI on 3091; a local HTTPS stand-in provider with a throwaway certificate, so no real provider was called):
+  - Added a custom provider key: it shows only "Key ••••0000" (the file is mode 600; the key is in no answer).
+  - Loaded 3 models, added 2 (66k and 33k windows), saved head own-1 and worker Kriya budget.
+  - After restart, stderr said "your orchestration: Custom (OpenAI-compatible) · deepseek/deepseek-chat leads, … budget builds" (the label is now "Custom ·"). The picker lists the person's Orchestration first, then the Kriya tiers and both own models.
+  - `/harness` "Your own models": one local test row, "14 calls · 182k in · 9120 out · $0.06". All page requests were 200.
+  - **Screenshots:** `screenshots/kriya-harness/own-models/` (4).
+- **Tests:**
+  - `tests/own-models.test.js` OM-01…10.
+  - `tests/own-models-run.test.js` OM-RUN-01, 02, real DSH. The person's head and worker ran the whole task on their provider: the provider got the key and its own model names; Kriya got no chat, never the key, and counts only. With the advert off, nothing of it ran.
+  - `tests/harness/own-usage.test.ts` HT-OWN-01, 02; `tests/db/harness-own-usage-rls.test.ts`; the migration chains.
+- **Commands and real output:**
+  - `node --test tests/own-models.test.js tests/own-models-run.test.js` → `pass 12 fail 0`.
+  - Server targeted (own-usage, RLS, migrations, regression) → `Tests 40 passed`.
+  - Kriya-Tavi `env -u OPENROUTER_API_KEY npm run check` → `Test Files 286 passed | 5 skipped (291)`, `Tests 3436 passed | 63 skipped (3499)`, exit 0.
+  - kriya-harness `npm run check` → first `1273/1274`: CK-06 pins the route's keys and now `own` is added. After updating it: `ℹ tests 1274 ℹ pass 1274 ℹ fail 0`, exit 0.
+- **Not verified:**
+  - A real provider key (OpenRouter `cost`, Groq `x_groq`, which providers refuse `stream_options`).
+  - Native Anthropic and Gemini APIs (not built, the owner's choice).
+  - Nothing is committed, pushed or deployed. `harness.ownModels` is off in production.
+- **Left running:** the local stack, `web-verify`, the test harness UI (3091) and the stand-in provider (3193).
+- **Next exact action:** the owner decides on commits, and which next features to build from the list given in chat.
+
 ### Harness 2.0 owner approvals
 
 - **Approved WD-01** (owner in chat, 2026-11-23: "Approve WD-01, start W0"): build only on documented DSH seams, no fork. 

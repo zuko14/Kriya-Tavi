@@ -18,6 +18,7 @@ describe("HT-REG-01: the harness.* settings", () => {
       "harness.api",
       "harness.approvalTtlMinutes",
       "harness.cartridgeOverlay",
+      "harness.cockpit",
       "harness.controlCenter",
       "harness.defaultSkills",
       "harness.deviceIdleDays",
@@ -25,12 +26,15 @@ describe("HT-REG-01: the harness.* settings", () => {
       "harness.gateway",
       "harness.handoff",
       "harness.installCommand",
+      "harness.installScript",
+      "harness.localModels",
       "harness.maxOutputTokens",
       "harness.mcp",
       "harness.minClientVersion",
       "harness.mirror",
       "harness.orchestraHead",
       "harness.orchestraWorker",
+      "harness.ownModels",
       "harness.releaseStage",
       "harness.remoteControl",
       "harness.rpm",
@@ -38,6 +42,7 @@ describe("HT-REG-01: the harness.* settings", () => {
       "harness.scoutEveryDays",
       "harness.scoutMaxFindings",
       "harness.scoutMonthlyInr",
+      "harness.taskProof",
       "harness.workforce",
     ])
   })
@@ -59,6 +64,16 @@ describe("HT-REG-01: the harness.* settings", () => {
       "harness.cartridgeOverlay",
       // Harness 2.0 W16 (MCP P3a)
       "harness.mcp",
+      // S-1 local models (SI-01)
+      "harness.localModels",
+      // S-2 the one-line installer (SI-02)
+      "harness.installScript",
+      // S-3 task proof
+      "harness.taskProof",
+      // Developer cockpit
+      "harness.cockpit",
+      // Own models
+      "harness.ownModels",
     ])
       expect(defs[key].fallback, key).toBe("off")
     expect(defs["harness.minClientVersion"].fallback).toBe("0.0.0")

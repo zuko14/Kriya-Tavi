@@ -79,5 +79,12 @@ export const GET = harnessRoute(true, async (_request, device) => {
     bodyEncodings: [...BODY_ENCODINGS],
     ...(orchestra && { orchestra }),
     ...((await getSetting("harness.workforce")) === "on" && { workforce: 1 as const }),
+    // Own models: the person may use their own API keys and orchestration
+    ...((await getSetting("harness.ownModels")) === "on" && { ownModels: 1 as const }),
+    // Developer cockpit: the harness shows its Developer tab
+    ...((await getSetting("harness.cockpit")) === "on" && { cockpit: 1 as const }),
+    // S-1: local models build only for the orchestra, so only with it
+    ...(orchestra &&
+      (await getSetting("harness.localModels")) === "on" && { localModels: 1 as const }),
   })
 })

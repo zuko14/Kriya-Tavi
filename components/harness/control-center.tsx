@@ -15,6 +15,7 @@ import {
 import { cancelAction, dispatchAction } from "@/actions/harness-control"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { ProofCard } from "@/components/harness/proof-card"
 import type { ControlCenterData } from "@/lib/harness/control"
 import { formatInr } from "@/lib/money"
 import { cn } from "@/lib/utils"
@@ -675,6 +676,9 @@ export function ControlCenter({
                       )}
                     </span>
                   </div>
+                  {d.proof && (
+                    <ProofCard proof={d.proof} running={ACTIVE.has(d.status)} />
+                  )}
                   <Result item={d} />
                 </li>
               )

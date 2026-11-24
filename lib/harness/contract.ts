@@ -142,6 +142,17 @@ export const ModelsResponse = z.strictObject({
   // Harness 2.0 W11: this Kriya takes TurnRequest.cartridgeOutcomes; absent
   // unless harness.workforce is on, so a client never sends what isn't taken
   workforce: z.literal(1).optional(),
+  // S-1: a device may build the orchestra's worker steps on its own local
+  // model (`kriya --local-model`); absent unless harness.localModels is on and
+  // the orchestra is offered (docs/kriya-harness/LOCAL_MODELS.md)
+  localModels: z.literal(1).optional(),
+  // Developer cockpit: the harness shows its Developer tab; absent unless
+  // harness.cockpit is on (docs/kriya-harness/DEVELOPER_COCKPIT.md)
+  cockpit: z.literal(1).optional(),
+  // Own models: the person may set up their own API keys and their own
+  // orchestration in the harness; absent unless harness.ownModels is on
+  // (docs/kriya-harness/OWN_MODELS.md)
+  ownModels: z.literal(1).optional(),
 })
 
 // H5: a local action waiting for the person (API_AND_CONTRACTS §4). The input
@@ -590,6 +601,9 @@ export const DispatchPayloads = {
     switches: RunSwitches,
     plan: RunPlan.optional(),
     profile: RunProfile.optional(),
+    // S-3 (TASK_PROOF.md): set by queue() only, with harness.taskProof on;
+    // older daemons ignore it
+    proof: z.literal(true).optional(),
   }),
   doctor: z.strictObject({}),
   rule_confirm: z.strictObject({
@@ -620,6 +634,62 @@ export const DispatchPayloads = {
     change: z.string().min(1).max(1000).optional(),
   }),
 } as const
+// S-3 (TASK_PROOF.md): what a computer reports about a task Kriya started,
+// computed by code there (kriya-harness src/proof.js). Untrusted until it
+// parses here; shown as "checked on your computer". Names and counts only:
+// no file content
+const ProofLevel = z.enum(["head", "worker", "single"])
+export const RunProof = z.strictObject({
+  verdict: z.enum(["verified", "partial", "failed", "blocked", "not checked"]).optional(),
+  steps: z
+    .array(
+      z.strictObject({
+        n: z.number().int().min(1).max(99),
+        title: z.string().max(120),
+        verdict: z.enum(["pass", "fail", "blocked", "not run"]),
+        attempts: z.number().int().min(0).max(99),
+        builtBy: z
+          .array(
+            z.strictObject({
+              level: ProofLevel,
+              name: z.string().max(80),
+              local: z.literal(true).optional(),
+            })
+          )
+          .max(8),
+        gates: z
+          .array(
+            z.strictObject({
+              id: z.string().regex(/^G-[A-Z0-9-]{2,20}$/),
+              status: z.string().max(20),
+            })
+          )
+          .max(20),
+      })
+    )
+    .max(12)
+    .optional(),
+  touchedChecks: z.array(z.string().max(300)).max(20).optional(),
+  changes: z
+    .strictObject({
+      files: z
+        .array(
+          z.strictObject({
+            path: z.string().min(1).max(300),
+            status: z.enum(["added", "modified", "deleted", "renamed"]),
+            added: z.number().int().min(0).optional(),
+            deleted: z.number().int().min(0).optional(),
+            binary: z.literal(true).optional(),
+          })
+        )
+        .max(200),
+      count: z.number().int().min(0),
+      added: z.number().int().min(0),
+      deleted: z.number().int().min(0),
+    })
+    .optional(),
+})
+export type RunProof = z.infer<typeof RunProof>
 export const Dispatch = z.strictObject({
   id: z.uuid(),
   kind: DispatchKind,
@@ -637,6 +707,24 @@ export const DispatchReportRequest = z.strictObject({
   result: z.record(z.string(), z.unknown()).optional(),
 })
 // What a kriya process runs: no task text from the terminal
+// Own models (docs/kriya-harness/OWN_MODELS.md): counts from the person's own
+// API keys, batched by the harness. Never a prompt, code or key. The cost is
+// what the provider reported, in micro-USD; absent when it didn't say
+export const OwnUsageRequest = z.strictObject({
+  entries: z
+    .array(
+      z.strictObject({
+        provider: z.string().regex(/^[a-z0-9-]{2,30}$/),
+        model: z.string().min(1).max(120),
+        requests: z.number().int().min(1).max(10_000),
+        inputTokens: z.number().int().min(0).max(1_000_000_000),
+        outputTokens: z.number().int().min(0).max(1_000_000_000),
+        reportedCostMicroUsd: z.number().int().min(0).max(1_000_000_000_000).optional(),
+      })
+    )
+    .min(1)
+    .max(50),
+})
 export const RunReportRequest = z.strictObject({
   localId: z.string().regex(/^[A-Za-z0-9_-]{1,80}$/),
   source: z.enum(["terminal", "dispatch"]),
@@ -895,6 +983,14 @@ export const ROUTES = [
     request: RunReportRequest,
     response: null,
   },
+  // 204; own-key usage counts (404 while harness.ownModels is off)
+  {
+    method: "POST",
+    path: "/own-usage",
+    auth: true,
+    request: OwnUsageRequest,
+    response: null,
+  },
   // 204; one row per (computer, session), events kept once per seq
   {
     method: "POST",
@@ -920,6 +1016,8 @@ export function contractJson() {
       request: route.request && z.toJSONSchema(route.request),
       response: route.response && z.toJSONSchema(route.response),
     })),
+    // S-3: what a daemon reports as result.proof for a run with `proof: true`
+    runProof: z.toJSONSchema(RunProof),
     // Harness 2.0: the ids a role cartridge may name (lib/harness/cartridge-ids.ts)
     cartridgeIds: {
       roles: [...CARTRIDGE_ROLES],

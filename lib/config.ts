@@ -739,6 +739,16 @@ export const SETTINGS = {
     pattern: /^(budget|balanced|escalation)$/,
     hint: "budget, balanced or escalation; the same as the head means no split",
   },
+  // S-1 local models (docs/kriya-harness/LOCAL_MODELS.md, owner decision
+  // SI-01): a device started with `kriya --local-model` may build the
+  // orchestra's worker steps on a model on its own computer or network; the
+  // head stays Kriya's. Offered only with the orchestra. Off: nothing changes
+  "harness.localModels": {
+    env: "KRIYA_HARNESS_LOCAL_MODELS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off; needs harness.workforce (the orchestra)",
+  },
   // Harness 2.0 W11 (WD-09): serve approved cartridge versions (active, or a
   // canary to a share of devices) instead of the repository's. Off: approved
   // versions are stored only, and ship through a reviewed commit
@@ -927,6 +937,45 @@ export const SETTINGS = {
     env: "KRIYA_HARNESS_INSTALL_COMMAND",
     pattern: /^(npm|npx|pnpm|brew) [A-Za-z0-9@/._:=+ -]{1,120}$/,
     hint: "e.g. npm install -g @kriya-ai/harness",
+  },
+  // Own models (docs/kriya-harness/OWN_MODELS.md): a person adds their own API
+  // keys (OpenAI-compatible providers) on their computer and builds their own
+  // orchestration (head and worker) from them, Kriya's tiers and local models.
+  // Keys never leave that computer; usage counts come to Kriya. Off: nothing
+  // changes, and POST /own-usage answers 404
+  "harness.ownModels": {
+    env: "KRIYA_HARNESS_OWN_MODELS",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // Developer cockpit (docs/kriya-harness/DEVELOPER_COCKPIT.md): the harness's
+  // Developer tab (GitHub, connections through each provider's own CLI,
+  // running servers, project health). Off: the harness looks as before
+  "harness.cockpit": {
+    env: "KRIYA_HARNESS_COCKPIT",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off",
+  },
+  // S-3 (docs/kriya-harness/TASK_PROOF.md): a task started from the Control
+  // Center asks its computer for the proof card: live steps, the verdict
+  // computed by code there, who built each attempt, gates, and changed files
+  // as names and line counts (no content). Off: tasks and results as before
+  "harness.taskProof": {
+    env: "KRIYA_HARNESS_TASK_PROOF",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off; needs harness.controlCenter",
+  },
+  // S-2 (docs/kriya-harness/INSTALLER.md): GET /install.sh serves the one-line
+  // installer and the Harness page shows `curl -fsSL <Kriya>/install.sh | sh`.
+  // Off: /install.sh answers 404 and the page shows installCommand as before
+  "harness.installScript": {
+    env: "KRIYA_HARNESS_INSTALL_SCRIPT",
+    fallback: "off",
+    pattern: /^(on|off)$/,
+    hint: "on or off; needs harness.api",
   },
   // Editing Studio (track E, docs/kriya-harness/kriya_video_editing). Off: the
   // manifest route answers 404, which is how a client learns editing isn't here

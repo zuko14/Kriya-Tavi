@@ -15,6 +15,7 @@ import {
   DaemonProject,
   DispatchPayloads,
   type DispatchReportRequest,
+  RunProof,
   type RunReportRequest,
 } from "@/lib/harness/contract"
 
@@ -254,6 +255,13 @@ export async function queue(
 ) {
   if (kind === "edit")
     throw new ControlError("not_allowed", "An edit starts from an agent or a job.")
+  // S-3: the proof card is Kriya's switch, never the browser's (TASK_PROOF.md)
+  if (kind === "run" && raw && typeof raw === "object") {
+    const rest: Record<string, unknown> = { ...(raw as Record<string, unknown>) }
+    delete rest.proof
+    raw =
+      (await getSetting("harness.taskProof")) === "on" ? { ...rest, proof: true } : rest
+  }
   return enqueue(userId, deviceId, kind, raw)
 }
 
@@ -419,6 +427,7 @@ export async function cancel(userId: string, id: string) {
 
 /** Everything the Control Center shows, as the person */
 export async function controlCenter(userId: string) {
+  const proofOn = (await getSetting("harness.taskProof")) === "on"
   return withUser(userId, async (tx) => {
     const devices = await tx
       .select({
@@ -477,7 +486,14 @@ export async function controlCenter(userId: string) {
           return ok.success ? [ok.data] : []
         }),
       })),
-      dispatches: recent,
+      // S-3: a task's proof, only with the switch on and only if it parses (TASK_PROOF.md)
+      dispatches: recent.map((d) => {
+        const reported =
+          proofOn && d.kind === "run"
+            ? RunProof.safeParse((d.result as { proof?: unknown } | null)?.proof)
+            : null
+        return { ...d, proof: reported?.success ? reported.data : null }
+      }),
       runs: live.map((r) => ({
         ...r,
         lost: r.status === "running" && now - r.updatedAt.getTime() > RUN_LOST_MS,

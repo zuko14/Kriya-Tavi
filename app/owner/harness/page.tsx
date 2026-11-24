@@ -7,6 +7,8 @@ import { FreezeScout, VersionControls } from "@/components/owner/harness-evolve/
 import { AddScoutSource, ScoutSourceToggle } from "@/components/owner/scout-forms"
 import { requireOwner } from "@/lib/auth"
 import { getSetting } from "@/lib/config"
+import { usd } from "@/components/harness/own-usage"
+import { ownUsageTotals } from "@/lib/harness/own-usage"
 import { candidateOverview } from "@/lib/harness/scout/proposal"
 import { scoutOverview } from "@/lib/harness/scout/sources"
 import { autoRollbacks, versionOverview } from "@/lib/harness/scout/versions"
@@ -30,7 +32,7 @@ const when = (d: Date | null) => (d ? WHEN.format(d) : "—")
 
 export default async function OwnerHarnessEvolve() {
   await requireOwner()
-  const [on, everyDays, budget, overview, candidates, versions, overlay, rolled] =
+  const [on, everyDays, budget, overview, candidates, versions, overlay, rolled, own] =
     await Promise.all([
       getSetting("harness.scout"),
       getSetting("harness.scoutEveryDays"),
@@ -40,6 +42,8 @@ export default async function OwnerHarnessEvolve() {
       versionOverview(),
       getSetting("harness.cartridgeOverlay"),
       autoRollbacks(),
+      // Own models: totals only, no person named (OWN_MODELS.md)
+      getSetting("harness.ownModels").then((v) => (v === "on" ? ownUsageTotals() : null)),
     ])
   const { sources, runs, findings } = overview
   return (
@@ -233,6 +237,41 @@ export default async function OwnerHarnessEvolve() {
           </Table>
         )}
       </Section>
+
+      {own && (
+        <Section
+          title="Own-key usage this month"
+          description="Calls people made from Kriya Harness through their own API keys (harness.ownModels). Kriya paid nothing; cost is the providers' own figure, shown only when every call reported one. No person is named."
+        >
+          {own.length === 0 ? (
+            <p className="text-[13px] text-muted-foreground">None yet this month.</p>
+          ) : (
+            <Table
+              head={[
+                "Provider",
+                "Model",
+                "People",
+                "Calls",
+                "Tokens in",
+                "Tokens out",
+                "Reported cost",
+              ]}
+            >
+              {own.map((r) => (
+                <tr key={`${r.provider}/${r.model}`}>
+                  <Td>{r.provider}</Td>
+                  <Td>{r.model}</Td>
+                  <Td>{r.people}</Td>
+                  <Td>{r.requests}</Td>
+                  <Td>{r.inputTokens}</Td>
+                  <Td>{r.outputTokens}</Td>
+                  <Td>{usd(r.reportedCostMicroUsd)}</Td>
+                </tr>
+              ))}
+            </Table>
+          )}
+        </Section>
+      )}
     </>
   )
 }

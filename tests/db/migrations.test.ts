@@ -186,6 +186,8 @@ describe("migrations", () => {
     // The self-hosted fabric (SH1) widens the provider checks and references workspaces
     // Track E sorts after everything and references the Control Center: first out
     // Harness 2.0 W7 (the Scout) sorts after track E: first out
+    // Own models (harness_own_usage) sorts last: first out
+    await pg.exec(read("rollback", "20271202000000_harness_own_usage.down.sql"))
     await pg.exec(read("rollback", "20271201000200_harness_cartridge_versions.down.sql"))
     await pg.exec(read("rollback", "20271201000100_harness_candidates.down.sql"))
     await pg.exec(read("rollback", "20271201000000_harness_scout.down.sql"))
@@ -251,6 +253,7 @@ describe("migrations", () => {
     await pg.exec(read("migrations", "20271201000000_harness_scout.sql"))
     await pg.exec(read("migrations", "20271201000100_harness_candidates.sql"))
     await pg.exec(read("migrations", "20271201000200_harness_cartridge_versions.sql"))
+    await pg.exec(read("migrations", "20271202000000_harness_own_usage.sql"))
   })
 
   it("rolls the A8 providers and undo columns back and applies them again", async () => {
@@ -966,6 +969,8 @@ describe("migrations", () => {
     // The self-hosted fabric (SH1) widens the provider checks and references workspaces
     // Track E sorts after everything and references the Control Center: first out
     // Harness 2.0 W7 (the Scout) sorts after track E: first out
+    // Own models (harness_own_usage) sorts last: first out
+    await pg.exec(read("rollback", "20271202000000_harness_own_usage.down.sql"))
     await pg.exec(read("rollback", "20271201000200_harness_cartridge_versions.down.sql"))
     await pg.exec(read("rollback", "20271201000100_harness_candidates.down.sql"))
     await pg.exec(read("rollback", "20271201000000_harness_scout.down.sql"))
@@ -1017,6 +1022,7 @@ describe("migrations", () => {
     await pg.exec(read("migrations", "20271201000000_harness_scout.sql"))
     await pg.exec(read("migrations", "20271201000100_harness_candidates.sql"))
     await pg.exec(read("migrations", "20271201000200_harness_cartridge_versions.sql"))
+    await pg.exec(read("migrations", "20271202000000_harness_own_usage.sql"))
     expect(await added()).toBe(16)
     expect(await shape()).toEqual(before)
   })
@@ -1040,6 +1046,8 @@ describe("migrations", () => {
     )
     // Track E sorts after everything and references the Control Center: first out
     // Harness 2.0 W7 (the Scout) sorts after track E: first out
+    // Own models (harness_own_usage) sorts last: first out
+    await pg.exec(read("rollback", "20271202000000_harness_own_usage.down.sql"))
     await pg.exec(read("rollback", "20271201000200_harness_cartridge_versions.down.sql"))
     await pg.exec(read("rollback", "20271201000100_harness_candidates.down.sql"))
     await pg.exec(read("rollback", "20271201000000_harness_scout.down.sql"))
@@ -1068,6 +1076,7 @@ describe("migrations", () => {
     await pg.exec(read("migrations", "20271201000000_harness_scout.sql"))
     await pg.exec(read("migrations", "20271201000100_harness_candidates.sql"))
     await pg.exec(read("migrations", "20271201000200_harness_cartridge_versions.sql"))
+    await pg.exec(read("migrations", "20271202000000_harness_own_usage.sql"))
     await pg.query(
       "insert into kriya.resource_usage (request_key, kind, quantity) values ('fd:3', 'flow_design', 1)"
     )
@@ -1155,6 +1164,8 @@ describe("migrations", () => {
     // The self-hosted fabric (SH1) widens the provider checks and references workspaces
     // Track E sorts after everything and references the Control Center: first out
     // Harness 2.0 W7 (the Scout) sorts after track E: first out
+    // Own models (harness_own_usage) sorts last: first out
+    await pg.exec(read("rollback", "20271202000000_harness_own_usage.down.sql"))
     await pg.exec(read("rollback", "20271201000200_harness_cartridge_versions.down.sql"))
     await pg.exec(read("rollback", "20271201000100_harness_candidates.down.sql"))
     await pg.exec(read("rollback", "20271201000000_harness_scout.down.sql"))
@@ -1200,6 +1211,7 @@ describe("migrations", () => {
     await pg.exec(read("migrations", "20271201000000_harness_scout.sql"))
     await pg.exec(read("migrations", "20271201000100_harness_candidates.sql"))
     await pg.exec(read("migrations", "20271201000200_harness_cartridge_versions.sql"))
+    await pg.exec(read("migrations", "20271202000000_harness_own_usage.sql"))
     expect(await added()).toBe(11)
     expect(await shape()).toEqual(before)
   })
@@ -1617,6 +1629,8 @@ describe("20270501000000_cloud_fabric (track C extension, SH1)", () => {
       [user, device]
     )
     // Harness 2.0 W7 (the Scout) sorts after track E: first out
+    // Own models (harness_own_usage) sorts last: first out
+    await pg.exec(read("rollback", "20271202000000_harness_own_usage.down.sql"))
     await pg.exec(read("rollback", "20271201000200_harness_cartridge_versions.down.sql"))
     await pg.exec(read("rollback", "20271201000100_harness_candidates.down.sql"))
     await pg.exec(read("rollback", "20271201000000_harness_scout.down.sql"))
@@ -1646,6 +1660,7 @@ describe("20270501000000_cloud_fabric (track C extension, SH1)", () => {
     await pg.exec(read("migrations", "20271201000000_harness_scout.sql"))
     await pg.exec(read("migrations", "20271201000100_harness_candidates.sql"))
     await pg.exec(read("migrations", "20271201000200_harness_cartridge_versions.sql"))
+    await pg.exec(read("migrations", "20271202000000_harness_own_usage.sql"))
     await pg.query(
       `insert into kriya.harness_dispatches (user_id, device_id, kind) values ($1, $2, 'edit')`,
       [user, device]
