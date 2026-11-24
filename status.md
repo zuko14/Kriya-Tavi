@@ -12538,6 +12538,27 @@ The source is `docs/kriya-harness/STRATEGIC_INTENTS_SOVEREIGN_COMPUTE_AND_ONBOAR
   - the owner runs `npm run db:migrate` against production before turning on `harness.ownModels`;
   - the owner turns on each switch when ready (`harness.cockpit`, `harness.taskProof`, `harness.installScript`, `harness.localModels`, `harness.ownModels`).
 
+### Developer tab 500 fix, release 2.1.1 (2026-11-24, owner report with screenshot)
+
+- **Reported:** the Developer tab showed "Kriya couldn't do that; see the terminal for details." in `~/Documents/3D_scene_testing`. The owner's `kriya` is `npm link`ed to the repository (2.1.0, published; npm `latest` 2.1.0).
+- **Reproduced** with the real CLIs on that folder: `TypeError: Cannot read properties of undefined (reading 'filter')` at `plugins/cockpit/index.js` `github()`.
+- **Root cause:** `repo.status()` returns `{ state: "not a repository" }` with no `remotes` for a folder outside git, and the route called `status.remotes.filter`. Because the sections were combined, one throw failed the whole read. The earlier tests and browser checks used only git folders.
+- **Fix** (kriya-harness `cb3df7c`):
+  - "not a repository" returns its state, and the tab offers "Start a git repository";
+  - every section loads on its own: a failure is logged and shown in its place.
+  - Tests CK-09 (a real non-git folder) and CK-10 (one section failing).
+- **Checked on all six of the owner's sidebar workspaces:**
+  - 3D_scene_testing, testing_kriya_harness and deepseek-harness: not a repository;
+  - tesing_kriya_benchmark: no remote;
+  - Kriya-Tavi and kriya-harness: remote, signed in.
+  - Every section loaded with no error.
+- **Also found:** `install.sh` still pinned `KRIYA_VERSION="2.0.1"` after the 2.1.0 bump (IN-06 checks that they match).
+- **Release 2.1.1:** `package.json`, `package-lock.json`, `install.sh` and the release notes. Kriya-Tavi `b945f13` regenerates the served installer copy.
+- **Commands and real output:**
+  - kriya-harness `npm run check` → `ℹ tests 1276 ℹ pass 1276 ℹ fail 0`, exit 0.
+  - Kriya-Tavi `env -u OPENROUTER_API_KEY npm run check` → `Tests 3436 passed | 63 skipped (3499)`, exit 0.
+- **Not done** (owner's to decide): push (kriya-harness is 2 ahead, including the owner's own `595a893` bump; Kriya-Tavi is 1 ahead), `npm publish` of 2.1.1, and restarting the running `kriya` (pid 32627 still runs the old code).
+
 ### Harness 2.0 owner approvals
 
 - **Approved WD-01** (owner in chat, 2026-11-23: "Approve WD-01, start W0"): build only on documented DSH seams, no fork. 
