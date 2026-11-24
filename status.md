@@ -12523,6 +12523,21 @@ The source is `docs/kriya-harness/STRATEGIC_INTENTS_SOVEREIGN_COMPUTE_AND_ONBOAR
 - **Left running:** the local stack, `web-verify`, the test harness UI (3091) and the stand-in provider (3193).
 - **Next exact action:** the owner decides on commits, and which next features to build from the list given in chat.
 
+### Commit and push (2026-11-24, owner in chat: "Commit the everything work… and also push into the github to their respective mains")
+
+- **The owner overrode AGENTS.md** voice rule 3 ("Never push to the `origin` remote") for this push, after being asked. They also accepted the likely Render auto-deploy of Kriya-Tavi `main` (all new features are off; the migration `20271202000000` is not applied by a deploy).
+- **Secrets scan before commit:** no `.env`, key, credentials or device files staged. Diff and new-file pattern scan: the only match was the fake `AKIAABCDEFGHIJKLMNOP` fixture in `tests/cockpit.test.js` (redaction test).
+- **Commits:**
+  - Kriya-Tavi `22ba711` "feat(harness): server side of local models, installer, task proof, cockpit and own models" (it includes the owner's earlier uncommitted `status.md` changes and the strategic intents doc);
+  - kriya-harness `9473999` "feat(harness): local models, installer, task proof, Developer tab and own models".
+- **Push** (server first): `git push origin main` → Kriya-Tavi `1b4a742..22ba711 main -> main`, kriya-harness `1d5f9c5..9473999 main -> main`.
+- **CI:** both runs on the new commits were `in_progress` when this was written. Not checked yet: their result, and whether Render deployed.
+- **Next exact action:**
+  - read both CI results;
+  - check Render's deploy of `22ba711`;
+  - the owner runs `npm run db:migrate` against production before turning on `harness.ownModels`;
+  - the owner turns on each switch when ready (`harness.cockpit`, `harness.taskProof`, `harness.installScript`, `harness.localModels`, `harness.ownModels`).
+
 ### Harness 2.0 owner approvals
 
 - **Approved WD-01** (owner in chat, 2026-11-23: "Approve WD-01, start W0"): build only on documented DSH seams, no fork. 
